@@ -363,7 +363,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       ### To ensure successful merging downstream,
       ### convert `attr` to character before adding
       ### `node_measures_list`
-      node_measures$attr <- as.character(node_measures$attr)
+      node_measures[,2] <- as.character(node_measures[,2])
       node_measures_list[[i]] <- node_measures
 
       # List of final processes edgelists
