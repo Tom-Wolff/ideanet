@@ -1,31 +1,56 @@
-#' Personal greeting
+#' Network Cleaning and Variable Calculation (`netwrite`)
 #'
-#' @description Greet a person and appropriately capitalize their name.
+#' @description The `netwrite` function reads in relational data of several formats and processes them into a set of standardized outputs. These outputs include sets of commonly calculated measures at the individual node and network-wide levels.
 #'
-#' @param data_type Your name (character string; e.g. "john doe").
-#' @param adjacency_matrix
-#' @param adjacency_list
-#' @param nodelist
-#' @param node_id
-#' @param i_elements
-#' @param j_elements
-#' @param weights
-#' @param type
-#' @param remove_loops
-#' @param package # Might need to remove this
-#' @param missing_code
-#' @param weight_type
-#' @param directed
-#' @param net_name
-#' @param shiny
-#' @param output
-#' @param message
+#' @param data_type A character value indicating the type of relational data being entered into `netwrite`. Available options are `edgelist`, `adjacency_matrix`, and `adjacency_list`.
+#' @param adjacency_matrix If `data_type` is set to `adjacency_matrix`, a matrix object containing the adjacency matrix for the network being processed.
+#' @param adjacency_list If `data_type` is set to `adjacency_list`, a data frame containing the adjacency list for the network being processed.
+#' @param nodelist Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If
+#' @param node_id If a data frame is entered for the `nodelist` arugment, `node_id` should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
+#' @param i_elements If `data_type` is set to `edgelist`, a numeric or character vector indicating the sender of ties in the edgelist.
+#' @param j_elements If `data_type` is set to `edgelist`, a numeric or character vector indicating the receiver of ties in the edgelist.
+#' @param weights A numeric vector indicating the weight of ties in the edgelist.
+#' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If `type` contains this vector, `netwrite` will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occuring in the network.
+#' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
+#' @param package (Deprecated) A character value indicating what format network objects should be produced by `netwrite`. Available options are `igraph` and `network`.
+#' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresonding nodelist is unavailable.
+#' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are `frequency` and `distance`.
+#' @param directed A logical value indicating whether edges should be treated as a directed or undirected when constructing the network.
+#' @param net_name A character value indicating the name to which network/igraph objects should be given.
+#' @param shiny A logical value indicating whether `netwrite` is being used in conjunction with IDEANet's Shiny-based visualization app. Should be set to its default (`FALSE`) when not being used with the Shiny app.
+#' @param output A character vector indicating the kinds of objects `netwrite` should assign to the global environment. `netwrite` produces several outputs that may not all be necessary to a user's needs. Users can specify which outputs they specifically want in order to minimize the number of objects appearing in the global environment. Potential outputs include igraph object(s) (`"graph"`), subgraph(s) of only nodes that appear in the largest component and/or bicomponent of the network (`"largest_component"`, `"largest_bi_component"`), data frame(s) containing node-level measures (`"node_measure_plot"`), a processed edgelist of the network (`"edgelist"`), a data frame indicating network-level summaries (`"system_level_measures"`), and summary visualizations for node- and network-level measures (`"node_measure_plot"`, `"system_measure_plot"`).
+#' @param message A logical value indicating whether warning messages should be displayed in the R console during processing.
 #'
-#' @return A character string, capitalized to title case.
+#' @return `netwrite` returns a variety of outputs and assigns them to the R global environment. Depending on the values assigned to the `output` argument, `netwrite` will produce any or all of the following:
+#'
+#' If `output` contains `graph`, `netwrite` will return an igraph object of the network represented in the original data.
+#' If a vector is entered into the `type` argument, `netwrite` also produces a list containing igraph objects for each unique relation type as well as the overall network. These output objects are named according to the value specified in the `net_name` argument.
+#'
+#' If `output` contains `nodelist`, `netwrite` will return a dataframe containing individual-level information for each node in the network. This dataframe contains a set of frequently used node-level measures for each node in the network. If a vector is entered into the `type` argument, `netwrite` will produce these node-level measures for each unique relattion type.
+#'
+#' If `output` contains `edgelist`, `netwrite` will return a formatted edgelist for the network represented in the original data. If a vector is entered into the `type` argument, `netwrite` also produces a list containing edgelists for each unique relation type as well as the overall network.
+#'
+#' If `output` contains `system_level_measures`, `netwrite` will return a data frame providing network-level summary information.
+#'
+#' If `output` contains `node_measure_plot`, `netwrite` will return a plot summarizing the distribution of frequently used node-level measures across all nodes in the network. If a vector is entered into the `type` argument, `netwrite` also produces a list containing node-level summary plots for each unique relation type as well as the overall network.
+#'
+#' If `output` contains `system_measure_plot`, `netwrite` will return a plot summarizing the distribution of frequently used network-level measures. If a vector is entered into the `type` argument, `netwrite` also produces a list containing network-level summary plots for each unique relation type as well as the overall network.
+#'
+#' If `output` contains `largest_bi_component`, `netwrite` will return an igraph object of the largest bicomponent in the network represented in the original data. If a vector is entered into the `type` argument, `netwrite` also produces a list containing the largest bicomponent for each unique relation type as well as the overall network.
+#'
+#' If `output` contains `largest_bi_component`, `netwrite` will return an igraph object of the largest main component in the network represented in the original data. If a vector is entered into the `type` argument, `netwrite` also produces a list containing the largest main component for each unique relation type as well as the overall network.
+#'
 #' @export
 #'
 #' @examples
-#' hello("james bond")
+#' netwrite(data_type = "edgelist",
+#'          nodelist = node_dataframe,
+#'          node_id = "id",
+#'          i_elements = edge_dataframe$ego,
+#'          j_elements = edge_dataframe$alter,
+#'          weights = edge_dataframe$weight,
+#'          type = edge_dataframe$relation_type,
+#'          directed = TRUE)
 
 
 ##########################################################
