@@ -1248,9 +1248,10 @@ concor_tree <- function(df = assignment_df) {
   plot.new()
   plot(tree_igraph, layout = tree_layout,
        edge.arrow.size = .25)
-  concor_tree <- recordPlot()
-  assign(x = "concor_tree", value = concor_tree, .GlobalEnv)
+  tree_plot <- recordPlot()
   dev.off()
+
+  return(tree_plot)
 
 }
 
@@ -1330,9 +1331,11 @@ role_sociogram <- function(graph, version) {
 
   names(super_list) <- names(graph)
 
-  plot_name <- paste(version, "relations_sociograms", sep = "_")
+  # plot_name <- paste(version, "relations_sociograms", sep = "_")
+  #
+  # assign(x = plot_name, value = super_list, envir = .GlobalEnv)
 
-  assign(x = plot_name, value = super_list, envir = .GlobalEnv)
+  return(super_list)
 
 
 }

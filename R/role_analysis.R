@@ -580,9 +580,10 @@ cluster_method <- function(graph, # igraph object generated from netwrite
     assign(x = "cluster_modularity", value = mod_plot, .GlobalEnv)
     dev.off()
 
-    # Cluster Relation Sociograms (Supernodes)
-    role_sociogram(graph = original_graph,
-                   version = "cluster")
+    # "Supernode" sociograms
+    cluster_relations_sociogram <- role_sociogram(graph = original_graph,
+                                                 version = "cluster")
+    assign(x = "cluster_relations_sociogram", value = cluster_relations_sociogram, .GlobalEnv)
 
 
     # Summary Visualization (Cluster Mean Values)
@@ -850,8 +851,8 @@ concor_method <- function(graph,
     # 2. ASSIGN MULTIPLE PLOTS IF 6+ RELATION TYPES
     cluster_sociogram(graph_list = original_graph,
                       version = "block")
-    assign(x = "concor_sociogram", value = cluster_sociogram, .GlobalEnv)
-    rm(cluster_sociogram)
+    # assign(x = "concor_sociogram", value = cluster_sociogram, .GlobalEnv)
+    # rm(cluster_sociogram)
 
     old.par <- par(mar = c(0, 0, 0, 0))
     par(old.par)
@@ -870,11 +871,13 @@ concor_method <- function(graph,
     dev.off()
 
     # CONCOR Tree
-    concor_tree(df = assignment_df)
+    tree_plot <- concor_tree(df = assignment_df)
+    assign(x = "concor_tree", value = tree_plot, .GlobalEnv)
 
     # "Supernode" sociograms
-    role_sociogram(graph = original_graph,
-                   version = "concor")
+    concor_relations_sociogram <- role_sociogram(graph = original_graph,
+                                                 version = "concor")
+    assign(x = "concor_relations_sociogram", value = concor_relations_sociogram, .GlobalEnv)
 
 
 
@@ -883,14 +886,14 @@ concor_method <- function(graph,
     # Summary Visualization (Cluster Relations)
     cluster_heatmaps(node_data = assignment_df,
                      graph_list = graph)
-    assign(x = "concor_relations_chisq", value = cluster_relations_chisq, .GlobalEnv)
-    assign(x = "concor_relations_density", value = cluster_relations_density, .GlobalEnv)
-    assign(x = "concor_relations_density_std", value = cluster_relations_density_std, .GlobalEnv)
-    assign(x = "concor_relations_density_centered", value = cluster_relations_density_centered, .GlobalEnv)
-    rm(list = c("cluster_relations_chisq",
-                "cluster_relations_density",
-                "cluster_relations_density_std",
-                "cluster_relations_density_centered"))
+    # assign(x = "concor_relations_chisq", value = cluster_relations_chisq, .GlobalEnv)
+    # assign(x = "concor_relations_density", value = cluster_relations_density, .GlobalEnv)
+    # assign(x = "concor_relations_density_std", value = cluster_relations_density_std, .GlobalEnv)
+    # assign(x = "concor_relations_density_centered", value = cluster_relations_density_centered, .GlobalEnv)
+    # rm(list = c("cluster_relations_chisq",
+    #             "cluster_relations_density",
+    #             "cluster_relations_density_std",
+    #             "cluster_relations_density_centered"))
 
 
   }
