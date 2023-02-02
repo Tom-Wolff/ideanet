@@ -16,3 +16,4 @@ Imports:
   network,
   sna,
   tidyverse
+RoxygenNote: 7.2.3
