@@ -1314,7 +1314,7 @@ role_sociogram <- function(graph, version) {
       group_by(cluster) %>%
       summarize(original_size = n()) %>%
       ungroup() %>%
-      mutate(size = (original_size/sum(original_size))*50)
+      mutate(size = log(original_size))
 
   } else {
 
@@ -1323,9 +1323,34 @@ role_sociogram <- function(graph, version) {
       group_by(cluster) %>%
       summarize(original_size = n()) %>%
       ungroup() %>%
-      mutate(size = (original_size/sum(original_size))*50)
+      mutate(size = log(original_size))
 
   }
+
+
+  i_size <- matrix(rep(supernodes$original_size, nrow(supernodes)),
+                   nrow = nrow(supernodes))
+  j_size <- t(matrix(rep(supernodes$original_size, nrow(supernodes)),
+                   nrow = nrow(supernodes)))
+
+  # REVISIT: DO WE NEED TO CHANGE FOR UNDIRECTED GRAPHS?
+  diag(j_size) <- diag(j_size)-1
+  possible_cells <- as.data.frame(i_size * j_size)
+  colnames(possible_cells) <- supernodes$cluster
+  rownames(possible_cells) <- supernodes$cluster
+
+  # Make full edgelist of potential tie weights
+    weight_el <- tidyr::pivot_longer(possible_cells, "1":as.character(max(supernodes$cluster)), names_to = "cluster_ego", values_to = "max_possible")
+    weight_el$cluster_ego <- as.numeric(weight_el$cluster_ego)
+    weight_el$cluster_alter <- rep(supernodes$cluster, each=nrow(supernodes))
+    weight_el$max_possible_summary <- weight_el$max_possible*(length(graph)-1)
+
+
+
+
+
+
+
 
   # Make list for storing sociograms
   super_list <- list()
@@ -1354,20 +1379,45 @@ role_sociogram <- function(graph, version) {
       left_join(alter_label, by = "alter") %>%
       group_by(cluster_ego, cluster_alter) %>%
       summarize(weight = n()) %>%
-      ungroup()
+      ungroup() %>%
+      left_join(weight_el, by = c("cluster_ego", "cluster_alter"))
+
+    # When visualizing the overall summary graph, we can have multiple ties for
+    # specific directed dyads. If we treat the demoninator for density as we usually would,
+    # there a chance that we'd get edge density scores that exceed 1. To fix this,
+    # we'll need to multiply the number of possible ties by number of relation types
+    # to get a more accurate denominator
+    if (i == 1) {
+      this_el$density <- this_el$weight/this_el$max_possible_summary
+    } else {
+      this_el$density <- this_el$weight/this_el$max_possible_summary
+    }
+
+    # We're only going to keep "edges" between "supernodes" if the density of ties
+    # between them exceed the median
+    median_dens <- median(this_el$density)
+    this_el <- dplyr::filter(this_el, density > median_dens)
+
+    # Add a base value and multiplier to scale edge weights based on density
+    this_el$density2 <- this_el$density*5 + 1
 
     # Make igraph object
     this_igraph <- igraph::graph_from_data_frame(this_el, directed = TRUE,
                                                  vertices = supernodes)
 
 
+    this_layout <- igraph::layout.fruchterman.reingold(this_igraph)
+
     # Record plot and assign to environment
     plot.new()
     plot(this_igraph,
+         vertex.size = igraph::V(this_igraph)$size + 5,
          vertex.color = igraph::V(this_igraph)$name,
-         edge.width = ((igraph::E(this_igraph)$weight)/max(igraph::E(this_igraph)$weight))*10,
-         edge.arrow.size = ((igraph::E(this_igraph)$weight)/max(igraph::E(this_igraph)$weight))*.25)
-    title(names(graph)[[i]])
+         edge.width = igraph::E(this_igraph)$density2,
+         edge.arrow.size = .5,
+         layout = this_layout)
+    title(main = names(graph)[[i]],
+          sub = paste("Median density: ", median_dens, sep = ""))
     this_plot <- recordPlot()
     super_list[[i]] <- this_plot
     dev.off()
