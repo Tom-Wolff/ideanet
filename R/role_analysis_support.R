@@ -1196,7 +1196,7 @@ cluster_sociogram <- function(graph_list = original_graph,
 # CONCOR parent tree
 ####################################################################
 
-concor_tree <- function(df = assignment_df) {
+concor_tree <- function(df) {
 
   block_assigns <- df[,2:(ncol(df)-2)]
 
