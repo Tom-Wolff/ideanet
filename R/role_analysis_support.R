@@ -1198,7 +1198,7 @@ cluster_sociogram <- function(graph_list = original_graph,
 
 concor_tree <- function(df = assignment_df) {
 
-  block_assigns <- assignment_df[,2:(ncol(assignment_df)-2)]
+  block_assigns <- df[,2:(ncol(df)-2)]
 
   # Relabel Nodes
 
@@ -1249,9 +1249,8 @@ concor_tree <- function(df = assignment_df) {
   plot(tree_igraph, layout = tree_layout,
        edge.arrow.size = .25)
   tree_plot <- recordPlot()
+  assign(x = "concor_block_tree", value = tree_plot, .GlobalEnv)
   dev.off()
-
-  return(tree_plot)
 
 }
 

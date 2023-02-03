@@ -854,15 +854,15 @@ concor_method <- function(graph,
     # assign(x = "concor_sociogram", value = cluster_sociogram, .GlobalEnv)
     # rm(cluster_sociogram)
 
-    old.par <- par(mar = c(0, 0, 0, 0))
-    par(old.par)
+    # old.par <- par(mar = c(0, 0, 0, 0))
+    # par(old.par)
 
 
     # Modularity plot
     plot.new()
     plot(x = modularity_df$num_blocks,
          y = modularity_df$modularity,
-         main = "Cluster Modularity",
+         main = "CONCOR Modularity",
          xlab = "Number of Blocks",
          ylab = "Modularity")
     lines(modularity_df$num_blocks, modularity_df$modularity)
@@ -870,9 +870,11 @@ concor_method <- function(graph,
     assign(x = "concor_modularity", value = mod_plot, .GlobalEnv)
     dev.off()
 
+    print(assignment_df)
+
     # CONCOR Tree
-    tree_plot <- concor_tree(df = assignment_df)
-    assign(x = "concor_tree", value = tree_plot, .GlobalEnv)
+    concor_tree(df = assignment_df)
+
 
     # "Supernode" sociograms
     concor_relations_sociogram <- role_sociogram(graph = original_graph,
