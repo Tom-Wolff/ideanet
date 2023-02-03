@@ -665,6 +665,10 @@ cluster_summary_plots <- function(graph_list,
                   "isolate")
 
 
+  # Make lists for storing individual plots
+  cluster_summaries_cent <- list()
+  cluster_summaries_triad <- list()
+
 
   for (i in 1:length(graph_list)) {
 
@@ -733,14 +737,29 @@ cluster_summary_plots <- function(graph_list,
       xlab("Variable") +
       labs(color = "Cluster")
 
-    assign(x = paste("cluster_summaries_cent_", names(graph_list)[[i]], sep = ""),
-           value = cent_plot,
-           .GlobalEnv)
+    cluster_summaries_cent[[i]] <- cent_plot
+    cluster_summaries_triad[[i]] <- triad_plot
 
-    assign(x = paste("cluster_summaries_triad_", names(graph_list)[[i]], sep = ""),
-           value = triad_plot,
-           .GlobalEnv)
+    # assign(x = paste("cluster_summaries_cent_", names(graph_list)[[i]], sep = ""),
+    #        value = cent_plot,
+    #        .GlobalEnv)
+    #
+    # assign(x = paste("cluster_summaries_triad_", names(graph_list)[[i]], sep = ""),
+    #        value = triad_plot,
+    #        .GlobalEnv)
   }
+
+  names(cluster_summaries_cent) <- names(graph_list)
+  names(cluster_summaries_triad) <- names(graph_list)
+
+  assign(x = "cluster_summaries_cent",
+         value = cluster_summaries_cent,
+         .GlobalEnv)
+
+  assign(x = "cluster_summaries_triad",
+         value = cluster_summaries_triad,
+         .GlobalEnv)
+
 }
 
 cluster_summary_cor <- function(summary_data) {
@@ -1005,11 +1024,11 @@ cluster_heatmaps <- function(node_data = cut_df2,
     facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store chi-squared heatmap to global environment
-  if (version == "cluster") {
-      assign(x = "cluster_relations_chisq", value = chisq_heat, .GlobalEnv)
-  } else {
-      assign(x = "concor_relations_chisq", value = chisq_heat, .GlobalEnv)
-  }
+  # if (version == "cluster") {
+  #     assign(x = "cluster_relations_chisq", value = chisq_heat, .GlobalEnv)
+  # } else {
+  #     assign(x = "concor_relations_chisq", value = chisq_heat, .GlobalEnv)
+  # }
 
 
   # DENSITY HEATMAP
@@ -1040,11 +1059,11 @@ cluster_heatmaps <- function(node_data = cut_df2,
     facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store density heatmap to global environment
-  if (version == "cluster") {
-      assign(x = "cluster_relations_density", value = density_heat, .GlobalEnv)
-  } else {
-      assign(x = "concor_relations_density", value = density_heat, .GlobalEnv)
-  }
+  # if (version == "cluster") {
+  #     assign(x = "cluster_relations_density", value = density_heat, .GlobalEnv)
+  # } else {
+  #     assign(x = "concor_relations_density", value = density_heat, .GlobalEnv)
+  # }
 
   # DENSITY HEATMAP (STANDARDIZED)
   range_density_std <- range(cluster_edgelist$density_std)
@@ -1078,11 +1097,11 @@ cluster_heatmaps <- function(node_data = cut_df2,
     facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store standardized density heatmap to global environment
-  if (version == "cluster") {
-      assign(x = "cluster_relations_density_std", value = density_std_heat, .GlobalEnv)
-  } else {
-      assign(x = "concor_relations_density_std", value = density_std_heat, .GlobalEnv)
-  }
+  # if (version == "cluster") {
+  #     assign(x = "cluster_relations_density_std", value = density_std_heat, .GlobalEnv)
+  # } else {
+  #     assign(x = "concor_relations_density_std", value = density_std_heat, .GlobalEnv)
+  # }
 
   # DENSITY HEATMAP (STANDARDIZED AND CENTERED)
   range_density_std2 <- range(cluster_edgelist$density_std2)
@@ -1112,11 +1131,23 @@ cluster_heatmaps <- function(node_data = cut_df2,
     facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store standardized + centered density heatmap to global environment
+  # if (version == "cluster") {
+  #     assign(x = "cluster_relations_density_centered", value = density_std2_heat, .GlobalEnv)
+  # } else {
+  #   assign(x = "concor_relations_density_centered", value = density_std2_heat, .GlobalEnv)
+  # }
+
+  # Alternate version of output: Store all four plots in a named list
+  cluster_relation_heatmaps <- list(chisq = chisq_heat,
+                                    density = density_heat,
+                                    density_std = density_std_heat,
+                                    density_centered = density_std2_heat)
   if (version == "cluster") {
-      assign(x = "cluster_relations_density_centered", value = density_std2_heat, .GlobalEnv)
+    assign(x = "cluster_relations_heatmaps", value = cluster_relation_heatmaps, .GlobalEnv)
   } else {
-    assign(x = "concor_relations_density_centered", value = density_std2_heat, .GlobalEnv)
+    assign(x = "concor_relations_heatmaps", value = cluster_relation_heatmaps, .GlobalEnv)
   }
+
 
 }
 
