@@ -1161,12 +1161,44 @@ cluster_sociogram <- function(graph_list = original_graph,
   # CLUSTERING VERSION
   if (version == "cluster") {
 
+    # First, let's assign colors to nodes based on cluster membership
+    color_df <- data.frame(name = igraph::V(graph_list[[i]])$name,
+                           cluster = igraph::V(graph_list[[i]])$cluster)
+    color_df$color <- color_assign(color_df$cluster)
+
+    for (i in 1:length(graph_list)) {
+      igraph::V(graph_list[[i]])$color <- color_df$color
+    }
+
+    # Condensed color_df for legend plotting
+    color_df2 <- color_df[,2:3]
+    color_df2 <- unique(color_df2)
+    color_df2 <- dplyr::arrange(color_df2, cluster)
+
+
     # If there's only one graph, you just plot the one graph
     if (length(graph_list) == 1) {
 
       plot.new()
-      plot(graph_list[[1]], vertex.color = igraph::V(graph_list[[1]])$cluster,
-           vertex.label = igraph::V(graph_list[[1]])$attr)
+      plot(graph_list[[1]], vertex.color = igraph::V(graph_list[[1]])$color,
+           vertex.label = NA,
+           vertex.frame.color = NA,
+           vertex.size = 2,
+           edge.width = .1,
+           edge.arrow.size = .1)
+
+      legend(
+        "bottomright",
+        legend = color_df2$cluster,
+        pt.bg  = color_df2$color,
+        col  = color_df2$color,
+        pch    = 21,
+        cex    = 1,
+        bty    = "n",
+        title  = "cluster"
+      )
+
+
       sociogram <- recordPlot()
       assign(x = 'cluster_sociogram', value = sociogram, .GlobalEnv)
 
@@ -1178,12 +1210,24 @@ cluster_sociogram <- function(graph_list = original_graph,
 
         plot.new()
 
-        plot(graph_list[[i]], vertex.color = igraph::V(graph_list[[i]])$cluster,
+        plot(graph_list[[i]], vertex.color = igraph::V(graph_list[[i]])$color,
              vertex.label = NA,
+             vertex.frame.color = NA,
              vertex.size = 2,
              edge.width = .1,
              edge.arrow.size = .1)
         title(names(graph_list)[[i]])
+
+        legend(
+          "bottomright",
+          legend = color_df2$cluster,
+          pt.bg  = color_df2$color,
+          col  = color_df2$color,
+          pch    = 21,
+          cex    = 1,
+          bty    = "n",
+          title  = "cluster"
+        )
 
         sociogram <- recordPlot()
 
@@ -1200,12 +1244,44 @@ cluster_sociogram <- function(graph_list = original_graph,
     # CONCOR VERSION
   } else {
 
+
+    # First, let's assign colors to nodes based on block membership
+    color_df <- data.frame(name = igraph::V(graph_list[[i]])$name,
+                           cluster = igraph::V(graph_list[[i]])$block)
+    color_df$color <- color_assign(color_df$cluster)
+
+    for (i in 1:length(graph_list)) {
+      igraph::V(graph_list[[i]])$color <- color_df$color
+    }
+
+    # Condensed color_df for legend plotting
+    color_df2 <- color_df[,2:3]
+    color_df2 <- unique(color_df2)
+    color_df2 <- dplyr::arrange(color_df2, cluster)
+
+
     # If there's only one graph, you just plot the one graph
     if (length(graph_list) == 1) {
 
       plot.new()
-      plot(graph_list[[1]], vertex.color = igraph::V(graph_list[[1]])$block,
-           vertex.label = igraph::V(graph_list[[1]])$attr)
+      plot(graph_list[[1]], vertex.color = igraph::V(graph_list[[1]])$color,
+           vertex.label = NA,
+           vertex.frame.color = NA,
+           vertex.size = 2,
+           edge.width = .1,
+           edge.arrow.size = .1)
+
+      legend(
+        "bottomright",
+        legend = color_df2$cluster,
+        pt.bg  = color_df2$color,
+        col  = color_df2$color,
+        pch    = 21,
+        cex    = 1,
+        bty    = "n",
+        title  = "block"
+      )
+
       sociogram <- recordPlot()
       assign(x = 'concor_sociogram', value = sociogram, .GlobalEnv)
 
@@ -1217,12 +1293,24 @@ cluster_sociogram <- function(graph_list = original_graph,
 
         plot.new()
 
-        plot(graph_list[[i]], vertex.color = igraph::V(graph_list[[i]])$block,
+        plot(graph_list[[i]], vertex.color = igraph::V(graph_list[[i]])$color,
              vertex.label = NA,
+             vertex.frame.color = NA,
              vertex.size = 2,
              edge.width = .1,
              edge.arrow.size = .1)
         title(names(graph_list)[[i]])
+
+        legend(
+          "bottomright",
+          legend = color_df2$cluster,
+          pt.bg  = color_df2$color,
+          col  = color_df2$color,
+          pch    = 21,
+          cex    = 1,
+          bty    = "n",
+          title  = "block"
+        )
 
         sociogram <- recordPlot()
 
@@ -1405,6 +1493,9 @@ role_sociogram <- function(graph, version) {
     this_igraph <- igraph::graph_from_data_frame(this_el, directed = TRUE,
                                                  vertices = supernodes)
 
+    # Color nodes (this makes adding a legend easier)
+    igraph::V(this_igraph)$color <- color_assign(input = igraph::V(this_igraph)$name)
+
 
     this_layout <- igraph::layout.fruchterman.reingold(this_igraph)
 
@@ -1412,12 +1503,27 @@ role_sociogram <- function(graph, version) {
     plot.new()
     plot(this_igraph,
          vertex.size = igraph::V(this_igraph)$size + 5,
-         vertex.color = igraph::V(this_igraph)$name,
+        # vertex.color = igraph::V(this_igraph)$name,
+        vertex.label = NA,
+        vertex.frame.color = NA,
          edge.width = igraph::E(this_igraph)$density2,
          edge.arrow.size = .5,
          layout = this_layout)
     title(main = names(graph)[[i]],
-          sub = paste("Median density: ", median_dens, sep = ""))
+          sub = paste("Median edge density: ", median_dens, sep = ""))
+
+    legend(
+      "bottomright",
+      legend = igraph::V(this_igraph)$name,
+      pt.bg  = igraph::V(this_igraph)$color,
+      col  = igraph::V(this_igraph)$color,
+      pch    = 21,
+      cex    = 1,
+      bty    = "n",
+      title  = version
+    )
+
+
     this_plot <- recordPlot()
     super_list[[i]] <- this_plot
     dev.off()
@@ -1433,5 +1539,26 @@ role_sociogram <- function(graph, version) {
 
   return(super_list)
 
+
+}
+
+####################################################################
+# Coloring nodes
+####################################################################
+
+color_assign <- function(input) {
+
+  # Get unique values of `input`
+  unique_vals <- unique(input)
+
+  # Use `colorspace` to get your colors
+  color_df <- data.frame(val = unique_vals,
+                         color = colorspace::qualitative_hcl(n = length(unique_vals)))
+
+  # Now create another dataframe containing input
+  assign_df <- data.frame(val = input)
+  assign_df <- dplyr::left_join(assign_df, color_df, by = "val")
+
+  return(assign_df$color)
 
 }
