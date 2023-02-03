@@ -863,8 +863,8 @@ concor_method <- function(graph,
     # Sociogram with nodes labeled by optimal clusters
     ### Make a dataframe for color assignments to ensure consistency
     ### across different plot objects
-    color_df <- data.frame(id = cut_df2$id,
-                           cluster = cut_df2$best_fit)
+    color_df <- data.frame(id = full_roster$id,
+                           cluster = full_roster$best_fit)
     color_df$color <- color_assign(color_df$cluster)
 
     # Condensed color_df for legend plotting
