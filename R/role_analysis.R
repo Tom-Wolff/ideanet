@@ -853,7 +853,7 @@ concor_method <- function(graph,
   #######################
 
   # Store cluster assignments to global environment
-  assign(x = "concor_assignments", value = assignment_df, .GlobalEnv)
+  assign(x = "concor_assignments", value = full_roster, .GlobalEnv)
 
 
   # Option to produce summary visualizations
