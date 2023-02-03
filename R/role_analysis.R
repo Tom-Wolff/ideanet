@@ -605,7 +605,8 @@ cluster_method <- function(graph, # igraph object generated from netwrite
 
     # Summary Visualization (Cluster Relations)
     cluster_heatmaps(node_data = cut_df2,
-                     graph_list = graph)
+                     graph_list = graph,
+                     version = "cluster")
 
   }
 
@@ -851,8 +852,8 @@ concor_method <- function(graph,
     # 2. ASSIGN MULTIPLE PLOTS IF 6+ RELATION TYPES
     cluster_sociogram(graph_list = original_graph,
                       version = "block")
-    assign(x = "concor_sociogram", value = cluster_sociogram, .GlobalEnv)
-    rm(cluster_sociogram)
+    # assign(x = "concor_sociogram", value = cluster_sociogram, .GlobalEnv)
+    # rm(cluster_sociogram)
 
     # old.par <- par(mar = c(0, 0, 0, 0))
     # par(old.par)
@@ -870,7 +871,6 @@ concor_method <- function(graph,
     assign(x = "concor_modularity", value = mod_plot, .GlobalEnv)
     dev.off()
 
-    print(assignment_df)
 
     # CONCOR Tree
     concor_tree(df = assignment_df)
@@ -887,15 +887,8 @@ concor_method <- function(graph,
 
     # Summary Visualization (Cluster Relations)
     cluster_heatmaps(node_data = assignment_df,
-                     graph_list = graph)
-    assign(x = "concor_relations_chisq", value = cluster_relations_chisq, .GlobalEnv)
-    assign(x = "concor_relations_density", value = cluster_relations_density, .GlobalEnv)
-    assign(x = "concor_relations_density_std", value = cluster_relations_density_std, .GlobalEnv)
-    assign(x = "concor_relations_density_centered", value = cluster_relations_density_centered, .GlobalEnv)
-    rm(list = c("cluster_relations_chisq",
-                "cluster_relations_density",
-                "cluster_relations_density_std",
-                "cluster_relations_density_centered"))
+                     graph_list = graph, version = "block")
+
 
 
   }

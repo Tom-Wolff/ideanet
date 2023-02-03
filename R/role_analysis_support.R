@@ -780,7 +780,8 @@ cluster_summary_cor <- function(summary_data) {
 ####################################################################
 
 cluster_heatmaps <- function(node_data = cut_df2,
-                             graph_list = graph){
+                             graph_list = graph,
+                             version){
 
   # Need cluster IDs for merging
   cluster_ego <- data.frame(ego = as.character(node_data$id),
@@ -1004,7 +1005,11 @@ cluster_heatmaps <- function(node_data = cut_df2,
     facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store chi-squared heatmap to global environment
-  assign(x = "cluster_relations_chisq", value = chisq_heat, .GlobalEnv)
+  if (version == "cluster") {
+      assign(x = "cluster_relations_chisq", value = chisq_heat, .GlobalEnv)
+  } else {
+      assign(x = "concor_relations_chisq", value = chisq_heat, .GlobalEnv)
+  }
 
 
   # DENSITY HEATMAP
@@ -1035,7 +1040,11 @@ cluster_heatmaps <- function(node_data = cut_df2,
     facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store density heatmap to global environment
-  assign(x = "cluster_relations_density", value = density_heat, .GlobalEnv)
+  if (version == "cluster") {
+      assign(x = "cluster_relations_density", value = density_heat, .GlobalEnv)
+  } else {
+      assign(x = "concor_relations_density", value = density_heat, .GlobalEnv)
+  }
 
   # DENSITY HEATMAP (STANDARDIZED)
   range_density_std <- range(cluster_edgelist$density_std)
@@ -1069,8 +1078,11 @@ cluster_heatmaps <- function(node_data = cut_df2,
     facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store standardized density heatmap to global environment
-  assign(x = "cluster_relations_density_std", value = density_std_heat, .GlobalEnv)
-
+  if (version == "cluster") {
+      assign(x = "cluster_relations_density_std", value = density_std_heat, .GlobalEnv)
+  } else {
+      assign(x = "concor_relations_density_std", value = density_std_heat, .GlobalEnv)
+  }
 
   # DENSITY HEATMAP (STANDARDIZED AND CENTERED)
   range_density_std2 <- range(cluster_edgelist$density_std2)
@@ -1100,7 +1112,11 @@ cluster_heatmaps <- function(node_data = cut_df2,
     facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store standardized + centered density heatmap to global environment
-  assign(x = "cluster_relations_density_centered", value = density_std2_heat, .GlobalEnv)
+  if (version == "cluster") {
+      assign(x = "cluster_relations_density_centered", value = density_std2_heat, .GlobalEnv)
+  } else {
+    assign(x = "concor_relations_density_centered", value = density_std2_heat, .GlobalEnv)
+  }
 
 }
 
@@ -1160,7 +1176,7 @@ cluster_sociogram <- function(graph_list = original_graph,
       plot(graph_list[[1]], vertex.color = igraph::V(graph_list[[1]])$block,
            vertex.label = igraph::V(graph_list[[1]])$attr)
       sociogram <- recordPlot()
-      assign(x = 'cluster_sociogram', value = sociogram, .GlobalEnv)
+      assign(x = 'concor_sociogram', value = sociogram, .GlobalEnv)
 
     } else {
 
@@ -1185,7 +1201,7 @@ cluster_sociogram <- function(graph_list = original_graph,
 
       names(sociogram_list) <- names(graph_list)
 
-      assign(x = 'cluster_sociogram', value = sociogram_list, .GlobalEnv)
+      assign(x = 'concor_sociogram', value = sociogram_list, .GlobalEnv)
 
     }
 
