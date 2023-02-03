@@ -561,10 +561,22 @@ cluster_method <- function(graph, # igraph object generated from netwrite
     dev.off()
 
     # Sociogram with nodes labeled by optimal clusters
-    # TO DO LIST: 1. ADD A LEGEND FOR CLUSTER COLORS
-    # 2. ASSIGN MULTIPLE PLOTS IF 6+ RELATION TYPES
+    ### Make a dataframe for color assignments to ensure consistency
+    ### across different plot objects
+    color_df <- data.frame(id = cut_df2$id,
+                           cluster = cut_df2$best_fit)
+    color_df$color <- color_assign(color_df$cluster)
+
+    # Condensed color_df for legend plotting
+    color_df2 <- color_df[,2:3]
+    color_df2 <- unique(color_df2)
+    color_df2 <- dplyr::arrange(color_df2, cluster)
+
+
     cluster_sociogram(graph_list = original_graph,
-                      version = "cluster")
+                      version = "cluster",
+                      color1 = color_df,
+                      color2 = color_df2)
 
 
 
@@ -582,7 +594,8 @@ cluster_method <- function(graph, # igraph object generated from netwrite
 
     # "Supernode" sociograms
     cluster_relations_sociogram <- role_sociogram(graph = original_graph,
-                                                 version = "cluster")
+                                                 version = "cluster",
+                                                 color2 = color_df2)
     assign(x = "cluster_relations_sociogram", value = cluster_relations_sociogram, .GlobalEnv)
 
 
@@ -848,10 +861,20 @@ concor_method <- function(graph,
 
 
     # Sociogram with nodes labeled by optimal clusters
-    # TO DO LIST: 1. ADD A LEGEND FOR CLUSTER COLORS
-    # 2. ASSIGN MULTIPLE PLOTS IF 6+ RELATION TYPES
+    ### Make a dataframe for color assignments to ensure consistency
+    ### across different plot objects
+    color_df <- data.frame(id = cut_df2$id,
+                           cluster = cut_df2$best_fit)
+    color_df$color <- color_assign(color_df$cluster)
+
+    # Condensed color_df for legend plotting
+    color_df2 <- color_df[,2:3]
+    color_df2 <- unique(color_df2)
+    color_df2 <- dplyr::arrange(color_df2, cluster)
     cluster_sociogram(graph_list = original_graph,
-                      version = "block")
+                      version = "block",
+                      color1 = color_df,
+                      color2 = color_df2)
     # assign(x = "concor_sociogram", value = cluster_sociogram, .GlobalEnv)
     # rm(cluster_sociogram)
 
@@ -878,7 +901,8 @@ concor_method <- function(graph,
 
     # "Supernode" sociograms
     concor_relations_sociogram <- role_sociogram(graph = original_graph,
-                                                 version = "concor")
+                                                 version = "concor",
+                                                 color2 = color_df2)
     assign(x = "concor_relations_sociogram", value = concor_relations_sociogram, .GlobalEnv)
 
 
