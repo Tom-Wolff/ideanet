@@ -1157,7 +1157,6 @@ cluster_heatmaps <- function(node_data = cut_df2,
 
 cluster_sociogram <- function(graph_list = original_graph,
                               version,
-                              color1,
                               color2) {
 
   # CLUSTERING VERSION
@@ -1167,7 +1166,7 @@ cluster_sociogram <- function(graph_list = original_graph,
     if (length(graph_list) == 1) {
 
       plot.new()
-      plot(graph_list[[1]], vertex.color = color1$color,
+      plot(graph_list[[1]], vertex.color = igraph::V(graph_list[[1]])$color,
            vertex.label = NA,
            vertex.frame.color = NA,
            vertex.size = 2,
@@ -1197,7 +1196,7 @@ cluster_sociogram <- function(graph_list = original_graph,
 
         plot.new()
 
-        plot(graph_list[[i]], vertex.color = color1$color,
+        plot(graph_list[[i]], vertex.color = igraph::V(graph_list[[i]])$color,
              vertex.label = NA,
              vertex.frame.color = NA,
              vertex.size = 2,
@@ -1235,7 +1234,7 @@ cluster_sociogram <- function(graph_list = original_graph,
     if (length(graph_list) == 1) {
 
       plot.new()
-      plot(graph_list[[1]], vertex.color = color1$color,
+      plot(graph_list[[1]], vertex.color = igraph::V(graph_list[[1]])$color,
            vertex.label = NA,
            vertex.frame.color = NA,
            vertex.size = 2,
@@ -1264,7 +1263,7 @@ cluster_sociogram <- function(graph_list = original_graph,
 
         plot.new()
 
-        plot(graph_list[[i]], vertex.color = color1$color,
+        plot(graph_list[[i]], vertex.color = igraph::V(graph_list[[i]])$color,
              vertex.label = NA,
              vertex.frame.color = NA,
              vertex.size = 2,
@@ -1373,7 +1372,8 @@ role_sociogram <- function(graph, version, color2) {
       group_by(cluster) %>%
       summarize(original_size = n()) %>%
       ungroup() %>%
-      mutate(size = log(original_size))
+      mutate(size = log(original_size)) %>%
+      left_join(color2, by = "cluster")
 
   } else {
 
@@ -1382,7 +1382,8 @@ role_sociogram <- function(graph, version, color2) {
       group_by(cluster) %>%
       summarize(original_size = n()) %>%
       ungroup() %>%
-      mutate(size = log(original_size))
+      mutate(size = log(original_size)) %>%
+      left_join(color2, by = "cluster")
 
   }
 
@@ -1474,7 +1475,7 @@ role_sociogram <- function(graph, version, color2) {
     plot.new()
     plot(this_igraph,
          vertex.size = igraph::V(this_igraph)$size + 5,
-         vertex.color = color2$color,
+         vertex.color = igraph::V(this_igraph)$color,
         vertex.label = NA,
         vertex.frame.color = NA,
          edge.width = igraph::E(this_igraph)$density2,
@@ -1491,7 +1492,7 @@ role_sociogram <- function(graph, version, color2) {
       pch    = 21,
       cex    = 1,
       bty    = "n",
-      title  = version
+      title  = ifelse(version == "cluster", "cluster", "block")
     )
 
 

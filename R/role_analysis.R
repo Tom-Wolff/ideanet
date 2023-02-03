@@ -572,10 +572,16 @@ cluster_method <- function(graph, # igraph object generated from netwrite
     color_df2 <- unique(color_df2)
     color_df2 <- dplyr::arrange(color_df2, cluster)
 
+    # Assign colors to igraph object list
+    for (i in 1:length(original_graph)){
+
+      igraph::V(original_graph[[i]])$color <- color_df$color
+
+    }
+
 
     cluster_sociogram(graph_list = original_graph,
                       version = "cluster",
-                      color1 = color_df,
                       color2 = color_df2)
 
 
@@ -871,9 +877,17 @@ concor_method <- function(graph,
     color_df2 <- color_df[,2:3]
     color_df2 <- unique(color_df2)
     color_df2 <- dplyr::arrange(color_df2, cluster)
+
+    # Assign colors to igraph object list
+    for (i in 1:length(original_graph)){
+
+      igraph::V(original_graph[[i]])$color <- color_df$color
+
+    }
+
+
     cluster_sociogram(graph_list = original_graph,
                       version = "block",
-                      color1 = color_df,
                       color2 = color_df2)
     # assign(x = "concor_sociogram", value = cluster_sociogram, .GlobalEnv)
     # rm(cluster_sociogram)
