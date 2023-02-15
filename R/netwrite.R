@@ -368,7 +368,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         }
       }
 
-
+print("Finished Basic Netwrite Processing")
 
       # Store netwrite outputs into respective lists
 
