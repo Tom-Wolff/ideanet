@@ -176,6 +176,12 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # If `nodelist` is a data frame, we'll want to merge it into `node_measures`
     if (("data.frame" %in% class(nodelist)) == TRUE) {
 
+      # Sometimes the original ID column we need to join on will be of a different class
+      # between the two dataframes we're trying to merge here. To be safe, we'll convert both columns
+      # into characters and merge
+      original_nodelist[, node_id] <- as.character(unlist(original_nodelist[, node_id]))
+      node_measures[, node_id] <- as.character(unlist(node_measures[, node_id]))
+
       node_measures <- dplyr::left_join(original_nodelist, node_measures, by = node_id)
       # Rearrange columns
       node_measures <- dplyr::select(node_measures, id, dplyr::everything())
@@ -491,8 +497,8 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Sometimes the original ID column we need to join on will be of a different class
       # between the two dataframes we're trying to merge here. To be safe, we'll convert both columns
       # into characters and merge
-      original_nodelist[, node_id] <- as.character(original_nodelist[, node_id])
-      node_measures[, node_id] <- as.character(node_measures[, node_id])
+      original_nodelist[, node_id] <- as.character(unlist(original_nodelist[, node_id]))
+      node_measures[, node_id] <- as.character(unlist(node_measures[, node_id]))
 
       node_measures <- dplyr::left_join(original_nodelist, node_measures, by = node_id)
       # Rearrange columns
