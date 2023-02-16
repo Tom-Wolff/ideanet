@@ -34,6 +34,7 @@
 #'
 #' role_analysis
 
+require(tidyverse)
 
 role_analysis <- function(graph, # igraph object generated from netwrite
                                             # Or list of igraph objects
