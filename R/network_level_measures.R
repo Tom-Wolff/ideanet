@@ -100,6 +100,9 @@ largest_bicomponent_igraph <- function(g) {
 
     bicomponent_summary <- data.frame()
 
+    # Make a list for storing all largest bicomponents
+    largest_bi_component <- list()
+
     for (i in 1:length(largest_id)) {
 
       # Get nodes in this bicomponent
@@ -122,13 +125,15 @@ largest_bicomponent_igraph <- function(g) {
 
       bicomponent_df <- rbind(bicomponent_df, bicomp_id_merge)
 
-      largest_bi_component <- igraph::induced_subgraph(g, largest_bicomp_ids)
+      largest_bi_component[[i]] <- igraph::induced_subgraph(g, largest_bicomp_ids)
 
       assign(x = paste('largest_bicomponent_ids', i, sep = "_"), value = largest_bicomp_ids,.GlobalEnv)
-      assign(x = paste('largest_bi_component', i, sep = "_"), value = largest_bi_component,.GlobalEnv)
+ #      assign(x = paste('largest_bi_component', i, sep = "_"), value = largest_bi_component,.GlobalEnv)
 
 
     }
+
+    assign(x = 'largest_bi_component', value = largest_bi_component,.GlobalEnv)
 
     bicomponent_df2 <- data.frame()
 
