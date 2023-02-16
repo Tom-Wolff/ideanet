@@ -379,15 +379,19 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       ### largest bicomponents in a list, which is then assigned as an element in
       ### the final output `bi_component_list`
       largest_bicomponents <- ls(envir = .GlobalEnv)[stringr::str_detect(ls(), "largest_bi_component_")]
-      if (length(largest_bicomponents) > 1) {
 
-        largest_bi_component <- list()
+      # Old code
+            # if (length(largest_bicomponents) > 1) {
+      #
+      #   largest_bi_component <- list()
+      #
+      #   for (i in 1:length(largest_bicomponents)) {
+      #     largest_bi_component[[i]] <- mget(largest_bicomponents[[i]], envir = .GlobalEnv)
+      #   }
+      #   rm(list = largest_bicomponents)
+      # }
 
-        for (i in 1:length(largest_bicomponents)) {
-          largest_bi_component[[i]] <- mget(largest_bicomponents[[i]], envir = .GlobalEnv)
-        }
-        rm(list = largest_bicomponents)
-      }
+      largest_bi_component <- mget(largest_bicomponents, envir = .GlobalEnv)
 
       bicomponent_list[[i]] <- largest_bi_component
 
@@ -395,17 +399,16 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       ### Same deal if there are multiple largest components of equal size
       largest_components <- ls()[stringr::str_detect(ls(envir = .GlobalEnv), "largest_component_")]
       largest_components <- largest_components[!stringr::str_detect(largest_components, "largest_component_ids")]
-      if (length(largest_components) > 1) {
-
-        largest_component <- list()
-
-        for (i in 1:length(largest_components)) {
-          largest_component[[i]] <- mget(largest_components[[i]], envir = .GlobalEnv)
-        }
-        rm(list = largest_components)
-      }
-
-
+      # if (length(largest_components) > 1) {
+      #
+      #   largest_component <- list()
+      #
+      #   for (i in 1:length(largest_components)) {
+      #     largest_component[[i]] <- mget(largest_components[[i]], envir = .GlobalEnv)
+      #   }
+      #   rm(list = largest_components)
+      # }
+      largest_component <- mget(largest_components, envir = .GlobalEnv)
 
       lcomponent_list[[i]] <- largest_component
 
