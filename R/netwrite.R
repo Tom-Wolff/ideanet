@@ -368,17 +368,45 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         }
       }
 
-print("Finished Basic Netwrite Processing")
-
       # Store netwrite outputs into respective lists
 
       # igraph object list
       graphs_list[[i]] <- this_igraph
 
       # Largest bicomponent list
+      ### Sometimes a network will have 2+ largest bicomponents of equivalent size.
+      ### The following is designed to handle this special case by storing all
+      ### largest bicomponents in a list, which is then assigned as an element in
+      ### the final output `bi_component_list`
+      largest_bicomponents <- ls()[stringr::str_detect(ls(), "largest_bi_component_")]
+      if (length(largest_bicomponents) > 1) {
+
+        largest_bi_component <- list()
+
+        for (i in 1:length(largest_bicomponents)) {
+          largest_bi_component[[i]] <- mget(largest_bicomponents[[i]])
+        }
+        rm(list = largest_bicomponents)
+      }
+
       bicomponent_list[[i]] <- largest_bi_component
 
       # Largest component list
+      ### Same deal if there are multiple largest components of equal size
+      largest_components <- ls()[stringr::str_detect(ls(), "largest_component_")]
+      largest_components <- largest_components[!stringr::str_detect(largest_components, "largest_component_ids")]
+      if (length(largest_components) > 1) {
+
+        largest_component <- list()
+
+        for (i in 1:length(largest_components)) {
+          largest_component[[i]] <- mget(largest_components[[i]])
+        }
+        rm(list = largest_components)
+      }
+
+
+
       lcomponent_list[[i]] <- largest_component
 
       # Node measure plot list
@@ -1634,7 +1662,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   }
 
 }
-
 
 
 
