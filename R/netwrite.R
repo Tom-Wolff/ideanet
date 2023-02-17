@@ -90,6 +90,9 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                        message = TRUE) {
 
 
+
+
+
   # If `node_id` is set to be `"id"`, change its value to `"original_id"`
   if ((!is.null(node_id) == TRUE)) {
     if (node_id == "id") {
@@ -378,15 +381,19 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # igraph object list
       graphs_list[[i]] <- this_igraph
+      rm(this_igraph)
 
       # Largest bicomponent list
       bicomponent_list[[i]] <- largest_bi_component
+      rm(largest_bi_component)
 
       # Largest component list
       lcomponent_list[[i]] <- largest_component
+      rm(largest_component)
 
       # Node measure plot list
       nplot_list[[i]] <- node_measure_plot
+      rm(node_measure_plot)
 
       # Node measures list
       ### To ensure successful merging downstream,
@@ -394,15 +401,19 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       ### `node_measures_list`
       node_measures[,2] <- as.character(node_measures[,2])
       node_measures_list[[i]] <- node_measures
+      rm(node_measures)
 
       # List of final processes edgelists
       f_edges_list[[i]] <- edgelist
+      rm(edgelist)
 
       # System-level measures summaries list
       s_measures_list[[i]] <- system_level_measures
+      rm(system_level_measures)
 
       # System-level plot list
       splot_list[[i]] <- system_measure_plot
+      rm(system_measure_plot)
 
 
 
@@ -479,6 +490,8 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # then merge these elements.
 
     for (i in 2:length(node_measures_list)) {
+
+      print(i)
 
       this_name <- names(node_measures_list)[[i]]
       new_column_names <- paste(this_name,
