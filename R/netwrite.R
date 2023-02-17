@@ -90,7 +90,9 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                        message = TRUE) {
 
 
-
+# We might need to store `output` in a separate object given that it also gets
+# defined in the subsequent `basic_netwrite` calls.
+final_output <- output
 
 
   # If `node_id` is set to be `"id"`, change its value to `"original_id"`
@@ -237,7 +239,12 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Looping Over netwrite
     for (i in seq_along(edges_list)) {
 
-      print(i)
+      if (names(edges_list)[[i]] == "summary_graph") {
+        base::message("Processing aggregate network of all edge types")
+      } else {
+        base::message(paste("Processing network for edge type", names(edges_list)[[i]], sep = " "))
+      }
+
 
       # May need to take out this `summary_graph` condition:
       # First-level netwrite's going to do all this stuff anyway
@@ -455,7 +462,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # 4. Keep only those objects that the original `output` argument specified
 
-    if ("graph" %in% output) {
+    if ("graph" %in% final_output) {
       assign(x = net_name, value = graph, .GlobalEnv)
       assign(x = "network_list", value = graphs_list, .GlobalEnv)
       rm(graph)
@@ -463,21 +470,21 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       rm(graph, graphs_list)
     }
 
-    if ("largest_bi_component" %in% output) {
+    if ("largest_bi_component" %in% final_output) {
       assign(x = "largest_bi_component", value = largest_bi_component, .GlobalEnv)
       assign(x = "bicomponent_list", value = bicomponent_list, .GlobalEnv)
     } else {
       rm(largest_bi_component, bicomponent_list)
     }
 
-    if ("largest_component" %in% output) {
+    if ("largest_component" %in% final_output) {
       assign(x = "largest_component", value = largest_component, .GlobalEnv)
       assign(x = "largest_component_list", value = lcomponent_list, .GlobalEnv)
     } else {
       rm(largest_component, lcomponent_list)
     }
 
-    if ("node_measure_plot" %in% output) {
+    if ("node_measure_plot" %in% final_output) {
       assign(x = "node_measure_plot", value = node_measure_plot, .GlobalEnv)
       assign(x = "node_measure_plot_list", value = nplot_list, .GlobalEnv)
     } else {
@@ -491,7 +498,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     for (i in 2:length(node_measures_list)) {
 
-      print(i)
+    #  print(i)
 
       this_name <- names(node_measures_list)[[i]]
       new_column_names <- paste(this_name,
@@ -519,7 +526,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     }
 
-    if ("nodelist" %in% output) {
+    if ("nodelist" %in% final_output) {
       assign(x = "node_measures", value = node_measures, .GlobalEnv)
       assign(x = "node_measures_list", value = node_measures_list, .GlobalEnv)
     } else {
@@ -527,21 +534,21 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       rm(node_measures_list)
     }
 
-    if ("edgelist" %in% output) {
+    if ("edgelist" %in% final_output) {
       assign(x = "edgelist", value = edgelist, .GlobalEnv)
       assign(x = "edgelist_list", value = f_edges_list, .GlobalEnv)
     } else {
       rm(edgelist, f_edges_list)
     }
 
-    if ("system_level_measures" %in% output) {
+    if ("system_level_measures" %in% final_output) {
       assign(x = "system_level_measures", value = system_level_measures, .GlobalEnv)
       assign(x = "system_level_measures_list", value = s_measures_list, .GlobalEnv)
     } else {
       rm(system_level_measures, s_measures_list)
     }
 
-    if ("system_measure_plot" %in% output) {
+    if ("system_measure_plot" %in% final_output) {
       assign(x = "system_measure_plot", value = system_measure_plot, .GlobalEnv)
       assign(x = "system_measure_plot_list", value = splot_list, .GlobalEnv)
     } else {
@@ -553,6 +560,42 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   } # End multi-relational network processing
 
+# Remove objects not specific as being included in `output`, based on
+# values stored in `final_output`. Although the above set of conditionals should
+# be taking care of this, it doesn't always succeed and this ensures that only the
+# desired outputs specified by the user remain in the Global Environment.
+
+  if (!("graph" %in% final_output)) {
+    rm(list = c("graph", "graphs_list"), envir = .GlobalEnv)
+  }
+
+  if (!("largest_bi_component" %in% final_output)) {
+    rm(list = c("largest_bi_component", "bicomponent_list"), envir = .GlobalEnv)
+  }
+
+  if (!("largest_component" %in% final_output)) {
+    rm(list = c("largest_component", "lcomponent_list"), envir = .GlobalEnv)
+  }
+
+  if (!("node_measure_plot" %in% final_output)) {
+    rm(list = c("node_measure_plot", "nplot_list"), envir = .GlobalEnv)
+  }
+
+  if (!("nodelist" %in% final_output)) {
+    rm(list = c("node_measures", "node_measures_list"), envir = .GlobalEnv)
+  }
+
+  if (!("edgelist" %in% final_output)) {
+    rm(list = c("edgelist", "f_edges_list"), envir = .GlobalEnv)
+  }
+
+  if (!("system_level_measures" %in% final_output)) {
+    rm(list = c("system_level_measures", "s_measures_list"), envir = .GlobalEnv)
+  }
+
+  if (!("system_measure_plot" %in% final_output)) {
+    rm(list = c("system_level_measures", "s_measures_list", "system_measure_plot"), envir = .GlobalEnv)
+  }
 
 }
 
