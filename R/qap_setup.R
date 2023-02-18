@@ -8,9 +8,12 @@
 #' @param directed A logical statement identifying if the network should be treated as directed. Defaults to False.
 #' @param directed A logical statement identifying if the network should be treated as directed. Defaults to False. 
 #' @param additional_vars A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an `id` or `label` variables which matches network exactly.
-#' @return `qap_setup` returns a list of elements that includes: 
+#' @return `qap_setup` returns a list `qap_results` of elements that include: 
+#' 
 #' - `qap_graph`, an updated `igraph` object containing the newly constructed dyadic variables and additional individual-level variables.
+#' 
 #' - `nodes`, a nodelist reflecting additional variables if included.
+#' 
 #' - `edges`, a nodelist reflecting new dyadic variables.
 #' @export
 #'
