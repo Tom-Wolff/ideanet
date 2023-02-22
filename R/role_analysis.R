@@ -67,6 +67,7 @@ role_analysis <- function(graph, # igraph object generated from netwrite
 ) {
 
   require("tidyverse")
+  require("concorR")
 
   if (method == "cluster") {
 

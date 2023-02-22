@@ -1,0 +1,579 @@
+#' Community Detection Across Multiple Routines (`communities`)
+#'
+#' @description The `communities` function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is usedd.
+#'
+#' @param g An igraph object. If the igraph object contains a directed network, the function will treat the network as undirected before running community detection routines.
+#' @param modres A modularity resolution parameter used when performing community detection using the Leiden method.
+#' @param shiny An argument indicating whether the output from the `communities` function will be fed into the IDEANet visualization app.
+#'
+#' @return `communities` returns three data frames. `comm_members` indicates each node's assigned community membership from each community detection routine. `comm_summaries` indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. `comp_scores` contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. If `shiny == FALSE`, this function will also plot a series of network visualizations in which nodes are colored by their assigned community memberships from each routine.
+#'
+#'
+#' @export
+#'
+#' @examples
+#' netwrite(data_type = "edgelist",
+#'          nodelist = node_dataframe,
+#'          node_id = "id",
+#'          i_elements = edge_dataframe$ego,
+#'          j_elements = edge_dataframe$alter,
+#'          weights = edge_dataframe$weight,
+#'          type = edge_dataframe$relation_type,
+#'          directed = TRUE)
+
+
+
+###############################################
+#    C O M M U N I T Y   D E T E C T I O N    #
+###############################################
+
+# Separate function for community detection
+# Takes a single argument, `g`, which is an igraph object.
+# `g` can be directed or undirected, but directed graphs are
+# automatically converted into undirected graphs
+
+#Orig Tom Wolff: 3.27.2022.
+
+#JWM: 3.27.2022. Added export of community summary tables
+#JWM: 3.27.2022. Added optional Leiden modularity resolution value
+#JWM: 3.28.2022. Changed export datasets to have input graph name as <dataset>_<graphname>.
+# TW: 5.25.2022. Updated for compatibility with graphs consisting of 2+ unconnected conmponents
+# TW: 9.08.2022. Updated to better handle 2+ unconnected components and isolates with leaging eigen and spinglass
+
+communities <- function(g, modres=1, shiny = FALSE) {
+
+
+  # Remove self-loops
+ # g <- igraph::simplify(g, remove.multiple = FALSE, remove.loops = TRUE)
+
+  # Maybe add an option to plot communities.
+  # Create a similarity matrix. How similar outputs to each other
+  # Search for adjusted Rand for calculating similarity. Takes partition info.
+
+  # If igraph object doesn't feature edge weights, add them and set equal to 1
+  if (is.null(igraph::E(g)$weight)) {
+
+    igraph::E(g)$weight <- 1
+
+  }
+
+  # Add warning that network will be converted to undirected
+  if (igraph::is.directed(g)) {
+    message("WARNING: The `communities` function currently supports undirected graphs only. Directed networks will be symmetrized before running community detection algorithms.")
+  }
+
+
+  # Probably need to update weights so that they're frequency and not distances
+
+  # Many of `igraph`'s off-the-shelf functions require undirected networks.
+  # To get going with these, we'll make an undirected version of input graph `g`
+
+  # Get adjacency matrix
+  g_mat <- as.matrix(igraph::as_adjacency_matrix(g, attr = "weight"))
+  # Symmetrize matrix by adding transpose to matrix
+  g_sym <- g_mat + t(g_mat)
+
+
+  # Get weighted ddensity for CPM
+  n <- nrow(g_sym)
+  w_dens <- sum(g_sym)/(n*(n-1))
+
+  # Remove redundant edges
+  g_sym2 <- g_sym
+  g_sym2[lower.tri(g_sym, diag = F)] <- 0
+
+  # Make igraph object from symmetrized matrix
+  g_undir <- igraph::graph_from_adjacency_matrix(g_sym2, mode = "undirected", weighted = T)
+
+  # Get reciprocal of edge weight for algorithms that treat edge weights as distances
+  igraph::E(g_undir)$r_weight <- 1/igraph::E(g_undir)$weight
+
+
+
+  # Betweenness does edges as distances. Need reciprocal
+  edge_betweenness <- igraph::cluster_edge_betweenness(g_undir,
+                                                       weights = igraph::E(g_undir)$r_weight,
+                                                       directed = FALSE,
+                                                       membership = T,
+                                                       modularity = T)
+  fast_greedy <- igraph::cluster_fast_greedy(g_undir,
+                                             weights = igraph::E(g_undir)$weight) # Only undirected graphs
+  infomap <- igraph::cluster_infomap(g_undir,
+                                     e.weights = igraph::E(g_undir)$weight) # Modularity for undirected graphs only
+  label_prop <- igraph::cluster_label_prop(g_undir,
+                                           weights = igraph::E(g_undir)$weight) # Needs to be undirected
+  leiden_mod <- igraph::cluster_leiden(g_undir,
+                                       objective_function = "modularity",
+                                       resolution_parameter=modres,
+                                       weights = igraph::E(g_undir)$weight,
+                                       n_iterations = 300) # Only undirected graphs # Leiden is better version of louvain
+
+  leiden_cpm <- igraph::cluster_leiden(g_undir,
+                                       objective_function = "CPM",
+                                       resolution_parameter = w_dens,
+                                       weights = igraph::E(g_undir)$weight,
+                                       n_iterations = 300)
+
+  # louvain <- igraph::cluster_louvain(g_undir) # Will take directed but gives error
+  # optimal <- igraph::cluster_optimal(g) # Works find with directed, but ignores directions
+
+  walktrap <- igraph::cluster_walktrap(g_undir,
+                                       weights = igraph::E(g_undir)$weight) # Works with directed
+
+  # Get number of isolated components
+  num_components <- igraph::components(g_undir)
+
+  if (num_components$no == 1) {
+        spinglass <- igraph::cluster_spinglass(g_undir,
+                                               weights = igraph::E(g_undir)$weight) # Works with directed, but need to ask about arguments (there are many)
+        leading_eigen <- igraph::cluster_leading_eigen(g_undir,
+                                                       weights = igraph::E(g_undir)$weight) # Needs to be undirected
+  } else {
+
+    igraph::V(g_undir)$component <- num_components$membership
+
+    subgraph_memberships <- data.frame()
+
+    # Isolate components
+    for (i in 1:num_components$no) {
+
+      this_component <- igraph::delete.vertices(g_undir, v = (igraph::V(g_undir)$component != i))
+
+      if (length(igraph::V(this_component)) <= 5) {
+
+        component_sums <- data.frame(id = as.numeric(names(igraph::V(this_component))),
+                                     component = i,
+                                     leading_eigen_membership = NA,
+                                     spinglass_membership = NA)
+
+
+        subgraph_memberships <- rbind(subgraph_memberships, component_sums)
+
+
+
+      } else {
+
+        this_leading_eigen <- igraph::cluster_leading_eigen(this_component,
+                                                  weights = igraph::E(this_component)$weight)$membership
+        this_spinglass <- igraph::cluster_spinglass(this_component,
+                                                    weights = igraph::E(this_component)$weight)$membership # Works with directed, but need to ask about arguments (there are many)
+
+        component_sums <- data.frame(id = as.numeric(names(igraph::V(this_component))),
+                                     component = i,
+                                     leading_eigen_membership = this_leading_eigen,
+                                     spinglass_membership = this_spinglass)
+
+        subgraph_memberships <- rbind(subgraph_memberships, component_sums)
+
+
+      }
+
+    }
+
+    # Assign new unique membership IDs. This is because, as it currently stands, each component
+    # has membership ids 1-n, which are redundant labels across several components
+    subgraph_memberships$leading_eigen_paste <- paste(subgraph_memberships$component, subgraph_memberships$leading_eigen_membership, sep = "_")
+    subgraph_memberships$spinglass_paste <- paste(subgraph_memberships$component, subgraph_memberships$spinglass_membership, sep = "_")
+
+    leading_eigen_ids <- data.frame(leading_eigen_paste = unique(subgraph_memberships$leading_eigen_paste),
+                                    new_leading_eigen = 1:length(unique(subgraph_memberships$leading_eigen_paste)))
+
+    spinglass_ids <- data.frame(spinglass_paste = unique(subgraph_memberships$spinglass_paste),
+                                    new_spinglass = 1:length(unique(subgraph_memberships$spinglass_paste)))
+
+    subgraph_memberships <- dplyr::left_join(subgraph_memberships, leading_eigen_ids, by = "leading_eigen_paste")
+    subgraph_memberships <- dplyr::left_join(subgraph_memberships, spinglass_ids, by = "spinglass_paste")
+
+    # subgraph_memberships$new_leading_eigen <- ifelse(is.na(subgraph_memberships$leading_eigen_membership),
+    #                                                  0,
+    #                                                  subgraph_memberships$new_leading_eigen)
+    #
+    # subgraph_memberships$new_spinglass <- ifelse(is.na(subgraph_memberships$spinglass_membership),
+    #                                                  0,
+    #                                                  subgraph_memberships$new_spinglass)
+
+    subgraph_memberships <- subgraph_memberships[, c("id", "component", "new_leading_eigen", "new_spinglass")]
+    colnames(subgraph_memberships) <- c("id", "component", "leading_eigen_membership", "spinglass_membership")
+
+  }
+
+
+
+
+  # Ideally, we'd also wanna run the cliquefinder one
+  # Ken Frank has a package for his cliquefinder tool (Either in Email or on CRAN)
+
+  # Need to make node-level dataset indicating community membership
+
+  if (num_components$no == 1) {
+
+  memberships <- data.frame(id = as.numeric(edge_betweenness$names),
+                            edge_betweenness_membership = edge_betweenness$membership,
+                            fast_greedy_membership = fast_greedy$membership,
+                            infomap_membership = infomap$membership,
+                            label_prop_membership = label_prop$membership,
+                            leading_eigen_membership = leading_eigen$membership,
+                            leiden_mod_membership = leiden_mod$membership,
+                            leiden_cpm_membership = leiden_cpm$membership,
+                            # louvain_membership = louvain$membership,
+                            # optimal_membership = optimal$membership,
+                            spinglass_membership = spinglass$membership,
+                            walktrap_membership = walktrap$membership)
+
+  } else {
+
+    memberships <- data.frame(id = as.numeric(edge_betweenness$names),
+                              edge_betweenness_membership = edge_betweenness$membership,
+                              fast_greedy_membership = fast_greedy$membership,
+                              infomap_membership = infomap$membership,
+                              label_prop_membership = label_prop$membership,
+                             # leading_eigen_membership = leading_eigen$membership,
+                              leiden_mod_membership = leiden_mod$membership,
+                              leiden_cpm_membership = leiden_cpm$membership,
+                              # louvain_membership = louvain$membership,
+                              # optimal_membership = optimal$membership,
+                            #  spinglass_membership = spinglass$membership,
+                              walktrap_membership = walktrap$membership)
+
+    memberships <- dplyr::left_join(memberships, subgraph_memberships, by = "id")
+
+    memberships$id <- as.character(memberships$id)
+
+
+
+  }
+
+
+
+  # Need to make network-level dataset recording number of communities and modularity scores
+  # We'll make it a long dataset for starters, assuming that we're only working with one network at a time
+  # Depending on feedback from others, we can easily make this wide for comparison between multiple graphs
+
+  # Merge network-level stuff into node-level dataframe
+  # For missing modularity scores, we'll have to calculate it ourselves
+
+  edge_betweenness_stats <- data.frame(method = "edge_betweenness",
+                                       num_communities = max(edge_betweenness$membership),
+                                       #modularity = edge_betweenness$modularity)
+                                       modularity = max(edge_betweenness$modularity))
+
+  fast_greedy_stats <- data.frame(method = "fast_greedy",
+                                  num_communities = max(fast_greedy$membership),
+                                  modularity = fast_greedy$modularity)
+  fast_greedy_stats <- fast_greedy_stats[which(fast_greedy_stats$modularity == max(fast_greedy_stats$modularity)),]
+
+  infomap_stats <- data.frame(method = "infomap",
+                              num_communities = max(infomap$membership),
+                              modularity = infomap$modularity)
+
+  label_prop_stats <- data.frame(method = "label_prop",
+                                 num_communities = max(label_prop$membership),
+                                 modularity = label_prop$modularity)
+
+  if (num_components$no == 1) {
+
+  leading_eigen_stats <- data.frame(method = "leading_eigen",
+                                    num_communities = max(leading_eigen$membership),
+                                    modularity = leading_eigen$modularity)
+  } else {
+
+    igraph::V(g_undir)$leading_eigen <- memberships$leading_eigen_membership
+
+    leading_eigen_stats <- data.frame(method = "leading_eigen",
+                                      num_communities = max(memberships$leading_eigen_membership, na.rm = T),
+                                      modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$leading_eigen))
+
+  }
+
+
+  leiden_mod_stats <- data.frame(method = "leiden_mod",
+                                 num_communities = max(leiden_mod$membership),
+                                 modularity = igraph::modularity(g_undir, membership = leiden_mod$membership))
+  leiden_cpm_stats <- data.frame(method = "leiden_cpm",
+                                 num_communities = max(leiden_cpm$membership),
+                                 modularity = igraph::modularity(g_undir, membership = leiden_cpm$membership))
+
+  # louvain_stats <- data.frame(method = "louvain",
+  #                                      num_communities = max(louvain$membership),
+  #                                      modularity = louvain$modularity)
+  # optimal_stats <- data.frame(method = "optimal",
+  #                                      num_communities = max(optimal$membership),
+  #                                      modularity = optimal$modularity)
+
+  if (num_components$no == 1) {
+
+  spinglass_stats <- data.frame(method = "spinglass",
+                                num_communities = max(spinglass$membership),
+                                modularity = spinglass$modularity)
+  } else {
+
+    igraph::V(g_undir)$spinglass <- memberships$spinglass_membership
+
+    spinglass_stats <- data.frame(method = "spinglass",
+                                      num_communities = max(memberships$spinglass_membership, na.rm = T),
+                                      modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$spinglass))
+
+
+  }
+
+  walktrap_stats <- data.frame(method = "walktrap",
+                               num_communities = max(walktrap$membership),
+                               modularity = walktrap$modularity)
+
+  walktrap_stats <- walktrap_stats[which(walktrap_stats$modularity == max(walktrap_stats$modularity)),]
+
+
+  community_summaries <- rbind(edge_betweenness_stats,
+                               fast_greedy_stats,
+                               infomap_stats,
+                               label_prop_stats,
+                               leading_eigen_stats,
+                               leiden_mod_stats,
+                               leiden_cpm_stats,
+                               # louvain_stats,
+                               # optimal_stats,
+                               spinglass_stats,
+                               walktrap_stats)
+
+  # Some functions give multiple modularity scores depending on different cutoff points. Need to ask Jim which one to keep.
+  # Is it just the maximum?
+
+  # Get highest modularity score
+
+  # Some functions create modularity scores that vary depending on seed. Something to keep in mind for later.
+
+  # Get median k and feed into stochastic block model
+  median_k <- median(community_summaries$num_communities)
+
+  # Stochastic Blockmodel Function (from Alexander Volfovsky)
+
+  spectral_sbm <- function(Adj, ##adjacency matrix
+                           k=2, ##how many clusters
+                           type="clusters", ##what to output --- cluster labels or centers
+                           nstart=10, ##how many restarts for kmeans
+                           absol=TRUE, ##do you want to look for smallest and largest eigenvalues, default yes
+                           elim_diag=TRUE){
+    As <- as.matrix(Adj);
+    if(elim_diag)diag(As) <- 0
+    DD <- diag(rowSums(As)^(-1/2))
+    DD[DD==Inf] <- 0
+    LL <- DD%*%As%*%DD
+
+    eigenLL <- eigen(LL)
+    if(!absol)svdLL <- eigenLL$vec[,order((eigenLL$val),decreasing=TRUE)[1:k]]
+    if(absol)svdLL <- eigenLL$vec[,order(abs(eigenLL$val),decreasing=TRUE)[1:k]]
+    # svdLL <- eigen(LL)$vec[,1:k]
+    if(type=="clusters")return(kmeans(svdLL,k,nstart=nstart)$cluster)
+    if(type=="centers")return(kmeans(svdLL,k)$centers,nstart=nstart)
+  }
+
+  # Turn graph `g` into an adjacency matrix
+  #adjmat <- as.matrix(igraph::as_adjacency_matrix(g_undir, type = "both", names = TRUE))
+
+  # Run stochastic blockmodel
+  sbm <- spectral_sbm(Adj = g_sym,
+                      k = median_k)
+
+  # Add SBM information to node and network-level datasets
+  memberships$sbm_membership <- sbm
+
+  sbm_stats <- data.frame(method = "sbm", num_communities = max(sbm),
+                          modularity = igraph::modularity(g_undir, membership = sbm))
+  community_summaries <- rbind(community_summaries, sbm_stats)
+  rownames(community_summaries) <- NULL
+
+  # I don't have the `reg.SSP` function anywhere, seems like this is
+  # vestigial from Alex's source?
+  # g_sbm = reg.SSP(as_adjacency_matrix(gsym, sparse=FALSE), K=7)
+  # mems_sbm = g_sbm$cluster
+  # mod_sbm<-modularity(gsym,mems_sbm)
+
+
+  # TW: I added a column for unique component ID in case users want to see how
+  # spinglass/leading eigen cluster assignments are given within components.
+  # But it's messing up the below code. The easy fix is just to rearrange the order
+  # of columns in `memberships`:
+
+  if (num_components$no == 1) {
+
+    memberships <- memberships[, c("id",
+                                   "edge_betweenness_membership",
+                                   "fast_greedy_membership","infomap_membership",
+                                   "label_prop_membership", "leiden_mod_membership",
+                                   "leiden_cpm_membership", "walktrap_membership",
+                                   "leading_eigen_membership",
+                                   "spinglass_membership", "sbm_membership")]
+
+    start_col <- 2
+    sub_val <- 1
+
+  } else {
+
+  memberships <- memberships[, c("id", "component",
+                                 "edge_betweenness_membership",
+                                 "fast_greedy_membership","infomap_membership",
+                                 "label_prop_membership", "leiden_mod_membership",
+                                 "leiden_cpm_membership", "walktrap_membership",
+                                 "leading_eigen_membership",
+                                 "spinglass_membership", "sbm_membership")]
+
+  start_col <- 3
+  sub_val <- 2
+
+  }
+
+  # Comparing cluster assignments
+  compare_scores <- c()
+
+  for(i in start_col:ncol(memberships)) {
+
+    for (j in start_col:ncol(memberships)) {
+
+      compare_scores[length(compare_scores) + 1] <- igraph::compare(memberships[,i], memberships[,j], "adjusted.rand")
+
+    }
+  }
+
+  compare_scores <- matrix(compare_scores, nrow = (ncol(memberships)-sub_val))
+
+  # Kieran: Made unique here as was having dimension issues because of repetition
+  rownames(compare_scores) <- unique(community_summaries$method)
+  colnames(compare_scores) <- unique(community_summaries$method)
+  diag(compare_scores) <- NA
+
+
+  # Plot network with nodes colored by community membership
+  if (!shiny) {
+  fr <- igraph::layout.fruchterman.reingold(g)
+
+  par(mfrow = c(2, 3))
+
+
+    # Edge betweenness
+    plot(g,
+         main = "Edge Betweenness",
+         vertex.size = 5,
+         #edge.width = .1,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,'edge_betweenness_membership'],
+         layout = fr)
+
+    # Fast/Greedy
+    plot(g,
+         main = "Fast/Greedy",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,'fast_greedy_membership'],
+         layout = fr)
+
+    # Infomap
+    plot(g,
+         main = "Infomap",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,'infomap_membership'],
+         layout = fr)
+
+    # Label Prop
+    plot(g,
+         main = "Label Prop.",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,"label_prop_membership"],
+         layout = fr)
+
+    # Leading Eigen
+    plot(g,
+         main = "Leading Eigen.",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,"leading_eigen_membership"],
+         layout = fr)
+
+    # Leiden (Mod)
+    plot(g,
+         main = "Leiden (Maximizing Modularity)",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,"leiden_mod_membership"],
+         layout = fr)
+
+
+    # Leiden (CPM)
+    plot(g,
+         main = "Leiden (Constant Potts Model)",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,"leiden_cpm_membership"],
+         layout = fr)
+
+    # Spinglass
+    plot(g,
+         main = "Spinglass",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,"spinglass_membership"],
+         layout = fr)
+
+    # Walktrap
+    plot(g,
+         main = "Walktrap",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,"walktrap_membership"],
+         layout = fr)
+
+    # SBM
+
+    plot(g,
+         main = "Stochastic Blockmodel",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,"sbm_membership"],
+         layout = fr)
+  }
+
+
+  # Assigns the data frame of each node's community membership
+  # to the global environment
+
+  # THIS METHOD OF GETTING THE NETWORK NAME DOESN'T WORK.
+  # NEED TO CONFER WITH KIERAN ABOUT A BETTER ALTERNATIVE
+  gname<-deparse(substitute(g))  #just do it once, fast, but cleaner
+  cn<-paste0("comm_members_",gname)
+
+  assign(x = cn, value = memberships,.GlobalEnv)
+
+  # Assigns summaries of community detection output to global environment
+
+   cn<-paste0("comm_summaries_",gname)
+
+  #assign(x = "community_summaries", value = community_summaries,.GlobalEnv)
+  assign(x = cn, value = community_summaries,.GlobalEnv)
+
+
+  # Assigns the matrix of adjusted rand scores to global environment
+  # assign(x = "community_comparison", value = compare_scores,.GlobalEnv)
+
+  #want to have everything as a dataframe
+   cs<-as.data.frame(compare_scores)
+   cn<-paste0("comp_scores_",gname)
+
+  # Assigns the matrix of adjusted rand scores to global environment
+   assign(x= cn, value = cs,.GlobalEnv)
+
+}
+
+
+
+
