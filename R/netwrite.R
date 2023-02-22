@@ -1702,5 +1702,4 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 }
 
 
-
-
+# Quick update
