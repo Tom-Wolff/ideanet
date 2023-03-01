@@ -17,6 +17,7 @@ role_analysis(
   fast_triad = TRUE,
   retain_variables = FALSE,
   cluster_summaries = FALSE,
+  dendro_names = FALSE,
   self_ties = FALSE,
   cutoff = 0.999,
   max_iter = 50
@@ -46,6 +47,8 @@ role_analysis(
 \item{retain_variables}{(Hierarchical clustering method only.) A logical value indicating whether output should include a data frame of all node-level measures used in hierarchical clustering.}
 
 \item{cluster_summaries}{(Hierarchical clustering method only.) A logical value indicating whether output should includde a data frame containing by-cluster mean values of variables used in hierarchical clustering.}
+
+\item{dendro_names}{(Hierarchical clustering method only.) A logical value indicating whether the cluster dendrogram visualization should display node labels rather than ID numbers.}
 
 \item{self_ties}{(CONCOR only.) A logical value indicting whether to include self-loops (ties directed toward oneself) in CONCOR calculation.}
 

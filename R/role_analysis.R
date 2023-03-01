@@ -14,6 +14,7 @@
 #' @param fast_triad (Hierarchical clustering method only.) A logical value indicating whether to use an faster method for counting individual nodes' positions in different types of triads. This faster method may lead to memory issues and should be avoided when working with larger networks.
 #' @param retain_variables (Hierarchical clustering method only.) A logical value indicating whether output should include a data frame of all node-level measures used in hierarchical clustering.
 #' @param cluster_summaries (Hierarchical clustering method only.) A logical value indicating whether output should includde a data frame containing by-cluster mean values of variables used in hierarchical clustering.
+#' @param dendro_names (Hierarchical clustering method only.) A logical value indicating whether the cluster dendrogram visualization should display node labels rather than ID numbers.
 #' @param self_ties (CONCOR only.) A logical value indicting whether to include self-loops (ties directed toward oneself) in CONCOR calculation.
 #' @param cutoff (CONCOR only.) A numeric value ranging from 0 to 1 that indicates the correlation cutoff for detecting convergence in CONCOR calculation.
 #' @param max_iter (CONCOR only.) A numeric value indicating the maximum number of iteractions allowed for CONCOR calculattion.
@@ -57,6 +58,7 @@ role_analysis <- function(graph, # igraph object generated from netwrite
                                             fast_triad = TRUE, # Whether to use dplyr method for triad position counting
                                             retain_variables = FALSE, # Export a dataframe of variables used in clustering
                                             cluster_summaries = FALSE, # Export a dataframe containing mean values of clustering variables within each cluster
+                                            dendro_names = FALSE, # If TRUE, `cluster_dendogram` lists nodel labels rathher than ID numbers
 
                                             # Arguments Specific to CONCOR
                                             self_ties = FALSE, # Whether to include self-ties in CONCOR calculation
@@ -81,7 +83,8 @@ role_analysis <- function(graph, # igraph object generated from netwrite
                                      viz = viz,
                                      fast_triad = fast_triad,
                                      retain_variable = retain_variables,
-                                     cluster_summaries = cluster_summaries)
+                                     cluster_summaries = cluster_summaries,
+                                     dendro_names = dendro_names)
 
   } else if (method == "concor" | method == "CONCOR") {
 
@@ -129,7 +132,8 @@ cluster_method <- function(graph, # igraph object generated from netwrite
                            cluster_summaries = FALSE, # Export a dataframe containing mean values of clustering variables within each cluster
                            viz = FALSE, # Produce summary visualizations
                            num_vars = 10, # Plots top 10 variables with greatest SD across clusters in summary plot
-                           plot_all = FALSE # Summary plot has all variables
+                           plot_all = FALSE, # Summary plot has all variables,
+                           dendro_names = FALSE
 ) {
 
 
@@ -313,6 +317,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   euclid_mat <- as.matrix(role_std[,2:ncol(role_std)])
   rownames(euclid_mat) <- role_std$id
   #colnames(euclid_mat) <- role_centrality$id
+
 
   # Now calculate Euclidean distances
   euclid_dist <- cluster::daisy(euclid_mat, metric="euclidean")
@@ -558,6 +563,11 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   if (viz == TRUE) {
 
     # Cluster dendrogram
+    if (dendro_names == TRUE) {
+      attr(euclid_dist, "Labels") <- node_measures[node_measures$id %in% role_centrality$id, 2]
+      hc=hclust(euclid_dist, method = "ward.D2")
+    }
+
     plot(hc)
     rect.hclust(hc, k = max_mod$num_clusters)
     dendrogram <- recordPlot()
