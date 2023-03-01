@@ -144,7 +144,8 @@ final_output <- output
   # needed for role analysis. To avoid this, we'll create an ad hoc
   # nodelist from unique node IDs in the edgelist
 
-  if (is.null(nodelist) == TRUE) {
+  # if (is.null(nodelist) == TRUE) {
+  if (nodelist == FALSE) {
 
     just_ids <- sort(unique(c(i_elements, j_elements)))
 
