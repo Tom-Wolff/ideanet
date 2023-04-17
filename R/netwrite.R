@@ -145,7 +145,7 @@ final_output <- output
   # nodelist from unique node IDs in the edgelist
 
   # if (is.null(nodelist) == TRUE) {
-  if (nodelist == FALSE) {
+  if (is.logical(nodelist)) {
 
     just_ids <- sort(unique(c(i_elements, j_elements)))
 
