@@ -26,7 +26,7 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
   }
   
   # Create nodelist, checking for an "id" column
-  if (!("id" %in% list.vertex.attributes(net))) {
+  if (!("id" %in% vertex_attr_names(net))) {
     nodes <- igraph::as_data_frame(net, what = "vertices") %>% 
       tibble::rownames_to_column(var = "id") %>% 
       mutate(id = as.numeric(id))
