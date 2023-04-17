@@ -6,7 +6,6 @@
 #' @param variables A vector of strings naming attributes to be transformed from individual-level to dyadic-level.
 #' @param methods A vector of strings naming methods to be applied to the `variables` vector. The `methods` vector must be the same length as the `variables` vector. Methods are applied in order (e.g, first method is applied to the first named attribute in `variables`)
 #' @param directed A logical statement identifying if the network should be treated as directed. Defaults to False.
-#' @param directed A logical statement identifying if the network should be treated as directed. Defaults to False. 
 #' @param additional_vars A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an `id` or `label` variables which matches network exactly.
 #' @return `qap_setup` returns a list `qap_results` of elements that include: 
 #' 
