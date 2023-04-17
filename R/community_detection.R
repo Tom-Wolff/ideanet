@@ -1,6 +1,6 @@
 #' Community Detection Across Multiple Routines (`communities`)
 #'
-#' @description The `communities` function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is usedd.
+#' @description The `communities` function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is used.
 #'
 #' @param g An igraph object. If the igraph object contains a directed network, the function will treat the network as undirected before running community detection routines.
 #' @param modres A modularity resolution parameter used when performing community detection using the Leiden method.
@@ -42,6 +42,12 @@
 
 communities <- function(g, modres=1, shiny = FALSE) {
 
+  require(tidyverse)
+  require(CliquePercolation)
+  require(qgraph)
+  require(Matrix)
+  require(linkcomm)
+  require(igraph)
 
   # Remove self-loops
  # g <- igraph::simplify(g, remove.multiple = FALSE, remove.loops = TRUE)
@@ -73,8 +79,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
   # Symmetrize matrix by adding transpose to matrix
   g_sym <- g_mat + t(g_mat)
 
-
-  # Get weighted ddensity for CPM
+  # Get weighted density for CPM
   n <- nrow(g_sym)
   w_dens <- sum(g_sym)/(n*(n-1))
 
@@ -87,8 +92,6 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   # Get reciprocal of edge weight for algorithms that treat edge weights as distances
   igraph::E(g_undir)$r_weight <- 1/igraph::E(g_undir)$weight
-
-
 
   # Betweenness does edges as distances. Need reciprocal
   edge_betweenness <- igraph::cluster_edge_betweenness(g_undir,
@@ -124,10 +127,8 @@ communities <- function(g, modres=1, shiny = FALSE) {
   num_components <- igraph::components(g_undir)
 
   if (num_components$no == 1) {
-        spinglass <- igraph::cluster_spinglass(g_undir,
-                                               weights = igraph::E(g_undir)$weight) # Works with directed, but need to ask about arguments (there are many)
-        leading_eigen <- igraph::cluster_leading_eigen(g_undir,
-                                                       weights = igraph::E(g_undir)$weight) # Needs to be undirected
+        spinglass <- igraph::cluster_spinglass(g_undir, weights = igraph::E(g_undir)$weight) # Works with directed, but need to ask about arguments (there are many)
+        leading_eigen <- igraph::cluster_leading_eigen(g_undir, weights = igraph::E(g_undir)$weight) # Needs to be undirected
   } else {
 
     igraph::V(g_undir)$component <- num_components$membership
@@ -197,9 +198,6 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   }
 
-
-
-
   # Ideally, we'd also wanna run the cliquefinder one
   # Ken Frank has a package for his cliquefinder tool (Either in Email or on CRAN)
 
@@ -239,11 +237,32 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
     memberships$id <- as.character(memberships$id)
 
-
-
   }
 
+  ##############################################
+  # This is probably where we want to add the two additional methods Gabe programmed
 
+  ## Clique Percolation ##
+  cf1 <- cpAlgorithm(W = g_sym, k = 3, method = "unweighted") # Running as unweighted
+  clust <- cf1$list.of.communities.labels # extract cluster assignments
+  clust <- lapply(clust, as.numeric)
+  cf1_membership <- multigroup_assign(g_sym, clust)
+  colnames(cf1_membership) <- c("cp_cluster", "id")
+  # cf1_membership$id <- as.character(cf1_membership$id)
+
+  ## Link comm ##
+  #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
+  linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% select(from, to)
+  lc <- getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
+  clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
+  clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
+  lc_membership <- multigroup_assign(g_sym, clust)
+  colnames(lc_membership) <- c("lc_cluster", "id")
+  # lc_membership$id <- as.character(lc_membership$id)
+
+ # Add into overall memberships dataframe
+  memberships <- dplyr::left_join(memberships, cf1_membership, by = "id")
+  memberships <- dplyr::left_join(memberships, lc_membership, by = "id")
 
   # Need to make network-level dataset recording number of communities and modularity scores
   # We'll make it a long dataset for starters, assuming that we're only working with one network at a time
@@ -322,6 +341,18 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   walktrap_stats <- walktrap_stats[which(walktrap_stats$modularity == max(walktrap_stats$modularity)),]
 
+  igraph::V(g)$cf1 <- memberships$cp_cluster
+  igraph::V(g)$lc <- memberships$lc
+
+  igraph::modularity(g_undir, membership = (V(g)$cf1 + 1))
+  igraph::modularity(g_undir, membership = (V(g)$lc + 1))
+
+  cf1_stats <- data.frame(method = "cp",
+                          num_communities = length(unique(memberships$cp_cluster)),
+                          modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster + 1)))
+  lc_stats <- data.frame(method = "lc",
+                          num_communities = length(unique(memberships$cp_cluster)),
+                          modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster + 1)))
 
   community_summaries <- rbind(edge_betweenness_stats,
                                fast_greedy_stats,
@@ -333,7 +364,9 @@ communities <- function(g, modres=1, shiny = FALSE) {
                                # louvain_stats,
                                # optimal_stats,
                                spinglass_stats,
-                               walktrap_stats)
+                               walktrap_stats,
+                               cf1_stats,
+                               lc_stats)
 
   # Some functions give multiple modularity scores depending on different cutoff points. Need to ask Jim which one to keep.
   # Is it just the maximum?
@@ -345,27 +378,6 @@ communities <- function(g, modres=1, shiny = FALSE) {
   # Get median k and feed into stochastic block model
   median_k <- median(community_summaries$num_communities)
 
-  # Stochastic Blockmodel Function (from Alexander Volfovsky)
-
-  spectral_sbm <- function(Adj, ##adjacency matrix
-                           k=2, ##how many clusters
-                           type="clusters", ##what to output --- cluster labels or centers
-                           nstart=10, ##how many restarts for kmeans
-                           absol=TRUE, ##do you want to look for smallest and largest eigenvalues, default yes
-                           elim_diag=TRUE){
-    As <- as.matrix(Adj);
-    if(elim_diag)diag(As) <- 0
-    DD <- diag(rowSums(As)^(-1/2))
-    DD[DD==Inf] <- 0
-    LL <- DD%*%As%*%DD
-
-    eigenLL <- eigen(LL)
-    if(!absol)svdLL <- eigenLL$vec[,order((eigenLL$val),decreasing=TRUE)[1:k]]
-    if(absol)svdLL <- eigenLL$vec[,order(abs(eigenLL$val),decreasing=TRUE)[1:k]]
-    # svdLL <- eigen(LL)$vec[,1:k]
-    if(type=="clusters")return(kmeans(svdLL,k,nstart=nstart)$cluster)
-    if(type=="centers")return(kmeans(svdLL,k)$centers,nstart=nstart)
-  }
 
   # Turn graph `g` into an adjacency matrix
   #adjmat <- as.matrix(igraph::as_adjacency_matrix(g_undir, type = "both", names = TRUE))
@@ -402,7 +414,8 @@ communities <- function(g, modres=1, shiny = FALSE) {
                                    "label_prop_membership", "leiden_mod_membership",
                                    "leiden_cpm_membership", "walktrap_membership",
                                    "leading_eigen_membership",
-                                   "spinglass_membership", "sbm_membership")]
+                                   "spinglass_membership", "sbm_membership", 
+                                   "cp_cluster", "lc_cluster")]
 
     start_col <- 2
     sub_val <- 1
@@ -415,7 +428,8 @@ communities <- function(g, modres=1, shiny = FALSE) {
                                  "label_prop_membership", "leiden_mod_membership",
                                  "leiden_cpm_membership", "walktrap_membership",
                                  "leading_eigen_membership",
-                                 "spinglass_membership", "sbm_membership")]
+                                 "spinglass_membership", "sbm_membership",
+                                 "cp_cluster", "lc_cluster")]
 
   start_col <- 3
   sub_val <- 2
@@ -533,13 +547,30 @@ communities <- function(g, modres=1, shiny = FALSE) {
          layout = fr)
 
     # SBM
-
     plot(g,
          main = "Stochastic Blockmodel",
          vertex.size = 5,
          edge.arrow.size = .01,
          vertex.label = NA,
          vertex.color = memberships[,"sbm_membership"],
+         layout = fr)
+    
+    # CP
+    plot(g,
+         main = "Clique Percolation",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,"cp_cluster"],
+         layout = fr)
+    
+    # LC
+    plot(g,
+         main = "Link Communities",
+         vertex.size = 5,
+         edge.arrow.size = .01,
+         vertex.label = NA,
+         vertex.color = memberships[,"lc_cluster"],
          layout = fr)
   }
 
@@ -574,6 +605,64 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
 }
 
+###########################################################################
+# Supporting functions
 
 
+
+# Stochastic Blockmodel Function (from Alexander Volfovsky)
+
+spectral_sbm <- function(Adj, ##adjacency matrix
+                         k=2, ##how many clusters
+                         type="clusters", ##what to output --- cluster labels or centers
+                         nstart=10, ##how many restarts for kmeans
+                         absol=TRUE, ##do you want to look for smallest and largest eigenvalues, default yes
+                         elim_diag=TRUE){
+  As <- as.matrix(Adj);
+  if(elim_diag)diag(As) <- 0
+  DD <- diag(rowSums(As)^(-1/2))
+  DD[DD==Inf] <- 0
+  LL <- DD%*%As%*%DD
+
+  eigenLL <- eigen(LL)
+  if(!absol)svdLL <- eigenLL$vec[,order((eigenLL$val),decreasing=TRUE)[1:k]]
+  if(absol)svdLL <- eigenLL$vec[,order(abs(eigenLL$val),decreasing=TRUE)[1:k]]
+  # svdLL <- eigen(LL)$vec[,1:k]
+  if(type=="clusters")return(kmeans(svdLL,k,nstart=nstart)$cluster)
+  if(type=="centers")return(kmeans(svdLL,k)$centers,nstart=nstart)
+}
+
+# Function that assigns nodes with multiple communities to a single community to which they are most connected to. 
+# If there is a tie, then the community is chosen at random (applies to CP and LC methods).
+
+multigroup_assign <- function(gmat, clust){
+
+  cpcomms <- matrix(nrow = nrow(gmat), ncol=length(clust), 0) # create node by community matrix
+  rownames(cpcomms) <- rownames(gmat)
+  colnames(cpcomms) <- 1:length(clust)
+
+  for (i in 1:length(clust)){ # assign a 1 if node is part of community
+    cpcomms[clust[[i]],i]<-1
+  }
+
+  ties_sent <- gmat%*%cpcomms # number of ties ego sends to group k
+
+  ties_sent <- ties_sent*cpcomms # remove ties that are sent to a group ego is not a part of
+
+  cp_maxcomm <- matrix(nrow = nrow(ties_sent), ncol = 1, 0)
+  rownames(cp_maxcomm) <- rownames(gmat)
+  for (i in 1:nrow(ties_sent)) {
+    maxcols <- which(ties_sent[i,] == max(ties_sent[i,])); # Pick the community to which ego has the most ties
+    if (length(maxcols) > 1){
+      maxcols <- sample(maxcols,1) # If tied at largest, pick a random community
+    }
+    cp_maxcomm[i] <- maxcols
+  }
+
+  nodes <- as.numeric(rownames(gmat))
+  isolates <- setdiff(nodes, unlist(clust))
+  cp_maxcomm[row.names(cp_maxcomm) %in% isolates, ] <- 0   # reassign isolates to isolate cluster
+  cp_maxcomm <- tibble(cluster = cp_maxcomm) %>% mutate(id = as.numeric(rownames(gmat)))
+  return(cp_maxcomm)
+}
 
