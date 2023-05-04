@@ -9,6 +9,7 @@
 #' @param node_id If a data frame is entered for the `nodelist` arugment, `node_id` should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
 #' @param i_elements If `data_type` is set to `edgelist`, a numeric or character vector indicating the sender of ties in the edgelist.
 #' @param j_elements If `data_type` is set to `edgelist`, a numeric or character vector indicating the receiver of ties in the edgelist.
+#' @param fix_nodelist If `data_type` is set to `edgelist` and user inputs a vector or data frame into `nodelist`, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, `fix_nodelist` is set to `FALSE` to identify potential inconsistencies between the nodelist and edgelist to the user.
 #' @param weights A numeric vector indicating the weight of ties in the edgelist.
 #' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If `type` contains this vector, `netwrite` will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occuring in the network.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
@@ -71,7 +72,10 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                        node_id = NULL,
                                        i_elements=FALSE,
                                        j_elements=FALSE,
-
+                                       # In the rare event that an edgelist contains node IDs that are
+                                       # not in the nodelist, `fix_nodelist` will add these node IDs to the
+                                       # nodelist used in network processing
+                                       fix_nodelist = TRUE,
                                        # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
                                        weights=NULL, type=NULL,
                                        remove_loops = FALSE,
@@ -132,9 +136,25 @@ final_output <- output
     # nodelist data frame, we'll end up with a lot of copies of the
     # basic node variables
     just_ids <- as.data.frame(original_nodelist)[, node_id]
+    # We also need a copy of this to check for ratio of node IDs
+    # appearing in nodelist vs. edgelist
+    just_ids_check <- just_ids
+
+    # If `fix_nodelist` is set to `TRUE`, we need to incorporate node IDs from the edgelist
+    if (fix_nodelist == TRUE) {
+      el_ids <- sort(unique(c(i_elements, j_elements)))
+      just_ids <- sort(unique(c(just_ids, el_ids)))
+    }
 
   } else {
     just_ids <- original_nodelist
+    just_ids_check <- just_ids
+
+    # If `fix_nodelist` is set to `TRUE`, we need to incorporate node IDs from the edgelist
+    if (fix_nodelist == TRUE) {
+      el_ids <- sort(unique(c(i_elements, j_elements)))
+      just_ids <- sort(unique(c(just_ids, el_ids)))
+    }
   }
 
 
@@ -151,6 +171,57 @@ final_output <- output
 
 
   }
+
+
+  # Sometimes users might enter a network with an erroneously high number of
+  # nodes relative to edges in the network. If this should occur, netwrite
+  # should warn the user of this being the case and ask the user if they would
+  # like to proceed.
+  ##### We'll need different versions of handling this for each type of data
+  ##### structure. Edgelists and adjacency matrices are pretty easy to handle,
+  ##### but we'll need to think of a systematic way to check for this when given
+  ##### and adjacency list.
+
+if (data_type == "edgelist" & !is.logical(nodelist)) {
+
+    ratio1 <- length(just_ids_check)/length(unique(c(i_elements, j_elements)))
+    ratio2 <- length(unique(c(i_elements, j_elements)))/length(just_ids_check)
+
+  if (ratio1 > 2) {
+    base::message("It appears that the number of nodes identified in your nodelist far exceeds the number of nodes identified in your edgelist. Is this correct?")
+    yes_no <- readline(prompt = "Enter 'Y' to proceed or 'N' to terminate netwrite: ")
+    yes_no <- as.character(yes_no)
+
+    while(!(yes_no %in% c("Yes", "Y", "No", "N", "yes", "y", "no", "n"))) {
+      yes_no <- readline(prompt = "Please enter an appropriate response ('Y' or 'N'): ")
+      yes_no <- as.character(yes_no)
+    }
+
+    tryCatch({
+      base::stopifnot(yes_no == "Yes" | yes_no == "Y" | yes_no == "yes" | yes_no == "y")
+    }, error = function(e) {
+      stop("netwrite has been terminated.", call. = FALSE)})
+
+  } else if (ratio2 > 2) {
+
+    base::message("It appears that the number of nodes identified in your edgelist far exceeds the number of nodes identified in your nodelist Is this correct?")
+    yes_no <- readline(prompt = "Enter 'Y' to proceed or 'N' to terminate netwrite: ")
+    yes_no <- as.character(yes_no)
+
+    while(!(yes_no %in% c("Yes", "Y", "No", "N", "yes", "y", "no", "n"))) {
+      yes_no <- readline(prompt = "Please enter an appropriate response ('Y' or 'N'): ")
+      yes_no <- as.character(yes_no)
+    }
+
+    tryCatch({
+      base::stopifnot(yes_no == "Yes" | yes_no == "Y" | yes_no == "yes" | yes_no == "y")
+    }, error = function(e) {
+      stop("netwrite has been terminated.", call. = FALSE)})
+  }
+}
+
+
+
 
 
 
@@ -940,6 +1011,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # EDGELIST
   } else {
 
+    print("creating edgelist")
+
     # Creating Canonical Node and Edgelists
     if (is.null(weights) == TRUE){
       edgelist <-as.matrix(cbind(i_elements, j_elements))
@@ -1060,6 +1133,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
 
 
+    print('creating igraph object')
     # Creating igraph object
     colnames(nodes)[[2]] <- c('attr')
     g <- igraph::graph_from_data_frame(d = edgelist[,c(3,5)], directed = as.logical(directed), vertices = nodes)
@@ -1068,6 +1142,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     igraph::edge.attributes(g)$weight <- edgelist[,6]
 
 
+    print('node-level measures')
     # Create an alternate closeness function
     # Reachablility function (Eliminate Loops, reaching yourself isn't that useful)
     # Adding Node-Level Measures
@@ -1089,6 +1164,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Calculating the Proportion of Two-Step Path that Are Also One-Step Paths
     # Calculating Multiplex Edge Correlation
     # Calculating System-Level Measures
+    print('system level measures')
     if ("system_level_measures" %in% output) {
       largest_weak_component_igraph(g)
       largest_bicomponent_igraph(g)
@@ -1238,10 +1314,36 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     avg_geodesic <- igraph::average.path.length(g, directed = directed)
 
+    ### Jim wanted to add transitivity correlation score as an additional
+    ### network-level measure. This is readymade in `sna`, so we'll use
+    ### `intergraph` and `sna` to call the package
+    ###### The requisite function in `sna` needs specification as to whether
+    ###### the network in question is directed or undirected. We'll make an
+    ###### object here with that specification
+    sna_mode <- ifelse(directed == T, "digraph", "graph")
+    trans_cor <- sna::gtrans(intergraph::asNetwork(g), mode = sna_mode, measure = "correlation")
+
+    if (directed == TRUE){
+        density_directed <- igraph::edge_density(g)
+        density_undirected <- igraph::edge_density(igraph::as.undirected(g))
+    } else {
+        density_directed <- NA
+        density_undirected <- igraph::edge_density(g)
+    }
+
+    num_isolates <- sum(nodes$total_degree == 0)
+
+    num_self_loops <- sum(igraph::is.loop(network, eids = igraph::E(network)))
+
 
 
     measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties',
                         'Number of Tie Types',
+
+                        "Number of isolates",
+                        "Number of self-loops",
+
+                        "Density (Undirected)", "Density (Directed)",
 
                         'Number of Weak Components', 'Size of Largest Weak Component', 'Proportion in the Largest Weak Component',
                         'Number of Strong Components', 'Size of Largest Strong Component', 'Proportion in the Largest Strong Component',
@@ -1251,6 +1353,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         'Number of Null Ties',
 
                         'Degree Assortativity', 'Reciprocity Rate', 'Transitivity Rate',
+
+                        'Transitivity Correlation',
 
 
 
@@ -1266,6 +1370,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               'The number of nodes in the graph',
                               'The number of ties in the graph',
                               'The number of types of tie in the graph (if multi-relational)',
+
+                              "The number of nodes in the network without any ties to other nodes",
+                              "The number of edges in the network that whose origin and target are the same node",
+
+                              "The proportion of possible ties in the network that actually exist when treating edges as being undirected",
+                              "The proportion of possible ties in the network that actually exist when treating edges as being directed",
 
                               'The number of weak components in the graph',
                               'The number of nodes in the largest weak component of the graph',
@@ -1288,6 +1398,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               'Edgewise correlation of degree', 'The proportion of directed ties that are reciprocated',
                               'The proportion of two-step paths that are also one-step paths',
 
+                              "The observed correlation between a tie and the number of two-step paths connecting the two nodes in a tie",
+
 
 
                               'The proportion of closed triangles to all triangles', 'The average shortest path length',
@@ -1300,6 +1412,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     measures <- c(graph_type, weighted_graph, as.character(num_nodes), as.character(num_ties), as.character(num_types),
 
+                  as.character(num_isolates), as.character(num_self_loops),
+
+                  as.character(density_undirected), as.character(density_directed),
+
                   as.character(num_clusters), as.character(largest_size), as.character(proportion_largest),
                   as.character(strong_num_clusters), as.character(strong_largest_size), as.character(strong_proportion_largest),
                   as.character(bicomponent_summary$num_bicomponents), as.character(bicomponent_summary$size_bicomponent), as.character(bicomponent_summary$prop_bicomponent),
@@ -1307,7 +1423,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(mutual), as.character(asym), as.character(null_ties),
 
                   as.character(degree_assortatvity), as.character(reciprocity_rate),
-                  as.character(transitivity_rate),  as.character(global_clustering_coefficient), average_path_length,
+                  as.character(transitivity_rate), as.character(trans_cor),
+
+                  as.character(global_clustering_coefficient), average_path_length,
                   as.character(multiplex_edge_correlation),
                   as.character(pairwise_weak_un), as.character(pairwise_strong_un),
                   as.character(pairwise_weak_dir), as.character(pairwise_strong_dir))
@@ -1702,5 +1820,3 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 }
 
-
-# Quick update
