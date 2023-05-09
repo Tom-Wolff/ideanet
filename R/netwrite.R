@@ -14,7 +14,7 @@
 #' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If `type` contains this vector, `netwrite` will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occuring in the network.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
 #' @param package (Deprecated) A character value indicating what format network objects should be produced by `netwrite`. Available options are `igraph` and `network`.
-#' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresonding nodelist is unavailable.
+#' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
 #' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are `frequency` and `distance`.
 #' @param directed A logical value indicating whether edges should be treated as a directed or undirected when constructing the network.
 #' @param net_name A character value indicating the name to which network/igraph objects should be given.
@@ -1011,7 +1011,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # EDGELIST
   } else {
 
-    print("creating edgelist")
+   # print("creating edgelist")
 
     # Creating Canonical Node and Edgelists
     if (is.null(weights) == TRUE){
@@ -1133,7 +1133,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
 
 
-    print('creating igraph object')
+   # print('creating igraph object')
     # Creating igraph object
     colnames(nodes)[[2]] <- c('attr')
     g <- igraph::graph_from_data_frame(d = edgelist[,c(3,5)], directed = as.logical(directed), vertices = nodes)
@@ -1142,7 +1142,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     igraph::edge.attributes(g)$weight <- edgelist[,6]
 
 
-    print('node-level measures')
+ #   print('node-level measures')
     # Create an alternate closeness function
     # Reachablility function (Eliminate Loops, reaching yourself isn't that useful)
     # Adding Node-Level Measures
@@ -1164,7 +1164,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Calculating the Proportion of Two-Step Path that Are Also One-Step Paths
     # Calculating Multiplex Edge Correlation
     # Calculating System-Level Measures
-    print('system level measures')
+   # print('system level measures')
     if ("system_level_measures" %in% output) {
       largest_weak_component_igraph(g)
       largest_bicomponent_igraph(g)
@@ -1320,9 +1320,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     ###### The requisite function in `sna` needs specification as to whether
     ###### the network in question is directed or undirected. We'll make an
     ###### object here with that specification
+   # print("trans_cor")
+   # assign("broken_graph", g, .GlobalEnv)
     sna_mode <- ifelse(directed == T, "digraph", "graph")
-    trans_cor <- sna::gtrans(intergraph::asNetwork(g), mode = sna_mode, measure = "correlation")
+    trans_cor <- sna::gtrans(intergraph::asNetwork(igraph::simplify(g, remove.multiple = T)), mode = sna_mode, measure = "correlation")
 
+
+  # print("density")
     if (directed == TRUE){
         density_directed <- igraph::edge_density(g)
         density_undirected <- igraph::edge_density(igraph::as.undirected(g))
@@ -1333,7 +1337,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     num_isolates <- sum(nodes$total_degree == 0)
 
-    num_self_loops <- sum(igraph::is.loop(network, eids = igraph::E(network)))
+    # print("self_loops")
+    num_self_loops <- sum(igraph::is.loop(g, eids = igraph::E(g)))
 
 
 
@@ -1820,3 +1825,5 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 }
 
+
+# Quick update
