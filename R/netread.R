@@ -16,8 +16,11 @@
 #' @param net_name A character value indicating the name of the network being read from the file(s). This name will be used as a prefix for both outputs created by `netread`.
 #' @param missing_code A numeric value indicating "missing" values in the data being read. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
 #'
-#' @return `netread` creates an edgelist and a nodelist in the R Global Environment, both of which are formatted to be compatible with the `netwrite` function. These objects are names `[net_name]_edgelist` and `[net_name]_nodelist`, respectively.
+#' @return The `netread` function creates an edgelist and a nodelist in the R Global Environment, both of which are formatted to be compatible with the `netwrite` function. These objects are names `[net_name]_edgelist` and `[net_name]_nodelist`, respectively.
 #' @export
+
+
+
 
 require(readxl)
 require(stringr)
