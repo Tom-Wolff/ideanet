@@ -12,6 +12,7 @@ netwrite(
   node_id = NULL,
   i_elements = FALSE,
   j_elements = FALSE,
+  fix_nodelist = TRUE,
   weights = NULL,
   type = NULL,
   remove_loops = FALSE,
@@ -41,6 +42,8 @@ netwrite(
 
 \item{j_elements}{If `data_type` is set to `edgelist`, a numeric or character vector indicating the receiver of ties in the edgelist.}
 
+\item{fix_nodelist}{If `data_type` is set to `edgelist` and user inputs a vector or data frame into `nodelist`, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, `fix_nodelist` is set to `FALSE` to identify potential inconsistencies between the nodelist and edgelist to the user.}
+
 \item{weights}{A numeric vector indicating the weight of ties in the edgelist.}
 
 \item{type}{A numeric or character vector indicating the types of relationships represented in the edgelist. If `type` contains this vector, `netwrite` will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occuring in the network.}
@@ -49,7 +52,7 @@ netwrite(
 
 \item{package}{(Deprecated) A character value indicating what format network objects should be produced by `netwrite`. Available options are `igraph` and `network`.}
 
-\item{missing_code}{A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresonding nodelist is unavailable.}
+\item{missing_code}{A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.}
 
 \item{weight_type}{A character value indicating whether edge weights should be treated as frequencies or distances. Available options are `frequency` and `distance`.}
 

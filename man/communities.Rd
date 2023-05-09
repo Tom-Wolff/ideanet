@@ -17,7 +17,7 @@ communities(g, modres = 1, shiny = FALSE)
 `communities` returns three data frames. `comm_members` indicates each node's assigned community membership from each community detection routine. `comm_summaries` indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. `comp_scores` contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. If `shiny == FALSE`, this function will also plot a series of network visualizations in which nodes are colored by their assigned community memberships from each routine.
 }
 \description{
-The `communities` function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is usedd.
+The `communities` function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is used.
 }
 \examples{
 netwrite(data_type = "edgelist",
