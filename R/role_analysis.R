@@ -18,8 +18,26 @@
 #' @param self_ties (CONCOR only.) A logical value indicting whether to include self-loops (ties directed toward oneself) in CONCOR calculation.
 #' @param cutoff (CONCOR only.) A numeric value ranging from 0 to 1 that indicates the correlation cutoff for detecting convergence in CONCOR calculation.
 #' @param max_iter (CONCOR only.) A numeric value indicating the maximum number of iteractions allowed for CONCOR calculattion.
-
-#' @return
+#' @return The `role_analysis` function assigns a set of objects to the Global Environment that users can access to help interpret results. This set varies somewhat depending on the method being used for positional analysis. 
+#'
+#' When hierarchical clustering is used, `role_analysis` creates the following:
+#' `cluster_assignments` is a data frame indicating each node's membership within inferred clusters at each level of partitioning.
+#' `cluster_sociogram` contains a visualization of the network wherein nodes are colored by their membership within clusters at the optimal level of partitioning.
+#' `cluster_dendrogram` is a visualization of the dendrogram produced from clustering nodes. Red boxes on the visualization indicate nodes' cluster memberships at the optimal level of partitioning.
+#' `cluster_modularity` is a visualization of the modularity scores of the matrix of similarity scores between nodes for each level of partitioning. This visualization helps identify the optimal level of partitioning inferred by the `role_analysis` function.
+#' `cluster_summaries_cent` contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on several important node-level measures.
+#' `cluster_summaries_cent` contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on in terms of their positions within certain kinds of triads in the network.
+#' `cluster_relations_heatmaps` is a list object containing several heatmap visualizations representing the extent to which nodes in one inferred cluster are connected to nodes in another cluster.
+#' `cluster_relations_sociogram` contains a network visualization representing the extent to which nodes in clusters inferred at the optimal level of partitioning are tied to one another. Nodes in this visualization represent inferred clusters in the aggregate.
+#'
+#' When CONCOR is used, `role_analysis` creates the following:
+#' `concor_assignments` is a data frame indicating each node's membership within inferred blocks at each level of partitioning.
+#' `concor_sociogram` contains a visualization of the network wherein nodes are colored by their membership within blocks at the optimal level of partitioning.
+#' `concor_block_tree` is a visualization representing how smaller blocks are derived from larger blocks at each level of partitioning using CONCOR.
+#' `concor_modularity` is a visualization of the modularity scores of the matrix of similarity scores between nodes for each level of partitioning. This visualization helps identify the optimal level of partitioning inferred by the `role_analysis` function.
+#' `concor_relations_heatmaps` is a list object containing several heatmap visualizations representing the extent to which nodes in one inferred block are connected to nodes in another block.
+#' `concor_relations_sociogram` contains a network visualization representing the extent to which nodes in blocks inferred at the optimal level of partitioning are tied to one another. Nodes in this visualization represent inferred blocks in the aggregate.
+#'
 #' @export
 #'
 #' @examples
