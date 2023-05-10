@@ -258,7 +258,8 @@ communities <- function(g, modres=1, shiny = FALSE) {
   clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
   lc_membership <- multigroup_assign(g_sym, clust)
   colnames(lc_membership) <- c("lc_cluster", "id")
-  # lc_membership$id <- as.character(lc_membership$id)
+  lc_membership$id <- as.character(lc_membership$id)
+  cf1_membership$id <- as.character(cf1_membership$id)
 
  # Add into overall memberships dataframe
   memberships <- dplyr::left_join(memberships, cf1_membership, by = "id")
@@ -414,7 +415,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
                                    "label_prop_membership", "leiden_mod_membership",
                                    "leiden_cpm_membership", "walktrap_membership",
                                    "leading_eigen_membership",
-                                   "spinglass_membership", "sbm_membership", 
+                                   "spinglass_membership", "sbm_membership",
                                    "cp_cluster", "lc_cluster")]
 
     start_col <- 2
@@ -554,7 +555,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
          vertex.label = NA,
          vertex.color = memberships[,"sbm_membership"],
          layout = fr)
-    
+
     # CP
     plot(g,
          main = "Clique Percolation",
@@ -563,7 +564,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
          vertex.label = NA,
          vertex.color = memberships[,"cp_cluster"],
          layout = fr)
-    
+
     # LC
     plot(g,
          main = "Link Communities",
@@ -632,7 +633,7 @@ spectral_sbm <- function(Adj, ##adjacency matrix
   if(type=="centers")return(kmeans(svdLL,k)$centers,nstart=nstart)
 }
 
-# Function that assigns nodes with multiple communities to a single community to which they are most connected to. 
+# Function that assigns nodes with multiple communities to a single community to which they are most connected to.
 # If there is a tie, then the community is chosen at random (applies to CP and LC methods).
 
 multigroup_assign <- function(gmat, clust){
