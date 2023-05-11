@@ -586,6 +586,8 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   assign(x = 'comm_members_net', value = memberships,.GlobalEnv)
 
+  comm_members_net <<- memberships
+
   # Assigns summaries of community detection output to global environment
 
    cn<-paste0("comm_summaries_",gname)
