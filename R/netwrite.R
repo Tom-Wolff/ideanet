@@ -182,7 +182,7 @@ final_output <- output
   ##### but we'll need to think of a systematic way to check for this when given
   ##### and adjacency list.
 
-if (data_type == "edgelist" & !is.logical(nodelist)) {
+if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
 
     ratio1 <- length(just_ids_check)/length(unique(c(i_elements, j_elements)))
     ratio2 <- length(unique(c(i_elements, j_elements)))/length(just_ids_check)
