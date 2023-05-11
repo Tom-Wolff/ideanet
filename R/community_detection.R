@@ -584,7 +584,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
   gname<-deparse(substitute(g))  #just do it once, fast, but cleaner
   cn<-paste0("comm_members_",gname)
 
-  assign(x = 'comm_members_net', value = memberships,.GlobalEnv)
+  #assign(x = 'comm_members_net', value = memberships,.GlobalEnv)
 
   comm_members_net <<- memberships
 
