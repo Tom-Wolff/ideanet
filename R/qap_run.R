@@ -54,7 +54,7 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
     # if (all(dv %in% 0:1) == T){
     res <- netlogit(dv, ivs, reps = 10, mode = mode)
   } else if (family == "linear") {
-    res <- netlm(dv, ivs, reps = 10, mode = mode)
+    res <- netlm(dv, ivs, reps = 100, mode = mode)
   } else {print("Not an available family -- Try 'linear' or 'binomial'")}
   
   # Tidy results

@@ -37,7 +37,9 @@ netread <- function(path = NULL,
                     row_names = FALSE,
                     format = NULL,
                     net_name = "network",
-                    missing_code = 99999) {
+                    missing_code = 99999,
+                    i_elements = NULL,
+                    j_elements = NULL) {
 
   # CSV
   if (filetype == "csv" | stringr::str_detect(path, "csv$")) {
