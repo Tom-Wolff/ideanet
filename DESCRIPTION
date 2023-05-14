@@ -10,10 +10,11 @@ License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 Imports:
-  cowplot,
-  igraph,
-  moments,
-  network,
-  sna,
-  tidyverse
+    cowplot,
+    igraph,
+    magrittr,
+    moments,
+    network,
+    sna,
+    tidyverse
 RoxygenNote: 7.2.3
