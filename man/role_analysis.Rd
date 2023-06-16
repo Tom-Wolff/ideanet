@@ -57,7 +57,7 @@ role_analysis(
 \item{max_iter}{(CONCOR only.) A numeric value indicating the maximum number of iteractions allowed for CONCOR calculattion.}
 }
 \value{
-The `role_analysis` function assigns a set of objects to the Global Environment that users can access to help interpret results. This set varies somewhat depending on the method being used for positional analysis. 
+The `role_analysis` function assigns a set of objects to the Global Environment that users can access to help interpret results. This set varies somewhat depending on the method being used for positional analysis.
 
 When hierarchical clustering is used, `role_analysis` creates the following:
 `cluster_assignments` is a data frame indicating each node's membership within inferred clusters at each level of partitioning.

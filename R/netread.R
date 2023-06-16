@@ -20,13 +20,6 @@
 #' @export
 
 
-
-
-require(readxl)
-require(stringr)
-require(dplyr)
-require(tidyr)
-
 netread <- function(path = NULL,
                     filetype = NULL,
                     sheet = NULL,
@@ -108,14 +101,14 @@ netread_csv <- function(path,
 
 
   # Read in CSV file
-  main_data <- read.csv(file = path,
+  main_data <- utils::read.csv(file = path,
                         header = col_names)
 
 
   # Read in nodelist if applicable
   if (!is.null(nodelist)) {
 
-    nodes <- read.csv(file = nodelist,
+    nodes <- utils::read.csv(file = nodelist,
                       header = col_names)
 
     assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
@@ -123,7 +116,7 @@ netread_csv <- function(path,
   }
 
 
-  ########## Edgelist handing
+  ########## Edgelist handling
   if (format == "edgelist") {
 
     if (col_names == TRUE) {
@@ -811,7 +804,7 @@ for (i in 1:(length(break_points)-1)) {
 
     uci_list[[i]] <- this_df[2:nrow(this_df), ]
     this_name <- this_df[1,]$lower
-    this_name <- str_replace(this_name, ":", "")
+    this_name <- stringr::str_replace(this_name, ":", "")
     uci_list_names <- c(uci_list_names, this_name)
 
   }
@@ -819,9 +812,9 @@ for (i in 1:(length(break_points)-1)) {
 }
 
 # Correct spelling of `lables`, if applicable
-uci_list_names <- str_replace_all(uci_list_names, "lable", "label")
+uci_list_names <- stringr::str_replace_all(uci_list_names, "lable", "label")
 # Rename "column" to "col" if applicable
-uci_list_names <- str_replace_all(uci_list_names, "column", "col")
+uci_list_names <- stringr::str_replace_all(uci_list_names, "column", "col")
 names(uci_list) <- uci_list_names
 
 # Parsing metadata

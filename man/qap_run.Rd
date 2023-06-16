@@ -18,14 +18,14 @@ qap_run(net, dependent = NULL, variables, directed = F, family = "linear")
 \item{family}{A string identifying the functional form. Options are "linear" and "binomial". Defauts to "linear".}
 }
 \value{
-`qap_run` returns a list of elements `model_results` that include: 
+`qap_run` returns a list of elements `model_results` that include:
 
 - `covs_df`, a data frame containing term labels, estimates, standard errors and p-values
 
 - `mods_df`, a data frame containing model-level information including the number of observations, AIC and BIC statistics.
 }
 \description{
-The `qap_run` function is a wrapper around `sna`'s Quadratic Assignment Procedure models `netlm()` and `netlogit()`. It expects a networks objects containing dependent and independent variables of interest (e.g, the output from `qap_setup`).
+The `qap_run` function is a wrapper around `sna`'s Quadratic Assignment Procedure models `sna::netlm()` and `sna::netlogit()`. It expects a networks objects containing dependent and independent variables of interest (e.g, the output from `qap_setup`).
 }
 \examples{
 qap_setup(net = igraph_object,

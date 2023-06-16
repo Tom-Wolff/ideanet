@@ -4,12 +4,14 @@
 #' @export
 #'
 #' @examples
+#'\dontrun{
 #' # Run `install_ideanetViz`
 #' install_ideanetViz()
 #'
 #' # Open the ideanetViz GUI
 #' library(ideanetViz)
 #' ideanet_viz()
+#' }
 
 
 install_ideanetViz <- function() {

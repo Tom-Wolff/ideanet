@@ -23,8 +23,6 @@
 
 qap_run <- function(net, dependent = NULL, variables, directed = F, family = "linear") {
 
-  require(magrittr)
-
   # Make sure it's an igraph object
   if ("network" %in% class(net)) {
     net <- intergraph::asIgraph(net)

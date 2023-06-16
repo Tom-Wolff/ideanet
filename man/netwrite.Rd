@@ -89,13 +89,3 @@ If `output` contains `largest_bi_component`, `netwrite` will return an igraph ob
 \description{
 The `netwrite` function reads in relational data of several formats and processes them into a set of standardized outputs. These outputs include sets of commonly calculated measures at the individual node and network-wide levels.
 }
-\examples{
-netwrite(data_type = "edgelist",
-         nodelist = node_dataframe,
-         node_id = "id",
-         i_elements = edge_dataframe$ego,
-         j_elements = edge_dataframe$alter,
-         weights = edge_dataframe$weight,
-         type = edge_dataframe$relation_type,
-         directed = TRUE)
-}

@@ -18,7 +18,7 @@ qap_setup(net, variables, methods, directed = F, additional_vars = NULL)
 \item{additional_vars}{A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an `id` or `label` variables which matches network exactly.}
 }
 \value{
-`qap_setup` returns a list `qap_results` of elements that include: 
+`qap_setup` returns a list `qap_results` of elements that include:
 
 - `qap_graph`, an updated `igraph` object containing the newly constructed dyadic variables and additional individual-level variables.
 

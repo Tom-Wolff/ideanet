@@ -1,19 +1,3 @@
-#' Personal greeting
-#'
-#' @description Greet a person and appropriately capitalize their name.
-#'
-#' @param nodes Your name (character string; e.g. "john doe").
-#' @param g
-#' @param directed
-#' @param message
-#'
-#' @return A character string, capitalized to title case.
-#' @export
-#'
-#' @examples
-#' hello("james bond")
-
-
 ###############################################
 #    N O D E - L E V E L   M E A S U R E S    #
 ###############################################
