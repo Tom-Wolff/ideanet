@@ -10,16 +10,6 @@
 #'
 #'
 #' @export
-#'
-#' @examples
-#' netwrite(data_type = "edgelist",
-#'          nodelist = node_dataframe,
-#'          node_id = "id",
-#'          i_elements = edge_dataframe$ego,
-#'          j_elements = edge_dataframe$alter,
-#'          weights = edge_dataframe$weight,
-#'          type = edge_dataframe$relation_type,
-#'          directed = TRUE)
 
 
 
@@ -41,13 +31,6 @@
 # TW: 9.08.2022. Updated to better handle 2+ unconnected components and isolates with leaging eigen and spinglass
 
 communities <- function(g, modres=1, shiny = FALSE) {
-
-  require(tidyverse)
-  require(CliquePercolation)
-  require(qgraph)
-  require(Matrix)
-  require(linkcomm)
-  require(igraph)
 
   # Remove self-loops
  # g <- igraph::simplify(g, remove.multiple = FALSE, remove.loops = TRUE)
@@ -243,7 +226,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
   # This is probably where we want to add the two additional methods Gabe programmed
 
   ## Clique Percolation ##
-  cf1 <- cpAlgorithm(W = g_sym, k = 3, method = "unweighted") # Running as unweighted
+  cf1 <- CliquePercolation::cpAlgorithm(W = g_sym, k = 3, method = "unweighted") # Running as unweighted
   clust <- cf1$list.of.communities.labels # extract cluster assignments
   clust <- lapply(clust, as.numeric)
   cf1_membership <- multigroup_assign(g_sym, clust)
@@ -253,7 +236,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
   ## Link comm ##
   #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
   linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% select(from, to)
-  lc <- getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
+  lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
   clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
   clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
   lc_membership <- multigroup_assign(g_sym, clust)
@@ -585,7 +568,8 @@ communities <- function(g, modres=1, shiny = FALSE) {
   cn<-paste0("comm_members_",gname)
 
   #assign(x = 'comm_members_net', value = memberships,.GlobalEnv)
-
+  # Make `id` variable to ensure consistent merging with other ideanet dataframes
+  memberships$id <- as.numeric(memberships$id)
   comm_members_net <<- memberships
 
   # Assigns summaries of community detection output to global environment
@@ -665,7 +649,7 @@ multigroup_assign <- function(gmat, clust){
   nodes <- as.numeric(rownames(gmat))
   isolates <- setdiff(nodes, unlist(clust))
   cp_maxcomm[row.names(cp_maxcomm) %in% isolates, ] <- 0   # reassign isolates to isolate cluster
-  cp_maxcomm <- tibble(cluster = cp_maxcomm) %>% mutate(id = as.numeric(rownames(gmat)))
+  cp_maxcomm <- tibble::tibble(cluster = cp_maxcomm) %>% mutate(id = as.numeric(rownames(gmat)))
   return(cp_maxcomm)
 }
 
