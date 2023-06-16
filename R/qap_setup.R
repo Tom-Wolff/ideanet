@@ -25,8 +25,6 @@
 
 qap_setup <- function(net, variables, methods, directed = F, additional_vars = NULL) {
 
-  require(magrittr)
-
   ### CONSTRUCTING NODE AND EDGE LISTS ###
 
   # Make sure it's an igraph object
