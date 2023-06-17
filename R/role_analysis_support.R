@@ -513,10 +513,10 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
   # Now we count how many of each triad type each ego has
   triad_count <- all_triads %>%
     dplyr::group_by(i, triad_type) %>%
-    dplyr::summarize(count = n()) %>%
+    dplyr::summarize(count = dplyr::n()) %>%
     tidyr::pivot_wider(names_from = triad_type,
                 values_from = count) %>%
-    ungroup()
+    dplyr::ungroup()
 
   triad_count[is.na(triad_count)] <- 0
 
@@ -605,7 +605,7 @@ cluster_collapse <- function(min_partition_size,
 
   test <- data.frame(cluster = this_cut[,ncol(this_cut)]) %>%
     dplyr::group_by(cluster) %>%
-    dplyr::mutate(cluster_size = n())
+    dplyr::mutate(cluster_size = dplyr::n())
 
   for (i in (max_mod_val-1):3) {
 
@@ -613,14 +613,14 @@ cluster_collapse <- function(min_partition_size,
     test$alt_cluster <- this_cut[,i]
     test <- test %>%
       dplyr::group_by(alt_cluster) %>%
-      dplyr::mutate(new_partition_size = n(),
+      dplyr::mutate(new_partition_size = dplyr::n(),
                     new_partition_check = min(cluster_size)) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(cluster = ifelse(new_partition_check < min_partition_size,
                               alt_cluster,
                               cluster)) %>%
       dplyr::group_by(cluster) %>%
-      dplyr::mutate(cluster_size = n()) %>%
+      dplyr::mutate(cluster_size = dplyr::n()) %>%
       dplyr::ungroup() %>%
       dplyr::select(cluster, cluster_size)
 
@@ -680,7 +680,7 @@ cluster_summary_plots <- function(graph_list,
       triad_regex <- paste("^", names(graph_list)[[i]], "_[0-9]",
                            sep = "")
 
-      triad_positions <- summary_data[str_detect(summary_data$var, triad_regex), ] %>%
+      triad_positions <- summary_data[stringr::str_detect(summary_data$var, triad_regex), ] %>%
         dplyr::arrange(order_id)
       triad_positions$order_id <- triad_positions$order_id - min(triad_positions$order_id) + 1
 
@@ -706,7 +706,7 @@ cluster_summary_plots <- function(graph_list,
 
     cent_plot <-  centralities %>%
       dplyr::group_by(order_id) %>%
-      dplyr::mutate(new_id = cur_group_id()) %>%
+      dplyr::mutate(new_id = dplyr::cur_group_id()) %>%
       dplyr::ungroup() %>%
       ggplot2::ggplot(ggplot2::aes(x = new_id,
                                    y = value,
@@ -773,7 +773,7 @@ cluster_summary_cor <- function(summary_data) {
 
   cor_plot <- cors %>%
     dplyr::group_by(order_id) %>%
-    dplyr::mutate(new_id = cur_group_id()) %>%
+    dplyr::mutate(new_id = dplyr::cur_group_id()) %>%
     dplyr::ungroup() %>%
     ggplot2::ggplot(ggplot2::aes(x = new_id,
                                  y = value,
@@ -814,7 +814,7 @@ cluster_heatmaps <- function(node_data = cut_df2,
   cluster_sizes <- node_data %>%
     dplyr::rename(cluster = best_fit) %>%
     dplyr::group_by(cluster) %>%
-    dplyr::summarize(size = n()) %>%
+    dplyr::summarize(size = dplyr::n()) %>%
     dplyr::ungroup()
 
   i_size <- matrix(rep(cluster_sizes$size, nrow(cluster_sizes)),
@@ -1336,7 +1336,7 @@ concor_tree <- function(df) {
   }
   count_df <- data.frame(block = block_counts) %>%
     dplyr::group_by(block) %>%
-    dplyr::summarize(orig_size = n()) %>%
+    dplyr::summarize(orig_size = dplyr::n()) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(size = ((orig_size/max(orig_size)) * 50))
 
@@ -1370,7 +1370,7 @@ role_sociogram <- function(graph, version, color2) {
     supernodes <- data.frame(id = igraph::V(graph[[1]])$name,
                              cluster = igraph::V(graph[[1]])$cluster) %>%
       dplyr::group_by(cluster) %>%
-      dplyr::summarize(original_size = n()) %>%
+      dplyr::summarize(original_size = dplyr::n()) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(size = log(original_size)) %>%
       dplyr::left_join(color2, by = "cluster")
@@ -1380,7 +1380,7 @@ role_sociogram <- function(graph, version, color2) {
     supernodes <- data.frame(id = igraph::V(graph[[1]])$name,
                              cluster = igraph::V(graph[[1]])$block) %>%
       dplyr::group_by(cluster) %>%
-      dplyr::summarize(original_size = n()) %>%
+      dplyr::summarize(original_size = dplyr::n()) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(size = log(original_size)) %>%
       dplyr::left_join(color2, by = "cluster")
@@ -1438,7 +1438,7 @@ role_sociogram <- function(graph, version, color2) {
       dplyr::left_join(ego_label, by = "ego") %>%
       dplyr::left_join(alter_label, by = "alter") %>%
       dplyr::group_by(cluster_ego, cluster_alter) %>%
-      dplyr::summarize(weight = n()) %>%
+      dplyr::summarize(weight = dplyr::n()) %>%
       dplyr::ungroup() %>%
       dplyr::left_join(weight_el, by = c("cluster_ego", "cluster_alter"))
 
