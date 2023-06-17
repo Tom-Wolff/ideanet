@@ -235,7 +235,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   ## Link comm ##
   #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
-  linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% select(from, to)
+  linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(from, to)
   lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
   clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
   clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
@@ -328,8 +328,8 @@ communities <- function(g, modres=1, shiny = FALSE) {
   igraph::V(g)$cf1 <- memberships$cp_cluster
   igraph::V(g)$lc <- memberships$lc
 
-  igraph::modularity(g_undir, membership = (V(g)$cf1 + 1))
-  igraph::modularity(g_undir, membership = (V(g)$lc + 1))
+  igraph::modularity(g_undir, membership = (igraph::V(g)$cf1 + 1))
+  igraph::modularity(g_undir, membership = (igraph::V(g)$lc + 1))
 
   cf1_stats <- data.frame(method = "cp",
                           num_communities = length(unique(memberships$cp_cluster)),
@@ -649,7 +649,7 @@ multigroup_assign <- function(gmat, clust){
   nodes <- as.numeric(rownames(gmat))
   isolates <- setdiff(nodes, unlist(clust))
   cp_maxcomm[row.names(cp_maxcomm) %in% isolates, ] <- 0   # reassign isolates to isolate cluster
-  cp_maxcomm <- tibble::tibble(cluster = cp_maxcomm) %>% mutate(id = as.numeric(rownames(gmat)))
+  cp_maxcomm <- tibble::tibble(cluster = cp_maxcomm) %>% dplyr::mutate(id = as.numeric(rownames(gmat)))
   return(cp_maxcomm)
 }
 
