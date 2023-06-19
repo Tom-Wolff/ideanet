@@ -15,11 +15,11 @@
 #' @export
 #'
 #' @examples
-#' qap_setup(net = igraph_object,
-#'          variables = "attribute_1",
-#'          methods = c("attribute_2", "attribute_3", "attribute_4"),
-#'          directed = F,
-#'          family = "linear")
+#' data("florentine", package = "ideanet")
+#'
+#' ideanet::qap_setup(network, variables = c("total_degree"), methods = c("difference"))
+#'
+#' ideanet::qap_run(qap_results[[1]], variables = c("diff_total_degree"))
 
 qap_run <- function(net, dependent = NULL, variables, directed = F, family = "linear") {
 

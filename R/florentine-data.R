@@ -14,8 +14,8 @@
 #' @source John Padgett (\href{http://www.casos.cs.cmu.edu/computational_tools/datasets/external/padgett/index2.html}{Website})
 #'
 #' @examples
-#' edges <- ideanet::florentine
-#' ideanet::netwrite(i_elements = edges$node,
-#'                  j_elements = edges$target,
-#'                  directed = F, type = edges$layer)
+#' data("florentine", package = "ideanet")
+#' ideanet::netwrite(i_elements = florentine$node,
+#'                  j_elements = florentine$target,
+#'                  directed = F, type = florentine$layer)
 "florentine"

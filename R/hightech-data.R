@@ -15,7 +15,8 @@
 #' @source Carnegie Mellon University (\href{http://casos.cs.cmu.edu/computational_tools/datasets/external/Hi-tech/index2.html}{Website})
 #'
 #' @examples
-#' ideanet::netwrite(i_elements = edges$node,
-#'                  j_elements = edges$target,
-#'                  directed = T, type = edges$layer)
+#' data("hightech", package = "ideanet")
+#' ideanet::netwrite(i_elements = hightech$node,
+#'                  j_elements = hightech$target,
+#'                  directed = T, type = hightech$layer)
 "hightech"
