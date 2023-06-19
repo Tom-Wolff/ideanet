@@ -17,11 +17,9 @@
 #' @export
 #'
 #' @examples
-#' qap_setup(net = igraph_object,
-#'          variables = c("attribute_1", "attribute_2", "attribute_3"),
-#'          methods = c("method_1", "method_2", "method_3"),
-#'          directed = F,
-#'          additional_vars = attribute_data)
+#' data("florentine", package = "ideanet")
+#'
+#' ideanet::qap_setup(network, variables = c("total_degree"), methods = c("difference"))
 
 qap_setup <- function(net, variables, methods, directed = F, additional_vars = NULL) {
 
