@@ -826,7 +826,12 @@ concor_method <- function(graph,
   modularity_df <- data.frame()
   for (i in 2:ncol(assignment_df)) {
 
-    igraph::V(cor_igraph)$block <- assignment_df[,i]
+    # Sometimes the concor function doesn't assign nodes to a block, thereby giving it
+    # an `NA` value. This will crash the modularity calculation. To remedy this, we need
+    # to replace `NA` values and treat them as their own de facto block (unclassified)
+    these_blocks <- assignment_df[,i]
+    these_blocks[is.na(these_blocks)] <- max(these_blocks, na.rm = T) + 1
+    igraph::V(cor_igraph)$block <- these_blocks
 
     this_mod <- data.frame(cut = colnames(assignment_df)[i],
                            modularity = igraph::modularity(cor_igraph, membership = igraph::V(cor_igraph)$block))
