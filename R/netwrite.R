@@ -1302,9 +1302,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     num_types <- ifelse((is.null(type) == TRUE), NA, length(unique(type)))
 
-    mutual <- igraph::dyad_census(g)$mut
-    asym <- igraph::dyad_census(g)$asym
-    null_ties <- igraph::dyad_census(g)$null
+    mutual <- suppressWarnings(igraph::dyad_census(g)$mut)
+    asym <- suppressWarnings(igraph::dyad_census(g)$asym)
+    null_ties <- suppressWarnings(igraph::dyad_census(g)$null)
 
     avg_geodesic <- igraph::average.path.length(g, directed = directed)
 
@@ -1442,11 +1442,11 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
     # Removing node-level and system-level data objects for clarity
-    rm(measure_labels, measure_descriptions, num_clusters, proportion_largest, degree_assortatvity,
+    suppressWarnings(rm(measure_labels, measure_descriptions, num_clusters, proportion_largest, degree_assortatvity,
        reciprocity_rate, global_clustering_coefficient, average_path_length,
-       multiplex_edge_correlation, measures, singular, singular_df)
+       multiplex_edge_correlation, measures, singular, singular_df))
 
-    rm(transitivity_rate, reachability, bicomponent_summary, largest_bicomponent_memberships, envir = .GlobalEnv)
+    suppressWarnings(rm(transitivity_rate, reachability, bicomponent_summary, largest_bicomponent_memberships, envir = .GlobalEnv))
 
   }
 
