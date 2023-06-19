@@ -17,7 +17,7 @@
 #' and Joe Miro from Russ Chappell (\href{https://www.chronologyproject.com}{Website})
 #'
 #' @examples
-#' data(marvel)
+#' edges <- ideanet::marvel
 #' ideanet::netwrite(i_elements = edges$Source, j_elements = edges$Target,
 #' weights = edges$Weight)
 "marvel"
