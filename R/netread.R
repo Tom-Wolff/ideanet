@@ -23,7 +23,7 @@
 netread <- function(path = NULL,
                     filetype = NULL,
                     sheet = NULL,
-                    nodelist,
+                    nodelist = NULL,
                     node_sheet = NULL,
                     object = NULL,
                     col_names = TRUE,
@@ -155,7 +155,7 @@ netread_csv <- function(path,
     # Generate nodelist if not given one
     if (is.null(nodelist)) {
 
-      nodes <- data.frame(id = unique(c(main_data$i_elements, this_el$j_elements)))
+      nodes <- data.frame(id = unique(c(main_data$i_elements, main_data$j_elements)))
       assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
 
     }
