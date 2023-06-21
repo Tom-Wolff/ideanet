@@ -195,6 +195,9 @@ cluster_method <- function(graph, # igraph object generated from netwrite
                               adjmats = adjmats)
     ### Now bind into `role_centrality`
     role_centrality <- cbind(role_centrality, rel_cors)
+  } else {
+    adjmats <- list()
+    adjmats[[1]] <- as.matrix(igraph::as_adjacency_matrix(graph$summary_graph, attr = "weight"))
   }
 
 

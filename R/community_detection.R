@@ -201,6 +201,9 @@ communities <- function(g, modres=1, shiny = FALSE) {
                             spinglass_membership = spinglass$membership,
                             walktrap_membership = walktrap$membership)
 
+  memberships$id <- as.character(memberships$id)
+
+
   } else {
 
     memberships <- data.frame(id = as.numeric(edge_betweenness$names),
