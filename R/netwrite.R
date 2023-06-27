@@ -42,6 +42,57 @@
 #' If `output` contains `largest_bi_component`, `netwrite` will return an igraph object of the largest main component in the network represented in the original data. If a vector is entered into the `type` argument, `netwrite` also produces a list containing the largest main component for each unique relation type as well as the overall network.
 #'
 #' @export
+#'
+#' @examples
+#' # Use netwrite on an edgelist
+#' netwrite(nodelist = fauxmesa_nodes,
+#'         node_id = "id",
+#'         i_elements = fauxmesa_edges$from,
+#'         j_elements = fauxmesa_edges$to,
+#'         directed = TRUE,
+#'         net_name = "faux_mesa")
+#'
+#' ### Inspect updated edgelist
+#' head(edgelist)
+#'
+#' ### Inspect data frame of node-level measures
+#' head(node_measures)
+#'
+#' ### Inspect system-level summary
+#' View(system_level_measures)
+#'
+#' ### Plot sociogram of network
+#' plot(faux_mesa)
+#'
+#' ### View node-level summary visualization
+#' node_measure_plot
+#'
+#' ### View system-level summary visualization
+#' system_measure_plot
+#'
+#'
+#'
+#' # Run netwrite on an adjacency matrix
+#' fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa))
+#'
+#' netwrite(data_type = "adjacency_matrix",
+#'         adjacency_matrix = fauxmesa_adjmat,
+#'         directed = TRUE,
+#'         net_name = "faux_mesa")
+#'
+#'
+#' # Run netwrite on a multirelational network
+#' netwrite(i_elements = florentine$node,
+#'         j_elements = florentine$target,
+#'         type = florentine$layer,
+#'         directed = TRUE,
+#'         net_name = "florentine")
+#'
+#' # View system level summary for aggregate network
+#' system_level_measures_list$summary_graph
+#'
+#' # View system level summary for network of `type 1` relations
+#' system_level_measures_list$`1`
 
 
 ##########################################################
@@ -725,7 +776,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     if(as.logical(directed) == TRUE){
 
       # Set up conditional for generating weighted graph from weighted adjacency matrix
-      adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
+      if (is.null(weights) == TRUE) {
+        adj_weight <- NULL
+      } else {
+        adj_weight <- ifelse(weights[[1]] == TRUE, TRUE, NULL)
+      }
+
+     # adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
 
       # Also need to adjust for type of weight
       # Make Weights Reflect Frequency Rather than Distance
@@ -804,7 +861,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # UNDIRECTED
     } else {
       # Set up conditional for generating weighted graph from weighted adjacency matrix
-      adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
+      if (is.null(weights) == TRUE) {
+        adj_weight <- NULL
+      } else {
+        adj_weight <- ifelse(weights[[1]] == TRUE, TRUE, NULL)
+      }
+     # adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
 
       # Also need to adjust for type of weight
       # Make Weights Reflect Frequency Rather than Distance
@@ -900,7 +962,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
     ### I've added some code that reverts the weights back to original if need be.
-    if(weight_type == 'frequency') {
+    if(weight_type == 'frequency' & !is.null(adj_weight) == TRUE) {
       igraph::E(g)$weight <- 1/igraph::E(g)$weight
     }
 

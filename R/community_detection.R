@@ -10,7 +10,18 @@
 #'
 #'
 #' @export
-
+#'
+#' @examples
+#' # Run netwrite
+#' netwrite(nodelist = fauxmesa_nodes,
+#'         node_id = "id",
+#'         i_elements = fauxmesa_edges$from,
+#'         j_elements = fauxmesa_edges$to,
+#'         directed = TRUE,
+#'         net_name = "faux_mesa")
+#'
+#' # Run community detection function
+#' communities(g = faux_mesa)
 
 
 ###############################################
