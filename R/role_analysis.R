@@ -141,7 +141,7 @@ role_analysis <- function(graph, # igraph object generated from netwrite
                                      backbone = backbone,
                                      viz = viz,
                                      fast_triad = fast_triad,
-                                     retain_variable = retain_variables,
+                                     retain_variables = retain_variables,
                                      cluster_summaries = cluster_summaries,
                                      dendro_names = dendro_names)
 

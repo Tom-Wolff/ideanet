@@ -17,7 +17,12 @@
 #' @examples
 #' data("florentine", package = "ideanet")
 #'
-#' ideanet::qap_setup(network, variables = c("total_degree"), methods = c("difference"))
+#'  ideanet::netwrite(i_elements = florentine$node,
+#'                    j_elements = florentine$target,
+#'                    directed = FALSE,
+#'                    net_name = "florentine_graph")
+#'
+#' ideanet::qap_setup(florentine_graph, variables = c("total_degree"), methods = c("difference"))
 #'
 #' ideanet::qap_run(qap_results[[1]], variables = c("diff_total_degree"))
 

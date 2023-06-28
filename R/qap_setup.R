@@ -19,7 +19,12 @@
 #' @examples
 #' data("florentine", package = "ideanet")
 #'
-#' ideanet::qap_setup(network, variables = c("total_degree"), methods = c("difference"))
+#'  ideanet::netwrite(i_elements = florentine$node,
+#'                    j_elements = florentine$target,
+#'                    directed = FALSE,
+#'                    net_name = "florentine_graph")
+#'
+#' ideanet::qap_setup(florentine_graph, variables = c("total_degree"), methods = c("difference"))
 
 qap_setup <- function(net, variables, methods, directed = F, additional_vars = NULL) {
 
@@ -92,11 +97,11 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
       # If method "reduced_category", create simple dichotomy
       if (method == "reduced_category") {
         edges <- edges %>%
-          dplyr::mutate(!!sym((paste0("same_", variable))) :=
-                   dplyr::case_when(!!sym(paste0(variable, "_alter")) ==
-                               !!sym(paste0(variable, "_ego")) ~ 1,
-                             is.na(!!sym(paste0(variable, "_ego"))) |
-                               is.na(!!sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+          dplyr::mutate(!!rlang::sym((paste0("same_", variable))) :=
+                   dplyr::case_when(!!rlang::sym(paste0(variable, "_alter")) ==
+                               !!rlang::sym(paste0(variable, "_ego")) ~ 1,
+                             is.na(!!rlang::sym(paste0(variable, "_ego"))) |
+                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
       }
 
       # If method "multi_category", create an tidyselect::all_of(variable) for each value and then dichotomize.
@@ -105,40 +110,40 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
 
         for (n in 1:length(opts)) {
           edges <- edges %>%
-            dplyr::mutate(!!sym((paste0("both_", variable, "_", opts[n]))) :=
-                     dplyr::case_when((!!sym(paste0(variable, "_alter")) == opts[n]) &
-                                 (!!sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
-                               is.na(!!sym(paste0(variable, "_ego"))) |
-                                 is.na(!!sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+            dplyr::mutate(!!rlang::sym((paste0("both_", variable, "_", opts[n]))) :=
+                     dplyr::case_when((!!rlang::sym(paste0(variable, "_alter")) == opts[n]) &
+                                 (!!rlang::sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
+                               is.na(!!rlang::sym(paste0(variable, "_ego"))) |
+                                 is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
         }
       }
 
       # If method "difference", take the difference between ego and alter
       if (method == "difference") {
         edges <- edges %>%
-          dplyr::mutate(!!sym((paste0("diff_", variable))) :=
-                   as.numeric(!!sym(paste0(variable, "_ego"))) -
-                   as.numeric(!!sym(paste0(variable, "_alter"))))
+          dplyr::mutate(!!rlang::sym((paste0("diff_", variable))) :=
+                   as.numeric(!!rlang::sym(paste0(variable, "_ego"))) -
+                   as.numeric(!!rlang::sym(paste0(variable, "_alter"))))
       }
 
       # If diff is "both", run both reduced and multi categories.
       if (method == "both") {
         edges <- edges %>%
-          dplyr::mutate(!!sym((paste0("same_", variable))) :=
-                   dplyr::case_when(!!sym(paste0(variable, "_alter")) ==
-                               !!sym(paste0(variable, "_ego")) ~ 1,
-                             is.na(!!sym(paste0(variable, "_ego"))) |
-                               is.na(!!sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+          dplyr::mutate(!!rlang::sym((paste0("same_", variable))) :=
+                   dplyr::case_when(!!rlang::sym(paste0(variable, "_alter")) ==
+                               !!rlang::sym(paste0(variable, "_ego")) ~ 1,
+                             is.na(!!rlang::sym(paste0(variable, "_ego"))) |
+                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
 
         opts <- nodes %>% dplyr::select(tidyselect::all_of(variable)) %>% dplyr::distinct() %>% tidyr::drop_na() %>% pull()
 
         for (n in 1:length(opts)) {
           edges <- edges %>%
-            dplyr::mutate(!!sym((paste0("both_", variable, "_", opts[n]))) :=
-                     dplyr::case_when((!!sym(paste0(variable, "_alter")) == opts[n]) &
-                                 (!!sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
-                               is.na(!!sym(paste0(variable, "_ego"))) |
-                                 is.na(!!sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+            dplyr::mutate(!!rlang::sym((paste0("both_", variable, "_", opts[n]))) :=
+                     dplyr::case_when((!!rlang::sym(paste0(variable, "_alter")) == opts[n]) &
+                                 (!!rlang::sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
+                               is.na(!!rlang::sym(paste0(variable, "_ego"))) |
+                                 is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
         }
       }
     }

@@ -28,9 +28,14 @@ qap_run(net, dependent = NULL, variables, directed = F, family = "linear")
 The `qap_run` function is a wrapper around `sna`'s Quadratic Assignment Procedure models `sna::netlm()` and `sna::netlogit()`. It expects a networks objects containing dependent and independent variables of interest (e.g, the output from `qap_setup`).
 }
 \examples{
-qap_setup(net = igraph_object,
-         variables = "attribute_1",
-         methods = c("attribute_2", "attribute_3", "attribute_4"),
-         directed = F,
-         family = "linear")
+data("florentine", package = "ideanet")
+
+ ideanet::netwrite(i_elements = florentine$node,
+                   j_elements = florentine$target,
+                   directed = FALSE,
+                   net_name = "florentine_graph")
+
+ideanet::qap_setup(florentine_graph, variables = c("total_degree"), methods = c("difference"))
+
+ideanet::qap_run(qap_results[[1]], variables = c("diff_total_degree"))
 }

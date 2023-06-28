@@ -8,7 +8,7 @@ netread(
   path = NULL,
   filetype = NULL,
   sheet = NULL,
-  nodelist,
+  nodelist = NULL,
   node_sheet = NULL,
   object = NULL,
   col_names = TRUE,

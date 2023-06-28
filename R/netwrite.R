@@ -59,7 +59,7 @@
 #' head(node_measures)
 #'
 #' ### Inspect system-level summary
-#' View(system_level_measures)
+#' system_level_measures
 #'
 #' ### Plot sociogram of network
 #' plot(faux_mesa)

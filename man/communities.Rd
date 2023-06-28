@@ -19,3 +19,15 @@ communities(g, modres = 1, shiny = FALSE)
 \description{
 The `communities` function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is used.
 }
+\examples{
+# Run netwrite
+netwrite(nodelist = fauxmesa_nodes,
+        node_id = "id",
+        i_elements = fauxmesa_edges$from,
+        j_elements = fauxmesa_edges$to,
+        directed = TRUE,
+        net_name = "faux_mesa")
+
+# Run community detection function
+communities(g = faux_mesa)
+}
