@@ -8,14 +8,16 @@ netread(
   path = NULL,
   filetype = NULL,
   sheet = NULL,
-  nodelist,
+  nodelist = NULL,
   node_sheet = NULL,
   object = NULL,
   col_names = TRUE,
   row_names = FALSE,
   format = NULL,
   net_name = "network",
-  missing_code = 99999
+  missing_code = 99999,
+  i_elements = NULL,
+  j_elements = NULL
 )
 }
 \arguments{

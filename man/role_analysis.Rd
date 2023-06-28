@@ -57,7 +57,7 @@ role_analysis(
 \item{max_iter}{(CONCOR only.) A numeric value indicating the maximum number of iteractions allowed for CONCOR calculattion.}
 }
 \value{
-The `role_analysis` function assigns a set of objects to the Global Environment that users can access to help interpret results. This set varies somewhat depending on the method being used for positional analysis. 
+The `role_analysis` function assigns a set of objects to the Global Environment that users can access to help interpret results. This set varies somewhat depending on the method being used for positional analysis.
 
 When hierarchical clustering is used, `role_analysis` creates the following:
 `cluster_assignments` is a data frame indicating each node's membership within inferred clusters at each level of partitioning.
@@ -81,15 +81,57 @@ When CONCOR is used, `role_analysis` creates the following:
 The `role_analysis` function takes networks processed by the `netwrite` function and performs positional analysis on them. Positional analysis methods allows users to infer distinct "roles" in networks from patterns in network activity. `role_analysis` currently supports the identification of roles using two methods: hierarchical clustering (cite) and convergence of correlations (CONCOR, Breiger 1975).
 }
 \examples{
-netwrite(data_type = "edgelist",
-         nodelist = node_dataframe,
-         node_id = "id",
-         i_elements = edge_dataframe$ego,
-         j_elements = edge_dataframe$alter,
-         weights = edge_dataframe$weight,
-         type = edge_dataframe$relation_type,
-         directed = TRUE)
+netwrite(i_elements = florentine$node,
+         j_elements = florentine$target,
+         type = florentine$layer,
+         directed = TRUE,
+         net_name = "florentine")
+
+# Clustering method
+role_analysis(graph = network_list,
+              nodes = node_measures,
+              directed = TRUE,
+              method = "cluster",
+              min_partitions = 2,
+              max_partitions = 8,
+              viz = TRUE)
+
+### View cluster dendrogram
+cluster_dendrogram
+
+### View modularity summary plot
+cluster_modularity
+
+### View cluster assignments
+head(cluster_assignments)
+
+### View centrality summary plot for aggregate network
+cluster_summaries_cent$summary_graph
+### View cenrality summary plot for network of relation `type 1`
+cluster_summaries_cent$`1`
+
+### View triad position summary plot for network of relation `type 1`
+cluster_summaries_triad$`1`
 
 
-role_analysis
+# CONCOR method
+role_analysis(graph = network_list,
+              nodes = node_measures,
+              directed = TRUE,
+              method = "concor",
+              min_partitions = 1,
+              max_partitions = 4,
+              viz = TRUE)
+
+### View CONCOR tree
+concor_block_tree
+
+### View modularity summary plot
+concor_modularity
+
+### View cluster assignments
+head(concor_assignments)
+
+### View chi-squared heatmaps of relations between blocks
+concor_relations_heatmaps$chisq
 }

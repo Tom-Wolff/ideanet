@@ -283,35 +283,35 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
     colnames(ki) <- c("k", "i", "tie_ki")
 
     # Merge pairs together to get ij,ji edges, etc.
-    el <- full_join(ij, ji, by = c("i", "j"))
-    el2 <- full_join(jk, kj, by = c("j", "k"))
-    el3 <- full_join(ik, ki, by = c("i", "k"))
+    el <- dplyr::full_join(ij, ji, by = c("i", "j"))
+    el2 <- dplyr::full_join(jk, kj, by = c("j", "k"))
+    el3 <- dplyr::full_join(ik, ki, by = c("i", "k"))
 
     # To make sure triad identification is exhausted, we
     # merge edgelists into triad lists in all possible orders.
     # This avoids the possibility of missing triads in which
     # node i isn't connected to either j or k
 
-    el_123 <- el %>% full_join(el2, by = 'j') %>%
-      full_join(el3, by = c("i", "k")) %>%
-      select(i, j, k, everything())
+    el_123 <- el %>% dplyr::full_join(el2, by = 'j') %>%
+      dplyr::full_join(el3, by = c("i", "k")) %>%
+      dplyr::select(i, j, k, dplyr::everything())
 
-    el_132 <- el %>% full_join(el3, by = "i") %>%
-      full_join(el2, by = c("j", "k"))
+    el_132 <- el %>% dplyr::full_join(el3, by = "i") %>%
+      dplyr::full_join(el2, by = c("j", "k"))
 
-    el_213 <- el2 %>% full_join(el, by = "j") %>%
-      full_join(el3, by = c("i", "k"))
+    el_213 <- el2 %>% dplyr::full_join(el, by = "j") %>%
+      dplyr::full_join(el3, by = c("i", "k"))
 
-    el_231 <- el2 %>% full_join(el3, by = "k") %>%
-      full_join(el, by = c("i", "j"))
+    el_231 <- el2 %>% dplyr::full_join(el3, by = "k") %>%
+      dplyr::full_join(el, by = c("i", "j"))
 
-    el_312 <- el3 %>% full_join(el, by = "i") %>%
-      full_join(el2, by = c("j", "k"))
+    el_312 <- el3 %>% dplyr::full_join(el, by = "i") %>%
+      dplyr::full_join(el2, by = c("j", "k"))
 
-    el_321 <- el3 %>% full_join(el2, by = "k") %>%
-      full_join(el, by = c("i", "j"))
+    el_321 <- el3 %>% dplyr::full_join(el2, by = "k") %>%
+      dplyr::full_join(el, by = c("i", "j"))
 
-    el_together <- bind_rows(el_123,
+    el_together <- dplyr::bind_rows(el_123,
                              el_132,
                              el_231,
                              el_213,
@@ -321,11 +321,11 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
     el_together[is.na(el_together)] <- 0
 
     el_together <- el_together %>%
-      group_by(i, j, k) %>%
-      slice(1) %>%
-      filter(i != j) %>%
-      filter(j != k) %>%
-      filter(i != k)
+      dplyr::group_by(i, j, k) %>%
+      dplyr::slice(1) %>%
+      dplyr::filter(i != j) %>%
+      dplyr::filter(j != k) %>%
+      dplyr::filter(i != k)
 
 
     # all_triads <- all_triads %>%
@@ -415,7 +415,7 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
 
     # Merge `all_combos` into complete triad list
     all_triads <- el_together %>%
-      left_join(all_combos, by = c("tie_ij",
+      dplyr::left_join(all_combos, by = c("tie_ij",
                                    "tie_ji",
                                    "tie_jk",
                                    "tie_kj",
@@ -443,26 +443,26 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
     # This avoids the possibility of missing triads in which
     # node i isn't connected to either j or k
 
-    el_123 <- el %>% full_join(el2, by = 'i') %>%
-      full_join(el3, by = c("j", "k")) %>%
-      select(i, j, k, everything())
+    el_123 <- el %>% dplyr::full_join(el2, by = 'i') %>%
+      dplyr::full_join(el3, by = c("j", "k")) %>%
+      dplyr::select(i, j, k, dplyr::everything())
 
-    el_132 <- el %>% full_join(el3, by = "j") %>%
-      full_join(el2, by = c("i", "k"))
+    el_132 <- el %>% dplyr::full_join(el3, by = "j") %>%
+      dplyr::full_join(el2, by = c("i", "k"))
 
-    el_213 <- el2 %>% full_join(el, by = "i") %>%
-      full_join(el3, by = c("j", "k"))
+    el_213 <- el2 %>% dplyr::full_join(el, by = "i") %>%
+      dplyr::full_join(el3, by = c("j", "k"))
 
-    el_231 <- el2 %>% full_join(el3, by = "k") %>%
-      full_join(el, by = c("i", "j"))
+    el_231 <- el2 %>% dplyr::full_join(el3, by = "k") %>%
+      dplyr::full_join(el, by = c("i", "j"))
 
-    el_312 <- el3 %>% full_join(el, by = "j") %>%
-      full_join(el2, by = c("i", "k"))
+    el_312 <- el3 %>% dplyr::full_join(el, by = "j") %>%
+      dplyr::full_join(el2, by = c("i", "k"))
 
-    el_321 <- el3 %>% full_join(el2, by = "k") %>%
-      full_join(el, by = c("i", "j"))
+    el_321 <- el3 %>% dplyr::full_join(el2, by = "k") %>%
+      dplyr::full_join(el, by = c("i", "j"))
 
-    el_together <- bind_rows(el_123,
+    el_together <- dplyr::bind_rows(el_123,
                              el_132,
                              el_231,
                              el_213,
@@ -472,11 +472,11 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
     el_together[is.na(el_together)] <- 0
 
     el_together <- el_together %>%
-      group_by(i, j, k) %>%
-      slice(1) %>%
-      filter(i != j) %>%
-      filter(j != k) %>%
-      filter(i != k)
+      dplyr::group_by(i, j, k) %>%
+      dplyr::slice(1) %>%
+      dplyr::filter(i != j) %>%
+      dplyr::filter(j != k) %>%
+      dplyr::filter(i != k)
 
     # all_triads <- all_triads %>%
     #   left_join(el1, by = c("i", "j")) %>%
@@ -502,9 +502,9 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
 
     # Merge `all_combos` into complete triad list
     all_triads <- el_together %>%
-      left_join(all_combos, by = c("tie_ij",
-                                   "tie_ik",
-                                   "tie_jk"))
+      dplyr::left_join(all_combos, by = c("tie_ij",
+                                         "tie_ik",
+                                         "tie_jk"))
 
 
   }
@@ -512,11 +512,11 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
 
   # Now we count how many of each triad type each ego has
   triad_count <- all_triads %>%
-    group_by(i, triad_type) %>%
-    summarize(count = n()) %>%
-    pivot_wider(names_from = triad_type,
+    dplyr::group_by(i, triad_type) %>%
+    dplyr::summarize(count = dplyr::n()) %>%
+    tidyr::pivot_wider(names_from = triad_type,
                 values_from = count) %>%
-    ungroup()
+    dplyr::ungroup()
 
   triad_count[is.na(triad_count)] <- 0
 
@@ -604,31 +604,31 @@ cluster_collapse <- function(min_partition_size,
   }
 
   test <- data.frame(cluster = this_cut[,ncol(this_cut)]) %>%
-    group_by(cluster) %>%
-    mutate(cluster_size = n())
+    dplyr::group_by(cluster) %>%
+    dplyr::mutate(cluster_size = dplyr::n())
 
   for (i in (max_mod_val-1):3) {
 
 
     test$alt_cluster <- this_cut[,i]
     test <- test %>%
-      group_by(alt_cluster) %>%
-      mutate(new_partition_size = n(),
-             new_partition_check = min(cluster_size)) %>%
-      ungroup() %>%
-      mutate(cluster = ifelse(new_partition_check < min_partition_size,
+      dplyr::group_by(alt_cluster) %>%
+      dplyr::mutate(new_partition_size = dplyr::n(),
+                    new_partition_check = min(cluster_size)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(cluster = ifelse(new_partition_check < min_partition_size,
                               alt_cluster,
                               cluster)) %>%
-      group_by(cluster) %>%
-      mutate(cluster_size = n()) %>%
-      ungroup() %>%
-      select(cluster, cluster_size)
+      dplyr::group_by(cluster) %>%
+      dplyr::mutate(cluster_size = dplyr::n()) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(cluster, cluster_size)
 
   }
 
   test <- test %>%
-    group_by(cluster) %>%
-    mutate(final_cluster = cur_group_id())
+    dplyr::group_by(cluster) %>%
+    dplyr::mutate(final_cluster = dplyr::cur_group_id())
 
   return(test$final_cluster)
 
@@ -675,13 +675,13 @@ cluster_summary_plots <- function(graph_list,
     if (i == 1) {
 
       centralities <- summary_data[(summary_data$var %in% cent_names), ] %>%
-        arrange(order_id)
+        dplyr::arrange(order_id)
 
       triad_regex <- paste("^", names(graph_list)[[i]], "_[0-9]",
                            sep = "")
 
-      triad_positions <- summary_data[str_detect(summary_data$var, triad_regex), ] %>%
-        arrange(order_id)
+      triad_positions <- summary_data[stringr::str_detect(summary_data$var, triad_regex), ] %>%
+        dplyr::arrange(order_id)
       triad_positions$order_id <- triad_positions$order_id - min(triad_positions$order_id) + 1
 
 
@@ -692,50 +692,50 @@ cluster_summary_plots <- function(graph_list,
       triad_regex <- paste("^", names(graph_list)[[i]], "_[0-9]",
                            sep = "")
 
-      centralities <- summary_data[str_detect(summary_data$var, cent_regex), ] %>%
-        arrange(order_id)
+      centralities <- summary_data[stringr::str_detect(summary_data$var, cent_regex), ] %>%
+        dplyr::arrange(order_id)
       centralities$order_id <- centralities$order_id - min(centralities$order_id) + 1
-      centralities <- centralities[!str_detect(centralities$var, "^cor"),]
+      centralities <- centralities[!stringr::str_detect(centralities$var, "^cor"),]
 
-      triad_positions <- summary_data[str_detect(summary_data$var, triad_regex), ] %>%
-        arrange(order_id)
+      triad_positions <- summary_data[stringr::str_detect(summary_data$var, triad_regex), ] %>%
+        dplyr::arrange(order_id)
       triad_positions$order_id <- triad_positions$order_id - min(triad_positions$order_id) + 1
 
     }
 
 
     cent_plot <-  centralities %>%
-      group_by(order_id) %>%
-      mutate(new_id = cur_group_id()) %>%
-      ungroup() %>%
-      ggplot(aes(x = new_id,
-                 y = value,
-                 color = as.factor(cluster))) +
-      geom_point() +
-      geom_line() +
-      scale_x_continuous(breaks = 1:length(unique(centralities$var)),
-                         labels = unique(centralities$var)) +
-      theme_minimal() +
-      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-            panel.grid.minor.x = element_blank()) +
-      ylab("Cluster Mean Value (Standardized)") +
-      xlab("Variable") +
-      labs(color = "Cluster")
+      dplyr::group_by(order_id) %>%
+      dplyr::mutate(new_id = dplyr::cur_group_id()) %>%
+      dplyr::ungroup() %>%
+      ggplot2::ggplot(ggplot2::aes(x = new_id,
+                                   y = value,
+                                   color = as.factor(cluster))) +
+      ggplot2::geom_point() +
+      ggplot2::geom_line() +
+      ggplot2::scale_x_continuous(breaks = 1:length(unique(centralities$var)),
+                                  labels = unique(centralities$var)) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust=1),
+            panel.grid.minor.x = ggplot2::element_blank()) +
+      ggplot2::ylab("Cluster Mean Value (Standardized)") +
+      ggplot2::xlab("Variable") +
+      ggplot2::labs(color = "Cluster")
 
     triad_plot <-  triad_positions %>%
-      ggplot(aes(x = order_id,
-                 y = value,
-                 color = as.factor(cluster))) +
-      geom_point() +
-      geom_line() +
-      scale_x_continuous(breaks = 1:length(unique(triad_positions$var)),
-                         labels = unique(triad_positions$var)) +
-      theme_minimal() +
-      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-            panel.grid.minor.x = element_blank()) +
-      ylab("Cluster Mean Value (Standardized)") +
-      xlab("Variable") +
-      labs(color = "Cluster")
+      ggplot2::ggplot(ggplot2::aes(x = order_id,
+                                   y = value,
+                                   color = as.factor(cluster))) +
+      ggplot2::geom_point() +
+      ggplot2::geom_line() +
+      ggplot2::scale_x_continuous(breaks = 1:length(unique(triad_positions$var)),
+                                  labels = unique(triad_positions$var)) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust=1),
+                      panel.grid.minor.x = ggplot2::element_blank()) +
+      ggplot2::ylab("Cluster Mean Value (Standardized)") +
+      ggplot2::xlab("Variable") +
+      ggplot2::labs(color = "Cluster")
 
     cluster_summaries_cent[[i]] <- cent_plot
     cluster_summaries_triad[[i]] <- triad_plot
@@ -766,28 +766,28 @@ cluster_summary_cor <- function(summary_data) {
 
   cor_regex <- "^cor_"
 
-  cors <- summary_data[str_detect(summary_data$var, cor_regex), ] %>%
-    arrange(order_id)
+  cors <- summary_data[stringr::str_detect(summary_data$var, cor_regex), ] %>%
+    dplyr::arrange(order_id)
 
   cors$order_id <- cors$order_id - min(cors$order_id) + 1
 
   cor_plot <- cors %>%
-    group_by(order_id) %>%
-    mutate(new_id = cur_group_id()) %>%
-    ungroup() %>%
-    ggplot(aes(x = new_id,
-               y = value,
-               color = as.factor(cluster))) +
-    geom_point() +
-    geom_line() +
-    scale_x_continuous(breaks = 1:length(unique(cors$var)),
-                       labels = unique(cors$var)) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-          panel.grid.minor.x = element_blank()) +
-    ylab("Cluster Mean Value (Standardized)") +
-    xlab("Variable") +
-    labs(color = "Cluster")
+    dplyr::group_by(order_id) %>%
+    dplyr::mutate(new_id = dplyr::cur_group_id()) %>%
+    dplyr::ungroup() %>%
+    ggplot2::ggplot(ggplot2::aes(x = new_id,
+                                 y = value,
+                                 color = as.factor(cluster))) +
+    ggplot2::geom_point() +
+    ggplot2::geom_line() +
+    ggplot2::scale_x_continuous(breaks = 1:length(unique(cors$var)),
+                                labels = unique(cors$var)) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust=1),
+                   panel.grid.minor.x = ggplot2::element_blank()) +
+    ggplot2::ylab("Cluster Mean Value (Standardized)") +
+    ggplot2::xlab("Variable") +
+    ggplot2::labs(color = "Cluster")
 
   assign(x = "cluster_summaries_correlations",
          value = cor_plot,
@@ -812,10 +812,10 @@ cluster_heatmaps <- function(node_data = cut_df2,
   ### For density calculations, we need to get population of
   ### each cluster
   cluster_sizes <- node_data %>%
-    rename(cluster = best_fit) %>%
-    group_by(cluster) %>%
-    summarize(size = n()) %>%
-    ungroup()
+    dplyr::rename(cluster = best_fit) %>%
+    dplyr::group_by(cluster) %>%
+    dplyr::summarize(size = dplyr::n()) %>%
+    dplyr::ungroup()
 
   i_size <- matrix(rep(cluster_sizes$size, nrow(cluster_sizes)),
                    nrow = nrow(cluster_sizes))
@@ -836,11 +836,11 @@ cluster_heatmaps <- function(node_data = cut_df2,
     colnames(this_el) <- c("ego", "alter", "weight")
 
     this_el <- this_el %>%
-      left_join(cluster_ego, by = "ego") %>%
-      left_join(cluster_alter, by = "alter") %>%
-      group_by(ego_cluster, alter_cluster) %>%
-      summarize(weight = sum(weight)) %>%
-      ungroup() #%>%
+      dplyr::left_join(cluster_ego, by = "ego") %>%
+      dplyr::left_join(cluster_alter, by = "alter") %>%
+      dplyr::group_by(ego_cluster, alter_cluster) %>%
+      dplyr::summarize(weight = sum(weight)) %>%
+      dplyr::ungroup() #%>%
     # mutate(weight_scl = scale(weight)[,1],
     #        weight_scl = weight_scl + -1*min(weight_scl) + 1,
     #          rel = i)
@@ -849,11 +849,11 @@ cluster_heatmaps <- function(node_data = cut_df2,
     # Need to make full edgelist
     full_el <- data.frame(ego_cluster = rep(cluster_sizes$cluster, each = length(cluster_sizes$cluster)),
                           alter_cluster = rep(cluster_sizes$cluster, length(cluster_sizes$cluster))) %>%
-      left_join(this_el, by = c("ego_cluster", "alter_cluster"))
+      dplyr::left_join(this_el, by = c("ego_cluster", "alter_cluster"))
 
-    this_mat <- full_el %>% pivot_wider(id_cols = ego_cluster,
-                                        names_from = alter_cluster,
-                                        values_from = weight)
+    this_mat <- full_el %>% tidyr::pivot_wider(id_cols = ego_cluster,
+                                              names_from = alter_cluster,
+                                              values_from = weight)
 
     this_mat[is.na(this_mat)] <- 0
     this_mat <- as.matrix(this_mat[,2:ncol(this_mat)])
@@ -915,12 +915,12 @@ cluster_heatmaps <- function(node_data = cut_df2,
     chisq_df$cluster <- as.numeric(rownames(chisq_df))
 
     chisq_df <- chisq_df %>%
-      pivot_longer(cols = -cluster,
+      tidyr::pivot_longer(cols = -cluster,
                    names_to = "alter",
                    values_to = "chisq") %>%
-      mutate(alter = as.numeric(alter)) %>%
-      arrange(cluster, alter) %>%
-      mutate(relation = names(graph_list)[[i]])
+      dplyr::mutate(alter = as.numeric(alter)) %>%
+      dplyr::arrange(cluster, alter) %>%
+      dplyr::mutate(relation = names(graph_list)[[i]])
 
     # Density
     ### Basic
@@ -928,12 +928,12 @@ cluster_heatmaps <- function(node_data = cut_df2,
     density_df$cluster <- as.numeric(rownames(density_df))
 
     density_df <- density_df %>%
-      pivot_longer(cols = -cluster,
+      tidyr::pivot_longer(cols = -cluster,
                    names_to = "alter",
                    values_to = "density") %>%
-      mutate(alter = as.numeric(alter)) %>%
-      arrange(cluster, alter) %>%
-      mutate(relation = names(graph_list)[[i]])
+      dplyr::mutate(alter = as.numeric(alter)) %>%
+      dplyr::arrange(cluster, alter) %>%
+      dplyr::mutate(relation = names(graph_list)[[i]])
 
     ### Standardized
     density_std_df <- as.data.frame(density_std)
@@ -941,12 +941,12 @@ cluster_heatmaps <- function(node_data = cut_df2,
     density_std_df$cluster <- as.numeric(rownames(density_std_df))
 
     density_std_df <- density_std_df %>%
-      pivot_longer(cols = -cluster,
-                   names_to = "alter",
-                   values_to = "density_std") %>%
-      mutate(alter = as.numeric(alter)) %>%
-      arrange(cluster, alter) %>%
-      mutate(relation = names(graph_list)[[i]])
+      tidyr::pivot_longer(cols = -cluster,
+                         names_to = "alter",
+                         values_to = "density_std") %>%
+      dplyr::mutate(alter = as.numeric(alter)) %>%
+      dplyr::arrange(cluster, alter) %>%
+      dplyr::mutate(relation = names(graph_list)[[i]])
 
     ### Standardized and centered
     density_std_df2 <- as.data.frame(density_std2)
@@ -954,18 +954,18 @@ cluster_heatmaps <- function(node_data = cut_df2,
     density_std_df2$cluster <- as.numeric(rownames(density_std_df2))
 
     density_std_df2 <- density_std_df2 %>%
-      pivot_longer(cols = -cluster,
-                   names_to = "alter",
-                   values_to = "density_std2") %>%
-      mutate(alter = as.numeric(alter)) %>%
-      arrange(cluster, alter) %>%
-      mutate(relation = names(graph_list)[[i]])
+      tidyr::pivot_longer(cols = -cluster,
+                           names_to = "alter",
+                           values_to = "density_std2") %>%
+      dplyr::mutate(alter = as.numeric(alter)) %>%
+      dplyr::arrange(cluster, alter) %>%
+      dplyr::mutate(relation = names(graph_list)[[i]])
 
     # Merge edgelists together
     this_cluster_edgelist <- chisq_df %>%
-      left_join(density_df, by = c("relation", "cluster", "alter")) %>%
-      left_join(density_std_df, by = c("relation", "cluster", "alter")) %>%
-      left_join(density_std_df2, by = c("relation", "cluster", "alter"))
+      dplyr::left_join(density_df, by = c("relation", "cluster", "alter")) %>%
+      dplyr::left_join(density_std_df, by = c("relation", "cluster", "alter")) %>%
+      dplyr::left_join(density_std_df2, by = c("relation", "cluster", "alter"))
 
 
     # If this is the first relation type, make a dataframe
@@ -974,7 +974,7 @@ cluster_heatmaps <- function(node_data = cut_df2,
       cluster_edgelist <- this_cluster_edgelist
       # Otherwise add this relation's values to `chisq_values`
     } else {
-      cluster_edgelist <- bind_rows(cluster_edgelist, this_cluster_edgelist)
+      cluster_edgelist <- dplyr::bind_rows(cluster_edgelist, this_cluster_edgelist)
     }
 
   }
@@ -1004,24 +1004,24 @@ cluster_heatmaps <- function(node_data = cut_df2,
 
   chisq_heat <- cluster_edgelist %>%
     # filter(relation == i) %>%
-    ggplot(aes(x = alter,
+    ggplot2::ggplot(ggplot2::aes(x = alter,
                y = forcats::fct_rev(cluster),
                fill = chisq)) +
-    geom_tile(color = "black") +
-    geom_text(aes(label = round(chisq, digits = 2)), color = "white", size = 4) +
-    theme_minimal() +
+    ggplot2::geom_tile(color = "black") +
+    ggplot2::geom_text(ggplot2::aes(label = round(chisq, digits = 2)), color = "white", size = 4) +
+    ggplot2::theme_minimal() +
     # scale_x_continuous(breaks = 1:max(cluster_edgelist$cluster)) +
     #   scale_y_continuous(breaks = 1:max(cluster_edgelist$cluster)) +
     # scale_y_reverse() +
-    labs(x = NULL, y = NULL) +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5)) +
-    scale_fill_gradient2(low="#102033", mid = "#2C6093", high="#47a0f3", #colors in the scale
-                         midpoint=mean_chisq,    #same midpoint for plots (mean of the range)
-                         breaks=seq(0,max(range_chisq),1), #breaks in the scale bar
-                         limits=c(floor(range_chisq[1]), ceiling(range_chisq[2]))) +
-    facet_wrap(~relation, ncol = 3, scales = "free")
+    ggplot2::labs(x = NULL, y = NULL) +
+    ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                    panel.grid.minor = ggplot2::element_blank(),
+                    plot.title = ggplot2::element_text(hjust = 0.5)) +
+    ggplot2::scale_fill_gradient2(low="#102033", mid = "#2C6093", high="#47a0f3", #colors in the scale
+                                 midpoint=mean_chisq,    #same midpoint for plots (mean of the range)
+                                 breaks=seq(0,max(range_chisq),1), #breaks in the scale bar
+                                 limits=c(floor(range_chisq[1]), ceiling(range_chisq[2]))) +
+    ggplot2::facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store chi-squared heatmap to global environment
   # if (version == "cluster") {
@@ -1039,24 +1039,24 @@ cluster_heatmaps <- function(node_data = cut_df2,
 
   density_heat <- cluster_edgelist %>%
     # filter(relation == i) %>%
-    ggplot(aes(x = alter,
-               y = forcats::fct_rev(cluster),
-               fill = density)) +
-    geom_tile(color = "black") +
-    geom_text(aes(label = round(density, digits = 2)), color = "white", size = 4) +
-    theme_minimal() +
+    ggplot2::ggplot(ggplot2::aes(x = alter,
+                                 y = forcats::fct_rev(cluster),
+                                 fill = density)) +
+    ggplot2::geom_tile(color = "black") +
+    ggplot2::geom_text(ggplot2::aes(label = round(density, digits = 2)), color = "white", size = 4) +
+    ggplot2::theme_minimal() +
     #  scale_x_continuous(breaks = 1:max(cluster_edgelist$cluster)) +
     # scale_y_continuous(breaks = 1:max(cluster_edgelist$cluster)) +
     #  scale_y_reverse() +
-    labs(x = NULL, y = NULL) +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5)) +
-    scale_fill_gradient2(low="#102033", mid = "#2C6093", high="#47a0f3", #colors in the scale
+    ggplot2::labs(x = NULL, y = NULL) +
+    ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                    panel.grid.minor = ggplot2::element_blank(),
+                    plot.title = ggplot2::element_text(hjust = 0.5)) +
+    ggplot2::scale_fill_gradient2(low="#102033", mid = "#2C6093", high="#47a0f3", #colors in the scale
                          midpoint=mean_density,    #same midpoint for plots (mean of the range)
                          breaks=seq(0,max(range_density),.1), #breaks in the scale bar
                          limits=c(floor(range_density[1]), range_density[2])) +
-    facet_wrap(~relation, ncol = 3, scales = "free")
+    ggplot2::facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store density heatmap to global environment
   # if (version == "cluster") {
@@ -1071,30 +1071,30 @@ cluster_heatmaps <- function(node_data = cut_df2,
   range_density_std[2] <- ceiling(range_density_std[2])
 
   density_std_heat <- cluster_edgelist %>%
-    mutate(limits = case_when(density_std > 3 ~ 3,
+    dplyr::mutate(limits = dplyr::case_when(density_std > 3 ~ 3,
                               density_std < -3 ~ -3,
                               TRUE ~ density_std)) %>%
     # filter(relation == i) %>%
-    ggplot(aes(x = alter,
-               y = forcats::fct_rev(cluster),
-               fill = limits)) +
-    geom_tile(color = "black") +
-    geom_text(aes(label = round(density_std, digits = 2)), color = "white", size = 4) +
-    theme_minimal() +
+    ggplot2::ggplot(ggplot2::aes(x = alter,
+                                 y = forcats::fct_rev(cluster),
+                                 fill = limits)) +
+    ggplot2::geom_tile(color = "black") +
+    ggplot2::geom_text(ggplot2::aes(label = round(density_std, digits = 2)), color = "white", size = 4) +
+    ggplot2::theme_minimal() +
     # scale_x_continuous(breaks = 1:max(cluster_edgelist$cluster)) +
     # scale_y_continuous(breaks = 1:max(cluster_edgelist$cluster)) +
     # scale_y_reverse() +
-    labs(x = NULL, y = NULL) +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5)) +
-    scale_fill_gradient2(low="#ad0206", mid = "grey", high="#47a0f3", #colors in the scale
+    ggplot2::labs(x = NULL, y = NULL) +
+    ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                    panel.grid.minor = ggplot2::element_blank(),
+                    plot.title = ggplot2::element_text(hjust = 0.5)) +
+    ggplot2::scale_fill_gradient2(low="#ad0206", mid = "grey", high="#47a0f3", #colors in the scale
                          midpoint=0,    #same midpoint for plots (mean of the range)
                          breaks=seq(-3,
                                     3, 1), #breaks in the scale bar
                          limits=c(-3,
                                   3)) +
-    facet_wrap(~relation, ncol = 3, scales = "free")
+    ggplot2::facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store standardized density heatmap to global environment
   # if (version == "cluster") {
@@ -1111,24 +1111,24 @@ cluster_heatmaps <- function(node_data = cut_df2,
 
   density_std2_heat <- cluster_edgelist %>%
     # filter(relation == i) %>%
-    ggplot(aes(x = alter,
-               y = forcats::fct_rev(cluster),
-               fill = density_std2)) +
-    geom_tile(color = "black") +
-    geom_text(aes(label = round(density_std2, digits = 2)), color = "white", size = 4) +
-    theme_minimal() +
+    ggplot2::ggplot(ggplot2::aes(x = alter,
+                                 y = forcats::fct_rev(cluster),
+                                 fill = density_std2)) +
+    ggplot2::geom_tile(color = "black") +
+    ggplot2::geom_text(ggplot2::aes(label = round(density_std2, digits = 2)), color = "white", size = 4) +
+    ggplot2::theme_minimal() +
     # scale_x_continuous(breaks = 1:max(cluster_edgelist$cluster)) +
     # scale_y_continuous(breaks = 1:max(cluster_edgelist$cluster)) +
     # scale_y_reverse() +
-    labs(x = NULL, y = NULL) +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5)) +
-    scale_fill_gradient2(low="#102033", mid = "#2C6093", high="#47a0f3", #colors in the scale
-                         midpoint=mean_density_std2,    #same midpoint for plots (mean of the range)
-                         breaks=seq(0,max(range_density_std2),1), #breaks in the scale bar
-                         limits=c(floor(range_density_std2[1]), range_density_std2[2])) +
-    facet_wrap(~relation, ncol = 3, scales = "free")
+    ggplot2::labs(x = NULL, y = NULL) +
+    ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                    panel.grid.minor = ggplot2::element_blank(),
+                    plot.title = ggplot2::element_text(hjust = 0.5)) +
+    ggplot2::scale_fill_gradient2(low="#102033", mid = "#2C6093", high="#47a0f3", #colors in the scale
+                                   midpoint=mean_density_std2,    #same midpoint for plots (mean of the range)
+                                   breaks=seq(0,max(range_density_std2),1), #breaks in the scale bar
+                                   limits=c(floor(range_density_std2[1]), range_density_std2[2])) +
+    ggplot2::facet_wrap(~relation, ncol = 3, scales = "free")
 
   # Store standardized + centered density heatmap to global environment
   # if (version == "cluster") {
@@ -1185,7 +1185,7 @@ cluster_sociogram <- function(graph_list = original_graph,
       )
 
 
-      sociogram <- recordPlot()
+      sociogram <- grDevices::recordPlot()
       assign(x = 'cluster_sociogram', value = sociogram, .GlobalEnv)
 
     } else {
@@ -1215,7 +1215,7 @@ cluster_sociogram <- function(graph_list = original_graph,
           title  = "cluster"
         )
 
-        sociogram <- recordPlot()
+        sociogram <- grDevices::recordPlot()
 
         sociogram_list[[i]] <- sociogram
 
@@ -1252,7 +1252,7 @@ cluster_sociogram <- function(graph_list = original_graph,
         title  = "block"
       )
 
-      sociogram <- recordPlot()
+      sociogram <- grDevices::recordPlot()
       assign(x = 'concor_sociogram', value = sociogram, .GlobalEnv)
 
     } else {
@@ -1282,7 +1282,7 @@ cluster_sociogram <- function(graph_list = original_graph,
           title  = "block"
         )
 
-        sociogram <- recordPlot()
+        sociogram <- grDevices::recordPlot()
 
         sociogram_list[[i]] <- sociogram
 
@@ -1335,10 +1335,10 @@ concor_tree <- function(df) {
     block_counts <- c(block_counts, block_assigns[,i])
   }
   count_df <- data.frame(block = block_counts) %>%
-    group_by(block) %>%
-    summarize(orig_size = n()) %>%
-    ungroup() %>%
-    mutate(size = ((orig_size/max(orig_size)) * 50))
+    dplyr::group_by(block) %>%
+    dplyr::summarize(orig_size = dplyr::n()) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(size = ((orig_size/max(orig_size)) * 50))
 
   # Make igraph object of block assignments
   tree_igraph <- igraph::graph_from_data_frame(block_el,
@@ -1353,7 +1353,7 @@ concor_tree <- function(df) {
   plot.new()
   plot(tree_igraph, layout = tree_layout,
        edge.arrow.size = .25)
-  tree_plot <- recordPlot()
+  tree_plot <- grDevices::recordPlot()
   assign(x = "concor_block_tree", value = tree_plot, .GlobalEnv)
   dev.off()
 
@@ -1369,21 +1369,21 @@ role_sociogram <- function(graph, version, color2) {
   if (version == "cluster") {
     supernodes <- data.frame(id = igraph::V(graph[[1]])$name,
                              cluster = igraph::V(graph[[1]])$cluster) %>%
-      group_by(cluster) %>%
-      summarize(original_size = n()) %>%
-      ungroup() %>%
-      mutate(size = log(original_size)) %>%
-      left_join(color2, by = "cluster")
+      dplyr::group_by(cluster) %>%
+      dplyr::summarize(original_size = dplyr::n()) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(size = log(original_size)) %>%
+      dplyr::left_join(color2, by = "cluster")
 
   } else {
 
     supernodes <- data.frame(id = igraph::V(graph[[1]])$name,
                              cluster = igraph::V(graph[[1]])$block) %>%
-      group_by(cluster) %>%
-      summarize(original_size = n()) %>%
-      ungroup() %>%
-      mutate(size = log(original_size)) %>%
-      left_join(color2, by = "cluster")
+      dplyr::group_by(cluster) %>%
+      dplyr::summarize(original_size = dplyr::n()) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(size = log(original_size)) %>%
+      dplyr::left_join(color2, by = "cluster")
 
   }
 
@@ -1435,12 +1435,12 @@ role_sociogram <- function(graph, version, color2) {
     }
 
     this_el <- this_el %>%
-      left_join(ego_label, by = "ego") %>%
-      left_join(alter_label, by = "alter") %>%
-      group_by(cluster_ego, cluster_alter) %>%
-      summarize(weight = n()) %>%
-      ungroup() %>%
-      left_join(weight_el, by = c("cluster_ego", "cluster_alter"))
+      dplyr::left_join(ego_label, by = "ego") %>%
+      dplyr::left_join(alter_label, by = "alter") %>%
+      dplyr::group_by(cluster_ego, cluster_alter) %>%
+      dplyr::summarize(weight = dplyr::n()) %>%
+      dplyr::ungroup() %>%
+      dplyr::left_join(weight_el, by = c("cluster_ego", "cluster_alter"))
 
     # When visualizing the overall summary graph, we can have multiple ties for
     # specific directed dyads. If we treat the demoninator for density as we usually would,
@@ -1496,7 +1496,7 @@ role_sociogram <- function(graph, version, color2) {
     )
 
 
-    this_plot <- recordPlot()
+    this_plot <- grDevices::recordPlot()
     super_list[[i]] <- this_plot
     dev.off()
 

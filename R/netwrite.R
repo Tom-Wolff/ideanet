@@ -44,14 +44,55 @@
 #' @export
 #'
 #' @examples
-#' netwrite(data_type = "edgelist",
-#'          nodelist = node_dataframe,
-#'          node_id = "id",
-#'          i_elements = edge_dataframe$ego,
-#'          j_elements = edge_dataframe$alter,
-#'          weights = edge_dataframe$weight,
-#'          type = edge_dataframe$relation_type,
-#'          directed = TRUE)
+#' # Use netwrite on an edgelist
+#' netwrite(nodelist = fauxmesa_nodes,
+#'         node_id = "id",
+#'         i_elements = fauxmesa_edges$from,
+#'         j_elements = fauxmesa_edges$to,
+#'         directed = TRUE,
+#'         net_name = "faux_mesa")
+#'
+#' ### Inspect updated edgelist
+#' head(edgelist)
+#'
+#' ### Inspect data frame of node-level measures
+#' head(node_measures)
+#'
+#' ### Inspect system-level summary
+#' system_level_measures
+#'
+#' ### Plot sociogram of network
+#' plot(faux_mesa)
+#'
+#' ### View node-level summary visualization
+#' node_measure_plot
+#'
+#' ### View system-level summary visualization
+#' system_measure_plot
+#'
+#'
+#'
+#' # Run netwrite on an adjacency matrix
+#' fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa))
+#'
+#' netwrite(data_type = "adjacency_matrix",
+#'         adjacency_matrix = fauxmesa_adjmat,
+#'         directed = TRUE,
+#'         net_name = "faux_mesa")
+#'
+#'
+#' # Run netwrite on a multirelational network
+#' netwrite(i_elements = florentine$node,
+#'         j_elements = florentine$target,
+#'         type = florentine$layer,
+#'         directed = TRUE,
+#'         net_name = "florentine")
+#'
+#' # View system level summary for aggregate network
+#' system_level_measures_list$summary_graph
+#'
+#' # View system level summary for network of `type 1` relations
+#' system_level_measures_list$`1`
 
 
 ##########################################################
@@ -64,39 +105,39 @@
 # respective subgraph
 
 netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                                       adjacency_list=FALSE,
-                                       nodelist=FALSE,
-                                       # `node_id` takes a character argument specifying
-                                       # how the original node ID variable should be named
-                                       # in output
-                                       node_id = NULL,
-                                       i_elements=FALSE,
-                                       j_elements=FALSE,
-                                       # In the rare event that an edgelist contains node IDs that are
-                                       # not in the nodelist, `fix_nodelist` will add these node IDs to the
-                                       # nodelist used in network processing
-                                       fix_nodelist = TRUE,
-                                       # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
-                                       weights=NULL, type=NULL,
-                                       remove_loops = FALSE,
-                                       package='igraph', missing_code=99999,
-                                       weight_type='frequency', directed=FALSE,
-                                       net_name='network',
-                                       shiny = FALSE,
-                                       output = c("graph",
-                                                  "largest_bi_component",
-                                                  "largest_component",
-                                                  "node_measure_plot",
-                                                  "nodelist",
-                                                  "edgelist",
-                                                  "system_level_measures",
-                                                  "system_measure_plot"),
-                                       message = TRUE) {
+                     adjacency_list=FALSE,
+                     nodelist=FALSE,
+                     # `node_id` takes a character argument specifying
+                     # how the original node ID variable should be named
+                     # in output
+                     node_id = NULL,
+                     i_elements=FALSE,
+                     j_elements=FALSE,
+                     # In the rare event that an edgelist contains node IDs that are
+                     # not in the nodelist, `fix_nodelist` will add these node IDs to the
+                     # nodelist used in network processing
+                     fix_nodelist = TRUE,
+                     # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
+                     weights=NULL, type=NULL,
+                     remove_loops = FALSE,
+                     package='igraph', missing_code=99999,
+                     weight_type='frequency', directed=FALSE,
+                     net_name='network',
+                     shiny = FALSE,
+                     output = c("graph",
+                                "largest_bi_component",
+                                "largest_component",
+                                "node_measure_plot",
+                                "nodelist",
+                                "edgelist",
+                                "system_level_measures",
+                                "system_measure_plot"),
+                     message = TRUE) {
 
 
-# We might need to store `output` in a separate object given that it also gets
-# defined in the subsequent `basic_netwrite` calls.
-final_output <- output
+  # We might need to store `output` in a separate object given that it also gets
+  # defined in the subsequent `basic_netwrite` calls.
+  final_output <- output
 
 
   # If `node_id` is set to be `"id"`, change its value to `"original_id"`
@@ -182,43 +223,43 @@ final_output <- output
   ##### but we'll need to think of a systematic way to check for this when given
   ##### and adjacency list.
 
-if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
+  if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
 
     ratio1 <- length(just_ids_check)/length(unique(c(i_elements, j_elements)))
     ratio2 <- length(unique(c(i_elements, j_elements)))/length(just_ids_check)
 
-  if (ratio1 > 2) {
-    base::message("It appears that the number of nodes identified in your nodelist far exceeds the number of nodes identified in your edgelist. Is this correct?")
-    yes_no <- readline(prompt = "Enter 'Y' to proceed or 'N' to terminate netwrite: ")
-    yes_no <- as.character(yes_no)
-
-    while(!(yes_no %in% c("Yes", "Y", "No", "N", "yes", "y", "no", "n"))) {
-      yes_no <- readline(prompt = "Please enter an appropriate response ('Y' or 'N'): ")
+    if (ratio1 > 2) {
+      base::message("It appears that the number of nodes identified in your nodelist far exceeds the number of nodes identified in your edgelist. Is this correct?")
+      yes_no <- readline(prompt = "Enter 'Y' to proceed or 'N' to terminate netwrite: ")
       yes_no <- as.character(yes_no)
-    }
 
-    tryCatch({
-      base::stopifnot(yes_no == "Yes" | yes_no == "Y" | yes_no == "yes" | yes_no == "y")
-    }, error = function(e) {
-      stop("netwrite has been terminated.", call. = FALSE)})
+      while(!(yes_no %in% c("Yes", "Y", "No", "N", "yes", "y", "no", "n"))) {
+        yes_no <- readline(prompt = "Please enter an appropriate response ('Y' or 'N'): ")
+        yes_no <- as.character(yes_no)
+      }
 
-  } else if (ratio2 > 2) {
+      tryCatch({
+        base::stopifnot(yes_no == "Yes" | yes_no == "Y" | yes_no == "yes" | yes_no == "y")
+      }, error = function(e) {
+        stop("netwrite has been terminated.", call. = FALSE)})
 
-    base::message("It appears that the number of nodes identified in your edgelist far exceeds the number of nodes identified in your nodelist Is this correct?")
-    yes_no <- readline(prompt = "Enter 'Y' to proceed or 'N' to terminate netwrite: ")
-    yes_no <- as.character(yes_no)
+    } else if (ratio2 > 2) {
 
-    while(!(yes_no %in% c("Yes", "Y", "No", "N", "yes", "y", "no", "n"))) {
-      yes_no <- readline(prompt = "Please enter an appropriate response ('Y' or 'N'): ")
+      base::message("It appears that the number of nodes identified in your edgelist far exceeds the number of nodes identified in your nodelist Is this correct?")
+      yes_no <- readline(prompt = "Enter 'Y' to proceed or 'N' to terminate netwrite: ")
       yes_no <- as.character(yes_no)
-    }
 
-    tryCatch({
-      base::stopifnot(yes_no == "Yes" | yes_no == "Y" | yes_no == "yes" | yes_no == "y")
-    }, error = function(e) {
-      stop("netwrite has been terminated.", call. = FALSE)})
+      while(!(yes_no %in% c("Yes", "Y", "No", "N", "yes", "y", "no", "n"))) {
+        yes_no <- readline(prompt = "Please enter an appropriate response ('Y' or 'N'): ")
+        yes_no <- as.character(yes_no)
+      }
+
+      tryCatch({
+        base::stopifnot(yes_no == "Yes" | yes_no == "Y" | yes_no == "yes" | yes_no == "y")
+      }, error = function(e) {
+        stop("netwrite has been terminated.", call. = FALSE)})
+    }
   }
-}
 
 
 
@@ -232,23 +273,23 @@ if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
   if (is.null(type) == TRUE) {
 
     basic_netwrite(data_type = data_type,
-                                     adjacency_matrix = adjacency_matrix,
-                                     adjacency_list = adjacency_list,
-                                     nodelist = just_ids,
-                                     node_id = node_id,
-                                     i_elements = i_elements,
-                                     j_elements = j_elements,
-                                     weights = weights,
-                                     type = type,
-                                     remove_loops = remove_loops,
-                                     package = package,
-                                     missing_code = missing_code,
-                                     weight_type = weight_type,
-                                     directed = directed,
-                                     net_name = net_name,
-                                     shiny = shiny,
-                                     output = output,
-                                     message = message)
+                   adjacency_matrix = adjacency_matrix,
+                   adjacency_list = adjacency_list,
+                   nodelist = just_ids,
+                   node_id = node_id,
+                   i_elements = i_elements,
+                   j_elements = j_elements,
+                   weights = weights,
+                   type = type,
+                   remove_loops = remove_loops,
+                   package = package,
+                   missing_code = missing_code,
+                   weight_type = weight_type,
+                   directed = directed,
+                   net_name = net_name,
+                   shiny = shiny,
+                   output = output,
+                   message = message)
 
     # If `nodelist` is a data frame, we'll want to merge it into `node_measures`
     if (("data.frame" %in% class(nodelist)) == TRUE) {
@@ -276,9 +317,9 @@ if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
 
     # Apply `net_splitter`
     edges_list <- net_splitter(i_elements = i_elements,
-                                            j_elements = j_elements,
-                                            type = type,
-                                            weights = weights)
+                               j_elements = j_elements,
+                               type = type,
+                               weights = weights)
 
 
     # Creating output lists
@@ -338,61 +379,61 @@ if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
         if ('weights' %in% colnames(edges_list[[i]]) == TRUE) {
 
           basic_netwrite(data_type = data_type,
-                                           adjacency_matrix = adjacency_matrix,
-                                           adjacency_list = adjacency_list,
-                                           nodelist = just_ids2,
-                                           node_id = node_id,
-                                           i_elements=edges_list[[i]]$i_elements,
-                                           j_elements=edges_list[[i]]$j_elements,
-                                           weights=edges_list[[i]]$weights,
-                                           type=edges_list[[i]]$type,
-                                           remove_loops = remove_loops,
-                                           package=package,
-                                           missing_code = missing_code,
-                                           weight_type = weight_type, directed=directed,
-                                           net_name = "this_igraph", # Giving a consistent name for igraph object
-                                           # Makes it easier to place into the list of
-                                           # igraph objects down the line.
-                                           shiny = TRUE,
-                                           # For processing multi-relational nets, we'll want to collect all the
-                                           # possible output objects from `basic_netwrite` at first, then filter out
-                                           # based on the original outputs specified in the `netwrite` call
-                                           output = c("graph",
-                                                      "largest_bi_component",
-                                                      "largest_component",
-                                                      "node_measure_plot",
-                                                      "nodelist",
-                                                      "edgelist",
-                                                      "system_level_measures",
-                                                      "system_measure_plot"),
-                                           message = message)
+                         adjacency_matrix = adjacency_matrix,
+                         adjacency_list = adjacency_list,
+                         nodelist = just_ids2,
+                         node_id = node_id,
+                         i_elements=edges_list[[i]]$i_elements,
+                         j_elements=edges_list[[i]]$j_elements,
+                         weights=edges_list[[i]]$weights,
+                         type=edges_list[[i]]$type,
+                         remove_loops = remove_loops,
+                         package=package,
+                         missing_code = missing_code,
+                         weight_type = weight_type, directed=directed,
+                         net_name = "this_igraph", # Giving a consistent name for igraph object
+                         # Makes it easier to place into the list of
+                         # igraph objects down the line.
+                         shiny = TRUE,
+                         # For processing multi-relational nets, we'll want to collect all the
+                         # possible output objects from `basic_netwrite` at first, then filter out
+                         # based on the original outputs specified in the `netwrite` call
+                         output = c("graph",
+                                    "largest_bi_component",
+                                    "largest_component",
+                                    "node_measure_plot",
+                                    "nodelist",
+                                    "edgelist",
+                                    "system_level_measures",
+                                    "system_measure_plot"),
+                         message = message)
 
         }else{
           # Aggregate graph, unweighted
           basic_netwrite(data_type = data_type,
-                                           adjacency_matrix = adjacency_matrix,
-                                           adjacency_list = adjacency_list,
-                                           nodelist = just_ids2,
-                                           node_id = node_id,
-                                           i_elements=edges_list[[i]]$i_elements,
-                                           j_elements=edges_list[[i]]$j_elements,
-                                           weights = NULL,
-                                           type=edges_list[[i]]$type,
-                                           remove_loops = remove_loops,
-                                           package=package,
-                                           missing_code = missing_code,
-                                           weight_type = weight_type, directed=directed,
-                                           net_name = "this_igraph",
-                                           shiny = TRUE,
-                                           output = c("graph",
-                                                      "largest_bi_component",
-                                                      "largest_component",
-                                                      "node_measure_plot",
-                                                      "nodelist",
-                                                      "edgelist",
-                                                      "system_level_measures",
-                                                      "system_measure_plot"),
-                                           message = message)
+                         adjacency_matrix = adjacency_matrix,
+                         adjacency_list = adjacency_list,
+                         nodelist = just_ids2,
+                         node_id = node_id,
+                         i_elements=edges_list[[i]]$i_elements,
+                         j_elements=edges_list[[i]]$j_elements,
+                         weights = NULL,
+                         type=edges_list[[i]]$type,
+                         remove_loops = remove_loops,
+                         package=package,
+                         missing_code = missing_code,
+                         weight_type = weight_type, directed=directed,
+                         net_name = "this_igraph",
+                         shiny = TRUE,
+                         output = c("graph",
+                                    "largest_bi_component",
+                                    "largest_component",
+                                    "node_measure_plot",
+                                    "nodelist",
+                                    "edgelist",
+                                    "system_level_measures",
+                                    "system_measure_plot"),
+                         message = message)
 
 
         }
@@ -402,56 +443,56 @@ if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
         if('weights' %in% colnames(edges_list[[i]]) == TRUE){
           # Subgraphs, with weights
           basic_netwrite(data_type = data_type,
-                                           adjacency_matrix = adjacency_matrix,
-                                           adjacency_list = adjacency_list,
-                                           nodelist = just_ids,
-                                           node_id = node_id,
-                                           i_elements=edges_list[[i]]$i_elements,
-                                           j_elements=edges_list[[i]]$j_elements,
-                                           weights = edges_list[[i]]$weights,
-                                           type=edges_list[[i]]$type,
-                                           remove_loops = remove_loops,
-                                           package=package,
-                                           missing_code = missing_code,
-                                           weight_type = weight_type, directed=directed,
-                                           net_name = "this_igraph",
-                                           shiny = TRUE,
-                                           output = c("graph",
-                                                      "largest_bi_component",
-                                                      "largest_component",
-                                                      "node_measure_plot",
-                                                      "nodelist",
-                                                      "edgelist",
-                                                      "system_level_measures",
-                                                      "system_measure_plot"),
-                                           message = message)
+                         adjacency_matrix = adjacency_matrix,
+                         adjacency_list = adjacency_list,
+                         nodelist = just_ids,
+                         node_id = node_id,
+                         i_elements=edges_list[[i]]$i_elements,
+                         j_elements=edges_list[[i]]$j_elements,
+                         weights = edges_list[[i]]$weights,
+                         type=edges_list[[i]]$type,
+                         remove_loops = remove_loops,
+                         package=package,
+                         missing_code = missing_code,
+                         weight_type = weight_type, directed=directed,
+                         net_name = "this_igraph",
+                         shiny = TRUE,
+                         output = c("graph",
+                                    "largest_bi_component",
+                                    "largest_component",
+                                    "node_measure_plot",
+                                    "nodelist",
+                                    "edgelist",
+                                    "system_level_measures",
+                                    "system_measure_plot"),
+                         message = message)
 
         } else {
           # Subgraphs, without weights
           basic_netwrite(data_type = data_type,
-                                           adjacency_matrix = adjacency_matrix,
-                                           adjacency_list = adjacency_list,
-                                           nodelist = just_ids,
-                                           node_id = node_id,
-                                           i_elements=edges_list[[i]]$i_elements,
-                                           j_elements=edges_list[[i]]$j_elements,
-                                           weights = NULL,
-                                           type=edges_list[[i]]$type,
-                                           remove_loops = remove_loops,
-                                           package=package,
-                                           missing_code = missing_code,
-                                           weight_type = weight_type, directed=directed,
-                                           net_name = "this_igraph",
-                                           shiny = TRUE,
-                                           output = c("graph",
-                                                      "largest_bi_component",
-                                                      "largest_component",
-                                                      "node_measure_plot",
-                                                      "nodelist",
-                                                      "edgelist",
-                                                      "system_level_measures",
-                                                      "system_measure_plot"),
-                                           message = message)
+                         adjacency_matrix = adjacency_matrix,
+                         adjacency_list = adjacency_list,
+                         nodelist = just_ids,
+                         node_id = node_id,
+                         i_elements=edges_list[[i]]$i_elements,
+                         j_elements=edges_list[[i]]$j_elements,
+                         weights = NULL,
+                         type=edges_list[[i]]$type,
+                         remove_loops = remove_loops,
+                         package=package,
+                         missing_code = missing_code,
+                         weight_type = weight_type, directed=directed,
+                         net_name = "this_igraph",
+                         shiny = TRUE,
+                         output = c("graph",
+                                    "largest_bi_component",
+                                    "largest_component",
+                                    "node_measure_plot",
+                                    "nodelist",
+                                    "edgelist",
+                                    "system_level_measures",
+                                    "system_measure_plot"),
+                         message = message)
 
         }
       }
@@ -570,7 +611,7 @@ if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
 
     for (i in 2:length(node_measures_list)) {
 
-    #  print(i)
+      #  print(i)
 
       this_name <- names(node_measures_list)[[i]]
       new_column_names <- paste(this_name,
@@ -632,10 +673,10 @@ if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
 
   } # End multi-relational network processing
 
-# Remove objects not specific as being included in `output`, based on
-# values stored in `final_output`. Although the above set of conditionals should
-# be taking care of this, it doesn't always succeed and this ensures that only the
-# desired outputs specified by the user remain in the Global Environment.
+  # Remove objects not specific as being included in `output`, based on
+  # values stored in `final_output`. Although the above set of conditionals should
+  # be taking care of this, it doesn't always succeed and this ensures that only the
+  # desired outputs specified by the user remain in the Global Environment.
 
   if (!("graph" %in% final_output)) {
     rm(list = c("graph", "graphs_list"), envir = .GlobalEnv)
@@ -684,31 +725,31 @@ if (shiny == FALSE & data_type == "edgelist" & !is.logical(nodelist)) {
 
 
 basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                                             adjacency_list=FALSE,
-                                             nodelist=NULL,
-                                             # `node_id` takes a character argument specifying
-                                             # how the original node ID variable should be named
-                                             # in output
-                                             node_id = NULL,
-                                             i_elements=FALSE,
-                                             j_elements=FALSE,
+                           adjacency_list=FALSE,
+                           nodelist=NULL,
+                           # `node_id` takes a character argument specifying
+                           # how the original node ID variable should be named
+                           # in output
+                           node_id = NULL,
+                           i_elements=FALSE,
+                           j_elements=FALSE,
 
-                                             # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
-                                             weights=NULL, type=NULL,
-                                             remove_loops = FALSE,
-                                             package='igraph', missing_code=99999,
-                                             weight_type='frequency', directed=FALSE,
-                                             net_name='network',
-                                             shiny = FALSE,
-                                             output = c("graph",
-                                                        "largest_bi_component",
-                                                        "largest_component",
-                                                        "node_measure_plot",
-                                                        "nodelist",
-                                                        "edgelist",
-                                                        "system_level_measures",
-                                                        "system_measure_plot"),
-                                             message = TRUE) {
+                           # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
+                           weights=NULL, type=NULL,
+                           remove_loops = FALSE,
+                           package='igraph', missing_code=99999,
+                           weight_type='frequency', directed=FALSE,
+                           net_name='network',
+                           shiny = FALSE,
+                           output = c("graph",
+                                      "largest_bi_component",
+                                      "largest_component",
+                                      "node_measure_plot",
+                                      "nodelist",
+                                      "edgelist",
+                                      "system_level_measures",
+                                      "system_measure_plot"),
+                           message = TRUE) {
 
   # Installing Necessary Packages
   list.of.packages <- c('dplyr', 'igraph', 'network', 'ggplot2', 'cowplot', 'moments')
@@ -735,7 +776,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     if(as.logical(directed) == TRUE){
 
       # Set up conditional for generating weighted graph from weighted adjacency matrix
-      adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
+      if (is.null(weights) == TRUE) {
+        adj_weight <- NULL
+      } else {
+        adj_weight <- ifelse(weights[[1]] == TRUE, TRUE, NULL)
+      }
+
+     # adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
 
       # Also need to adjust for type of weight
       # Make Weights Reflect Frequency Rather than Distance
@@ -782,7 +829,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Adding Node-level measures
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
         nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                                     message = message)
+                                   message = message)
 
         # If original `node_id` name is specified, rename column `attr` to match
         if (!is.null(node_id)) {
@@ -814,7 +861,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # UNDIRECTED
     } else {
       # Set up conditional for generating weighted graph from weighted adjacency matrix
-      adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
+      if (is.null(weights) == TRUE) {
+        adj_weight <- NULL
+      } else {
+        adj_weight <- ifelse(weights[[1]] == TRUE, TRUE, NULL)
+      }
+     # adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
 
       # Also need to adjust for type of weight
       # Make Weights Reflect Frequency Rather than Distance
@@ -858,7 +910,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Adding Node-Level Measures
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
         nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                                     message = message)
+                                   message = message)
 
         # If original `node_id` name is specified, rename column `attr` to match
         if (!is.null(node_id)) {
@@ -910,7 +962,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
     ### I've added some code that reverts the weights back to original if need be.
-    if(weight_type == 'frequency') {
+    if(weight_type == 'frequency' & !is.null(adj_weight) == TRUE) {
       igraph::E(g)$weight <- 1/igraph::E(g)$weight
     }
 
@@ -980,7 +1032,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Adding Node-Level Measures
     if ("nodelist" %in% output | "node_measure_plot" %in% output) {
       nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                                   message = message)
+                                 message = message)
 
       # If original `node_id` name is specified, rename column `attr` to match
       if (!is.null(node_id)) {
@@ -1011,7 +1063,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # EDGELIST
   } else {
 
-   # print("creating edgelist")
+    # print("creating edgelist")
 
     # Creating Canonical Node and Edgelists
     if (is.null(weights) == TRUE){
@@ -1133,7 +1185,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
 
 
-   # print('creating igraph object')
+    # print('creating igraph object')
     # Creating igraph object
     colnames(nodes)[[2]] <- c('attr')
     g <- igraph::graph_from_data_frame(d = edgelist[,c(3,5)], directed = as.logical(directed), vertices = nodes)
@@ -1142,13 +1194,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     igraph::edge.attributes(g)$weight <- edgelist[,6]
 
 
- #   print('node-level measures')
+    #   print('node-level measures')
     # Create an alternate closeness function
     # Reachablility function (Eliminate Loops, reaching yourself isn't that useful)
     # Adding Node-Level Measures
     if ("nodelist" %in% output | "node_measure_plot" %in% output) {
       nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                                   message = message)
+                                 message = message)
 
       # If original `node_id` name is specified, rename column `attr` to match
       if (!is.null(node_id)) {
@@ -1164,7 +1216,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Calculating the Proportion of Two-Step Path that Are Also One-Step Paths
     # Calculating Multiplex Edge Correlation
     # Calculating System-Level Measures
-   # print('system level measures')
+    # print('system level measures')
     if ("system_level_measures" %in% output) {
       largest_weak_component_igraph(g)
       largest_bicomponent_igraph(g)
@@ -1179,8 +1231,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
 
       multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
-                                                   weight_type = weight_type,
-                                                   type = type)
+                                 weight_type = weight_type,
+                                 type = type)
     }
     # Outputting Network Objects
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
@@ -1194,6 +1246,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       assign(x = 'edgelist', value = edgelist,.GlobalEnv)
     }
     if ("nodelist" %in% output) {
+      # We need to force consistency across `ideanet's` various functions to make sure they
+      # produce dataframes that can easily be merged into one another. For now, all `id` columns
+      # will be designated as a numeric vector
+      nodes$id <- as.numeric(nodes$id)
       assign(x = 'node_measures', value = nodes,.GlobalEnv)
     }
 
@@ -1308,9 +1364,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     num_types <- ifelse((is.null(type) == TRUE), NA, length(unique(type)))
 
-    mutual <- igraph::dyad_census(g)$mut
-    asym <- igraph::dyad_census(g)$asym
-    null_ties <- igraph::dyad_census(g)$null
+    mutual <- suppressWarnings(igraph::dyad_census(g)$mut)
+    asym <- suppressWarnings(igraph::dyad_census(g)$asym)
+    null_ties <- suppressWarnings(igraph::dyad_census(g)$null)
 
     avg_geodesic <- igraph::average.path.length(g, directed = directed)
 
@@ -1320,19 +1376,19 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     ###### The requisite function in `sna` needs specification as to whether
     ###### the network in question is directed or undirected. We'll make an
     ###### object here with that specification
-   # print("trans_cor")
-   # assign("broken_graph", g, .GlobalEnv)
+    # print("trans_cor")
+    # assign("broken_graph", g, .GlobalEnv)
     sna_mode <- ifelse(directed == T, "digraph", "graph")
     trans_cor <- sna::gtrans(intergraph::asNetwork(igraph::simplify(g, remove.multiple = T)), mode = sna_mode, measure = "correlation")
 
 
-  # print("density")
+    # print("density")
     if (directed == TRUE){
-        density_directed <- igraph::edge_density(g)
-        density_undirected <- igraph::edge_density(igraph::as.undirected(g))
+      density_directed <- igraph::edge_density(g)
+      density_undirected <- igraph::edge_density(igraph::as.undirected(g))
     } else {
-        density_directed <- NA
-        density_undirected <- igraph::edge_density(g)
+      density_directed <- NA
+      density_undirected <- igraph::edge_density(g)
     }
 
     num_isolates <- sum(nodes$total_degree == 0)
@@ -1448,11 +1504,11 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
     # Removing node-level and system-level data objects for clarity
-    rm(measure_labels, measure_descriptions, num_clusters, proportion_largest, degree_assortatvity,
+    suppressWarnings(rm(measure_labels, measure_descriptions, num_clusters, proportion_largest, degree_assortatvity,
        reciprocity_rate, global_clustering_coefficient, average_path_length,
-       multiplex_edge_correlation, measures, singular, singular_df)
+       multiplex_edge_correlation, measures, singular, singular_df))
 
-    rm(transitivity_rate, reachability, bicomponent_summary, largest_bicomponent_memberships, envir = .GlobalEnv)
+    suppressWarnings(rm(transitivity_rate, reachability, bicomponent_summary, largest_bicomponent_memberships, envir = .GlobalEnv))
 
   }
 

@@ -1,34 +1,3 @@
-#' Personal greeting
-#'
-#' @description Greet a person and appropriately capitalize their name.
-#'
-#' @param data_type Your name (character string; e.g. "john doe").
-#' @param adjacency_matrix
-#' @param adjacency_list
-#' @param nodelist
-#' @param node_id
-#' @param i_elements
-#' @param j_elements
-#' @param weights
-#' @param type
-#' @param remove_loops
-#' @param package # Might need to remove this
-#' @param missing_code
-#' @param weight_type
-#' @param directed
-#' @param net_name
-#' @param shiny
-#' @param output
-#' @param message
-#'
-#' @return A character string, capitalized to title case.
-#' @export
-#'
-#' @examples
-#' hello("james bond")
-
-
-
 #####################################################
 #    L A R G E S T   W E A K   C O M P O N E N T    #
 #####################################################

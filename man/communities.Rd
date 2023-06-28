@@ -20,12 +20,14 @@ communities(g, modres = 1, shiny = FALSE)
 The `communities` function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is used.
 }
 \examples{
-netwrite(data_type = "edgelist",
-         nodelist = node_dataframe,
-         node_id = "id",
-         i_elements = edge_dataframe$ego,
-         j_elements = edge_dataframe$alter,
-         weights = edge_dataframe$weight,
-         type = edge_dataframe$relation_type,
-         directed = TRUE)
+# Run netwrite
+netwrite(nodelist = fauxmesa_nodes,
+        node_id = "id",
+        i_elements = fauxmesa_edges$from,
+        j_elements = fauxmesa_edges$to,
+        directed = TRUE,
+        net_name = "faux_mesa")
+
+# Run community detection function
+communities(g = faux_mesa)
 }
