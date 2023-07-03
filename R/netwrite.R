@@ -501,19 +501,19 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # igraph object list
       graphs_list[[i]] <- this_igraph
-      rm(this_igraph)
+      suppressWarnings(rm(this_igraph))
 
       # Largest bicomponent list
       bicomponent_list[[i]] <- largest_bi_component
-      rm(largest_bi_component)
+      suppressWarnings(rm(largest_bi_component))
 
       # Largest component list
       lcomponent_list[[i]] <- largest_component
-      rm(largest_component)
+      suppressWarnings(rm(largest_component))
 
       # Node measure plot list
       nplot_list[[i]] <- node_measure_plot
-      rm(node_measure_plot)
+      suppressWarnings(rm(node_measure_plot))
 
       # Node measures list
       ### To ensure successful merging downstream,
@@ -521,19 +521,19 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       ### `node_measures_list`
       node_measures[,2] <- as.character(node_measures[,2])
       node_measures_list[[i]] <- node_measures
-      rm(node_measures)
+      suppressWarnings(rm(node_measures))
 
       # List of final processes edgelists
       f_edges_list[[i]] <- edgelist
-      rm(edgelist)
+      suppressWarnings(rm(edgelist))
 
       # System-level measures summaries list
       s_measures_list[[i]] <- system_level_measures
-      rm(system_level_measures)
+      suppressWarnings(rm(system_level_measures))
 
       # System-level plot list
       splot_list[[i]] <- system_measure_plot
-      rm(system_measure_plot)
+      suppressWarnings(rm(system_measure_plot))
 
 
 
@@ -578,30 +578,30 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     if ("graph" %in% final_output) {
       assign(x = net_name, value = graph, .GlobalEnv)
       assign(x = "network_list", value = graphs_list, .GlobalEnv)
-      rm(graph)
+      suppressWarnings(rm(graph))
     } else {
-      rm(graph, graphs_list)
+      suppressWarnings(rm(graph, graphs_list))
     }
 
     if ("largest_bi_component" %in% final_output) {
       assign(x = "largest_bi_component", value = largest_bi_component, .GlobalEnv)
       assign(x = "bicomponent_list", value = bicomponent_list, .GlobalEnv)
     } else {
-      rm(largest_bi_component, bicomponent_list)
+      suppressWarnings(rm(largest_bi_component, bicomponent_list))
     }
 
     if ("largest_component" %in% final_output) {
       assign(x = "largest_component", value = largest_component, .GlobalEnv)
       assign(x = "largest_component_list", value = lcomponent_list, .GlobalEnv)
     } else {
-      rm(largest_component, lcomponent_list)
+      suppressWarnings(rm(largest_component, lcomponent_list))
     }
 
     if ("node_measure_plot" %in% final_output) {
       assign(x = "node_measure_plot", value = node_measure_plot, .GlobalEnv)
       assign(x = "node_measure_plot_list", value = nplot_list, .GlobalEnv)
     } else {
-      rm(node_measure_plot, nplot_list)
+      suppressWarnings(rm(node_measure_plot, nplot_list))
     }
 
     # For `nodelist`, we just want a dataframe that has the node-level
@@ -643,29 +643,29 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       assign(x = "node_measures", value = node_measures, .GlobalEnv)
       assign(x = "node_measures_list", value = node_measures_list, .GlobalEnv)
     } else {
-      rm(node_measures)
-      rm(node_measures_list)
+      suppressWarnings(rm(node_measures))
+      suppressWarnings(rm(node_measures_list))
     }
 
     if ("edgelist" %in% final_output) {
       assign(x = "edgelist", value = edgelist, .GlobalEnv)
       assign(x = "edgelist_list", value = f_edges_list, .GlobalEnv)
     } else {
-      rm(edgelist, f_edges_list)
+      suppressWarnings(rm(edgelist, f_edges_list))
     }
 
     if ("system_level_measures" %in% final_output) {
       assign(x = "system_level_measures", value = system_level_measures, .GlobalEnv)
       assign(x = "system_level_measures_list", value = s_measures_list, .GlobalEnv)
     } else {
-      rm(system_level_measures, s_measures_list)
+      suppressWarnings(rm(system_level_measures, s_measures_list))
     }
 
     if ("system_measure_plot" %in% final_output) {
       assign(x = "system_measure_plot", value = system_measure_plot, .GlobalEnv)
       assign(x = "system_measure_plot_list", value = splot_list, .GlobalEnv)
     } else {
-      rm(system_measure_plot, splot_list)
+      suppressWarnings(rm(system_measure_plot, splot_list))
     }
 
 
@@ -679,35 +679,35 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   # desired outputs specified by the user remain in the Global Environment.
 
   if (!("graph" %in% final_output)) {
-    rm(list = c("graph", "graphs_list"), envir = .GlobalEnv)
+    suppressWarnings(rm(list = c("graph", "graphs_list"), envir = .GlobalEnv))
   }
 
   if (!("largest_bi_component" %in% final_output)) {
-    rm(list = c("largest_bi_component", "bicomponent_list"), envir = .GlobalEnv)
+    suppressWarnings(rm(list = c("largest_bi_component", "bicomponent_list"), envir = .GlobalEnv))
   }
 
   if (!("largest_component" %in% final_output)) {
-    rm(list = c("largest_component", "lcomponent_list"), envir = .GlobalEnv)
+    suppressWarnings(rm(list = c("largest_component", "lcomponent_list"), envir = .GlobalEnv))
   }
 
   if (!("node_measure_plot" %in% final_output)) {
-    rm(list = c("node_measure_plot", "nplot_list"), envir = .GlobalEnv)
+    suppressWarnings(rm(list = c("node_measure_plot", "nplot_list"), envir = .GlobalEnv))
   }
 
   if (!("nodelist" %in% final_output)) {
-    rm(list = c("node_measures", "node_measures_list"), envir = .GlobalEnv)
+    suppressWarnings(rm(list = c("node_measures", "node_measures_list"), envir = .GlobalEnv))
   }
 
   if (!("edgelist" %in% final_output)) {
-    rm(list = c("edgelist", "f_edges_list"), envir = .GlobalEnv)
+    suppressWarnings(rm(list = c("edgelist", "f_edges_list"), envir = .GlobalEnv))
   }
 
   if (!("system_level_measures" %in% final_output)) {
-    rm(list = c("system_level_measures", "s_measures_list"), envir = .GlobalEnv)
+    suppressWarnings(rm(list = c("system_level_measures", "s_measures_list"), envir = .GlobalEnv))
   }
 
   if (!("system_measure_plot" %in% final_output)) {
-    rm(list = c("system_measure_plot", "system_measure_plot_list"), envir = .GlobalEnv)
+    suppressWarnings(rm(list = c("system_measure_plot", "system_measure_plot_list"), envir = .GlobalEnv))
   }
 
 }
@@ -1217,7 +1217,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Calculating Multiplex Edge Correlation
     # Calculating System-Level Measures
     # print('system level measures')
-    if ("system_level_measures" %in% output) {
+    if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
       largest_weak_component_igraph(g)
       largest_bicomponent_igraph(g)
       ### Merge in largest bicomponent memberships
@@ -1233,6 +1233,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
                                  weight_type = weight_type,
                                  type = type)
+
     }
     # Outputting Network Objects
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
@@ -1872,11 +1873,11 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   # Remove largest component/bicomponent if not specified
   if (!("largest_component" %in% output)) {
-    rm(largest_component, largest_component_ids)
+    suppressWarnings(rm(largest_component, largest_component_ids))
   }
 
   if (!("largest_bi_component" %in% output)) {
-    rm(largest_bi_component, largest_bi_component_ids)
+    suppressWarnings(rm(largest_bi_component, largest_bi_component_ids))
   }
 
 }
