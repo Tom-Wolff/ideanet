@@ -665,7 +665,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       assign(x = "system_measure_plot", value = system_measure_plot, .GlobalEnv)
       assign(x = "system_measure_plot_list", value = splot_list, .GlobalEnv)
     } else {
-      rm(system_level_measures, s_measures_list)
+      rm(system_measure_plot, splot_list)
     }
 
 
