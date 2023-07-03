@@ -707,7 +707,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   }
 
   if (!("system_measure_plot" %in% final_output)) {
-    rm(list = c("system_level_measures", "s_measures_list", "system_measure_plot"), envir = .GlobalEnv)
+    rm(list = c("system_measure_plot", "system_measure_plot_list"), envir = .GlobalEnv)
   }
 
 }
