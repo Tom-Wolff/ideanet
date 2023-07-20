@@ -15,5 +15,5 @@
 
 
 install_ideanetViz <- function() {
-  devtools::install_github("kieranlele/IDEANETViz")
+  devtools::install_github("kieranlele/ideanetViz")
 }
