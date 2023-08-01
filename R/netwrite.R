@@ -272,24 +272,58 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   # the data entered does not reflect a multi-relational net and
   if (is.null(type) == TRUE) {
 
-    basic_netwrite(data_type = data_type,
-                   adjacency_matrix = adjacency_matrix,
-                   adjacency_list = adjacency_list,
-                   nodelist = just_ids,
-                   node_id = node_id,
-                   i_elements = i_elements,
-                   j_elements = j_elements,
-                   weights = weights,
-                   type = type,
-                   remove_loops = remove_loops,
-                   package = package,
-                   missing_code = missing_code,
-                   weight_type = weight_type,
-                   directed = directed,
-                   net_name = net_name,
-                   shiny = shiny,
-                   output = output,
-                   message = message)
+
+    # If `nodelist` is a data frame, we'll want to make sure that the node-level
+    # attributes it already stores are included in the igraph objects that
+    # `netwrite` produces
+
+    if (("data.frame" %in% class(nodelist)) == TRUE) {
+
+      basic_netwrite(data_type = data_type,
+                     adjacency_matrix = adjacency_matrix,
+                     adjacency_list = adjacency_list,
+                     nodelist = original_nodelist,
+                     node_id = node_id,
+                     i_elements = i_elements,
+                     j_elements = j_elements,
+                     weights = weights,
+                     type = type,
+                     remove_loops = remove_loops,
+                     package = package,
+                     missing_code = missing_code,
+                     weight_type = weight_type,
+                     directed = directed,
+                     net_name = net_name,
+                     shiny = shiny,
+                     output = output,
+                     message = message)
+
+    } else {
+
+      basic_netwrite(data_type = data_type,
+                     adjacency_matrix = adjacency_matrix,
+                     adjacency_list = adjacency_list,
+                     nodelist = just_ids,
+                     node_id = node_id,
+                     i_elements = i_elements,
+                     j_elements = j_elements,
+                     weights = weights,
+                     type = type,
+                     remove_loops = remove_loops,
+                     package = package,
+                     missing_code = missing_code,
+                     weight_type = weight_type,
+                     directed = directed,
+                     net_name = net_name,
+                     shiny = shiny,
+                     output = output,
+                     message = message)
+
+    }
+
+
+# The below code chunk is presumably deprecated, but saving here in case
+    # merge issues reappear.
 
     # If `nodelist` is a data frame, we'll want to merge it into `node_measures`
     if (("data.frame" %in% class(nodelist)) == TRUE) {
@@ -374,6 +408,14 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         }
 
 
+        # If we have a data frame for a nodelist, use that. Otherwise
+        # `just_ids`
+        if ("data.frame" %in% class(nodelist) == TRUE) {
+              nodelist_condition <- original_nodelist
+        } else {
+              nodelist_condition <- just_ids2
+        }
+
 
         # If handling aggregate graph that has weights
         if ('weights' %in% colnames(edges_list[[i]]) == TRUE) {
@@ -381,7 +423,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
           basic_netwrite(data_type = data_type,
                          adjacency_matrix = adjacency_matrix,
                          adjacency_list = adjacency_list,
-                         nodelist = just_ids2,
+                         nodelist = nodelist_condition,
                          node_id = node_id,
                          i_elements=edges_list[[i]]$i_elements,
                          j_elements=edges_list[[i]]$j_elements,
@@ -413,7 +455,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
           basic_netwrite(data_type = data_type,
                          adjacency_matrix = adjacency_matrix,
                          adjacency_list = adjacency_list,
-                         nodelist = just_ids2,
+                         nodelist = nodelist_condition,
                          node_id = node_id,
                          i_elements=edges_list[[i]]$i_elements,
                          j_elements=edges_list[[i]]$j_elements,
@@ -440,12 +482,20 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       } else {
 
+        # If we have a data frame for a nodelist, use that. Otherwise
+        # `just_ids`
+        if ("data.frame" %in% class(nodelist) == TRUE) {
+          nodelist_condition <- original_nodelist
+        } else {
+          nodelist_condition <- just_ids
+        }
+
         if('weights' %in% colnames(edges_list[[i]]) == TRUE){
           # Subgraphs, with weights
           basic_netwrite(data_type = data_type,
                          adjacency_matrix = adjacency_matrix,
                          adjacency_list = adjacency_list,
-                         nodelist = just_ids,
+                         nodelist = nodelist_condition,
                          node_id = node_id,
                          i_elements=edges_list[[i]]$i_elements,
                          j_elements=edges_list[[i]]$j_elements,
@@ -472,7 +522,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
           basic_netwrite(data_type = data_type,
                          adjacency_matrix = adjacency_matrix,
                          adjacency_list = adjacency_list,
-                         nodelist = just_ids,
+                         nodelist = nodelist_condition,
                          node_id = node_id,
                          i_elements=edges_list[[i]]$i_elements,
                          j_elements=edges_list[[i]]$j_elements,
@@ -1120,14 +1170,26 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       edgelist <- edgelist[order(edgelist$i_id, edgelist$j_id), ]
       edgelist <- as.matrix(edgelist)
       rm(senders, targets)
+
     } else {
-      nodes <- nodelist
+
+      # If `nodelist` is a data frame, extract vector of
+      # node_ids
+      if ("data.frame" %in% class(nodelist)) {
+            nodes <- nodelist[,node_id]
+      } else {
+            nodes <- nodelist
+      }
+
 
       nodes <- cbind(as.data.frame(seq(1, length(nodes), 1)), nodes)
       colnames(nodes) <- c('id', 'label')
+      # Make `label` a character to ensure merging
+      nodes$label <- as.character(nodes$label)
 
       senders <- as.data.frame(edgelist[,c(1:2)])
       colnames(senders)[[2]] <- c('label')
+      senders$label <- as.character(senders$label)
       senders <- dplyr::left_join(senders, nodes, by='label')
       colnames(senders)[c(2,3)] <- c('i_elements', 'i_id')
 
@@ -1138,6 +1200,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       }
 
       colnames(targets)[[2]] <- c('label')
+      targets$label <- as.character(targets$label)
       targets <- dplyr::left_join(targets, nodes, by='label')
       if (is.null(type) == TRUE) {
         colnames(targets)[c(2,4)] <- c('j_elements', 'j_id')
@@ -1188,7 +1251,21 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # print('creating igraph object')
     # Creating igraph object
     colnames(nodes)[[2]] <- c('attr')
+    # If the nodelist is a data frame, we'll want to add the node attributes
+    # back into the newly constructed, zero-indexed nodelist so that they
+    # also appear in the igraph object constructed below
+    if ("data.frame" %in% class(nodelist)) {
+      colnames(nodelist)[[which(colnames(nodelist) == node_id)]] <- "attr"
+      nodelist$attr <- as.character(nodelist$attr)
+      nodes <- nodes %>% dplyr::left_join(nodelist, by = "attr")
+    }
+
+
     g <- igraph::graph_from_data_frame(d = edgelist[,c(3,5)], directed = as.logical(directed), vertices = nodes)
+
+    # Once you've created the igraph object, you can remove the other
+    # node level attributes for now
+    nodes <- nodes[,1:2]
 
     # Adding edge weights
     igraph::edge.attributes(g)$weight <- edgelist[,6]
@@ -1398,6 +1475,85 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     num_self_loops <- sum(igraph::is.loop(g, eids = igraph::E(g)))
 
 
+    # Centralization scores
+    #### First, need to remove isolates from graph for select measures
+    g_no_iso <- igraph::delete.vertices(g, v = (igraph::degree(g, mode = "all") == 0))
+
+    if (directed == TRUE) {
+
+      ### Betweenness
+      cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
+                                                           directed = FALSE,
+                                                           normalized = TRUE)$centralization
+      cent_bet_dir <- igraph::centralization.betweenness(g_no_iso,
+                                                           directed = TRUE,
+                                                           normalized = TRUE)$centralization
+
+      ### Degree
+      cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
+                                                      loops = FALSE,
+                                                      normalized = TRUE)$centralization
+      cent_deg_out <- igraph::centralization.degree(g, mode = "out",
+                                                      loops = FALSE,
+                                                      normalized = TRUE)$centralization
+      cent_deg_in <- igraph::centralization.degree(g, mode = "in",
+                                                      loops = FALSE,
+                                                      normalized = TRUE)$centralization
+
+      ### Closeness
+      cent_close_undir <- igraph::centralization.closeness(g_no_iso,
+                                                         mode = "all",
+                                                         normalized = TRUE)$centralization
+      cent_close_out <- igraph::centralization.closeness(g_no_iso,
+                                                       mode = "out",
+                                                       normalized = TRUE)$centralization
+      cent_close_in <- igraph::centralization.closeness(g_no_iso,
+                                                      mode = "in",
+                                                      normalized = TRUE)$centralization
+
+      ### Eigen
+      cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
+                                                        directed = FALSE,
+                                                        normalized = TRUE)$centralization
+      cent_eigen_dir <- igraph::centralization.evcent(g_no_iso,
+                                                      directed = TRUE,
+                                                      normalized = TRUE)$centralization
+
+    } else {
+
+      ### Betweenness
+      cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
+                                                           directed = FALSE,
+                                                           normalized = TRUE)$centralization
+      cent_bet_dir <- NA
+
+      ### Degree
+      cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
+                                                      loops = FALSE,
+                                                      normalized = TRUE)$centralization
+      cent_deg_out <- NA
+      cent_deg_in <- NA
+
+      ### Closeness
+      cent_close_undir <- igraph::centralization.closeness(g_no_iso,
+                                                         mode = "all",
+                                                         normalized = TRUE)$centralization
+      cent_close_out <- NA
+      cent_close_in <- NA
+
+      ### Eigen
+      cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
+                                                        directed = FALSE,
+                                                        normalized = TRUE)$centralization
+      cent_eigen_dir <- NA
+
+    }
+
+    # K-core cohesion (ask Jim for best name for this measure)
+    k_core_cohesion <- k_cohesion(graph = g)
+
+
+
 
     measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties',
                         'Number of Tie Types',
@@ -1424,7 +1580,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         'Multi-Level Edge Correlation',
 
                         'Pairwise Reachability (Weak, Undirected)', 'Pairwise Reachability (Strong, Undirected)',
-                        'Pairwise Reachability (Weak, Directed)', 'Pairwise Reachability (Strong, Directed)'
+                        'Pairwise Reachability (Weak, Directed)', 'Pairwise Reachability (Strong, Directed)',
+
+                        "Betweenness Centralization (Undirected)", "Betweenness Centralization (Directed)",
+                        "Degree Centralization (Undirected)", "Degree Centralization (In)", "Degree Centralization (Out)",
+                        "Closeness Centralization (Undirected)", "Closeness Centralization (In)", "Closeness Centralization (Out)",
+                        "Eigenvector Centralization (Undirected)", "Eigenvector Centralization (Directed)",
+                        "K-Core Cohesion"
     )
 
     measure_descriptions <- c("Type of graph (either directed or undirected)",
@@ -1470,7 +1632,29 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               'The proportion of nodes that share a weak component (undirected)',
                               'The proportion of nodes that share a strong component (undirected)',
                               'The proportion of nodes that share a weak component (directed)',
-                              'The proportion of nodes that share a strong component (directed)')
+                              'The proportion of nodes that share a strong component (directed)',
+
+                              # Betweeness
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Undirected shortest paths used when calculating betweenness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Directed shortest paths used when calculating betweenness)",
+
+                              #Degree
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Undirected edges used when calculating degree)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Incoming edges used when calculating degree)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Outgoing edges used when calculating degree)",
+
+                              # Closeness
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Undirected edges used when calculating closeness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Incoming edges used when calculating closeness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Outgoing edges used when calculating closeness)",
+
+                              # Eigenvector centrality
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Undirected edges used when calculating eigenvector centrality)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Directed edges paths used when calculating eigenvector centrality)",
+
+                              # K-core Cohesion
+                              "The average across all pairs of the maximum k-core to which each pair is a joint member (Measures the average level of shared contacts)"
+                              )
 
     measures <- c(graph_type, weighted_graph, as.character(num_nodes), as.character(num_ties), as.character(num_types),
 
@@ -1490,7 +1674,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(global_clustering_coefficient), average_path_length,
                   as.character(multiplex_edge_correlation),
                   as.character(pairwise_weak_un), as.character(pairwise_strong_un),
-                  as.character(pairwise_weak_dir), as.character(pairwise_strong_dir))
+                  as.character(pairwise_weak_dir), as.character(pairwise_strong_dir),
+
+                  as.character(cent_bet_undir), as.character(cent_bet_dir),
+                  as.character(cent_deg_undir), as.character(cent_deg_in), as.character(cent_deg_out),
+                  as.character(cent_close_undir), as.character(cent_close_in), as.character(cent_close_out),
+                  as.character(cent_eigen_undir), as.character(cent_eigen_dir),
+                  as.character(k_core_cohesion))
 
     system_level_measures <- cbind(as.data.frame(measure_labels), measure_descriptions, measures)
 
