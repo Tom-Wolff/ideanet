@@ -139,6 +139,13 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   # defined in the subsequent `basic_netwrite` calls.
   final_output <- output
 
+  # If the data frame containing a nodelist is a tibble, it creates problems
+  # downstream. So detect whether or not `nodelist` is a tibble and remove that
+  # property
+
+  if (("data.frame" %in% class(nodelist)) == TRUE) {
+    nodelist <- as.data.frame(nodelist)
+  }
 
   # If `node_id` is set to be `"id"`, change its value to `"original_id"`
   if ((!is.null(node_id) == TRUE)) {
@@ -760,6 +767,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     suppressWarnings(rm(list = c("system_measure_plot", "system_measure_plot_list"), envir = .GlobalEnv))
   }
 
+
 }
 
 #######################################################
@@ -1140,7 +1148,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     colnames(edgelist)[[1]] <- c('Obs_ID')
 
     # Adding Nodes
-    if(is.null(nodelist[[1]]) == TRUE) {
+     if(is.null(nodelist[[1]]) == TRUE) {
+    #if(length(nodelist) == 1 & nodelist[[1]] == FALSE) {
+      print("make nodes no nodelist")
       nodes <- as.data.frame(sort(unique(c(edgelist[,2], edgelist[,3]))))
       nodes <- cbind(seq(1,nrow(nodes),1), nodes)
       colnames(nodes) <- c('id', 'label')
