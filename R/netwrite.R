@@ -910,7 +910,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         if ("nodelist" %in% output | "node_measure_plot" %in% output) {
           nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
         }
-        degree_assortatvity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+        degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
         reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
         trans_rate_igraph(g)
         global_clustering_coefficient <- igraph::transitivity(g, type='global')
@@ -999,6 +999,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       }
 
 
+
+
     }
 
     # Outputting Network Objects
@@ -1041,6 +1043,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     if ("graph" %in% output) {
       assign(x = net_name, value = g,.GlobalEnv)
     }
+
 
     # ADJACENCY LIST
   }else if (data_type == 'adjacency_list') {
@@ -1112,7 +1115,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
         nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
       }
-      degree_assortatvity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+      degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
       trans_rate_igraph(g)
       global_clustering_coefficient <- igraph::transitivity(g, type='global')
@@ -1311,7 +1314,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
         nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
       }
-      degree_assortatvity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+      degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
       trans_rate_igraph(g)
       global_clustering_coefficient <- igraph::transitivity(g, type='global')
@@ -1559,9 +1562,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     }
 
+
     # K-core cohesion (ask Jim for best name for this measure)
     k_core_cohesion <- k_cohesion(graph = g)
-
 
 
 
@@ -1678,7 +1681,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
                   as.character(mutual), as.character(asym), as.character(null_ties),
 
-                  as.character(degree_assortatvity), as.character(reciprocity_rate),
+                  as.character(degree_assortativity), as.character(reciprocity_rate),
                   as.character(transitivity_rate), as.character(trans_cor),
 
                   as.character(global_clustering_coefficient), average_path_length,
@@ -1705,13 +1708,14 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
     # Removing node-level and system-level data objects for clarity
-    suppressWarnings(rm(measure_labels, measure_descriptions, num_clusters, proportion_largest, degree_assortatvity,
+    suppressWarnings(rm(measure_labels, measure_descriptions, num_clusters, proportion_largest, degree_assortativity,
        reciprocity_rate, global_clustering_coefficient, average_path_length,
        multiplex_edge_correlation, measures, singular, singular_df))
 
     suppressWarnings(rm(transitivity_rate, reachability, bicomponent_summary, largest_bicomponent_memberships, envir = .GlobalEnv))
 
   }
+
 
   # System & Node-Level Visualizations
 
@@ -1821,6 +1825,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     p_1
 
   }
+
 
   if ("node_measure_plot" %in% output) {
 

@@ -395,6 +395,8 @@ k_cohesion <- function(graph) {
 
   # 4. Get edgelist
   k_edges <- as.data.frame(igraph::get.edgelist(graph, names = TRUE))
+  k_edges$V1 <- as.character(k_edges$V1)
+  k_edges$V2 <- as.character(k_edges$V2)
 
   # 5. Merge node-level coreness values into edgelist
   k_edges <- k_edges %>%
