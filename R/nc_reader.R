@@ -1,9 +1,3 @@
-# Calling tidyverse for magrittr pipes. All non-base functions SHOULD be
-# manually called otherwise. ideanet loads magrittr pipes by default so
-# this is only here for testing purposes.
-
-library(tidyverse)
-
 nc_read <- function(
                     # ARGUMENTS:
 
@@ -189,18 +183,51 @@ catToFactor <- function(dataframe,variableName) {
 }
 
 # Identifying which variables to which we apply `catToFactor`
-apply_catToFactor <- function(df){
-### 1. Remove `_num` suffix
-    ##### First create vector of column names
-    df_names <- colnames(df)
-    prefixes <- stringr::str_remove_all(df_names, "_\\d$")
-### 2. Use `rle` to identify consecutive repeats of prefixes
-    consec_rep <- rle(prefixes)
-### 3. Extract prefixes with consecutive repeats
-    rep_prefixes <- consec_rep$values[consec_rep$lengths > 1]
-######### Note, if no variables are found to need recoding, just skip the rest
-if (length(rep_prefixes > 0)) {
-### 4. Verify that values of these variables only contain "true", "false", or NA
+# Identifying which variables to which we apply `catToFactor`
+apply_catToFactor <- function(df) {
+  ### Extract only columns with "true" and "false" codings
+
+  # Store copy of original df
+  original_df <- df
+
+  # LIMIT TO ONLY THE T/F VARIABLES FIRST
+  df_keep <- c()
+  for (i in 1:ncol(df)) {
+    df_keep[i] <- sum(!(df[,i] %in% c("true", "false"))) == 0
+  }
+  df <- df[,df_keep]
+
+  # THEN REMOVE STUFF FOLLOWING THE LAST UNDERSCORE
+  ##### Create vector of column names
+  df_names <- colnames(df)
+  prefixes <- stringr::str_remove(df_names, "_(?:.(?!_))+$")
+
+  for (i in 1:length(prefixes)) {
+    this_prefix <- prefixes[i]
+
+    last_prefix <- prefixes[i-1]
+    next_prefix <- prefixes[i+1]
+
+    if (i > 1){
+      if (str_detect(last_prefix, paste("^", this_prefix, sep = "")) == TRUE) {
+        prefixes[i-1] <- this_prefix
+      }}
+
+    if (i < length(prefixes)){
+      if (str_detect(next_prefix, paste("^", this_prefix, sep = "")) == TRUE) {
+        prefixes[i+1] <- this_prefix
+      }}
+
+  }
+
+  ### 2. Use `rle` to identify consecutive repeats of prefixes
+  consec_rep <- rle(prefixes)
+  ### 3. Extract prefixes with consecutive repeats
+  rep_prefixes <- consec_rep$values[consec_rep$lengths > 1]
+
+  ######### Note, if no variables are found to need recoding, just skip the rest
+  if (length(rep_prefixes > 0)) {
+    ### 4. Verify that values of these variables only contain "true", "false", or NA
     final_prefixes <- c()
     for (i in 1:length(rep_prefixes)) {
       ##### Pull just the columns beginning with this prefix
@@ -215,23 +242,24 @@ if (length(rep_prefixes > 0)) {
         next
       }
     }
-### 5. Store vector of prefixes to which `catToFactor` will be applied
+
+    ### 5. Store vector of prefixes to which `catToFactor` will be applied
     ##### We do this where we define `final_prefixes`
-### 6. Run `catToFactor`
+    ### 6. Run `catToFactor`
     for (i in 1:length(final_prefixes)) {
       this_var <- catToFactor(df, final_prefixes[i])
       if ((NA %in% this_var) & length(this_var) == 1) {
         next
       } else {
-        df_names <- colnames(df)
-        df[,(ncol(df)+1)] <- this_var
-        colnames(df) <- c(df_names, final_prefixes[i])
+        df_names <- colnames(original_df)
+        original_df[,(ncol(original_df)+1)] <- this_var
+        colnames(original_df) <- c(df_names, final_prefixes[i])
       }
     }
-    return(df)
-} else {
-    return(df)
-}
+    return(original_df)
+  } else {
+    return(original_df)
+  }
 }
 
 # Function for turning NC booleans into R logicals

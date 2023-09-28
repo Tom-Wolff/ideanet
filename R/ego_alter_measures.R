@@ -1,8 +1,21 @@
-ego_df <- egonet_egos
-alter_df <- egonet_alters
-ego_prefix = "ego_"
-alter_prefix = "alter_"
-vars = c("race", "year", "major1")
+#' Additional Measure Calculation for Ego Networks (`ego_alter_measures`)
+#'
+#' @description Common measures of ego network properties can differ in whether they require information about ego's attributes. Some measures, like the h-index, only require information about alter attributes, while others, such as Pearson's phi, require information about both ego and their alters. `ego_netwrite` calculates measures of the former sort by default. `ego_alter_measures`, by contrast, allows users to calculate measures that require both ego- and alter-level data.
+#'
+#' @param ego_df A data frame containing measures of ego attributes. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.
+#' @param alter_df A data frame containing measures of alter attributes. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.
+#' @param ego_prefix A character value indicating a common prefix for variables contained in `ego_df`. These prefixes are removed in order to match variables with their counterparts in `alter_df`.
+#' @param ego_suffix A character value indicating a common suffix for variables contained in `ego_df`. These suffixes are removed in order to match variables with their counterparts in `alter_df`.
+#' @param alter_prefix A character value indicating a common prefix for variables contained in `alter_df`. These prefixes are removed in order to match variables with their counterparts in `ego_df`.
+#' @param alter_suffix A character value indicating a common suffix for variables contained in `alter_df`. These suffixes are removed in order to match variables with their counterparts in `ego_df`.
+#' @param vars A character vector indicating which variables appearing in both `ego_df` and `alter_df` should be matched and used for calculating measures. If the user does not manually specify variables in this argument, `ego_alter_measures` will automatically search for matching variables across `ego_df` and `alter_df`.
+#' @param measures A character vector indicating which measures should be calculated. Measures include diversity, number and proportion of homophilous alters, E-I index, Pearson's phi, and Euclidean distance. If the user does not manually specify measures in this argument, `ego_alter_measures` will calculate all applicable measures to each variable.
+#' @param na.rm A logical value indicating whether `NA` values should be excluded when calculating continuous measures.
+#'
+#' @return `ego_alter_measures` returns a data frame containing the measures specified by the user for each individual ego network. This data frame is complementary to the `summaries` data frame created by `ego_netwrite`, and the two can easily be merged.
+#'
+#' @export
+
 
 ego_alter_measures <- function(ego_df,
                                alter_df,
@@ -49,6 +62,25 @@ ego_alter_measures <- function(ego_df,
   # and `alter_df`
 
   if (!is.null(vars) == TRUE) {
+
+    # Ensure that variables are in both ego and alter dataframes
+    not_in_ego <- vars[!(vars %in% colnames(ego_df))]
+    not_in_alter <- vars[!(vars %in% colnames(alter_df))]
+    bad_vars <- c(not_in_ego, not_in_alter)
+
+    # If 1+ variables do not appear in both dataframes, warn the user and exclude these variables
+    # from calculations
+    if (length(bad_vars == 1)) {
+      base::warning(paste("Variable ", bad_vars, " does not appear in both ego and alter data frames. Measures related to ", bad_vars, " will not be calculated.", sep = ""))
+      vars <- vars[!(vars %in% bad_vars)]
+    } else if (length(bad_vars > 1)) {
+      bad_var_string1 <- paste(bad_vars[1:(length(bad_vars)-1)], collapse = ", ")
+      bad_var_string2 <- paste(bad_var_string1, bad_vars[length(bad_vars)], sep = ", and ")
+      base::warning(paste("Variables ", bad_var_string2, " do not appear in both ego and alter data frames. Measures related to these variables will not be calculated.", sep = ""))
+      vars <- vars[!(vars %in% bad_vars)]
+    }
+
+    # Extract variables being compared from `ego_df` and `alter_df`
     ego_df <- ego_df[,c("ego_id", vars)]
     alter_df <- alter_df[, c("ego_id", "alter_id", vars)]
   } else {
@@ -61,7 +93,7 @@ ego_alter_measures <- function(ego_df,
     alter_df <- alter_df[, c("ego_id", "alter_id", vars)]
   }
 
-  # 3. Check that variables are in both dataframes
+
 
 
 
@@ -121,6 +153,10 @@ ego_alter_measures <- function(ego_df,
       combined_class <- c(combined_class, "continuous")
     }
 
+    if ("POSIXct" %in% class(combined_var)) {
+      combined_class <- c(combined_class, "date")
+    }
+
 
     #if (sum(ego_class_label %in% alter_class_label) == 0) {
     if (length(combined_class) == 0) {
@@ -135,6 +171,27 @@ ego_alter_measures <- function(ego_df,
     var_df <- alter_info %>%
       dplyr::left_join(ego_info, by = "ego_id")
     colnames(var_df) <- c("ego_id", "alter_val", "ego_val")
+
+
+    # Add a warning indicating if unique values don't overlap for both columns
+    # (if categorical)
+    if ("categorical" %in% combined_class) {
+
+      # Get unique values of `ego_val` column that aren't NAs
+      unique_ego_val <- unique(var_df$ego_val)
+      unique_ego_val <- unique_ego_val[!is.na(unique_ego_val)]
+      # Same for `alter_val` column
+      unique_alter_val <- unique(var_df$alter_val)
+      unique_alter_val <- unique_alter_val[!is.na(unique_alter_val)]
+      # Determine if there's any overlap
+      val_overlaps <- sum(unique_ego_val %in% unique_alter_val)
+      # Display warning message if `val_overlaps == 0`
+      if (val_overlaps == 0) {
+        warning(paste("No values in variable ", vars[[i]], " appear for both egos and alters. You may want to ensure that this variable is similarly coded for both egos and alters.",
+                      sep = ""))
+      }
+    }
+
 
     # both_class_label <- ego_class_label[which(ego_class_label %in% alter_class_label)]
 
@@ -282,6 +339,24 @@ get_measures <- function(x) {
       dplyr::left_join(bin_vars, by = "ego_id")
     } else {
       ego_df <- bin_vars
+    }
+
+  }
+
+  if ("date" %in% x$class) {
+    date_vars <- x$var_df %>%
+      dplyr::mutate(diff = as.numeric(difftime(ego_val, alter_val, units = "days")),
+                    abs_diff = abs(diff)) %>%
+      dplyr::group_by(ego_id) %>%
+      dplyr::summarize(mean_diff = mean(diff, na.rm = TRUE),
+                       mean_abs_diff = mean(abs_diff, na.rm = TRUE)) %>%
+      dplyr::ungroup()
+
+    if (df_made == TRUE) {
+      ego_df <- ego_df %>%
+        dplyr::left_join(date_vars, by = "ego_id")
+    } else {
+      ego_df <- date_vars
     }
 
   }

@@ -5,7 +5,7 @@
 #' @param data_type A character value indicating the type of relational data being entered into `netwrite`. Available options are `edgelist`, `adjacency_matrix`, and `adjacency_list`.
 #' @param adjacency_matrix If `data_type` is set to `adjacency_matrix`, a matrix object containing the adjacency matrix for the network being processed.
 #' @param adjacency_list If `data_type` is set to `adjacency_list`, a data frame containing the adjacency list for the network being processed.
-#' @param nodelist Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If
+#' @param nodelist Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If the latter, a value for `node_id` must be specified.
 #' @param node_id If a data frame is entered for the `nodelist` arugment, `node_id` should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
 #' @param i_elements If `data_type` is set to `edgelist`, a numeric or character vector indicating the sender of ties in the edgelist.
 #' @param j_elements If `data_type` is set to `edgelist`, a numeric or character vector indicating the receiver of ties in the edgelist.

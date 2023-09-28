@@ -15,5 +15,5 @@
 
 
 install_ideanetViz <- function() {
-  devtools::install_github("kieranlele/ideanetViz")
+  devtools::install_github("Tom-Wolff/ideanetViz")
 }
