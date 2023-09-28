@@ -70,10 +70,10 @@ ego_alter_measures <- function(ego_df,
 
     # If 1+ variables do not appear in both dataframes, warn the user and exclude these variables
     # from calculations
-    if (length(bad_vars == 1)) {
+    if (length(bad_vars) == 1) {
       base::warning(paste("Variable ", bad_vars, " does not appear in both ego and alter data frames. Measures related to ", bad_vars, " will not be calculated.", sep = ""))
       vars <- vars[!(vars %in% bad_vars)]
-    } else if (length(bad_vars > 1)) {
+    } else if (length(bad_vars) > 1) {
       bad_var_string1 <- paste(bad_vars[1:(length(bad_vars)-1)], collapse = ", ")
       bad_var_string2 <- paste(bad_var_string1, bad_vars[length(bad_vars)], sep = ", and ")
       base::warning(paste("Variables ", bad_var_string2, " do not appear in both ego and alter data frames. Measures related to these variables will not be calculated.", sep = ""))
@@ -284,9 +284,9 @@ get_measures <- function(x) {
       dplyr::group_by(ego_id) %>%
       dplyr::summarize(length = dplyr::n(),
                        diversity = length(unique(alter_val)),
-                       num_sim = sum(alter_val == ego_val, na.rm = T),
+                       num_sim = sum(as.character(alter_val) == as.character(ego_val), na.rm = T),
                        prop_sim = num_sim/length,
-                       num_diff = sum(alter_val != ego_val, na.rm = T),
+                       num_diff = sum(as.character(alter_val) != as.character(ego_val), na.rm = T),
                        prop_diff = num_diff/length,
                        ei_index = (prop_diff - prop_sim)/length) %>%
       dplyr::ungroup() %>%
@@ -381,12 +381,12 @@ pearson_phi <- function(x) {
     dplyr::rename(n_alter_tot = n)
 
   alter_obs <- x %>% dplyr::group_by(ego_id) %>%
-    count(alter_val) %>%
+    dplyr::count(alter_val) %>%
     dplyr::rename(n_alter_obs = n)
 
   alter_tots <- alter_tot %>% dplyr::left_join(alter_obs, by = "alter_val") %>%
     dplyr::select(ego_id, dplyr::everything()) %>%
-    mutate(n_alter_obs = tidyr::replace_na(n_alter_obs, 0)) %>%
+    dplyr::mutate(n_alter_obs = tidyr::replace_na(n_alter_obs, 0)) %>%
     dplyr::arrange(ego_id)
 
   p_phi <- alter_tots %>%
