@@ -209,12 +209,12 @@ apply_catToFactor <- function(df) {
     next_prefix <- prefixes[i+1]
 
     if (i > 1){
-      if (str_detect(last_prefix, paste("^", this_prefix, sep = "")) == TRUE) {
+      if (stringr::str_detect(last_prefix, paste("^", this_prefix, sep = "")) == TRUE) {
         prefixes[i-1] <- this_prefix
       }}
 
     if (i < length(prefixes)){
-      if (str_detect(next_prefix, paste("^", this_prefix, sep = "")) == TRUE) {
+      if (stringr::str_detect(next_prefix, paste("^", this_prefix, sep = "")) == TRUE) {
         prefixes[i+1] <- this_prefix
       }}
 
