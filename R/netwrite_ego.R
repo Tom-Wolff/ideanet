@@ -235,6 +235,12 @@ ego_netwrite <- function(egos,
       # this_alters$alter_id <- this_alter_id
 
       this_alters <- alters[alters$ego_id == this_ego, ]
+      # Need a bit of finagling if ego is an isolation (makes zero nominations)
+      if (nrow(this_alters) == 0) {
+        this_alters <- alters[1,]
+        this_alters$ego_id <- this_ego
+        this_alters[1, 2:ncol(this_alters)] <- NA
+      }
 
       this_alter_alter <- alter_alter[alter_alter$ego_id == this_ego, ]
 
