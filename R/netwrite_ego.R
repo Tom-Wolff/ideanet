@@ -51,6 +51,8 @@ ego_netwrite <- function(egos,
                          egor_design = NULL,
                          egor_alter_design = list(max = Inf)) {
 
+  browser()
+
   if (!is.null(network_canvas_path)) {
 
     nc_list <- nc_read(path = network_canvas_path,

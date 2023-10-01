@@ -8,6 +8,7 @@ ego_netwrite(
   egos,
   ego_id,
   alters,
+  alter_id = NULL,
   alter_ego = NULL,
   alter_alter = NULL,
   aa_ego = NULL,
@@ -29,6 +30,8 @@ ego_netwrite(
 \item{ego_id}{A vector of unique identifiers corresponding to each ego, or a single character value indicating the name of the column in `egos` containing ego identifiers.}
 
 \item{alters}{A data frame containing measures of alter attributes.}
+
+\item{alter_id}{A vector of identifiers indicating which alter is associated with a given row in `alters`, or a single character value indicating the name of the column in `alters` containing alter identifiers.}
 
 \item{alter_ego}{A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in `alters` containing ego identifiers.}
 
