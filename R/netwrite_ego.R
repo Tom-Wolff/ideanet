@@ -5,6 +5,7 @@
 #' @param egos A data frame containing measures of ego attributes.
 #' @param ego_id A vector of unique identifiers corresponding to each ego, or a single character value indicating the name of the column in `egos` containing ego identifiers.
 #' @param alters A data frame containing measures of alter attributes.
+#' @param alter_id A vector of identifiers indicating which alter is associated with a given row in `alters`, or a single character value indicating the name of the column in `alters` containing alter identifiers.
 #' @param alter_ego A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in `alters` containing ego identifiers.
 #' @param alter_alter A data frame containing an edgelist indicataing ties between alters in each ego's network. This edgelist is optional, but `ego_netwrite` wil not provide certain measures without it.
 #' @param aa_ego A vector of identifiers indicating which ego is associated with a given tie between alters, or a single character indicating the name of the column in `alter_alter` containing ego identifiers.
@@ -27,6 +28,7 @@
 ego_netwrite <- function(egos,
                          ego_id,
                          alters,
+                         alter_id = NULL,
                          alter_ego = NULL,
                          alter_alter = NULL,
                          aa_ego = NULL,
