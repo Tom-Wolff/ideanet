@@ -1,7 +1,3 @@
-path <- "~/Desktop/soan265/ego_net_data/full_data"
-cat.to.factor = TRUE
-ideanet = TRUE
-
 nc_read <- function(
                     # ARGUMENTS:
 
