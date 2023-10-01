@@ -200,7 +200,7 @@ apply_catToFactor <- function(df) {
   # LIMIT TO ONLY THE T/F VARIABLES FIRST
   df_keep <- c()
   for (i in 1:ncol(df)) {
-    df_keep[i] <- sum(!(df[,i] %in% c("true", "false"))) == 0
+    df_keep[i] <- sum(!(df[,i] %in% c("true", "false", NA))) == 0
   }
   df <- df[,df_keep]
 
