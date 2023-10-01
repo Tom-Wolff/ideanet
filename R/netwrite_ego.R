@@ -1007,8 +1007,8 @@ alter_centrality <- function(x) {
                       betweenness_scores = NA,
                       bonpow = NA,
                       bonpow_negative = NA,
-                      eigen_cen = NA,
-                      constraint = NA,
+                      eigen_centrality = NA,
+                      burt_constraint = NA,
                       effective_size = NA,
                       reachability = NA)
     out$ego_id <- x$ego
