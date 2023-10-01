@@ -106,6 +106,9 @@ ego_netwrite <- function(egos,
     if (is.null(alter_ego) == TRUE) {
       alter_ego1 <- alters[,(which(colnames(alters) == ego_id))]
       alter_ego_fix <- TRUE
+    } else if (class(alter_ego) == "character" & length(alter_ego) == 1) {
+      alter_ego1 <- alters[,(which(colnames(alters) == alter_ego))]
+      alter_ego_fix <- TRUE
     }
 
     if (class(alter_id) == "character" & length(alter_id) == 1) {
@@ -116,7 +119,10 @@ ego_netwrite <- function(egos,
     if (!is.null(alter_alter)) {
 
       if (is.null(aa_ego) == TRUE) {
-        aa_ego1 <- alter_alter[,(which(colnames(alter_alter) == ego_id))]
+        aa_ego1 <- alter_alter[,(which(colnames(alter_alter) == aa_ego))]
+        aa_ego_fix <- TRUE
+      } else if (class(aa_ego) == "character" & length(aa_ego) == 1) {
+        aa_ego1 <- alter_alter[,(which(colnames(alters) == aa_ego))]
         aa_ego_fix <- TRUE
       }
 
