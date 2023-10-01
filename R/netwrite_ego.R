@@ -334,6 +334,7 @@ ego_netwrite <- function(egos,
     # Get centrality measures for alters in each ego network and add to
     # `alters_output`
     alter_cent <- dplyr::bind_rows(lapply(igraph_list, alter_centrality))
+
     alters_output <- dplyr::left_join(alters_output, alter_cent, by = c("ego_id", "id"))
 
     # Add Obs_ID column to alter edgelist object
@@ -953,6 +954,8 @@ fragmentation_index <- function(x) {
 
 igraph_apply <- function(x) {
 
+  if ("igraph" %in% class(x$igraph)) {
+
   frag_index <- fragmentation_index(x$igraph)
 
   graph_summary <- data.frame(ego_id = x$ego,
@@ -968,10 +971,41 @@ igraph_apply <- function(x) {
                               constraint = igraph::constraint(x$igraph_ego)[["ego"]],
                               betweenness = igraph::betweenness(x$igraph_ego)[["ego"]],
                               norm_betweenness = igraph::betweenness(x$igraph_ego, normalized = TRUE)[["ego"]])
+  } else {
+    graph_summary <- data.frame(ego_id = x$ego,
+                                network_size = 0,
+                                mean_degree = NA,
+                                density = NA,
+                                num_weakcomponent = NA,
+                                num_strongcomponent = NA,
+                                component_ratio = NA,
+                                fragmentation_index = NA,
+                                effective_size = NA,
+                                efficiency = NA,
+                                constraint = NA,
+                                betweenness = NA,
+                                norm_betweenness = NA)
+  }
 }
 
 
 alter_centrality <- function(x) {
+
+  # If ego is an isolate (no nominated ties)
+  if (!("igraph" %in% class(x$igraph))) {
+    # Make a dataframe that's merge-compatible but just contains NAs
+    out <- data.frame(total_degree = NA,
+                      closeness = NA,
+                      betweenness_scores = NA,
+                      bonpow = NA,
+                      bonpow_negative = NA,
+                      eigen_cen = NA,
+                      constraint = NA,
+                      effective_size = NA,
+                      reachability = NA)
+    out$ego_id <- x$ego
+    out$id <- NA
+  } else {
 
   total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
   # WEIGHTED DEGREE TBD
@@ -1004,7 +1038,7 @@ alter_centrality <- function(x) {
                reachability)
   out$ego_id <- ego_ids
   out$id <- alter_ids
-
+}
   return(out)
 
 }
