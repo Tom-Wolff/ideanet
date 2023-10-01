@@ -1,3 +1,7 @@
+path <- "~/Desktop/soan265/ego_net_data/full_data"
+cat.to.factor = TRUE
+ideanet = TRUE
+
 nc_read <- function(
                     # ARGUMENTS:
 
@@ -36,8 +40,10 @@ ego_files <- just_csv[stringr::str_detect(just_csv, "ego.csv$")]
 for (i in 1:length(ego_files)) {
   if (i == 1) {
     egos <- read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE)
+    egos$networkCanvasCaseID <- as.character(egos$networkCanvasCaseID)
   } else {
     this_ego <- read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE)
+    this_ego$networkCanvasCaseID <- as.character(this_ego$networkCanvasCaseID)
     egos <- dplyr::bind_rows(egos, this_ego)
   }
 }
@@ -82,12 +88,17 @@ for (i in 1:length(edge_files)) {
     el$edge_type <- edge_type
   } else {
     this_el <- read.csv(paste(path, edge_files[[i]], sep = "/"), header = T)
-    ### Record type of edge
-    edge_type <- stringr::str_extract(edge_files[[i]], "edgeList.*.csv")
-    edge_type <- stringr::str_replace(edge_type, "edgeList_", "")
-    edge_type <- stringr::str_replace(edge_type, ".csv", "")
-    this_el$edge_type <- edge_type
-    el <- dplyr::bind_rows(el, this_el)
+
+    if (nrow(this_el) == 0) {
+      next
+    } else {
+      ### Record type of edge
+      edge_type <- stringr::str_extract(edge_files[[i]], "edgeList.*.csv")
+      edge_type <- stringr::str_replace(edge_type, "edgeList_", "")
+      edge_type <- stringr::str_replace(edge_type, ".csv", "")
+      this_el$edge_type <- edge_type
+      el <- dplyr::bind_rows(el, this_el)
+    }
   }
 }
 
