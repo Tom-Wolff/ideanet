@@ -206,7 +206,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   original_graph <- graph
 
   # 2. Select required variables from `nodes` for clustering
-  role_centrality <- dplyr::select(node_measures,
+  role_centrality <- dplyr::select(nodes,
                                    id,
                                    dplyr::contains("degree"),
                                    dplyr::contains("betweenness"),
@@ -626,7 +626,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
 
     # Cluster dendrogram
     if (dendro_names == TRUE) {
-      attr(euclid_dist, "Labels") <- node_measures[node_measures$id %in% role_centrality$id, 2]
+      attr(euclid_dist, "Labels") <- nodes[nodes$id %in% role_centrality$id, 2]
       hc=stats::hclust(euclid_dist, method = "ward.D2")
     }
 

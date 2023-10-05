@@ -367,3 +367,56 @@ multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
     multiplex_edge_correlation <- 'Simplex Network'
   }
 }
+
+
+
+#######################################
+#    K - C O R E   C O H E S I O N    #
+#######################################
+
+
+k_cohesion <- function(graph) {
+
+  # 1. Convert to undirected
+  # Give warning that graph will be converted to undirected
+  if (igraph::is_directed(graph) == TRUE) {
+    base::warning("Graph will be treated as undirected for calculation of k-core cohesion measure.")
+    graph <- igraph::as.undirected(graph)
+  }
+
+  # 2. Simplify graph (remove multiple edges)
+  graph <- igraph::simplify(graph, remove.multiple = T, remove.loops = T)
+
+  # 3. Get k-coreness value for all nodes
+  v1_cores <- data.frame(V1 = names(igraph::coreness(graph)),
+                         core1 = igraph::coreness(graph))
+  v2_cores <- data.frame(V2 = names(igraph::coreness(graph)),
+                         core2 = igraph::coreness(graph))
+
+  # 4. Get edgelist
+  k_edges <- as.data.frame(igraph::get.edgelist(graph, names = TRUE))
+  k_edges$V1 <- as.character(k_edges$V1)
+  k_edges$V2 <- as.character(k_edges$V2)
+
+  # 5. Merge node-level coreness values into edgelist
+  k_edges <- k_edges %>%
+    dplyr::left_join(v1_cores, by = "V1") %>%
+    dplyr::left_join(v2_cores, by = "V2") %>%
+    # 6. Assign lower nodel-level coreness value as edge-level
+    # coreness value
+    dplyr::mutate(core3 = dplyr::case_when(core1 <= core2 ~ core1,
+                                           TRUE ~ core2))
+
+  # 7. Get number of zeroes (absent edges)
+  num_nodes <- length(igraph::V(graph))
+  #### Number of possible edges in graph
+  num_possible <- (num_nodes*(num_nodes-1))/2
+  #### Number of zeroes we'll need for calculation
+  #### (`num_possible` - num_edges)
+  num_zeros <- num_possible - length(k_edges)
+  ### Now calculate cohesion measure
+  k_cohesion <- sum(k_edges$core3, rep(0, num_zeros))/num_possible
+
+  return(k_cohesion)
+
+}

@@ -722,7 +722,13 @@ cluster_summary_plots <- function(graph_list,
       ggplot2::xlab("Variable") +
       ggplot2::labs(color = "Cluster")
 
-    triad_plot <-  triad_positions %>%
+    # In some cases, particularly with small networks or sparse relation types,
+    # we might have situations where no triads are counted for a particular
+    # relation type. We need to handle this case.
+
+    if (nrow(triad_positions) != 0) {
+
+    triad_plot <- triad_positions %>%
       ggplot2::ggplot(ggplot2::aes(x = order_id,
                                    y = value,
                                    color = as.factor(cluster))) +
@@ -736,6 +742,29 @@ cluster_summary_plots <- function(graph_list,
       ggplot2::ylab("Cluster Mean Value (Standardized)") +
       ggplot2::xlab("Variable") +
       ggplot2::labs(color = "Cluster")
+
+    } else {
+
+      triad_plot <- triad_positions %>%
+        dplyr::mutate(cluster = 1, var = "No relevant triads", value = 0,
+                      sd = 0, order_id = 1, var_id = 1) %>%
+        ggplot2::ggplot(ggplot2::aes(x = order_id,
+                                     y = value,
+                                     color = as.factor(cluster))) +
+        ggplot2::geom_point() +
+        ggplot2::geom_line() +
+        # ggplot2::scale_x_continuous(breaks = 1:length(unique(triad_positions$var)),
+        #                             labels = unique(triad_positions$var)) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust=1),
+                       panel.grid.minor.x = ggplot2::element_blank()) +
+        # ggplot2::ylab("Cluster Mean Value (Standardized)") +
+        # ggplot2::xlab("Variable") +
+        ggplot2::ggtitle("No relevant triads") +
+        ggplot2::labs(color = "Cluster")
+
+
+    }
 
     cluster_summaries_cent[[i]] <- cent_plot
     cluster_summaries_triad[[i]] <- triad_plot
