@@ -7,10 +7,14 @@
 #' @param alters A data frame containing measures of alter attributes.
 #' @param alter_id A vector of identifiers indicating which alter is associated with a given row in `alters`, or a single character value indicating the name of the column in `alters` containing alter identifiers.
 #' @param alter_ego A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in `alters` containing ego identifiers.
+#' @param alter_type (DEPRECATED) A numeric or character vector indicating the types of relationships existing between ego and a given alter, or a single character value indicating the name of the column in `alters` containing relationship type. If `alter_type` is specified, `ego_netwrite` will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.
+#' @param alter_types A character vector indicating the columns in `alters` that indicate whether a given alter has certain types of relations with ego. These columns should all contain binary measures indicating whether alter has a particular type of relation with ego.
 #' @param alter_alter A data frame containing an edgelist indicataing ties between alters in each ego's network. This edgelist is optional, but `ego_netwrite` wil not provide certain measures without it.
 #' @param aa_ego A vector of identifiers indicating which ego is associated with a given tie between alters, or a single character indicating the name of the column in `alter_alter` containing ego identifiers.
 #' @param i_elements A vector of identifiers indicating which alter is on one end of an alter-alter tie, or a single character indicating the name of the column in `alter_alter` containing these identifiers.
 #' @param j_elements A vector of identifiers indicating which alter is on the other end of an alter-alter tie, or a single character indicating the name of the column in `alter_alter` containing these identifiers.
+#' @param directed A logical value indicating whether network ties are directed or undirected.
+#' @param aa_type A numeric or character vector indicating the types of relationships represented in the alter edgelist, or a single character value indicating the name of the column in `alter_alter` containing relationship type. If `alter_type` is specified, `ego_netwrite` will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.
 #' @param missing_code A numeric value indicating "missing" values in the alter-alter edgelist.
 #' @param na.rm A logical value indicating whether `NA` values should be excluded when calculating continuous measures.
 #' @param output_name A character value indicating the name or prefix that should be given to output objects.
@@ -30,10 +34,14 @@ ego_netwrite <- function(egos,
                          alters,
                          alter_id = NULL,
                          alter_ego = NULL,
+                         alter_type = NULL,
+                         alter_types = NULL,
                          alter_alter = NULL,
                          aa_ego = NULL,
                          i_elements = NULL,
                          j_elements = NULL,
+                         directed = FALSE,
+                         aa_type = NULL,
                          missing_code = 99999,
 
                          # Do we remove NA values when calculating continuous measures?
@@ -50,6 +58,8 @@ ego_netwrite <- function(egos,
                          egor = FALSE,
                          egor_design = NULL,
                          egor_alter_design = list(max = Inf)) {
+
+  # browser()
 
   if (!is.null(network_canvas_path)) {
 
@@ -95,6 +105,8 @@ ego_netwrite <- function(egos,
     aa_ego_fix <- FALSE
     i_elements_fix <- FALSE
     j_elements_fix <- FALSE
+    alter_types_fix <- FALSE
+    aa_type_fix <- FALSE
 
     # If ID columns are specified by character values, extract those columns
 
@@ -116,6 +128,13 @@ ego_netwrite <- function(egos,
       alter_id_fix <- TRUE
     }
 
+    # if (class(alter_types) == "character" & length(alter_types) == 1) {
+    #   alter_types1 <- alters[,(which(colnames(alters) == alter_types))]
+    #   alter_types_fix <- TRUE
+    # }
+
+
+
     if (!is.null(alter_alter)) {
 
       if (is.null(aa_ego) == TRUE) {
@@ -136,6 +155,11 @@ ego_netwrite <- function(egos,
         j_elements_fix <- TRUE
       }
 
+      if (class(aa_type) == "character" & length(aa_type) == 1) {
+        aa_type1 <- alter_alter[,(which(colnames(alter_alter) == aa_type))]
+        aa_type_fix <- TRUE
+      }
+
     }
     # If characters were used to identify ID columns, assign them to the correct
     # objects
@@ -152,6 +176,10 @@ ego_netwrite <- function(egos,
       alter_id <- alter_id1
     }
 
+    # if (alter_types_fix == TRUE) {
+    #   alter_types <- alter_types1
+    # }
+
     if (!is.null(alter_alter)) {
 
       if (aa_ego_fix == TRUE) {
@@ -165,6 +193,11 @@ ego_netwrite <- function(egos,
       if (j_elements_fix == TRUE) {
         j_elements <- j_elements1
       }
+
+      if (aa_type_fix == TRUE) {
+        aa_type <- aa_type1
+      }
+
     }
 
 
@@ -193,27 +226,112 @@ ego_netwrite <- function(egos,
     }
     alters$alter_id <- alter_id
 
-    alters <- alters %>%
-      dplyr::select(ego_id, alter_id, dplyr::everything())
+    # Adjust this to clearly label ego-alter edge type variables
+    if (!is.null(alter_types)) {
+
+      alter_types_df <- alters[, c("ego_id", "alter_id", alter_types)]
+      # Rename to indicate type variables
+      colnames(alter_types_df) <- paste("type", colnames(alter_types_df), sep = "_")
+      colnames(alter_types_df)[[1]] <- "ego_id"
+      colnames(alter_types_df)[[2]] <- "alter_id"
+
+      alters <- alters %>%
+        dplyr::left_join(alter_types_df, by = c("ego_id", "alter_id")) %>%
+        dplyr::select(ego_id, alter_id, tidyr::starts_with("type"), dplyr::everything())
+
+    } else {
+      alters <- alters %>%
+        dplyr::select(ego_id, alter_id, dplyr::everything())
+    }
+
 
     if (!is.null(alter_alter)) {
       alter_alter$i_elements <- i_elements
       alter_alter$j_elements <- j_elements
       alter_alter$ego_id <- aa_ego
-      alter_alter <- alter_alter %>%
-        dplyr::select(ego_id, i_elements, j_elements, dplyr::everything())
+
+      if (!is.null(aa_type)) {
+        alter_alter$type <- aa_type
+
+        alter_alter <- alter_alter %>%
+          dplyr::select(ego_id, i_elements, j_elements, type, dplyr::everything())
+      } else {
+        alter_alter <- alter_alter %>%
+          dplyr::select(ego_id, i_elements, j_elements, dplyr::everything())
+      }
     }
 
   }
 
   ################################################################################
-  # Creating list of igraph objects for each ego network
+  # Creating numeric IDs for Data
   ################################################################################
+
+  # Create new numeric `ego_id` values
+  ego_id_relabel <- data.frame(ego_id = egos$ego_id,
+                               new_ego_id = 1:length(egos$ego_id))
+
+  egos <- egos %>%
+    dplyr::left_join(ego_id_relabel, by = "ego_id") %>%
+    dplyr::select(-ego_id) %>%
+    dplyr::rename(ego_id = new_ego_id) %>%
+    dplyr::select(ego_id, dplyr::everything())
+  alters <- alters %>%
+    dplyr::left_join(ego_id_relabel, by = "ego_id") %>%
+    dplyr::select(-ego_id) %>%
+    dplyr::rename(ego_id = new_ego_id) %>%
+    dplyr::select(ego_id, dplyr::everything())
+  if (!is.null(alter_alter)) {
+  alter_alter <- alter_alter %>%
+    dplyr::left_join(ego_id_relabel, by = "ego_id") %>%
+    dplyr::select(-ego_id) %>%
+    dplyr::rename(ego_id = new_ego_id) %>%
+    dplyr::select(ego_id, dplyr::everything())
+  }
+
+  # Create new numeric `alter_id` values
+  alter_id_relabel <- alters %>%
+    dplyr::group_by(ego_id) %>%
+    dplyr::mutate(new_alter_id = dplyr::row_number()) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(ego_id, alter_id, new_alter_id)
+
+  alters <- alters %>%
+    dplyr::left_join(alter_id_relabel, by = c("ego_id", "alter_id")) %>%
+    dplyr::select(-alter_id) %>%
+    dplyr::rename(alter_id = new_alter_id) %>%
+    dplyr::select(ego_id, alter_id, dplyr::everything())
 
   if (!is.null(alter_alter)) {
 
+  # These are used to identify i and j in the alter-alter edgelist
+  i_elements_relabel <- alter_id_relabel %>%
+    dplyr::rename(i_elements = alter_id,
+                  new_i_elements = new_alter_id)
+  j_elements_relabel <- alter_id_relabel %>%
+    dplyr::rename(j_elements = alter_id,
+                  new_j_elements = new_alter_id)
+
+  alter_alter <- alter_alter %>%
+    dplyr::left_join(i_elements_relabel, by = c("ego_id", "i_elements")) %>%
+    dplyr::left_join(j_elements_relabel, by = c("ego_id", "j_elements")) %>%
+    dplyr::select(-i_elements, -j_elements) %>%
+    dplyr::rename(i_elements = new_i_elements,
+                  j_elements = new_j_elements) %>%
+    dplyr::select(ego_id, i_elements, j_elements, dplyr::everything())
+
+}
+
+  ################################################################################
+  # Creating list of igraph objects for each ego network
+  ################################################################################
+
+  # Get full list of edge types in alter-alter edgelist
+  if (!is.null(alter_alter)) {
+
+    # AGGREGATE GRAPHS
     # Get unique values of `ego_id`
-    ego_ids <- unique(ego_id)
+    ego_ids <- unique(egos$ego_id)
 
     # Make list to store igraph objects
     igraph_list <- list()
@@ -228,14 +346,14 @@ ego_netwrite <- function(egos,
       #    and in the alter-alter edgelist. Then zero-index.
       # b. Make sure
       this_ego <- ego_ids[[i]]
-      this_ego_info <- egos[ego_id == this_ego,]
+      this_ego_info <- egos[egos$ego_id == this_ego,]
 
       # this_alters <- alters[alters$ego_id == this_ego, ]
       # this_alter_id <- alter_id[alter_ego == this_ego]
       # this_alters$alter_id <- this_alter_id
 
       this_alters <- alters[alters$ego_id == this_ego, ]
-      # Need a bit of finagling if ego is an isolation (makes zero nominations)
+      # Need a bit of finagling if ego is an isolate (makes zero nominations)
       if (nrow(this_alters) == 0) {
         this_alters <- alters[1,]
         this_alters$ego_id <- this_ego
@@ -245,7 +363,7 @@ ego_netwrite <- function(egos,
       this_alter_alter <- alter_alter[alter_alter$ego_id == this_ego, ]
 
 
-      # If an ego nominate alters with no connections to each other,
+      # If an ego nominates alters with no connections to each other,
       # no need to create an igraph object
       if (nrow(this_alter_alter) == 0) {
         # Store in list of igraph objects
@@ -300,9 +418,21 @@ ego_netwrite <- function(egos,
         # this_igraph <- igraph::graph_from_data_frame(aa_simp, vertices = alters_simp,
         #                                              directed = FALSE)
 
+        # # To make `graph_from_data_frame` work, we need to reshape `this_alters`
+        # # so that only one row corresponds to a particular alter
+        # this_alters <- this_alters %>%
+        #   dplyr::mutate(pivot_hold = 1) %>%
+        #   tidyr::pivot_wider(names_from = type,
+        #                      values_from = pivot_hold,
+        #                      values_fill = 0,
+        #                      names_prefix = "type_") %>%
+        #   dplyr::group_by(ego_id, id) %>%
+        #   dplyr::summarise_all(max, na.rm = TRUE) %>%
+        #   dplyr::ungroup() %>%
+        #   dplyr::select(id, alter_id, ego_id, dplyr::everything())
 
         this_igraph <- igraph::graph_from_data_frame(this_alter_alter, vertices = this_alters,
-                                                     directed = FALSE)
+                                                     directed = directed)
 
         # Add in ego to the graph (without attributes)
         this_igraph_ego <- igraph::add_vertices(this_igraph, 1)
@@ -347,7 +477,7 @@ ego_netwrite <- function(egos,
 
     # Get centrality measures for alters in each ego network and add to
     # `alters_output`
-    alter_cent <- dplyr::bind_rows(lapply(igraph_list, alter_centrality))
+    alter_cent <- dplyr::bind_rows(lapply(igraph_list, alter_centrality, directed = directed))
 
     alters_output <- dplyr::left_join(alters_output, alter_cent, by = c("ego_id", "id"))
 
@@ -356,12 +486,211 @@ ego_netwrite <- function(egos,
     alter_alter_output <- alter_alter_output %>%
       dplyr::select(Obs_ID, dplyr::everything())
 
+
+    # WITHIN-RELATION TYPE
+    if (!is.null(aa_type)) {
+
+      # Get unique values of `ego_id`
+      # ego_ids <- unique(ego_id)
+      # Get full list of edge types in alter-alter edgelist
+      edge_types <- unique(aa_type)
+      # Record all possible combinations of egos and alter-alter edge types
+      type_index <- data.frame(ego = rep(ego_ids, each = length(edge_types)),
+                               type = rep(edge_types, length(ego_ids)))
+      type_index$name <- paste(type_index$ego, type_index$type, sep = "_")
+
+      # Make list to store igraph objects
+      igraph_list2 <- list()
+      # Make object for storing alter information
+      # alters_output <- "to_populate"
+      # Make object for storing alter edgelist
+      # alter_alter_output <- "to_populate"
+
+      for (i in 1:length(type_index$name)) {
+        # a. Within each node ID, get the unique values for alter IDs in the alter DF
+        #    and in the alter-alter edgelist. Then zero-index.
+        # b. Make sure
+        this_ego <- type_index$ego[[i]]
+        this_type <- type_index$type[[i]]
+        this_ego_info <- egos[ego_id == this_ego,]
+
+        this_alters <- alters[alters$ego_id == this_ego, ]
+        # Need a bit of finagling if ego is an isolate (makes zero nominations)
+        if (nrow(this_alters) == 0) {
+          this_alters <- alters[1,]
+          this_alters$ego_id <- this_ego
+          this_alters[1, 2:ncol(this_alters)] <- NA
+        }
+
+        this_alter_alter <- alter_alter[alter_alter$ego_id == this_ego & alter_alter$type == this_type, ]
+
+
+
+        # If an ego nominate alters with no connections to each other,
+        # no need to create an igraph object
+        if (nrow(this_alter_alter) == 0) {
+          # Store in list of igraph objects
+          igraph_list2[[i]] <- list(ego = this_ego,
+                                    type = this_type,
+                                    ego_info = this_ego_info,
+                                    igraph = NA)
+
+          # Need to add column `id` to `alters` to make compatible for merging in
+          # final output
+          this_alters$id <- NA
+
+          # Also store in main `igraph_list`. This is a bit involved,
+          # so I'll do my best to walk through the steps in the comments here
+          #### First, we need to use `lappy` to figure out which item in `igraph_list`
+          #### corresponds to the ego we're interested in
+          list_id <- which(unlist(lapply(igraph_list, function(x, num) {x$ego == num}, num = this_ego)))
+          #### Now that we have this, we're going to store `igraph` and `igraph_ego`,
+          #### as constructed in this step of the loop, into the appropriate item
+          #### in igraph_list (which is the corresponding ego). Placeholder names
+          #### are used in this step
+          igraph_list[[list_id]]$this_igraph <- NA
+          igraph_list[[list_id]]$this_igraph_ego <- NA
+          #### Now we rename the new additions to this_ego's item in `igraph_list`
+          names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]]))-1)] <- paste("igraph", this_type, sep = "_")
+          names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]])))] <-   paste("igraph_ego", this_type, sep = "_")
+
+        } else {
+
+          # this_aa_i <- aa_i[aa_ego == this_ego]
+          # this_aa_j <- aa_j[aa_ego == this_ego]
+          # this_alter_alter$aa_i <- this_aa_i
+          # this_alter_alter$aa_j <- this_aa_j
+
+          # Get unique alter identifiers from both dataframes
+          # unique_alters <- unique(c(this_alter_id, this_aa_i, this_aa_j))
+          unique_alters <- unique(c(this_alters$alter_id,
+                                    this_alter_alter$i_elements,
+                                    this_alter_alter$j_elements))
+          alter_id_merge <- data.frame(alter_id = unique_alters,
+                                       id = (1:length(unique_alters)) - 1)
+          aa_i_merge <- data.frame(i_elements = unique_alters,
+                                   i_id = (1:length(unique_alters)) - 1)
+          aa_j_merge <- data.frame(j_elements = unique_alters,
+                                   j_id = (1:length(unique_alters)) - 1)
+
+          this_alters <- this_alters %>%
+            dplyr::left_join(alter_id_merge, by = "alter_id") %>%
+            dplyr::select(id, alter_id, ego_id, dplyr::everything())
+
+          # If there's a variable in `this_alters` called `name`, it'll mess up igraph
+          # processing. Because of this, we have to rename
+
+          if ("name" %in% colnames(this_alters)) {
+            colnames(this_alters) <- stringr::str_replace_all(colnames(this_alters), "^name$", "alter_name")
+          }
+
+          this_alter_alter <- this_alter_alter %>%
+            dplyr::left_join(aa_i_merge, by = "i_elements") %>%
+            dplyr::left_join(aa_j_merge, by = "j_elements") %>%
+            dplyr::select(i_id, j_id, i_elements, j_elements, ego_id, dplyr::everything())
+
+          # # Make simplified versions of data frames for the purposes of creating these
+          # # igraph objects
+          # alters_simp <- this_alters %>% dplyr::select(id)
+          # aa_simp <- this_alter_alter %>% dplyr::select(i_elements, j_elements)
+          #
+          # this_igraph <- igraph::graph_from_data_frame(aa_simp, vertices = alters_simp,
+          #                                              directed = FALSE)
+
+
+          this_igraph <- igraph::graph_from_data_frame(this_alter_alter, vertices = this_alters,
+                                                       directed = directed)
+
+          # Add in ego to the graph (without attributes)
+          this_igraph_ego <- igraph::add_vertices(this_igraph, 1)
+          this_igraph_ego <- igraph::add_edges(this_igraph_ego, c(rbind(seq(igraph::gorder(this_igraph_ego) - 1),
+                                                                        igraph::gorder(this_igraph_ego))))
+          igraph::V(this_igraph_ego)$name[[igraph::gorder(this_igraph_ego)]] <- "ego"
+
+          # Store in list of igraph objects
+          igraph_list2[[i]] <- list(ego = this_ego,
+                                    type = this_type,
+                                    ego_info = this_ego_info,
+                                    igraph = this_igraph,
+                                    igraph_ego = this_igraph_ego)
+
+          # Also store in main `igraph_list`. This is a bit involved,
+          # so I'll do my best to walk through the steps in the comments here
+          #### First, we need to use `lappy` to figure out which item in `igraph_list`
+          #### corresponds to the ego we're interested in
+          list_id <- which(unlist(lapply(igraph_list, function(x, num) {x$ego == num}, num = this_ego)))
+          #### Now that we have this, we're going to store `igraph` and `igraph_ego`,
+          #### as constructed in this step of the loop, into the appropriate item
+          #### in igraph_list (which is the corresponding ego). Placeholder names
+          #### are used in this step
+          igraph_list[[list_id]]$this_igraph <- this_igraph
+          igraph_list[[list_id]]$this_igraph_ego <- this_igraph_ego
+          #### Now we rename the new additions to this_ego's item in `igraph_list`
+          names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]]))-1)] <- paste("igraph", this_type, sep = "_")
+          names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]])))] <-   paste("igraph_ego", this_type, sep = "_")
+
+          # Reorder columns of alter edgelist for final output
+          this_alter_alter <- this_alter_alter %>%
+            dplyr::select(ego_id, i_elements, i_id, j_elements, j_id, dplyr::everything())
+
+          # Storing updated alter edgelist
+          # if (class(alter_alter_output) == "character") {
+          #   if (alter_alter_output == "to_populate") {
+          #     alter_alter_output <- this_alter_alter
+          #   }
+          # } else {
+          #   alter_alter_output <- dplyr::bind_rows(alter_alter_output, this_alter_alter)
+          # }
+
+        }
+
+        # Reorder columns of alters list for final output
+        # this_alters <- this_alters %>%
+        #   dplyr::select(ego_id, id, alter_id, dplyr::everything())
+
+        # Storing updated alters list
+        ### For multirelational nets, we only need to do this once per egoid
+        # if (i %% length(edge_types) == 1) {
+        # if (class(alters_output) == "character") {
+        #   if (alters_output == "to_populate") {
+        #     alters_output <- this_alters
+        #   }
+        # } else {
+        #   alters_output <- dplyr::bind_rows(alters_output, this_alters)
+        # }
+        # }
+      }
+
+      # Get centrality measures for alters in each ego network and add to
+      # `alters_output`
+      alter_cent2 <- lapply(igraph_list2, alter_centrality, directed = directed)
+      # Add type indicator
+      for (i in 1:length(alter_cent2)) {
+        alter_cent2[[i]]$type <- type_index$type[[i]]
+      }
+      # Bind rows
+      alter_cent2 <- dplyr::bind_rows(alter_cent2)
+      # Reshape to wide format
+      alter_cent2 <- alter_cent2 %>%
+        tidyr::pivot_wider(id_cols = c("ego_id", "id"),
+                           names_from = type,
+                           values_from = total_degree:reachability) %>%
+        dplyr::filter(!is.na(id))
+
+
+      alters_output <- dplyr::left_join(alters_output, alter_cent2, by = c("ego_id", "id"))
+
+
+    }
+
+
   } else {
 
     alters_output <- alters
     alter_alter_output <- NULL
 
   }
+
 
   ################################################################################
   # NETWORK-LEVEL, ATTRIBUTE-AGNOSTIC MEASURES
@@ -373,213 +702,169 @@ ego_netwrite <- function(egos,
 
   if (!is.null(alter_alter)) {
 
-    attr_agnostic <- dplyr::bind_rows(lapply(igraph_list, igraph_apply))
+    egonet_summaries <- dplyr::bind_rows(lapply(igraph_list, igraph_apply, directed = directed))
+
+    # Within-relation type, if applicable
+    if (!is.null(aa_type)) {
+        egonet_summaries2 <- lapply(igraph_list2, igraph_apply, directed = directed)
+        # Rename columns
+        for (i in 1:length(egonet_summaries2)) {
+            egonet_summaries2[[i]]$type <- type_index$type[[i]]
+        }
+        # Bind rows
+        egonet_summaries2 <- dplyr::bind_rows(egonet_summaries2)
+        # Reshape to wide format
+        egonet_summaries2 <- egonet_summaries2 %>%
+          tidyr::pivot_wider(names_from = type,
+                             values_from = -ego_id)
+        # Remove `type_` artifact columns
+        egonet_summaries2 <- egonet_summaries2[,1:(ncol(egonet_summaries2)-length(unique(aa_type)))]
+        # Merge into `egonet_summaries`
+        egonet_summaries <- dplyr::left_join(egonet_summaries, egonet_summaries2, by = "ego_id")
+    }
+
+  # If we don't have data on alter-alter ties, we may still need `egonet_summaries`
+  # for multiplex edge correlation on the ego-alter edgelist. But at this stage
+  # the only thing that really needs to be calculated is network size
+  } else {
+    ### Create `egonet_summaries`
+    egonet_summaries <- data.frame(ego_id = unique(egos$ego_id))
+
+    ### Use `dplyr` to get ego network sizes
+    alter_hold <- alters %>% dplyr::select(ego_id, alter_id, dplyr::starts_with("type_"))
+    net_sizes <- alter_hold %>% dplyr::group_by(ego_id) %>%
+      dplyr::summarize(network_size = length(unique(alter_id))) %>%
+      dplyr::ungroup()
+
+    ### Merge into `egonet_summaries`
+    egonet_summaries <- egonet_summaries %>%
+      dplyr::left_join(net_sizes, by = "ego_id")
+
+    ##### If we have multiple relation types, we'll want degree counts for those as well
+    if (!is.null(alter_types)) {
+      type_sizes <- alter_hold %>%
+        dplyr::select(-alter_id) %>%
+        dplyr::group_by(ego_id) %>%
+        dplyr::summarize_all(~sum(.x == 1, na.rm = T)) %>%
+        dplyr::ungroup()
+
+      colnames(type_sizes) <- gsub("^type_", "network_size_", colnames(type_sizes))
+
+      egonet_summaries <- egonet_summaries %>%
+        dplyr::left_join(type_sizes, by = "ego_id")
+
+    }
 
   }
 
   ################################################################################
-  # NETWORK-LEVEL, ATTRIBUTE-SPECIFIC MEASURES
+  # MULTIPLEX EDGE CORRELATIONS
   ################################################################################
 
-  #### For this, I imagine the plan would be to take the alters data frame,
-  #### develop a set of functions that's applied to columns of a specific class,
-  #### then use dplyr::group_by(ego_id) %>% dplyr::summarize_all() on these
-  #### columns. I've developed an example with the H index measure of diversity
-  #### to give you (Gabe) a template to work with.
+  # On the alter-alter edgelist
+  if (!is.null(aa_type)) {
 
-  # # Debugging reference; ignore for now; delete later
-  # df <- read.csv("~/Desktop/netwrite_debug/test_alter_df.csv")
-  # df[df==""] <- NA
-  # df$factor <- as.factor(df$factor)
-  # df$factor_na <- as.factor(df$factor_na)
-  # df$ordered <- as.ordered(df$factor)
-  # df$ordered_na <- as.ordered(df$factor_na)
+    # Get alter edgelist in format that Jon's function will like
+    aa_multi <- alter_alter_output
+    aa_multi$weight <- 1
+    aa_multi <- aa_multi[,c("Obs_ID", "i_elements", "i_id", "j_elements", "j_id", "weight", "type", "ego_id")]
+    # Store unique values for alter edge types
+    edge_types <- unique(aa_type)
 
-  alter_classes <- sapply(alters, class)
+    cors_list <- list()
 
-  #### Criteria for certain functions:
-  ###### CATEGORICAL MEASURES are assumed IF:
-  ############# a. Variables are factors (but not ordered)
-  ############# b. Variables are characters with some finite set of unique values
-  #############    I'm thinking more than 2 but less than 8. I'm willing to negotiate
-  #############    on this point.
-  ############# c. Integers with some finite set of unique values matching the
-  #############    criteria specified in b.
+    for (i in 1:nrow(egos)) {
+      print(i)
+      this_ego <- egos[i, ]
+      this_ego_id <- this_ego[, "ego_id"]
+      # Get edgelist for only this ego
+      this_el <- aa_multi[aa_multi$ego_id == this_ego_id, ]
 
-  # Compile which columns should be treated as categorical measures
-  alter_integers_cat <- unlist(lapply(alters, FUN = detect_integer_cat))
-  alter_character_cat <- unlist(lapply(alters, FUN = detect_char_cat))
-  alter_factors <- unlist(lapply(alter_classes, FUN = function(x) ("factor" %in% x) & !("ordered" %in% x)))
-  cat_vars <- as.logical(alter_integers_cat + alter_character_cat + alter_factors)
-  if (sum(cat_vars) > 0) {
-    ### First value of `cat_measures`, corresponding to `ego_id`, also needs to be TRUE
-    cat_vars[[1]] <- TRUE
-    ### But `alter_id`, the second value, needs to be FALSE
-    cat_vars[[2]] <- FALSE
-    # Now extract from alters (NOTE: REPLACE `df` with `alters` ONCE FINISHED)
-    cat_df <- alters[,cat_vars]
+      # Handling if ego is an isolate
+      if (nrow(this_el) > 0) {
+            this_cors <- suppressWarnings(as.data.frame(t(multiplex_ego(edgelist = this_el,
+                                                                         directed = directed,
+                                                                         type = aa_multi$type))))
+            this_cors$ego_id <- this_ego_id
 
-
-    # Gabe suggested counts and proportions for categorical variable values
-    for (i in 1:length(unique(cat_df$ego_id))) {
-      this_ego <- unique(cat_df$ego_id)[[i]]
-      # Remove `ego_id` before using `lapply`
-      this_cat <- cat_df %>%
-        dplyr::filter(ego_id == this_ego) %>%
-        dplyr::select(-ego_id)
-
-      counts_applied <- lapply(this_cat, get_count_df, ego_id = this_ego)
-
-      # Extract variable names to paste
-      rep_nums <- unlist(lapply(counts_applied, nrow))
-      cat_names <- colnames(this_cat)
-
-      counts_applied <- dplyr::bind_rows(counts_applied)
-
-      counts_applied$name <- paste(rep(cat_names, times = rep_nums), counts_applied$name, sep = "_")
-
-      if (i == 1) {
-        counts_df <- counts_applied
-      } else {
-        counts_df <- dplyr::bind_rows(counts_df, counts_applied)
+            cors_list[[i]] <- this_cors
       }
 
     }
 
-    counts_df <- counts_df %>%
-      tidyr::pivot_wider(names_from = "name",
-                         values_from = "val")
+    cors_list <- dplyr::bind_rows(cors_list)
 
-    counts_df[is.na(counts_df)] <- 0
+    # Identify that these are correlations for alter-alter ties
+    colnames(cors_list) <- paste("aa", colnames(cors_list), sep = "_")
+    colnames(cors_list)[ncol(cors_list)] <- "ego_id"
 
+    egonet_summaries <- egonet_summaries %>%
+      dplyr::left_join(cors_list, by = "ego_id")
 
-
-
-    cat_measures <- cat_df %>%
-      dplyr::group_by(ego_id) %>%
-      dplyr::summarise_all(.funs = list(
-        h_index = ~ h_index(.),
-        iqv = ~ iqv_index(.)) # add function assigned to categorical variables.
-      ) %>%
-      dplyr::ungroup() %>%
-
-      dplyr::left_join(counts_df, by = "ego_id")
-  } else {
-    cat_measures <- NULL
   }
 
-  ###### BINARY MEASURES are assumed IF:
-  ############# a. Variables are logicals (duh)
-  ############# b. Variables are characters with two unique values
-  ############# c. Integers with two unique values
 
-  alter_logicals <- unlist(lapply(alter_classes, FUN = function(x) "logical" %in% x))
-  alter_integer_binary <- unlist(lapply(alters, FUN = detect_integer_binary))
-  alter_char_binary <- unlist(lapply(alters, FUN = detect_char_binary))
-  bin_vars <- as.logical(alter_logicals + alter_integer_binary + alter_char_binary)
-  if (sum(bin_vars) > 0) {
+  # On the ego-alter edgelist
+  if (!is.null(alter_types)) {
 
-    ### First value of `cat_measures`, corresponding to `ego_id`, also needs to be TRUE
-    bin_vars[[1]] <- TRUE
-    ### But `alter_id`, the second value, needs to be FALSE
-    bin_vars[[2]] <- FALSE
-    # Now extract from alters (NOTE: REPLACE `df` with `alters` ONCE FINISHED)
-    bin_df <- alters[,bin_vars]
+    # Get just the columns we need
+    alter_cor_df <- alters[, alter_types]
+    ### Add a prefix for `tidyr` call later
+    colnames(alter_cor_df) <- paste("type", colnames(alter_cor_df), sep = "_")
+    alter_cor_df$ego_id <- alters_output$ego_id
+    alter_cor_df$alter_id <- alters_output$alter_id
+    # Now we need to convert to a long dataframe
+    alter_cor_df <- alter_cor_df %>%
+      tidyr::pivot_longer(cols = tidyr::starts_with("type"),
+                          names_to = "type",
+                          values_to = "type_bin") %>%
+      dplyr::filter(type_bin == 1) %>%
+      # Some reformatting to work with `multiplex_ego`
+      dplyr::mutate(Obs_ID = dplyr::row_number(),
+                    i_elements = ego_id,
+                    i_id = 0,
+                    j_elements = alter_id,
+                    j_id = j_elements,
+                    weight = 1,
+                    type = stringr::str_replace_all(type, "^type_", "")) %>%
+      dplyr::select(Obs_ID, i_elements, i_id, j_elements, j_id, weight, type, ego_id)
 
-    for (i in 1:length(unique(bin_df$ego_id))) {
-      this_ego <- unique(bin_df$ego_id)[[i]]
-      # Remove `ego_id` before using `lapply`
-      this_bin <- bin_df %>%
-        dplyr::filter(ego_id == this_ego) %>%
-        dplyr::select(-ego_id)
+    # Store unique values for edge types
+    alter_edge_types <- unique(alter_cor_df$type)
 
-      props_applied <- lapply(this_bin, get_prop_df, ego_id = this_ego)
+    alter_cors_list <- list()
 
-      # Extract variable names to paste
-      rep_nums <- unlist(lapply(props_applied, nrow))
-      bin_names <- colnames(this_bin)
+    for (i in 1:nrow(egos)) {
+      this_ego <- egos[i, ]
+      this_ego_id <- this_ego[, "ego_id"]
+      # Get edgelist for only this ego
+      this_el <- alter_cor_df[alter_cor_df$ego_id == this_ego_id, ]
 
-      props_applied <- dplyr::bind_rows(props_applied)
+    # Handling if ego is an isolate
+    if (nrow(this_el) > 0) {
+      this_cors <- suppressWarnings(as.data.frame(t(multiplex_ego(edgelist = this_el,
+                                                                  directed = directed,
+                                                                  type = alter_edge_types))))
+      this_cors$ego_id <- this_ego_id
 
-      props_applied$val <- paste(rep(bin_names, times = rep_nums), props_applied$val, sep = "_")
-
-      if (i == 1) {
-        props_df <- props_applied
-      } else {
-        props_df <- dplyr::bind_rows(props_df, props_applied)
-      }
-
+      alter_cors_list[[i]] <- this_cors
+    }
     }
 
-    props_df <- props_df %>%
-      tidyr::pivot_wider(names_from = "val",
-                         values_from = "prop",
-                         names_prefix = "prop_")
+    alter_cors_list <- dplyr::bind_rows(alter_cors_list)
+    # Identify that these are correlations for ego-alter ties
+    colnames(alter_cors_list) <- paste("alter", colnames(alter_cors_list), sep = "_")
+    colnames(alter_cors_list)[ncol(alter_cors_list)] <- "ego_id"
 
-    props_df[is.na(props_df)] <- 0
+    # Merge into `egonet_summaries`
+    egonet_summaries <- egonet_summaries %>%
+      dplyr::left_join(alter_cors_list, by = "ego_id")
 
-    # If we don't add anything beyond just proportions, we can just leave it at this
-    bin_measures <- props_df
-
-
-
-    #
-    # bin_measures <- bin_df %>%
-    #   dplyr::group_by(ego_id) %>%
-    #   dplyr::summarize_all(.funs = list(prop1 = ~ get_prop(., out = 1),
-    #                                     prop2 = ~ get_prop(., out = 2),
-    #                                     propNA = ~ get_prop(., out = 3))
-    #   )
-  } else {
-    bin_measures <- NULL
+    # End ego-alter edge correlations
   }
 
-  ###### CONTINUOUS MEASURES are assumed IF:
-  ############# a. Variables are numerics that include non-integer values
-  ############# b. Variables are numerics with 3+ unique values
 
-  alter_numeric <- unlist(lapply(alters, FUN = detect_numeric))
-  alter_integers <- unlist(lapply(alters, FUN = detect_integer))
-  cont_vars <- as.logical(alter_numeric + alter_integers)
-  if (sum(cont_vars) > 0) {
-    ### First value of `cat_measures`, corresponding to `ego_id`, also needs to be TRUE
-    cont_vars[[1]] <- TRUE
-    ### But `alter_id`, the second value, needs to be FALSE
-    cont_vars[[2]] <- FALSE
-    # Now extract from alters (NOTE: REPLACE `df` with `alters` ONCE FINISHED)
-    cont_df <- alters[,cont_vars]
 
-    cont_measures <- cont_df %>%
-      dplyr::group_by(ego_id) %>%
-      dplyr::summarize_all(.funs = list(mean = ~ mean(., na.rm = na.rm),
-                                        sd = ~ sd(., na.rm = na.rm)))
-
-  } else {
-    cont_measures <- NULL
-  }
-
-  # Merge together
-  attr_specific <- data.frame(ego_id = egos$ego_id)
-
-  if (!is.null(cat_measures)) {
-    attr_specific <- dplyr::left_join(attr_specific, cat_measures, by = "ego_id")
-  }
-
-  if (!is.null(cont_measures)) {
-    attr_specific <- dplyr::left_join(attr_specific, cont_measures, by = "ego_id")
-  }
-
-  if (!is.null(bin_measures)) {
-    attr_specific <- dplyr::left_join(attr_specific, bin_measures, by = "ego_id")
-  }
-
-  ### Merge in `attr_agnostic` if applicable
-  if (!is.null(alter_alter)) {
-    egonet_summaries <- attr_agnostic %>%
-      dplyr::left_join(attr_specific, by = "ego_id")
-  } else {
-    egonet_summaries <- attr_specific
-  }
 
   ################################################################################
   # Dataset-level summary
@@ -597,7 +882,7 @@ ego_netwrite <- function(egos,
   summary_titles <- c("Number of egos/ego networks",
                       "Number of alters",
                       "Number of isolates",
-                      "Smallest network size",
+                      "Smallest non-isolate network size",
                       "Largest network size",
                       "Average network size",
                       "Average network density",
@@ -612,7 +897,7 @@ ego_netwrite <- function(egos,
                             "The mean fragmentation index score of personal networks provided by egos (networks with zero alters excluded from calculation)")
 
   # Combine into single dataframe
-  summary_merge <- data.frame(var_name = summary_names,
+  summary_labels <- data.frame(var_name = summary_names,
                               measure_labels = summary_titles,
                               measure_descriptions = summary_descriptions)
 
@@ -632,7 +917,7 @@ ego_netwrite <- function(egos,
       dplyr::summarize(num_egos =          as.character(dplyr::n()),
                        num_alters =        as.character(sum(network_size, na.rm = TRUE)),
                        num_isolates =      as.character(sum(network_size == 0)),
-                       min_net_size =      as.character(min(network_size)),
+                       min_net_size =      as.character(min(network_size[network_size != 0])),
                        max_net_size =      as.character(max(network_size, na.rm = TRUE)),
                        avg_net_size =      as.character(mean(network_size, na.rm = TRUE)),
                        avg_density =       as.character(mean(density, na.rm = TRUE)),
@@ -642,15 +927,69 @@ ego_netwrite <- function(egos,
     summary_t$var_name <- rownames(summary_t)
     colnames(summary_t) <- c("measures", "var_name")
     # 5. Merge into `summary_merge`
-    summary_merge <- summary_merge %>%
+    summary_merge <- summary_labels %>%
       dplyr::left_join(summary_t, by = "var_name") %>%
       dplyr::select(-var_name)
+
+    # If there are multiple alter-alter edge types, we'll want to do the same process
+    # within each edge type
+
+    if (!is.null(aa_type)) {
+
+      for (i in 1:length(unique(aa_type))) {
+        summary_df <- data.frame(ego_id = egos$ego_id)
+
+        # 2. Merge in ego-level network summaries, selecting only the variables we need
+        summary_df <- summary_df %>%
+          dplyr::left_join(egonet_summaries, by = "ego_id")
+        # Which variables are we working with here?
+        summary_df <- summary_df[,c("ego_id", paste(c("network_size", "mean_degree", "density", "fragmentation_index"), unique(aa_type)[[i]], sep = "_"))]
+        # Rename columns
+        colnames(summary_df) <- c("ego_id", "network_size", "mean_degree", "density", "fragmentation_index")
+
+        summary_df <- summary_df %>%
+          dplyr::select(ego_id, network_size, mean_degree, density, fragmentation_index) %>%
+          # Handle egos who nominate zero alters
+          dplyr::mutate(network_size = ifelse(is.na(network_size), 0, network_size)) %>%
+          # 3. Create summary measures
+          dplyr::summarize(num_egos =          as.character(dplyr::n()),
+                           num_alters =        as.character(sum(network_size, na.rm = TRUE)),
+                           num_isolates =      as.character(sum(network_size == 0)),
+                           min_net_size =      as.character(min(network_size[network_size != 0])),
+                           max_net_size =      as.character(max(network_size, na.rm = TRUE)),
+                           avg_net_size =      as.character(mean(network_size, na.rm = TRUE)),
+                           avg_density =       as.character(mean(density, na.rm = TRUE)),
+                           avg_fragmentation = as.character(mean(fragmentation_index, na.rm = TRUE)))
+
+        # 4. Transpose
+        summary_t <- as.data.frame(t(summary_df))
+        summary_t$var_name <- rownames(summary_t)
+        colnames(summary_t) <- c("measures", "var_name")
+        # 5. Merge into `summary_merge`
+        this_merge <- summary_labels %>%
+          dplyr::left_join(summary_t, by = "var_name") %>%
+          dplyr::select(-var_name)
+
+        this_merge$measure_labels <-paste("(", unique(aa_type)[[i]], ") ", this_merge$measure_labels, sep = "")
+        # We don't need the top row
+        this_merge <- this_merge[2:nrow(this_merge),]
+
+        if (i == 1) {
+          multi_summary <- this_merge
+        } else {
+          multi_summary <- dplyr::bind_rows(multi_summary, this_merge)
+        }
+      # End for loop
+      }
+      # Merge into `summary_merge`
+      summary_merge <- dplyr::bind_rows(summary_merge, multi_summary)
+
+    }
 
   } else {
 
     # 1. Get unique list of egos
     summary_df <- data.frame(ego_id = egos$ego_id)
-    summary_df <- data.frame(ego_id = 0:4)
     # 2. Get network sizes from alters dataframe
     net_sizes <- alters_output %>%
       dplyr::group_by(ego_id) %>%
@@ -671,17 +1010,25 @@ ego_netwrite <- function(egos,
     colnames(summary_t) <- c("measures", "var_name")
     # 4. Merge into `summary_merge`
     summary_merge <- summary_t %>%
-      dplyr::left_join(summary_merge, by = "var_name") %>%
+      dplyr::left_join(summary_labels, by = "var_name") %>%
       dplyr::select(-var_name) %>%
       dplyr::select(measure_labels, measure_descriptions, measures)
   }
 
 
-
-
   ################################################################################
   # Assigning output to the global environment
   ################################################################################
+
+  if (directed == FALSE) {
+    egonet_summaries <- egonet_summaries %>%
+      dplyr::select(-tidyr::starts_with("pairwise_weak_dir"),
+                    -tidyr::starts_with("pairwise_strong_dir"),
+                    -tidyr::starts_with("dyad_asym"),
+                    -tidyr::starts_with("triad_012"), -tidyr::starts_with("triad_021"),
+                    -tidyr::starts_with("triad_111"), -tidyr::starts_with("triad_030"),
+                    -tidyr::starts_with("triad_120"), -tidyr::starts_with("triad_210"))
+  }
 
 
   assign(x = paste(output_name, "_egos", sep = ""), value = egos, .GlobalEnv)
@@ -811,94 +1158,6 @@ detect_numeric <- function(x) {
 }
 
 
-# H-index for ego network diversity of categorical measures
-h_index <- function(x) {
-  # Get total number of values in `x`
-  num_vals <- length(x)
-
-  # To deal with treating `NAs` as their own category, let's rely on `dplyr`
-  h_df <- data.frame(value = x) %>%
-    dplyr::group_by(value) %>%
-    dplyr::summarize(prop_sq = (dplyr::n()/num_vals)^2) %>%
-    dplyr::ungroup()
-
-  if (NA %in% h_df$value) {
-    base::warning("NA values detected. NA will be treated as its own category when calculating H-index.")
-  }
-
-  h_val <- 1-sum(h_df$prop_sq)
-  # Return output
-  return(h_val)
-}
-
-# Normalized H_index
-iqv_index <- function(x) {
-
-  num_vals <- length(x)
-  num_distinct_vals <- length(unique(x))
-
-  # To deal with treating `NAs` as their own category, let's rely on `dplyr`
-  h_df <- data.frame(value = x) %>%
-    dplyr::group_by(value) %>%
-    dplyr::summarize(prop_sq = (dplyr::n()/num_vals)^2) %>%
-    dplyr::ungroup()
-
-  if (NA %in% h_df$value) {
-    base::warning("NA values detected. NA will be treated as its own category when calculating IQV")
-  }
-
-  h_val <- 1-sum(h_df$prop_sq)
-  iqv <- h_val / (1 - (1/num_distinct_vals))
-  return(iqv)
-}
-
-# In theory you could use `mean` to get proportions for categorical variables,
-# but there are cases where you have `NA` values that you want included in the
-# denominator, thus making `mean(x, na.rm = TRUE)` unreliable. This function
-# gets you proportions for binary measures while avoiding that issue.
-# get_prop <- function(x, out = 1) {
-#   # prop <- sum(x, na.rm = TRUE)/length(x)
-#   # return(prop)
-#
-#   denom <- length(x)
-#
-#   prop_df <- data.frame(val = x) %>%
-#     dplyr::group_by(val) %>%
-#     dplyr::summarize(prop = dplyr::n()/denom) %>%
-#     dplyr::ungroup()
-#
-#   # If there's an NA value in the mix, extract it and remove from `prop_df`
-#   if (NA %in% prop_df$val) {
-#     na_there <- TRUE
-#     prop_na <- prop_df %>%
-#       dplyr::filter(is.na(val))
-#     prop_df <- prop_df %>%
-#       dplyr::filter(!is.na(val))
-#   } else {
-#     na_there <- FALSE
-#   }
-#
-#   if (out == 1) {
-#     output <- unname(unlist(prop_df[1, 2]))
-#   } else if (out == 2) {
-#     output <- unname(unlist(prop_df[2, 2]))
-#   } else {
-#     if (na_there == TRUE) {
-#       output <- unname(unlist(prop_na$prop))
-#     } else {
-#       output <- 0
-#     }
-#   }
-#
-#   # Sometimes you'll get an NA value, go ahead and replace with 0
-#   if (is.na(output) == TRUE) {
-#     output <- 0
-#   }
-#
-#   return(output)
-#
-# }
-
 get_prop_df <- function(x, ego_id) {
 
   denom <- length(x)
@@ -942,119 +1201,10 @@ get_count_df <- function(x, ego_id) {
 
 
 
-fragmentation_index <- function(x) {
-
-  # Note: igraph::distances gives a matrix of paths, is this what we need?
-  # TURN TO 1/O for REACHABILITY AND MAKE IT WORK
-  # Get distance matrix
-  t <- igraph::distances(x)
-  # Remove `inf` values
-  t[is.infinite(t)] <- 0
-  # Binarize
-  t <- t > 0
-  # Make diagonal NA
-  diag(t) <- NA
-  # Take the mean
-  out <- mean(t, na.rm = TRUE)
-
-  # t <- intergraph::asNetwork(x)
-  # t <- sna::reachability(t)
-  # diag(t) <- 0
-  # out <- mean(t)
-
-  return(out)
-
-}
-
-igraph_apply <- function(x) {
-
-  if ("igraph" %in% class(x$igraph)) {
-
-  frag_index <- fragmentation_index(x$igraph)
-
-  graph_summary <- data.frame(ego_id = x$ego,
-                              network_size = igraph::gorder(x$igraph),
-                              mean_degree = mean(igraph::degree(x$igraph)),
-                              density = igraph::edge_density(x$igraph),
-                              num_weakcomponent = igraph::count_components(x$igraph, mode = "weak"),
-                              num_strongcomponent = igraph::count_components(x$igraph, mode = "strong"),
-                              component_ratio = (igraph::count_components(x$igraph, mode = "weak") - 1) / (igraph::gorder(x$igraph) - 1),
-                              fragmentation_index = frag_index,
-                              effective_size = igraph::gorder(x$igraph) - mean(igraph::degree(x$igraph)),
-                              efficiency = (igraph::gorder(x$igraph) - mean(igraph::degree(x$igraph))) / igraph::gorder(x$igraph),
-                              constraint = igraph::constraint(x$igraph_ego)[["ego"]],
-                              betweenness = igraph::betweenness(x$igraph_ego)[["ego"]],
-                              norm_betweenness = igraph::betweenness(x$igraph_ego, normalized = TRUE)[["ego"]])
-  } else {
-    graph_summary <- data.frame(ego_id = x$ego,
-                                network_size = 0,
-                                mean_degree = NA,
-                                density = NA,
-                                num_weakcomponent = NA,
-                                num_strongcomponent = NA,
-                                component_ratio = NA,
-                                fragmentation_index = NA,
-                                effective_size = NA,
-                                efficiency = NA,
-                                constraint = NA,
-                                betweenness = NA,
-                                norm_betweenness = NA)
-  }
-}
 
 
-alter_centrality <- function(x) {
 
-  # If ego is an isolate (no nominated ties)
-  if (!("igraph" %in% class(x$igraph))) {
-    # Make a dataframe that's merge-compatible but just contains NAs
-    out <- data.frame(total_degree = NA,
-                      closeness = NA,
-                      betweenness_scores = NA,
-                      bonpow = NA,
-                      bonpow_negative = NA,
-                      eigen_centrality = NA,
-                      burt_constraint = NA,
-                      effective_size = NA,
-                      reachability = NA)
-    out$ego_id <- x$ego
-    out$id <- NA
-  } else {
 
-  total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
-  # WEIGHTED DEGREE TBD
-  comp_membership <- ideanet:::component_memberships(x$igraph)
-  closeness <- ideanet:::closeness_igraph(x$igraph)
-  # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
-  betweenness_scores <- ideanet:::betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
-  # Remove the final value here, as that's ego's score
-  betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
-  bonpow <- ideanet:::bonacich_igraph(x$igraph, directed = FALSE, message = TRUE)
-  bonpow_negative <- ideanet:::bonacich_igraph(x$igraph, directed = FALSE, bpct = -.75, message = TRUE)
-  colnames(bonpow_negative) <- c("bonacich_negative", "bon_centralization_negative")
-  eigen_cen <- ideanet:::eigen_igraph(x$igraph, directed = FALSE, message = TRUE)
-  constraint <- ideanet:::burt_ch(x$igraph)
-  effective_size <- ideanet:::ens(x$igraph)
-  reachability <- ideanet:::reachable_igraph(x$igraph, directed = FALSE)
 
-  bon_cent <- bonpow[[2]]
-  bonpow <- bonpow[[1]]
-  bon_cent_neg <- bonpow_negative[[2]]
-  bonpow_negative <- bonpow_negative[[1]]
-
-  # Get ego and alter IDs for merging
-  ego_ids <- igraph::V(x$igraph)$ego_id
-  alter_ids <- as.numeric(igraph::V(x$igraph)$name)
-
-  # Compile into data frame
-  out <- cbind(total_degree, closeness, betweenness_scores,
-               bonpow, bonpow_negative, eigen_cen, constraint, effective_size,
-               reachability)
-  out$ego_id <- ego_ids
-  out$id <- alter_ids
-}
-  return(out)
-
-}
 
 
