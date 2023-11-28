@@ -4,8 +4,19 @@
 
 alter_centrality <- function(x, directed) {
 
+  # Two necessary conditions:
+  ### 1. Is ego an isolate? If that's the case, no igraph objects would have
+  ### been stored for it in `igraph_list`
+  ego_isolate <- !("igraph" %in% class(x$igraph))
+  ### 2. Does ego have ties but no ties exist between alters?
+  if (ego_isolate == FALSE) {
+      alters_noties <- length(igraph::E(x$igraph)) == 0
+  } else {
+      alters_noties <- FALSE
+  }
+
   # If ego is an isolate (no nominated ties)
-  if (!("igraph" %in% class(x$igraph))) {
+  if (ego_isolate == TRUE) {
 
     if (directed == FALSE) {
       # Make a dataframe that's merge-compatible but just contains NAs
@@ -37,6 +48,74 @@ alter_centrality <- function(x, directed) {
       out$id <- NA
     }
 
+  # Handling if ego is not an isolate but alters have no ties to one another.
+  # May need to revisit how we decide on measure values here.
+  } else if (alters_noties == TRUE) {
+
+    if (directed == FALSE) {
+
+      total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      # WEIGHTED DEGREE TBD
+      comp_membership <- ideanet:::component_memberships(x$igraph)
+      closeness <- ideanet:::closeness_igraph(x$igraph)
+      # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
+      betweenness_scores <- ideanet:::betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
+      # Remove the final value here, as that's ego's score
+      betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
+      eigen_cen <- rep(NA, length(total_degree))
+      constraint <- ideanet:::burt_ch(x$igraph)
+      effective_size <- ideanet:::ens(x$igraph)
+      reachability <- ideanet:::reachable_igraph(x$igraph, directed = FALSE)
+
+
+      bonpow <- rep(NA, length(total_degree))
+      bonpow_negative <- rep(NA, length(total_degree))
+
+      # Get ego and alter IDs for merging
+      ego_ids <- igraph::V(x$igraph)$ego_id
+      alter_ids <- as.numeric(igraph::V(x$igraph)$name)
+
+      # Compile into data frame
+      out <- cbind(total_degree, closeness, betweenness_scores,
+                   bonpow, bonpow_negative, eigen_cen, constraint, effective_size,
+                   reachability)
+      out$ego_id <- ego_ids
+      out$id <- alter_ids
+
+    } else {
+
+      indegree <- igraph::degree(x$igraph, mode = "in", loops = FALSE)
+      outdegree <- igraph::degree(x$igraph, mode = "out", loops = FALSE)
+      total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      # WEIGHTED DEGREE TBD
+      comp_membership <- ideanet:::component_memberships(x$igraph)
+      closeness <- ideanet:::closeness_igraph(x$igraph)
+      # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
+      betweenness_scores <- ideanet:::betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
+      # Remove the final value here, as that's ego's score
+      betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
+      eigen_cen <- rep(NA, length(total_degree))
+      constraint <- ideanet:::burt_ch(x$igraph)
+      effective_size <- ideanet:::ens(x$igraph)
+      reachability <- ideanet:::reachable_igraph(x$igraph, directed = TRUE)
+
+
+      bonpow <- rep(NA, length(total_degree))
+      bonpow_negative <- rep(NA, length(total_degree))
+
+      # Get ego and alter IDs for merging
+      ego_ids <- igraph::V(x$igraph)$ego_id
+      alter_ids <- as.numeric(igraph::V(x$igraph)$name)
+
+      # Compile into data frame
+      out <- cbind(indegree, outdegree, total_degree, closeness, betweenness_scores,
+                   bonpow, bonpow_negative, eigen_cen, constraint, effective_size,
+                   reachability)
+      out$ego_id <- ego_ids
+      out$id <- alter_ids
+    }
+
+  # Handling if ego is not an isolate and at least one tie exists between two alters
   } else {
 
     if (directed == FALSE) {
@@ -112,6 +191,8 @@ alter_centrality <- function(x, directed) {
 
 
   }
+  # Remove extraneous `eigen_cen` column if it appears
+  out$eigen_cen <- NULL
   return(out)
 
 }

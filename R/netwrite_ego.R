@@ -9,6 +9,7 @@
 #' @param alter_ego A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in `alters` containing ego identifiers.
 #' @param alter_type (DEPRECATED) A numeric or character vector indicating the types of relationships existing between ego and a given alter, or a single character value indicating the name of the column in `alters` containing relationship type. If `alter_type` is specified, `ego_netwrite` will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.
 #' @param alter_types A character vector indicating the columns in `alters` that indicate whether a given alter has certain types of relations with ego. These columns should all contain binary measures indicating whether alter has a particular type of relation with ego.
+#' @param max_alters A numeric value indicating the maximum number of alters an ego in the dataset could have nominated
 #' @param alter_alter A data frame containing an edgelist indicataing ties between alters in each ego's network. This edgelist is optional, but `ego_netwrite` wil not provide certain measures without it.
 #' @param aa_ego A vector of identifiers indicating which ego is associated with a given tie between alters, or a single character indicating the name of the column in `alter_alter` containing ego identifiers.
 #' @param i_elements A vector of identifiers indicating which alter is on one end of an alter-alter tie, or a single character indicating the name of the column in `alter_alter` containing these identifiers.
@@ -31,11 +32,12 @@
 
 ego_netwrite <- function(egos,
                          ego_id,
-                         alters,
+                         alters = NULL,
                          alter_id = NULL,
                          alter_ego = NULL,
                          alter_type = NULL,
                          alter_types = NULL,
+                         max_alters = Inf,
                          alter_alter = NULL,
                          aa_ego = NULL,
                          i_elements = NULL,
@@ -56,8 +58,7 @@ ego_netwrite <- function(egos,
 
                          # Egor compatibility
                          egor = FALSE,
-                         egor_design = NULL,
-                         egor_alter_design = list(max = Inf)) {
+                         egor_design = NULL) {
 
   # browser()
 
@@ -96,6 +97,15 @@ ego_netwrite <- function(egos,
     if (!is.null(alter_alter)) {
       alter_alter <- as.data.frame(alter_alter)
     }
+
+
+    ################################################################################
+    # Handling type indicator variables
+    ################################################################################
+
+
+
+
 
 
     # Indictors for renaming objects
@@ -353,8 +363,11 @@ ego_netwrite <- function(egos,
       # this_alters$alter_id <- this_alter_id
 
       this_alters <- alters[alters$ego_id == this_ego, ]
+      # Create an isolate indicator for downstream
+      this_iso <- ifelse(nrow(this_alters) == 0, TRUE, FALSE)
+
       # Need a bit of finagling if ego is an isolate (makes zero nominations)
-      if (nrow(this_alters) == 0) {
+      if (this_iso == TRUE) {
         this_alters <- alters[1,]
         this_alters$ego_id <- this_ego
         this_alters[1, 2:ncol(this_alters)] <- NA
@@ -364,17 +377,60 @@ ego_netwrite <- function(egos,
 
 
       # If an ego nominates alters with no connections to each other,
-      # no need to create an igraph object
+      # we need to create the igraph object a bit differently
       if (nrow(this_alter_alter) == 0) {
-        # Store in list of igraph objects
-        igraph_list[[i]] <- list(ego = this_ego,
-                                 ego_info = this_ego_info,
-                                 igraph = NA)
 
-        # Need to add column `id` to `alters` to make compatible for merging in
-        # final output
-        this_alters$id <- NA
+        # If ego is an isolate, though, we don't need to create an igraph object
+        if (this_iso == TRUE) {
+          # Store in list of igraph objects
+          igraph_list[[i]] <- list(ego = this_ego,
+                                   ego_info = this_ego_info,
+                                   igraph = NA)
 
+          # Need to add column `id` to `alters` to make compatible for merging in
+          # final output
+          this_alters$id <- NA
+
+        # If ego isn't an isolate, though, just that alters aren't connected,
+        # proceed this way
+        } else {
+
+          unique_alters <- unique(this_alters$alter_id)
+          alter_id_merge <- data.frame(alter_id = unique_alters,
+                                       id = (1:length(unique_alters)) - 1)
+
+          this_alters <- this_alters %>%
+            dplyr::left_join(alter_id_merge, by = "alter_id") %>%
+            dplyr::select(id, alter_id, ego_id, dplyr::everything())
+
+          # If there's a variable in `this_alters` called `name`, it'll mess up igraph
+          # processing. Because of this, we have to rename
+
+          if ("name" %in% colnames(this_alters)) {
+            colnames(this_alters) <- stringr::str_replace_all(colnames(this_alters), "^name$", "alter_name")
+          }
+
+          this_alter_alter <- this_alter_alter %>%
+            dplyr::select(i_elements, j_elements, ego_id, dplyr::everything())
+
+          this_igraph <- igraph::graph_from_data_frame(this_alter_alter, vertices = this_alters,
+                                                       directed = directed)
+
+          # Add in ego to the graph (without attributes)
+          this_igraph_ego <- igraph::add_vertices(this_igraph, 1)
+          this_igraph_ego <- igraph::add_edges(this_igraph_ego, c(rbind(seq(igraph::gorder(this_igraph_ego) - 1),
+                                                                        igraph::gorder(this_igraph_ego))))
+          igraph::V(this_igraph_ego)$name[[igraph::gorder(this_igraph_ego)]] <- "ego"
+
+          # Store in list of igraph objects
+          igraph_list[[i]] <- list(ego = this_ego,
+                                   ego_info = this_ego_info,
+                                   igraph = this_igraph,
+                                   igraph_ego = this_igraph_ego)
+
+        }
+
+      # Alters have edges with each other, proceed normally
       } else {
 
         # this_aa_i <- aa_i[aa_ego == this_ego]
@@ -515,6 +571,9 @@ ego_netwrite <- function(egos,
         this_ego_info <- egos[ego_id == this_ego,]
 
         this_alters <- alters[alters$ego_id == this_ego, ]
+        # Create an isolate indicator for downstream
+        this_iso <- ifelse(nrow(this_alters) == 0, TRUE, FALSE)
+
         # Need a bit of finagling if ego is an isolate (makes zero nominations)
         if (nrow(this_alters) == 0) {
           this_alters <- alters[1,]
@@ -526,34 +585,96 @@ ego_netwrite <- function(egos,
 
 
 
-        # If an ego nominate alters with no connections to each other,
+        # If an ego nominates alters with no connections to each other,
         # no need to create an igraph object
         if (nrow(this_alter_alter) == 0) {
-          # Store in list of igraph objects
-          igraph_list2[[i]] <- list(ego = this_ego,
-                                    type = this_type,
-                                    ego_info = this_ego_info,
-                                    igraph = NA)
 
-          # Need to add column `id` to `alters` to make compatible for merging in
-          # final output
-          this_alters$id <- NA
+          # If ego is an isolate, though, we don't need to create an igraph object
+          if (this_iso == TRUE) {
+              # Store in list of igraph objects
+              igraph_list2[[i]] <- list(ego = this_ego,
+                                        type = this_type,
+                                        ego_info = this_ego_info,
+                                        igraph = NA)
 
-          # Also store in main `igraph_list`. This is a bit involved,
-          # so I'll do my best to walk through the steps in the comments here
-          #### First, we need to use `lappy` to figure out which item in `igraph_list`
-          #### corresponds to the ego we're interested in
-          list_id <- which(unlist(lapply(igraph_list, function(x, num) {x$ego == num}, num = this_ego)))
-          #### Now that we have this, we're going to store `igraph` and `igraph_ego`,
-          #### as constructed in this step of the loop, into the appropriate item
-          #### in igraph_list (which is the corresponding ego). Placeholder names
-          #### are used in this step
-          igraph_list[[list_id]]$this_igraph <- NA
-          igraph_list[[list_id]]$this_igraph_ego <- NA
-          #### Now we rename the new additions to this_ego's item in `igraph_list`
-          names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]]))-1)] <- paste("igraph", this_type, sep = "_")
-          names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]])))] <-   paste("igraph_ego", this_type, sep = "_")
+              # Need to add column `id` to `alters` to make compatible for merging in
+              # final output
+              this_alters$id <- NA
 
+              # Also store in main `igraph_list`. This is a bit involved,
+              # so I'll do my best to walk through the steps in the comments here
+              #### First, we need to use `lappy` to figure out which item in `igraph_list`
+              #### corresponds to the ego we're interested in
+              list_id <- which(unlist(lapply(igraph_list, function(x, num) {x$ego == num}, num = this_ego)))
+              #### Now that we have this, we're going to store `igraph` and `igraph_ego`,
+              #### as constructed in this step of the loop, into the appropriate item
+              #### in igraph_list (which is the corresponding ego). Placeholder names
+              #### are used in this step
+              igraph_list[[list_id]]$this_igraph <- NA
+              igraph_list[[list_id]]$this_igraph_ego <- NA
+              #### Now we rename the new additions to this_ego's item in `igraph_list`
+              names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]]))-1)] <- paste("igraph", this_type, sep = "_")
+              names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]])))] <-   paste("igraph_ego", this_type, sep = "_")
+
+          # If ego isn't an isolate, though, just that alters aren't connected,
+          # proceed this way
+          } else {
+
+            unique_alters <- unique(this_alters$alter_id)
+            alter_id_merge <- data.frame(alter_id = unique_alters,
+                                         id = (1:length(unique_alters)) - 1)
+            this_alters <- this_alters %>%
+              dplyr::left_join(alter_id_merge, by = "alter_id") %>%
+              dplyr::select(id, alter_id, ego_id, dplyr::everything())
+
+            # If there's a variable in `this_alters` called `name`, it'll mess up igraph
+            # processing. Because of this, we have to rename
+
+            if ("name" %in% colnames(this_alters)) {
+              colnames(this_alters) <- stringr::str_replace_all(colnames(this_alters), "^name$", "alter_name")
+            }
+
+            this_alter_alter <- this_alter_alter %>%
+              dplyr::select(i_elements, j_elements, ego_id, dplyr::everything())
+
+            this_igraph <- igraph::graph_from_data_frame(this_alter_alter, vertices = this_alters,
+                                                         directed = directed)
+
+            # Add in ego to the graph (without attributes)
+            this_igraph_ego <- igraph::add_vertices(this_igraph, 1)
+            this_igraph_ego <- igraph::add_edges(this_igraph_ego, c(rbind(seq(igraph::gorder(this_igraph_ego) - 1),
+                                                                          igraph::gorder(this_igraph_ego))))
+            igraph::V(this_igraph_ego)$name[[igraph::gorder(this_igraph_ego)]] <- "ego"
+
+            # Store in list of igraph objects
+            igraph_list2[[i]] <- list(ego = this_ego,
+                                      type = this_type,
+                                      ego_info = this_ego_info,
+                                      igraph = this_igraph,
+                                      igraph_ego = this_igraph_ego)
+
+            # Also store in main `igraph_list`. This is a bit involved,
+            # so I'll do my best to walk through the steps in the comments here
+            #### First, we need to use `lappy` to figure out which item in `igraph_list`
+            #### corresponds to the ego we're interested in
+            list_id <- which(unlist(lapply(igraph_list, function(x, num) {x$ego == num}, num = this_ego)))
+            #### Now that we have this, we're going to store `igraph` and `igraph_ego`,
+            #### as constructed in this step of the loop, into the appropriate item
+            #### in igraph_list (which is the corresponding ego). Placeholder names
+            #### are used in this step
+            igraph_list[[list_id]]$this_igraph <- this_igraph
+            igraph_list[[list_id]]$this_igraph_ego <- this_igraph_ego
+            #### Now we rename the new additions to this_ego's item in `igraph_list`
+            names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]]))-1)] <- paste("igraph", this_type, sep = "_")
+            names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]])))] <-   paste("igraph_ego", this_type, sep = "_")
+
+            # Reorder columns of alter edgelist for final output
+            this_alter_alter <- this_alter_alter %>%
+              dplyr::select(ego_id, i_elements, i_id, j_elements, j_id, dplyr::everything())
+          }
+
+
+    # Not an isolate, at least one dyad has an edge. Proceed normally
         } else {
 
           # this_aa_i <- aa_i[aa_ego == this_ego]
@@ -808,11 +929,11 @@ ego_netwrite <- function(egos,
   if (!is.null(alter_types)) {
 
     # Get just the columns we need
-    alter_cor_df <- alters[, alter_types]
+    alter_cor_df <- alters[, c("ego_id", "alter_id", alter_types)]
     ### Add a prefix for `tidyr` call later
     colnames(alter_cor_df) <- paste("type", colnames(alter_cor_df), sep = "_")
-    alter_cor_df$ego_id <- alters_output$ego_id
-    alter_cor_df$alter_id <- alters_output$alter_id
+    colnames(alter_cor_df)[[1]] <- "ego_id"
+    colnames(alter_cor_df)[[2]] <- "alter_id"
     # Now we need to convert to a long dataframe
     alter_cor_df <- alter_cor_df %>%
       tidyr::pivot_longer(cols = tidyr::starts_with("type"),
@@ -993,7 +1114,7 @@ ego_netwrite <- function(egos,
     # 2. Get network sizes from alters dataframe
     net_sizes <- alters_output %>%
       dplyr::group_by(ego_id) %>%
-      dplyr::summarize(network_size = dplyr::n()) %>%
+      dplyr::summarize(network_size = sum(!is.na(alter_id))) %>%
       dplyr::ungroup()
     summary_df <- summary_df %>%
       dplyr::left_join(net_sizes, by = "ego_id") %>%
@@ -1013,6 +1134,40 @@ ego_netwrite <- function(egos,
       dplyr::left_join(summary_labels, by = "var_name") %>%
       dplyr::select(-var_name) %>%
       dplyr::select(measure_labels, measure_descriptions, measures)
+
+  }
+
+  ######### I think we need unique summary measures for ego->alter edge types
+  if (!is.null(alter_types)) {
+    for (i in 1:length(alter_types)) {
+      # Create placeholder variable for this edge type
+      this_sizes <- alters_output
+      this_sizes$this_var <- this_sizes[, paste("type", alter_types[[i]], sep = "_")]
+      # Get network sizes from alters dataframe
+      this_sizes <- this_sizes %>%
+        dplyr::group_by(ego_id) %>%
+        dplyr::summarize(network_size = sum(this_var)) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(network_size2 = network_size,
+                      network_size = ifelse(is.na(network_size), 0, network_size),
+                      network_size2 = ifelse(network_size2 == 0, NA, network_size2)) %>%
+        dplyr::summarize(num_alters =        as.character(sum(network_size, na.rm = TRUE)),
+                         num_isolates =      as.character(sum(network_size == 0)),
+                         min_net_size =      as.character(min(network_size2, na.rm = TRUE)),
+                         max_net_size =      as.character(max(network_size2, na.rm = TRUE)),
+                         avg_net_size =      as.character(mean(network_size2, na.rm = TRUE)))
+      # Transpose
+      this_t <- as.data.frame(t(this_sizes))
+      this_t$var_name <- rownames(this_t)
+      colnames(this_t) <- c("measures", "var_name")
+      # Merge into `summary_merge`
+      this_t <- this_t %>%
+        dplyr::left_join(summary_labels, by = "var_name") %>%
+        dplyr::mutate(measure_labels = paste("(", alter_types[[i]], ") ", measure_labels, sep = "")) %>%
+        dplyr::select(-var_name) %>%
+        dplyr::select(measure_labels, measure_descriptions, measures)
+      summary_merge <- dplyr::bind_rows(summary_merge, this_t)
+    }
   }
 
 
@@ -1032,6 +1187,12 @@ ego_netwrite <- function(egos,
 
 
   assign(x = paste(output_name, "_egos", sep = ""), value = egos, .GlobalEnv)
+
+  # Remove placeholder rows in `alter_output` given for isolate egos
+  # only needed when alter-alter edgelist is present
+      if (!is.null(alter_alter)) {
+          alters_output <- alters_output[!is.na(alters_output$id),]
+      }
   assign(x = paste(output_name, "_alters", sep = ""), value = alters_output, .GlobalEnv)
 
   assign(x = paste(output_name, "_summaries", sep = ""), value = egonet_summaries, .GlobalEnv)
@@ -1077,7 +1238,7 @@ ego_netwrite <- function(egos,
                                              source = ".srcID",
                                              target = ".tgtID"),
                               ego_design = egor_design,
-                              alter_design = egor_alter_design)
+                              alter_design = list(max = max_alters))
 
     assign(x = paste(output_name, "_egor", sep = ""), value = egor_object, .GlobalEnv)
 
@@ -1200,10 +1361,13 @@ get_count_df <- function(x, ego_id) {
 }
 
 
+##### NOTES
+# When `id` in the outputted alter list is `NA`, it's because alters were in a network
+# in which ego nominated them, but no alters were tied to one another in the alter-alter edgelist.
+# We may need to revisit if we even want this column in the output
 
-
-
-
+# In igraph list, ego->alter edge attributes are stored as a node property of the alter.
+# I think this is defensible.
 
 
 
