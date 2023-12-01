@@ -1,19 +1,23 @@
-
 #' E-I Index (`ei_index`)
 #'
-#' @description
+#' @description Linear transformation of the proportion homophilous measure (Krackhardt and Stern 1988; Perry et al. 2018)
 #'
 #' @param ego_id A vector of unique ego identifiers located in an ego dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.
 #' @param ego_measure A vector of attributes corresponding to each ego.
 #' @param alter_ego A vector of ego identifiers located in an alter dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.
 #' @param alter_measure A vector of attributes corresponding to each alter
 #'
-#' @return
+#' @return `ei_index` returns a dataframe of vectors that include the ego identifier and the ei-index value for the selected attribute
 #'
 #' @export
 #'
 #' @examples
 #'
+#' data(package = "egor", "egos32")
+#' data(package = "egor", "alters32")
+#'
+#' ei_index(ego_id = egos32$.EGOID, ego_measure = egos32$country,
+#' alter_ego = alters32$.EGOID, alter_measure = alters32$country)
 
 
 ei_index <- function(ego_id,

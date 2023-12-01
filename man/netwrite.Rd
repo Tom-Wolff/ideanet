@@ -34,7 +34,7 @@ netwrite(
 
 \item{adjacency_list}{If `data_type` is set to `adjacency_list`, a data frame containing the adjacency list for the network being processed.}
 
-\item{nodelist}{Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If}
+\item{nodelist}{Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If the latter, a value for `node_id` must be specified.}
 
 \item{node_id}{If a data frame is entered for the `nodelist` arugment, `node_id` should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.}
 
@@ -46,7 +46,7 @@ netwrite(
 
 \item{weights}{A numeric vector indicating the weight of ties in the edgelist.}
 
-\item{type}{A numeric or character vector indicating the types of relationships represented in the edgelist. If `type` contains this vector, `netwrite` will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occuring in the network.}
+\item{type}{A numeric or character vector indicating the types of relationships represented in the edgelist. If `type` contains this vector, `netwrite` will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.}
 
 \item{remove_loops}{A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.}
 

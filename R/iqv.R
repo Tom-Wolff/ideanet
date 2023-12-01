@@ -1,18 +1,22 @@
 #' Index of Qualitative Variation (`iqv`)
 #'
-#' @description
+#' @description A normalized value of the h-index for measuring the diversity of an ego's network for categorical attributes (Perry et al. 2018)
 #'
 #' @param ego_id A vector of ego identifiers located in an alter dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.
 #' @param measure A vector of alter attributes for a given categorical measure.
 #' @param prefix A character value indicating the desired prefix for the calculated homophily measure.
 #' @param suffix A character value indicating the desired suffix for the calculated homophily measure.
 #'
-#' @return
+#' @return `iqv` returns a dataframe of vectors that include the ego identifier and iqv value of diversity for the desired categorical attribute.
 #'
 #' @export
 #'
 #' @examples
 #'
+#' data(package = "egor", "egos32")
+#' data(package = "egor", "alters32")
+#'
+#' iqv(ego_id = alters32$.EGOID, measure = alters32$country)
 
 
 

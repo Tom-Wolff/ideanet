@@ -1,6 +1,6 @@
 #' Pearson's Phi (`pearson_phi`)
 #'
-#' @description
+#' @description The `pearson_phi` function identifies the underlying homophilous preference of ego based on the distribution of alter attributes in the population (Perry et al. 2018)
 #'
 #' @param ego_id A vector of unique ego identifiers located in an ego dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.
 #' @param ego_measure A vector of attributes corresponding to each ego.
@@ -9,12 +9,17 @@
 #' @param prefix A character value indicating the desired prefix for the calculated homophily measure.
 #' @param suffix A character value indicating the desired suffix for the calculated homophily measure.
 #'
-#' @return
+#' @return `pearson_phi` returns a dataframe of vectors that include the ego identifier and phi value of homophilous preference.
 #'
 #' @export
 #'
 #' @examples
 #'
+#' data(package = "egor", "egos32")
+#' data(package = "egor", "alters32")
+#'
+#' pearson_phi(ego_id = egos32$.EGOID, ego_measure = egos32$country,
+#' alter_ego = alters32$.EGOID, alter_measure = alters32$country)
 
 
 pearson_phi <- function(ego_id,

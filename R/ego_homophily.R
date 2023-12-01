@@ -1,6 +1,6 @@
 #' Measuring Homophily in Ego Networks (`ego_homophily`)
 #'
-#' @description
+#' @description The `ego_homophily` function identifies how similar ego is from their alters on a given attribute.
 #'
 #' @param ego_id A vector of unique ego identifiers located in an ego dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.
 #' @param ego_measure A vector of attributes corresponding to each ego.
@@ -10,12 +10,18 @@
 #' @param suffix A character value indicating the desired suffix for the calculated homophily measure.
 #' @param prop A logical value indicating whether homophily should be represented as a count or as a proportion.
 #'
-#' @return
+#' @return `ego_homophily` returns a dataframe of vectors that include the ego identifier and the number or proportion of alters with the same selected attribute
 #'
 #' @export
 #'
 #' @examples
 #'
+#' data(package = "egor", "egos32")
+#' data(package = "egor", "alters32")
+#'
+#' ego_homophily(ego_id = egos32$.EGOID, ego_measure = egos32$country,
+#' alter_ego = alters32$.EGOID, alter_measure = alters32$country)
+
 
 
 ego_homophily <- function(ego_id,

@@ -1,6 +1,6 @@
 #' Ego Network Cleaning and Measure Calculation (`ego_netwrite`)
 #'
-#' @description The `ego_netwrite` function reads in data pertaining to ego networks and processes them into a set of standardized outputs, including measures commonly calculated for ego networks. `ego_netwrite` is also designed to process data produced by Network Canvas, a popular tool for egocentric data capture.
+#' @description The `ego_netwrite` function reads in data pertaining to ego networks and processes them into a set of standardized outputs, including measures commonly calculated for ego networks.
 #'
 #' @param egos A data frame containing measures of ego attributes.
 #' @param ego_id A vector of unique identifiers corresponding to each ego, or a single character value indicating the name of the column in `egos` containing ego identifiers.
@@ -19,8 +19,6 @@
 #' @param missing_code A numeric value indicating "missing" values in the alter-alter edgelist.
 #' @param na.rm A logical value indicating whether `NA` values should be excluded when calculating continuous measures.
 #' @param output_name A character value indicating the name or prefix that should be given to output objects.
-#' @param network_canvas_path If using data from Network Canvas, a character value indicating the directory in which Network Canvas CSVs are located. `ego_netwrite` will automatically read in all CSV files located in this directory and process them.
-#' @param cat.to.factor When using Network Canvas data, a logical vaue indicating whether categorical variables, originally stored as a series of TRUE/FALSE columns, should be converted into a single factor column.
 #' @param egor A logical value indicating whether output should include an `egor` object, which is often useful for visualizaton and for simulation larger networks from egocentric data.
 #' @param egor_design If creating an `egor` object, a list of arguments to `srvyr::as_survey_design()` specifying the sampling design for egos. This argument corresponds to `ego_design` in `egor::egor`.
 #' @param egor_alter_design If creating an `egor` object, the maximum number of alters than an ego can nominate. This argument corresponds to `alter_design` in `egor::egor`.
@@ -52,40 +50,11 @@ ego_netwrite <- function(egos,
                          # Name for output objects
                          output_name = "egonet",
 
-                         # Network canvas reading
-                         network_canvas_path = NULL,
-                         cat.to.factor = TRUE,
-
                          # Egor compatibility
                          egor = FALSE,
                          egor_design = NULL) {
 
   # browser()
-
-  if (!is.null(network_canvas_path)) {
-
-    nc_list <- nc_read(path = network_canvas_path,
-                       cat.to.factor = cat.to.factor,
-                       ideanet = TRUE)
-
-    egos <- nc_list$egos
-    alters <- nc_list$alters
-    alter_alter <- nc_list$alter_edgelists
-
-    # In case tibbles are created, convert to basic data frames
-    egos <- as.data.frame(egos)
-    alters <- as.data.frame(alters)
-    alter_alter <- as.data.frame(alter_alter) %>%
-      dplyr::rename(i_elements = from,
-                    j_elements = to)
-
-    ego_id <- egos$ego_id
-
-
-    # If users are loading Network Canvas data, the `nc_read` function will already
-    # process these data in a way that's compatible with the rest of `ego_netwrite`.
-    # As such, the next section can be skipped if working with NC data
-  } else {
 
     ################################################################################
     # Basic Formatting
@@ -271,7 +240,6 @@ ego_netwrite <- function(egos,
       }
     }
 
-  }
 
   ################################################################################
   # Creating numeric IDs for Data
