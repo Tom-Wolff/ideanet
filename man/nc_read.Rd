@@ -14,7 +14,8 @@ nc_read(path, cat.to.factor = TRUE, output_list = TRUE)
 \item{output_list}{A logical value indicating whether output should be stored as three separate objects in the Global Environment or as a single list of objects in the Global Environment.}
 }
 \value{
-\code{nc_read} returns three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}. Data frames are either stored individually in the Global Environment or as elements in a single list in the Global Environment depending on how \code{output_list} is specified.
+\code{nc_read} returns three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}. Data frames are either stored individually in the Global Environment or as elements in a single list in the Global Environment depending on how \code{output_list} is specified. \cr \cr
+Note that in the \code{alters} data frame, column \code{node_type} reflects the "node type" assigned to a given alter as specified in a Network Canvas protocol. Values in \code{node_type} are likely not those which should be fed into the \code{alter_types} argument in \code{\link{ego_netwrite}}.
 }
 \description{
 The \code{nc_read} function reads in and processes CSV files produced by Network Canvas, a popular tool for egocentric data capture. \code{nc_read} produces three dataframes optimized for use with \code{\link{ego_netwrite}}.

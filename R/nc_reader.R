@@ -6,7 +6,8 @@
 #' @param cat.to.factor A logical value indicating whether categorical variables, originally stored as a series of TRUE/FALSE columns, should be converted into a single factor column.
 #' @param output_list A logical value indicating whether output should be stored as three separate objects in the Global Environment or as a single list of objects in the Global Environment.
 #'
-#' @return \code{nc_read} returns three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}. Data frames are either stored individually in the Global Environment or as elements in a single list in the Global Environment depending on how \code{output_list} is specified.
+#' @return \code{nc_read} returns three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}. Data frames are either stored individually in the Global Environment or as elements in a single list in the Global Environment depending on how \code{output_list} is specified. \cr \cr
+#' Note that in the \code{alters} data frame, column \code{node_type} reflects the "node type" assigned to a given alter as specified in a Network Canvas protocol. Values in \code{node_type} are likely not those which should be fed into the \code{alter_types} argument in \code{\link{ego_netwrite}}.
 #'
 #' @export
 
@@ -146,7 +147,7 @@ ego_basic <- egos %>%
 
 alters <- alters %>%
   dplyr::left_join(ego_basic, by = "networkCanvasEgoUUID") %>%
-  dplyr::select(ego_id, alter_id = nodeID, dplyr::everything())
+  dplyr::select(ego_id, alter_id = nodeID, node_type, dplyr::everything())
 
 el <- el %>%
   dplyr::left_join(ego_basic, by = "networkCanvasEgoUUID") %>%
@@ -161,11 +162,12 @@ if (output_list == FALSE) {
   assign(x = paste(protocol_name, "_egos", sep = ""), value = egos, .GlobalEnv)
   assign(x = paste(protocol_name, "_alters", sep = ""), value = alters, .GlobalEnv)
   assign(x = paste(protocol_name, "_alter_edgelists", sep = ""), value = el, .GlobalEnv)
+
 } else {
   nc_list <- list(egos = egos,
                   alters = alters,
                   alter_edgelists = el)
-  return(nc_list)
+  assign(x = paste(protocol_name, "_list", sep = ""), value = nc_list, .GlobalEnv)
 }
 
 }
