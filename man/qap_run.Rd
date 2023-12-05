@@ -2,12 +2,12 @@
 % Please edit documentation in R/qap_run.R
 \name{qap_run}
 \alias{qap_run}
-\title{Quadratic Assignment Procedure (`qap_run`).}
+\title{Quadratic Assignment Procedure (\code{qap_run}).}
 \usage{
 qap_run(net, dependent = NULL, variables, directed = F, family = "linear")
 }
 \arguments{
-\item{net}{An `igraph` or `network` object.}
+\item{net}{An \code{igraph} or \code{network} object.}
 
 \item{dependent}{A string naming the dependent variable of interest.}
 
@@ -18,14 +18,14 @@ qap_run(net, dependent = NULL, variables, directed = F, family = "linear")
 \item{family}{A string identifying the functional form. Options are "linear" and "binomial". Defauts to "linear".}
 }
 \value{
-`qap_run` returns a list of elements `model_results` that include:
+`qap_run` returns a list of elements \code{model_results} that include:
 
-- `covs_df`, a data frame containing term labels, estimates, standard errors and p-values
+- \code{covs_df}, a data frame containing term labels, estimates, standard errors and p-values
 
-- `mods_df`, a data frame containing model-level information including the number of observations, AIC and BIC statistics.
+- \code{mods_df}, a data frame containing model-level information including the number of observations, AIC and BIC statistics.
 }
 \description{
-The `qap_run` function is a wrapper around `sna`'s Quadratic Assignment Procedure models `sna::netlm()` and `sna::netlogit()`. It expects a networks objects containing dependent and independent variables of interest (e.g, the output from `qap_setup`).
+The \code{qap_run} function is a wrapper around \code{sna}'s Quadratic Assignment Procedure models \code{\link[sna:netlm]{sna::netlm}} and \code{\link[sna:netlogit]{sna::netlogit}}. It expects a networks objects containing dependent and independent variables of interest (e.g, the output from \code{\link{qap_setup}}).
 }
 \examples{
 data("florentine", package = "ideanet")

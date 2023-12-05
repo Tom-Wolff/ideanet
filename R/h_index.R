@@ -1,13 +1,13 @@
-#' H-Index (`h_index`)
+#' H-Index (\code{h_index})
 #'
 #' @description Measure of ego network diversity for categorical attributes (Perry et al. 2018)
 #'
-#' @param ego_id A vector of ego identifiers located in an alter dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.
+#' @param ego_id A vector of ego identifiers located in an alter dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{alters}.
 #' @param measure A vector of alter attributes for a given categorical measure.
 #' @param prefix A character value indicating the desired prefix for the calculated homophily measure.
 #' @param suffix A character value indicating the desired suffix for the calculated homophily measure.
 #'
-#' @return `h_index` returns a dataframe of vectors that include the ego identifier and h-index of diversity for the desired categorical attribute.
+#' @return \code{h_index} returns a dataframe of vectors that include the ego identifier and h-index of diversity for the desired categorical attribute.
 #'
 #' @export
 #'

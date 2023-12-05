@@ -2,7 +2,7 @@
 % Please edit documentation in R/netread.R
 \name{netread}
 \alias{netread}
-\title{Reading Network Data Files and Initial Cleaning (`netread`)}
+\title{Reading Network Data Files and Initial Cleaning (\code{netread})}
 \usage{
 netread(
   path = NULL,
@@ -21,9 +21,9 @@ netread(
 )
 }
 \arguments{
-\item{path}{A character value indicating the path of the file which the data are to be read from. If `netread` is converting `igraph` or `network` objects, no file path is needed.}
+\item{path}{A character value indicating the path of the file which the data are to be read from. If \code{netread} is converting \code{igraph} or \code{network} objects, no file path is needed.}
 
-\item{filetype}{A character value indicating the type of file being read. Valid arguments are `"csv"`, `"excel"` (.xls, .xlsx), `"igraph"` (for `igraph` objects), `"network"` or `"sna"` (for `network` objects), `"pajek"` (for Pajek files), and `"ucinet"` (for UCINet files).}
+\item{filetype}{A character value indicating the type of file being read. Valid arguments are \code{"csv"}, \code{"excel"} (.xls, .xlsx), \code{"igraph"} (for \code{igraph} objects), \code{"network"} or \code{"sna"} (for \code{network} objects), \code{"pajek"} (for Pajek files), and \code{"ucinet"} (for UCINet files).}
 
 \item{sheet}{If reading in an Excel file with multiple sheets, a character value indicating the name of the sheet on which the core relational data are stored.}
 
@@ -31,25 +31,25 @@ netread(
 
 \item{node_sheet}{If reading in an Excel file with multiple sheets, a character value indicating the name of the sheet on which the node-level information is store.}
 
-\item{object}{If converting an `igraph` or `network` object, the object to be converted.}
+\item{object}{If converting an \code{igraph} or \code{network} object, the object to be converted.}
 
 \item{col_names}{For reading CSV and Excel files, a logical value indicating whether the first row in the file serves as the file's header and contains the names of each column.}
 
 \item{row_names}{For reading CSV and Excel files, a logical value indicating whether the first column in the file contains ID values for each row and should not be treated as part of the core data.}
 
-\item{format}{For reading CSV and Excel files, a character value indicating the format in which relational data are structured in the file. Valid arguments include `"edgelist"`, `"adjacency_matrix"`, and `"adjacency_list"`.}
+\item{format}{For reading CSV and Excel files, a character value indicating the format in which relational data are structured in the file. Valid arguments include \code{"edgelist"}, \code{"adjacency_matrix"}, and \code{"adjacency_list"}.}
 
-\item{net_name}{A character value indicating the name of the network being read from the file(s). This name will be used as a prefix for both outputs created by `netread`.}
+\item{net_name}{A character value indicating the name of the network being read from the file(s). This name will be used as a prefix for both outputs created by \code{netread}.}
 
 \item{missing_code}{A numeric value indicating "missing" values in the data being read. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.}
 
-\item{i_elements}{If `format` is set to `edgelist`, a character value indicating the name of the column containing the sender of ties in the edgelist. If not specified, `netread` assumes the first column of the data represents tie senders.}
+\item{i_elements}{If \code{format} is set to \code{edgelist}, a character value indicating the name of the column containing the sender of ties in the edgelist. If not specified, \code{netread} assumes the first column of the data represents tie senders.}
 
-\item{j_elements}{If `format` is set to `edgelist`, a character value indicating the name of the column containing the receiver of ties in the edgelist. If not specified, `netread` assumes the second column of the data represents tie receivers}
+\item{j_elements}{If \code{format} is set to \code{edgelist}, a character value indicating the name of the column containing the receiver of ties in the edgelist. If not specified, \code{netread} assumes the second column of the data represents tie receivers}
 }
 \value{
-The `netread` function creates an edgelist and a nodelist in the R Global Environment, both of which are formatted to be compatible with the `netwrite` function. These objects are names `[net_name]_edgelist` and `[net_name]_nodelist`, respectively.
+The \code{netread} function creates an edgelist and a nodelist in the R Global Environment, both of which are formatted to be compatible with the \code{\link{netwrite}} function. These objects are names \code{[net_name]_edgelist} and \code{[net_name]_nodelist}, respectively.
 }
 \description{
-The `netread` function reads in various files storing relational data converts them into edgelists that ensure their compatibility with other `ideanet` functions.
+The \code{netread} function reads in various files storing relational data converts them into edgelists that ensure their compatibility with other \code{ideanet} functions.
 }

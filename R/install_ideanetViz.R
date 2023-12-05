@@ -1,6 +1,6 @@
-#' Install IDEANet Visualization GUI (`install_ideanetViz`)
+#' Install IDEANet Visualization GUI (\code{install_ideanetViz})
 #'
-#' @description The IDEANet suite includes a Shiny-based GUI designed to help people process their data and perform basic analyses. `ideanetViz` also allows users to easily customize network visualizations and access more advanced analysis modules within its GUI.
+#' @description The IDEANet suite includes a Shiny-based GUI designed to help people process their data and perform basic analyses. \code{ideanetViz} also allows users to easily customize network visualizations and access more advanced analysis modules within its GUI.
 #' @export
 #'
 #' @examples

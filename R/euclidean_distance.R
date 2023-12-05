@@ -1,15 +1,15 @@
-#' Euclidean Distance (`euclidean_distance`)
+#' Euclidean Distance (\code{euclidean_distance})
 #'
 #' @description Typical difference between between ego and their alters for a given continuous attribute (Perry et al. 2018)
 #'
-#' @param ego_id A vector of unique ego identifiers located in an ego dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.
+#' @param ego_id A vector of unique ego identifiers located in an ego dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{egos}.
 #' @param ego_measure A vector of attributes corresponding to each ego.
-#' @param alter_ego A vector of ego identifiers located in an alter dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.
+#' @param alter_ego A vector of ego identifiers located in an alter dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{alters}.
 #' @param alter_measure A vector of attributes corresponding to each alter.
 #' @param prefix A character value indicating the desired prefix for the calculated homophily measure.
 #' @param suffix A character value indicating the desired suffix for the calculated homophily measure.
 #'
-#' @return `euclidean_distance` returns a dataframe of vectors that include the ego identifier and euclidean distance for the desired continuous attribute
+#' @return \code{euclidean_distance} returns a dataframe of vectors that include the ego identifier and euclidean distance for the desired continuous attribute
 #'
 #' @export
 #'

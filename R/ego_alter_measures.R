@@ -1,18 +1,18 @@
-#' Additional Measure Calculation for Ego Networks (`ego_alter_measures`)
+#' Additional Measure Calculation for Ego Networks (\code{ego_alter_measures})
 #'
 #' @description Common measures of ego network properties can differ in whether they require information about ego's attributes. Some measures, like the h-index, only require information about alter attributes, while others, such as Pearson's phi, require information about both ego and their alters. `ego_netwrite` calculates measures of the former sort by default. `ego_alter_measures`, by contrast, allows users to calculate measures that require both ego- and alter-level data.
 #'
-#' @param ego_df A data frame containing measures of ego attributes. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.
-#' @param alter_df A data frame containing measures of alter attributes. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.
-#' @param ego_prefix A character value indicating a common prefix for variables contained in `ego_df`. These prefixes are removed in order to match variables with their counterparts in `alter_df`.
-#' @param ego_suffix A character value indicating a common suffix for variables contained in `ego_df`. These suffixes are removed in order to match variables with their counterparts in `alter_df`.
-#' @param alter_prefix A character value indicating a common prefix for variables contained in `alter_df`. These prefixes are removed in order to match variables with their counterparts in `ego_df`.
-#' @param alter_suffix A character value indicating a common suffix for variables contained in `alter_df`. These suffixes are removed in order to match variables with their counterparts in `ego_df`.
-#' @param vars A character vector indicating which variables appearing in both `ego_df` and `alter_df` should be matched and used for calculating measures. If the user does not manually specify variables in this argument, `ego_alter_measures` will automatically search for matching variables across `ego_df` and `alter_df`.
-#' @param measures A character vector indicating which measures should be calculated. Measures include diversity, number and proportion of homophilous alters, E-I index, Pearson's phi, and Euclidean distance. If the user does not manually specify measures in this argument, `ego_alter_measures` will calculate all applicable measures to each variable.
-#' @param na.rm A logical value indicating whether `NA` values should be excluded when calculating continuous measures.
+#' @param ego_df A data frame containing measures of ego attributes. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{egos}.
+#' @param alter_df A data frame containing measures of alter attributes. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{alters}.
+#' @param ego_prefix A character value indicating a common prefix for variables contained in \code{ego_df}. These prefixes are removed in order to match variables with their counterparts in \code{alter_df}.
+#' @param ego_suffix A character value indicating a common suffix for variables contained in \code{ego_df}. These suffixes are removed in order to match variables with their counterparts in \code{alter_df}.
+#' @param alter_prefix A character value indicating a common prefix for variables contained in \code{alter_df}. These prefixes are removed in order to match variables with their counterparts in \code{ego_df}.
+#' @param alter_suffix A character value indicating a common suffix for variables contained in \code{alter_df}. These suffixes are removed in order to match variables with their counterparts in \code{ego_df}.
+#' @param vars A character vector indicating which variables appearing in both \code{ego_df} and \code{alter_df} should be matched and used for calculating measures. If the user does not manually specify variables in this argument, \code{ego_alter_measures} will automatically search for matching variables across \code{ego_df} and \code{alter_df}.
+#' @param measures A character vector indicating which measures should be calculated. Measures include diversity, number and proportion of homophilous alters, E-I index, Pearson's phi, and Euclidean distance. If the user does not manually specify measures in this argument, \code{ego_alter_measures} will calculate all applicable measures to each variable.
+#' @param na.rm A logical value indicating whether \code{NA} values should be excluded when calculating continuous measures.
 #'
-#' @return `ego_alter_measures` returns a data frame containing the measures specified by the user for each individual ego network. This data frame is complementary to the `summaries` data frame created by `ego_netwrite`, and the two can easily be merged.
+#' @return \code{ego_alter_measures} returns a data frame containing the measures specified by the user for each individual ego network. This data frame is complementary to the \code{summaries} data frame created by \code{\link{ego_netwrite}}, and the two can easily be merged.
 #'
 #' @export
 

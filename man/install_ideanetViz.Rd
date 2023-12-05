@@ -2,12 +2,12 @@
 % Please edit documentation in R/install_ideanetViz.R
 \name{install_ideanetViz}
 \alias{install_ideanetViz}
-\title{Install IDEANet Visualization GUI (`install_ideanetViz`)}
+\title{Install IDEANet Visualization GUI (\code{install_ideanetViz})}
 \usage{
 install_ideanetViz()
 }
 \description{
-The IDEANet suite includes a Shiny-based GUI designed to help people process their data and perform basic analyses. `ideanetViz` also allows users to easily customize network visualizations and access more advanced analysis modules within its GUI.
+The IDEANet suite includes a Shiny-based GUI designed to help people process their data and perform basic analyses. \code{ideanetViz} also allows users to easily customize network visualizations and access more advanced analysis modules within its GUI.
 }
 \examples{
 \dontrun{

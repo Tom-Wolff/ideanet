@@ -2,7 +2,7 @@
 % Please edit documentation in R/pearson_phi.R
 \name{pearson_phi}
 \alias{pearson_phi}
-\title{Pearson's Phi (`pearson_phi`)}
+\title{Pearson's Phi (\code{pearson_phi})}
 \usage{
 pearson_phi(
   ego_id,
@@ -14,11 +14,11 @@ pearson_phi(
 )
 }
 \arguments{
-\item{ego_id}{A vector of unique ego identifiers located in an ego dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.}
+\item{ego_id}{A vector of unique ego identifiers located in an ego dataframe. If using data objects created by \code{ego_netwrite}, this should be the data frame entitled \code{egos}.}
 
 \item{ego_measure}{A vector of attributes corresponding to each ego.}
 
-\item{alter_ego}{A vector of ego identifiers located in an alter dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.}
+\item{alter_ego}{A vector of ego identifiers located in an alter dataframe. If using data objects created by \code{ego_netwrite}, this should be the data frame entitled \code{alters}.}
 
 \item{alter_measure}{A vector of attributes corresponding to each alter}
 
@@ -27,10 +27,10 @@ pearson_phi(
 \item{suffix}{A character value indicating the desired suffix for the calculated homophily measure.}
 }
 \value{
-`pearson_phi` returns a dataframe of vectors that include the ego identifier and phi value of homophilous preference.
+\code{pearson_phi} returns a dataframe of vectors that include the ego identifier and phi value of homophilous preference.
 }
 \description{
-The `pearson_phi` function identifies the underlying homophilous preference of ego based on the distribution of alter attributes in the population (Perry et al. 2018)
+The \code{pearson_phi} function identifies the underlying homophilous preference of ego based on the distribution of alter attributes in the population (Perry et al. 2018)
 }
 \examples{
 

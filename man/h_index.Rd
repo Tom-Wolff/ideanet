@@ -2,12 +2,12 @@
 % Please edit documentation in R/h_index.R
 \name{h_index}
 \alias{h_index}
-\title{H-Index (`h_index`)}
+\title{H-Index (\code{h_index})}
 \usage{
 h_index(ego_id, measure, prefix = NULL, suffix = NULL)
 }
 \arguments{
-\item{ego_id}{A vector of ego identifiers located in an alter dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.}
+\item{ego_id}{A vector of ego identifiers located in an alter dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{alters}.}
 
 \item{measure}{A vector of alter attributes for a given categorical measure.}
 
@@ -16,7 +16,7 @@ h_index(ego_id, measure, prefix = NULL, suffix = NULL)
 \item{suffix}{A character value indicating the desired suffix for the calculated homophily measure.}
 }
 \value{
-`h_index` returns a dataframe of vectors that include the ego identifier and h-index of diversity for the desired categorical attribute.
+\code{h_index} returns a dataframe of vectors that include the ego identifier and h-index of diversity for the desired categorical attribute.
 }
 \description{
 Measure of ego network diversity for categorical attributes (Perry et al. 2018)

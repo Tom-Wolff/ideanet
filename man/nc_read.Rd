@@ -18,5 +18,5 @@ nc_read(path, cat.to.factor = TRUE, output_list = TRUE)
 Note that in the \code{alters} data frame, column \code{node_type} reflects the "node type" assigned to a given alter as specified in a Network Canvas protocol. Values in \code{node_type} are likely not those which should be fed into the \code{alter_types} argument in \code{\link{ego_netwrite}}.
 }
 \description{
-The \code{nc_read} function reads in and processes CSV files produced by Network Canvas, a popular tool for egocentric data capture. \code{nc_read} produces three dataframes optimized for use with \code{\link{ego_netwrite}}.
+The \code{nc_read} function reads in and processes CSV files produced by \href{https://networkcanvas.com/}{Network Canvas}, a popular tool for egocentric data capture. \code{nc_read} produces three dataframes optimized for use with \code{\link{ego_netwrite}}.
 }

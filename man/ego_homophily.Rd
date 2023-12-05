@@ -2,7 +2,7 @@
 % Please edit documentation in R/ego_homophily.R
 \name{ego_homophily}
 \alias{ego_homophily}
-\title{Measuring Homophily in Ego Networks (`ego_homophily`)}
+\title{Measuring Homophily in Ego Networks (\code{ego_homophily})}
 \usage{
 ego_homophily(
   ego_id,
@@ -15,11 +15,11 @@ ego_homophily(
 )
 }
 \arguments{
-\item{ego_id}{A vector of unique ego identifiers located in an ego dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.}
+\item{ego_id}{A vector of unique ego identifiers located in an ego dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{egos}.}
 
 \item{ego_measure}{A vector of attributes corresponding to each ego.}
 
-\item{alter_ego}{A vector of ego identifiers located in an alter dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.}
+\item{alter_ego}{A vector of ego identifiers located in an alter dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{alters}.}
 
 \item{alter_measure}{A vector of attributes corresponding to each alter}
 
@@ -30,10 +30,10 @@ ego_homophily(
 \item{prop}{A logical value indicating whether homophily should be represented as a count or as a proportion.}
 }
 \value{
-`ego_homophily` returns a dataframe of vectors that include the ego identifier and the number or proportion of alters with the same selected attribute
+\code{ego_homophily} returns a dataframe of vectors that include the ego identifier and the number or proportion of alters with the same selected attribute
 }
 \description{
-The `ego_homophily` function identifies how similar ego is from their alters on a given attribute.
+The \code{ego_homophily} function identifies how similar ego is from their alters on a given attribute.
 }
 \examples{
 

@@ -2,32 +2,32 @@
 % Please edit documentation in R/qap_setup.R
 \name{qap_setup}
 \alias{qap_setup}
-\title{Individual to Dyadic variable transformation (`qap_setup`).}
+\title{Individual to Dyadic variable transformation (\code{qap_setup}).}
 \usage{
 qap_setup(net, variables, methods, directed = F, additional_vars = NULL)
 }
 \arguments{
-\item{net}{An `igraph` or `network` object.}
+\item{net}{An \code{igraph} or \code{network} object.}
 
 \item{variables}{A vector of strings naming attributes to be transformed from individual-level to dyadic-level.}
 
-\item{methods}{A vector of strings naming methods to be applied to the `variables` vector. The `methods` vector must be the same length as the `variables` vector. Methods are applied in order (e.g, first method is applied to the first named attribute in `variables`)}
+\item{methods}{A vector of strings naming methods to be applied to the \code{variables} vector. The \code{methods} vector must be the same length as the \code{variables} vector. Methods are applied in order (e.g, first method is applied to the first named attribute in \code{variables})}
 
-\item{directed}{A logical statement identifying if the network should be treated as directed. Defaults to False.}
+\item{directed}{A logical statement identifying if the network should be treated as directed. Defaults to \code{FALSE}.}
 
-\item{additional_vars}{A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an `id` or `label` variables which matches network exactly.}
+\item{additional_vars}{A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an \code{id} or \code{label} variables which matches network exactly.}
 }
 \value{
-`qap_setup` returns a list `qap_results` of elements that include:
+\code{qap_setup} returns a list \code{qap_results} of elements that include:
 
-- `qap_graph`, an updated `igraph` object containing the newly constructed dyadic variables and additional individual-level variables.
+- \code{qap_graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
 
-- `nodes`, a nodelist reflecting additional variables if included.
+- \code{nodes}, a nodelist reflecting additional variables if included.
 
-- `edges`, a nodelist reflecting new dyadic variables.
+- \code{edges}, a nodelist reflecting new dyadic variables.
 }
 \description{
-The `qap_setup` function transform an individual level attributes into dyadic comparisons following a set of methods. Output can be used to compute QAP measurements using sister functions in IDEAnet package.
+The \code{qap_setup} function transform an individual level attributes into dyadic comparisons following a set of methods. Output can be used to compute QAP measurements using sister functions in \code{ideanet}.
 }
 \examples{
 data("florentine", package = "ideanet")

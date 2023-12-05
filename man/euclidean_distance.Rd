@@ -2,7 +2,7 @@
 % Please edit documentation in R/euclidean_distance.R
 \name{euclidean_distance}
 \alias{euclidean_distance}
-\title{Euclidean Distance (`euclidean_distance`)}
+\title{Euclidean Distance (\code{euclidean_distance})}
 \usage{
 euclidean_distance(
   ego_id,
@@ -14,11 +14,11 @@ euclidean_distance(
 )
 }
 \arguments{
-\item{ego_id}{A vector of unique ego identifiers located in an ego dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.}
+\item{ego_id}{A vector of unique ego identifiers located in an ego dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{egos}.}
 
 \item{ego_measure}{A vector of attributes corresponding to each ego.}
 
-\item{alter_ego}{A vector of ego identifiers located in an alter dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.}
+\item{alter_ego}{A vector of ego identifiers located in an alter dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{alters}.}
 
 \item{alter_measure}{A vector of attributes corresponding to each alter.}
 
@@ -27,7 +27,7 @@ euclidean_distance(
 \item{suffix}{A character value indicating the desired suffix for the calculated homophily measure.}
 }
 \value{
-`euclidean_distance` returns a dataframe of vectors that include the ego identifier and euclidean distance for the desired continuous attribute
+\code{euclidean_distance} returns a dataframe of vectors that include the ego identifier and euclidean distance for the desired continuous attribute
 }
 \description{
 Typical difference between between ego and their alters for a given continuous attribute (Perry et al. 2018)

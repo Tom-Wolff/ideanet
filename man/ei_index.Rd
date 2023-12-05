@@ -2,7 +2,7 @@
 % Please edit documentation in R/ei_index.R
 \name{ei_index}
 \alias{ei_index}
-\title{E-I Index (`ei_index`)}
+\title{E-I Index (\code{ei_index})}
 \usage{
 ei_index(
   ego_id,
@@ -14,16 +14,16 @@ ei_index(
 )
 }
 \arguments{
-\item{ego_id}{A vector of unique ego identifiers located in an ego dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `egos`.}
+\item{ego_id}{A vector of unique ego identifiers located in an ego dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{egos}.}
 
 \item{ego_measure}{A vector of attributes corresponding to each ego.}
 
-\item{alter_ego}{A vector of ego identifiers located in an alter dataframe. If using data objects created by `ego_netwrite`, this should be the data frame entitled `alters`.}
+\item{alter_ego}{A vector of ego identifiers located in an alter dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{alters}.}
 
 \item{alter_measure}{A vector of attributes corresponding to each alter}
 }
 \value{
-`ei_index` returns a dataframe of vectors that include the ego identifier and the ei-index value for the selected attribute
+\code{ei_index} returns a dataframe of vectors that include the ego identifier and the ei-index value for the selected attribute
 }
 \description{
 Linear transformation of the proportion homophilous measure (Krackhardt and Stern 1988; Perry et al. 2018)

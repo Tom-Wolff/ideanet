@@ -2,7 +2,7 @@
 % Please edit documentation in R/role_analysis.R
 \name{role_analysis}
 \alias{role_analysis}
-\title{Positional (Role) Analysis in Networks (`role_analysis`)}
+\title{Positional (Role) Analysis in Networks (\code{role_analysis})}
 \usage{
 role_analysis(
   graph,
@@ -24,21 +24,21 @@ role_analysis(
 )
 }
 \arguments{
-\item{graph}{An igraph object or a list of igraph objects produced as output from `netwrite`.}
+\item{graph}{An igraph object or a list of igraph objects produced as output from \code{\link{netwrite}}.}
 
-\item{nodes}{A data frame containing individual-level network measures for each node in the network. Ideally, the `node_measures` data frame produced by `netwrite` should be assigned to this argument.}
+\item{nodes}{A data frame containing individual-level network measures for each node in the network. Ideally, the \code{node_measures} data frame produced by \code{\link{netwrite}} should be assigned to this argument.}
 
-\item{directed}{A logical value indicating whether network edges should be treated as direected.}
+\item{directed}{A logical value indicating whether network edges should be treated as directed.}
 
-\item{method}{A character value indicating the method used for positional analysis. Valid arguments are currently `"cluster"` for hierarchical clustering and `"concor"` for CONCOR.}
+\item{method}{A character value indicating the method used for positional analysis. Valid arguments are currently \code{"cluster"} for hierarchical clustering and \code{"concor"} for CONCOR.}
 
 \item{min_partitions}{A numeric value indicating the number of minimum number of clusters or partitions to assign to nodes in the network. When using hierarchical clustering, this value reflects the minimum number of clusters produced by analysis. When using CONCOR, this value reflects the minimum number of partitions produced in analysis, such that a value of 1 results in a partitioning of two groups, a value of 2 results in four groups, and so on.}
 
 \item{max_partitions}{A numeric value indicating the number of maximum number of clusters or partitions to assign to nodes in the network. When using hierarchical clustering, this value reflects the maximum number of clusters produced by analysis. When using CONCOR, this value reflects the maximum number of partitions produced in analysis, such that a value of 1 results in a partitioning of two groups, a value of 2 results in four groups, and so on.}
 
-\item{min_partition_size}{A numeric value indicating the minimum number of nodes required for inclusion in a cluster. If an inferred cluster or partition contains fewer nodes than the number assigned to `min_partition_size`, nodes in this cluster/partition will be labeled as members of a parent cluster/partition.}
+\item{min_partition_size}{A numeric value indicating the minimum number of nodes required for inclusion in a cluster. If an inferred cluster or partition contains fewer nodes than the number assigned to \code{min_partition_size}, nodes in this cluster/partition will be labeled as members of a parent cluster/partition.}
 
-\item{backbone}{A numeric value ranging from 0-1 indicating which edges in the similarity/correlation matrix should be kept when calculating modularity of cluster/partition assignments. When calculating optimal modularity, it helps to backbone the similarity/correlation matrix according to the nth percentile. Larger networks benefit from higher `backbone` values, while lower values generally benefit smaller networks.}
+\item{backbone}{A numeric value ranging from 0-1 indicating which edges in the similarity/correlation matrix should be kept when calculating modularity of cluster/partition assignments. When calculating optimal modularity, it helps to backbone the similarity/correlation matrix according to the nth percentile. Larger networks benefit from higher \code{backbone} values, while lower values generally benefit smaller networks.}
 
 \item{viz}{A logical value indicating whether to produce summary visualizations of the positional analysis.}
 
@@ -57,28 +57,28 @@ role_analysis(
 \item{max_iter}{(CONCOR only.) A numeric value indicating the maximum number of iteractions allowed for CONCOR calculattion.}
 }
 \value{
-The `role_analysis` function assigns a set of objects to the Global Environment that users can access to help interpret results. This set varies somewhat depending on the method being used for positional analysis.
+The \code{role_analysis} function assigns a set of objects to the Global Environment that users can access to help interpret results. This set varies somewhat depending on the method being used for positional analysis.
 
-When hierarchical clustering is used, `role_analysis` creates the following:
-`cluster_assignments` is a data frame indicating each node's membership within inferred clusters at each level of partitioning.
-`cluster_sociogram` contains a visualization of the network wherein nodes are colored by their membership within clusters at the optimal level of partitioning.
-`cluster_dendrogram` is a visualization of the dendrogram produced from clustering nodes. Red boxes on the visualization indicate nodes' cluster memberships at the optimal level of partitioning.
-`cluster_modularity` is a visualization of the modularity scores of the matrix of similarity scores between nodes for each level of partitioning. This visualization helps identify the optimal level of partitioning inferred by the `role_analysis` function.
-`cluster_summaries_cent` contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on several important node-level measures.
-`cluster_summaries_cent` contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on in terms of their positions within certain kinds of triads in the network.
-`cluster_relations_heatmaps` is a list object containing several heatmap visualizations representing the extent to which nodes in one inferred cluster are connected to nodes in another cluster.
-`cluster_relations_sociogram` contains a network visualization representing the extent to which nodes in clusters inferred at the optimal level of partitioning are tied to one another. Nodes in this visualization represent inferred clusters in the aggregate.
+When hierarchical clustering is used, \code{role_analysis} creates the following:
+\code{cluster_assignments} is a data frame indicating each node's membership within inferred clusters at each level of partitioning.
+\code{cluster_sociogram} contains a visualization of the network wherein nodes are colored by their membership within clusters at the optimal level of partitioning.
+\code{cluster_dendrogram} is a visualization of the dendrogram produced from clustering nodes. Red boxes on the visualization indicate nodes' cluster memberships at the optimal level of partitioning.
+\code{cluster_modularity} is a visualization of the modularity scores of the matrix of similarity scores between nodes for each level of partitioning. This visualization helps identify the optimal level of partitioning inferred by the \code{role_analysis} function.
+\code{cluster_summaries_cent} contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on several important node-level measures.
+\code{cluster_summaries_cent} contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on in terms of their positions within certain kinds of triads in the network.
+\code{cluster_relations_heatmaps} is a list object containing several heatmap visualizations representing the extent to which nodes in one inferred cluster are connected to nodes in another cluster.
+\code{cluster_relations_sociogram} contains a network visualization representing the extent to which nodes in clusters inferred at the optimal level of partitioning are tied to one another. Nodes in this visualization represent inferred clusters in the aggregate.
 
-When CONCOR is used, `role_analysis` creates the following:
-`concor_assignments` is a data frame indicating each node's membership within inferred blocks at each level of partitioning.
-`concor_sociogram` contains a visualization of the network wherein nodes are colored by their membership within blocks at the optimal level of partitioning.
-`concor_block_tree` is a visualization representing how smaller blocks are derived from larger blocks at each level of partitioning using CONCOR.
-`concor_modularity` is a visualization of the modularity scores of the matrix of similarity scores between nodes for each level of partitioning. This visualization helps identify the optimal level of partitioning inferred by the `role_analysis` function.
-`concor_relations_heatmaps` is a list object containing several heatmap visualizations representing the extent to which nodes in one inferred block are connected to nodes in another block.
-`concor_relations_sociogram` contains a network visualization representing the extent to which nodes in blocks inferred at the optimal level of partitioning are tied to one another. Nodes in this visualization represent inferred blocks in the aggregate.
+When CONCOR is used, \code{role_analysis} creates the following:
+\code{concor_assignments} is a data frame indicating each node's membership within inferred blocks at each level of partitioning.
+\code{concor_sociogram} contains a visualization of the network wherein nodes are colored by their membership within blocks at the optimal level of partitioning.
+\code{concor_block_tree} is a visualization representing how smaller blocks are derived from larger blocks at each level of partitioning using CONCOR.
+\code{concor_modularity} is a visualization of the modularity scores of the matrix of similarity scores between nodes for each level of partitioning. This visualization helps identify the optimal level of partitioning inferred by the \code{role_analysis} function.
+\code{concor_relations_heatmaps} is a list object containing several heatmap visualizations representing the extent to which nodes in one inferred block are connected to nodes in another block.
+\code{concor_relations_sociogram} contains a network visualization representing the extent to which nodes in blocks inferred at the optimal level of partitioning are tied to one another. Nodes in this visualization represent inferred blocks in the aggregate.
 }
 \description{
-The `role_analysis` function takes networks processed by the `netwrite` function and performs positional analysis on them. Positional analysis methods allows users to infer distinct "roles" in networks from patterns in network activity. `role_analysis` currently supports the identification of roles using two methods: hierarchical clustering (cite) and convergence of correlations (CONCOR, Breiger 1975).
+The \code{role_analysis} function takes networks processed by the \code{\link{netwrite}} function and performs positional analysis on them. Positional analysis methods allows users to infer distinct "roles" in networks from patterns in network activity. \code{role_analysis} currently supports the identification of roles using two methods: hierarchical clustering (cite) and convergence of correlations (CONCOR, Breiger 1975).
 }
 \examples{
 netwrite(i_elements = florentine$node,

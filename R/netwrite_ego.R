@@ -1,29 +1,29 @@
-#' Ego Network Cleaning and Measure Calculation (`ego_netwrite`)
+#' Ego Network Cleaning and Measure Calculation (\code{ego_netwrite})
 #'
-#' @description The `ego_netwrite` function reads in data pertaining to ego networks and processes them into a set of standardized outputs, including measures commonly calculated for ego networks.
+#' @description The \code{ego_netwrite} function reads in data pertaining to ego networks and processes them into a set of standardized outputs, including measures commonly calculated for ego networks.
 #'
 #' @param egos A data frame containing measures of ego attributes.
-#' @param ego_id A vector of unique identifiers corresponding to each ego, or a single character value indicating the name of the column in `egos` containing ego identifiers.
+#' @param ego_id A vector of unique identifiers corresponding to each ego, or a single character value indicating the name of the column in \code{egos} containing ego identifiers.
 #' @param alters A data frame containing measures of alter attributes.
-#' @param alter_id A vector of identifiers indicating which alter is associated with a given row in `alters`, or a single character value indicating the name of the column in `alters` containing alter identifiers.
-#' @param alter_ego A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in `alters` containing ego identifiers.
-#' @param alter_type (DEPRECATED) A numeric or character vector indicating the types of relationships existing between ego and a given alter, or a single character value indicating the name of the column in `alters` containing relationship type. If `alter_type` is specified, `ego_netwrite` will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.
-#' @param alter_types A character vector indicating the columns in `alters` that indicate whether a given alter has certain types of relations with ego. These columns should all contain binary measures indicating whether alter has a particular type of relation with ego.
+#' @param alter_id A vector of identifiers indicating which alter is associated with a given row in \code{alters}, or a single character value indicating the name of the column in \code{alters} containing alter identifiers.
+#' @param alter_ego A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in \code{alters} containing ego identifiers.
+#' @param alter_type (DEPRECATED) A numeric or character vector indicating the types of relationships existing between ego and a given alter, or a single character value indicating the name of the column in \code{alters} containing relationship type. If \code{alter_type} is specified, \code{ego_netwrite} will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.
+#' @param alter_types A character vector indicating the columns in \code{alters} that indicate whether a given alter has certain types of relations with ego. These columns should all contain binary measures indicating whether alter has a particular type of relation with ego.
 #' @param max_alters A numeric value indicating the maximum number of alters an ego in the dataset could have nominated
-#' @param alter_alter A data frame containing an edgelist indicataing ties between alters in each ego's network. This edgelist is optional, but `ego_netwrite` wil not provide certain measures without it.
-#' @param aa_ego A vector of identifiers indicating which ego is associated with a given tie between alters, or a single character indicating the name of the column in `alter_alter` containing ego identifiers.
-#' @param i_elements A vector of identifiers indicating which alter is on one end of an alter-alter tie, or a single character indicating the name of the column in `alter_alter` containing these identifiers.
-#' @param j_elements A vector of identifiers indicating which alter is on the other end of an alter-alter tie, or a single character indicating the name of the column in `alter_alter` containing these identifiers.
+#' @param alter_alter A data frame containing an edgelist indicating ties between alters in each ego's network. This edgelist is optional, but \code{ego_netwrite} will not provide certain measures without it.
+#' @param aa_ego A vector of identifiers indicating which ego is associated with a given tie between alters, or a single character indicating the name of the column in \code{alter_alter} containing ego identifiers.
+#' @param i_elements A vector of identifiers indicating which alter is on one end of an alter-alter tie, or a single character indicating the name of the column in \code{alter_alter} containing these identifiers.
+#' @param j_elements A vector of identifiers indicating which alter is on the other end of an alter-alter tie, or a single character indicating the name of the column in \code{alter_alter} containing these identifiers.
 #' @param directed A logical value indicating whether network ties are directed or undirected.
-#' @param aa_type A numeric or character vector indicating the types of relationships represented in the alter edgelist, or a single character value indicating the name of the column in `alter_alter` containing relationship type. If `alter_type` is specified, `ego_netwrite` will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.
+#' @param aa_type A numeric or character vector indicating the types of relationships represented in the alter edgelist, or a single character value indicating the name of the column in \code{alter_alter} containing relationship type. If \code{alter_type} is specified, \code{ego_netwrite} will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.
 #' @param missing_code A numeric value indicating "missing" values in the alter-alter edgelist.
-#' @param na.rm A logical value indicating whether `NA` values should be excluded when calculating continuous measures.
+#' @param na.rm A logical value indicating whether \code{NA} values should be excluded when calculating continuous measures.
 #' @param output_name A character value indicating the name or prefix that should be given to output objects.
-#' @param egor A logical value indicating whether output should include an `egor` object, which is often useful for visualizaton and for simulation larger networks from egocentric data.
-#' @param egor_design If creating an `egor` object, a list of arguments to `srvyr::as_survey_design()` specifying the sampling design for egos. This argument corresponds to `ego_design` in `egor::egor`.
-#' @param egor_alter_design If creating an `egor` object, the maximum number of alters than an ego can nominate. This argument corresponds to `alter_design` in `egor::egor`.
+#' @param egor A logical value indicating whether output should include an \code{egor} object, which is often useful for visualizaton and for simulation larger networks from egocentric data.
+#' @param egor_design If creating an \code{egor} object, a list of arguments to \code{\link[srvyr:as_survey_design]{srvyr::as_survey_design}} specifying the sampling design for egos. This argument corresponds to \code{ego_design} in \code{\link[egor:egor]{egor::egor}}.
+#' @param egor_alter_design If creating an \code{egor} object, the maximum number of alters than an ego can nominate. This argument corresponds to \code{alter_design} in \code{\link[egor:egor]{egor::egor}}.
 #'
-#' @return `ego_netwrite` returns several data frames, one containing measures of ego attributes, another containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, `ego_netwrite`  returns a list of igraph objects constructed for each individual ego network, as well as an `egor` object for the overall dataset if desired.
+#' @return \code{ego_netwrite} returns several data frames, one containing measures of ego attributes, another containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite}  returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.
 #'
 #' @export
 
@@ -205,6 +205,15 @@ ego_netwrite <- function(egos,
     }
     alters$alter_id <- alter_id
 
+    # Columns named `weight` can lead to downstream issues with igraph. If such a column exists in `alters`,
+    # we'll need to preemptively rename it here
+    if ("weight" %in% colnames(alters)) {
+      colnames(alters) <- stringr::str_replace_all(colnames(alters), "^weight$", "original_weight_alter")
+    }
+
+
+
+
     # Adjust this to clearly label ego-alter edge type variables
     if (!is.null(alter_types)) {
 
@@ -225,6 +234,13 @@ ego_netwrite <- function(egos,
 
 
     if (!is.null(alter_alter)) {
+
+      # Columns named `weight` can lead to downstream issues with igraph. If such a column exists in `alter_alter`,
+      # we'll need to preemptively rename it here
+      if ("weight" %in% colnames(alter_alter)) {
+        colnames(alter_alter) <- stringr::str_replace_all(colnames(alter_alter), "^weight$", "original_weight_aa")
+      }
+
       alter_alter$i_elements <- i_elements
       alter_alter$j_elements <- j_elements
       alter_alter$ego_id <- aa_ego

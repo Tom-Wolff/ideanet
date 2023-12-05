@@ -1,17 +1,17 @@
-#' Quadratic Assignment Procedure (`qap_run`).
+#' Quadratic Assignment Procedure (\code{qap_run}).
 #'
-#' @description The `qap_run` function is a wrapper around `sna`'s Quadratic Assignment Procedure models `sna::netlm()` and `sna::netlogit()`. It expects a networks objects containing dependent and independent variables of interest (e.g, the output from `qap_setup`).
+#' @description The \code{qap_run} function is a wrapper around \code{sna}'s Quadratic Assignment Procedure models \code{\link[sna:netlm]{sna::netlm}} and \code{\link[sna:netlogit]{sna::netlogit}}. It expects a networks objects containing dependent and independent variables of interest (e.g, the output from \code{\link{qap_setup}}).
 #'
-#' @param net An `igraph` or `network` object.
+#' @param net An \code{igraph} or \code{network} object.
 #' @param dependent A string naming the dependent variable of interest.
 #' @param variables A vector of strings naming the independent variables of interest.
 #' @param directed A logical statement identifying if the network should be treated as directed. Defaults to False.
 #' @param family A string identifying the functional form. Options are "linear" and "binomial". Defauts to "linear".
-#' @return `qap_run` returns a list of elements `model_results` that include:
+#' @return `qap_run` returns a list of elements \code{model_results} that include:
 #'
-#' - `covs_df`, a data frame containing term labels, estimates, standard errors and p-values
+#' - \code{covs_df}, a data frame containing term labels, estimates, standard errors and p-values
 #'
-#' - `mods_df`, a data frame containing model-level information including the number of observations, AIC and BIC statistics.
+#' - \code{mods_df}, a data frame containing model-level information including the number of observations, AIC and BIC statistics.
 #' @export
 #'
 #' @examples
