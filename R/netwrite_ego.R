@@ -120,7 +120,7 @@ ego_netwrite <- function(egos,
         aa_ego1 <- alter_alter[,(which(colnames(alter_alter) == aa_ego))]
         aa_ego_fix <- TRUE
       } else if (class(aa_ego) == "character" & length(aa_ego) == 1) {
-        aa_ego1 <- alter_alter[,(which(colnames(alters) == aa_ego))]
+        aa_ego1 <- alter_alter[,(which(colnames(alter_alter) == aa_ego))]
         aa_ego_fix <- TRUE
       }
 
