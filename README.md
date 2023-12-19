@@ -2,6 +2,10 @@
 
 ![ideanet_logo](https://github.com/Tom-Wolff/ideanet/assets/36702189/9f0b61b5-9106-4ca4-baa3-c3b2309b4c0f)
 
+<p align="center">
+    <img width="400" src="https://github.com/Tom-Wolff/ideanet/assets/36702189/9f0b61b5-9106-4ca4-baa3-c3b2309b4c0f" alt="IDEANet logo">
+</p>
+
 The IDEANet project (NSF Grant # 2024271) aims to maximize scientific discovery in network science by significantly lowering the analytic and access barriers-to-entry for
 researchers. As part of this effort, the `ideanet` package offers a set of integrated modules to securely access, process, analyze, and visualize existing network data using
 expert-level analytics while conforming to requirements set by source institutions. Our hope is that this project will increase collaboration on intensive, cross-disciplinary data science questions across the social and behavioral sciences.
