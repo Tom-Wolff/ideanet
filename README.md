@@ -50,7 +50,7 @@ Users applying `ideanet` to sociocentric data can use the `netwrite` function to
 
 `ideanet` features a set of additional functions designed for working with egocentric data. The primary function in this set, `ego_netwrite`, reads in a data frame of egos, a second data frame of alters nominated by each ego, and an optional third data frame containing edges existing between alters as reported by an ego. Using these data frames, `ego_netwrite` generates measures of centrality and position for each node in an ego network, summaries of each individual ego network, and a summary of the data as a whole. These outputs provide users with the means to make inferences from their data at various levels of analysis, and allow users to identify typical properties of networks in their data. Measures featured in `ego_netwrite`'s output include:
 
-## Node-Level Measures
+### Node-Level Measures
 
 - Degree (In, Out, Undirected)
 - Closeness Centrality
@@ -61,7 +61,7 @@ Users applying `ideanet` to sociocentric data can use the `netwrite` function to
 - Burt's Effective Size
 - Reachability
 
-## Network-Level Measures
+### Network-Level Measures
 
 - Network Size (Nodes, Edges)
 - Number of Components
@@ -79,7 +79,7 @@ Users applying `ideanet` to sociocentric data can use the `netwrite` function to
 - Triad Census
 - Position (Motif) Census
 
-## Dataset-Level Measures
+### Dataset-Level Measures
 
 - Number of Egos
 - Number of Nominated Alters
@@ -90,11 +90,12 @@ Users applying `ideanet` to sociocentric data can use the `netwrite` function to
 - Average Density
 - Average Fragmentation
  
-## Advanced Analytic Modules
+## Advanced Analysis Modules
+
+`ideanet` includes modules for advanced analysis, allowing researchers to extend the utility of `netwrite` and its outputs. Modules for Multiple Regression Quadratic Assignment Procedure (MRQAP) and Positional (Role) Analysis are currently available, and additional modules are expected to come in the near future.
 
 ## Support and Compatibility with Other Network Analysis Packages
 
-Although `ego_netwrite` requires three separate data frames for egos, alters, and edges between alters, ego networks are often stored in a single wide dataset. `ideanet` includes an added function, `ego_reshape`, that helps users reshape their data into a structure more compatible with `ego_netwrite`. and other popular R packages for ego network analysis.  `ego_netwrite`’s output has similarly been designed with versatility in mind. Alongside the set of summaries and measures detailed earlier, the function creates and stores an organized list of `igraph` objects that allows users to engage in further analysis and visualization of individual ego networks. 
+`ideanet` is designed to be versatile and compatible with other tools for social network analysis. The package includes a convenient function for reading several types of sociocentric network data files into R (`netread`), including those associated with software packages like UCINet and Pajek. This affords users a greater ability to access and work with network data even if they decide to use tools other than `netwrite` for analysis.
 
-Our package also includes a function specifically designed to read and process data generated using Network Canvas, an increasingly popular tool for capturing egocentric network data.
-Further, `ego_netwrite` gives users the option to export their data as an `egor` object for use with the `egor` R package, which affords users the ability to fit exponential random graph models using egocentric data.
+`ideanet` gives similar consideration to egocentric data. Although `ego_netwrite` requires three separate data frames for egos, alters, and edges between alters, ego networks are often stored in a single wide dataset. With this in mind, the `ego_reshape` function allows users to reshape their data into a structure more compatible with `ego_netwrite` and other popular R packages for ego network analysis. Additionally, our package includes a function specifically designed to read and process data generated using [Network Canvas](https://networkcanvas.com/), an increasingly popular tool for capturing egocentric network data. Further, `ego_netwrite` gives users the option to export their data as an `egor` object for use with the `egor` R package, which enables users to fit exponential random graph models using egocentric data.
