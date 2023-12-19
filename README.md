@@ -1,6 +1,6 @@
 # Integrating Data Exchange and Analysis for Networks (IDEANet)
 
-![Artboard 1](https://github.com/Tom-Wolff/ideanet/assets/36702189/c427eac8-3e65-4793-aee9-24d1270f2e40)
+![Artboard 1](https://github.com/Tom-Wolff/ideanet/assets/36702189/c427eac8-3e65-4793-aee9-24d1270f2e40 | width = 200)
 
 The IDEANet project (NSF Grant # 2024271) aims to maximize scientific discovery in network science by significantly lowering the analytic and access barriers-to-entry for
 researchers. As part of this effort, the `ideanet` package offers a set of integrated modules to securely access, process, analyze, and visualize existing network data using
