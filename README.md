@@ -7,7 +7,7 @@ expert-level analytics while conforming to requirements set by source institutio
 
 ## Sociocentric Data Processing
 
-Users applying `ideanet` to sociocentric data can use the `netwrite` function to generate an extensive set of measures and summaries of their networks, which includes
+Users applying `ideanet` to sociocentric data can use the `netwrite` function to generate an extensive set of measures and summaries of their networks. By applying a single, convenient function to an edgelist, adjacency matrix, or adjacency list, users can quickly produce the following measures:
 
 ### Node-Level Measures
 
@@ -22,5 +22,32 @@ Users applying `ideanet` to sociocentric data can use the `netwrite` function to
 - Reachability
 - Component Membership (Weak, Strong, Bicomponent)
 
+### System-Level Measures
+
+- Directedness
+- Weightedness
+- Network Size (Nodes, Edges)
+- Density
+- Multiple Edge Types
+- Number of Components (Weak, Strong, Bicomponent)
+- Size of Components
+- Proportion of Nodes in Components
+- Dyad Census
+- Degree Assortativity
+- Reciprocity Rate
+- Transitivity Rate
+- Transitivity Correlation
+- Global Clustering Coefficient
+- Average Geodesic
+- Multi-level Edge Correlation
+- Pairwise Reachability
+- Matrix Singularity
+
+`netwrite` includes full support for networks with weighted edges, as well as networks with multiple "types" or "level" of edges. `netwrite` also produces several additional outputs that aid in sociocentric network analysis. These include cleanly-formatted edgelists, summary visualizations, and `igraph` objects for aggregate networks and networks of specific edge types, 
 
 ## Egocentric Data Processing
+
+
+## Advanced Analytic Modules
+
+## Support and Compatibility with Other Network Analysis Packages
