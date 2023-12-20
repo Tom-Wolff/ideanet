@@ -1,19 +1,19 @@
-#' Individual to Dyadic variable transformation (`qap_setup`).
+#' Individual to Dyadic variable transformation (\code{qap_setup}).
 #'
-#' @description The `qap_setup` function transform an individual level attributes into dyadic comparisons following a set of methods. Output can be used to compute QAP measurements using sister functions in IDEAnet package.
+#' @description The \code{qap_setup} function transform an individual level attributes into dyadic comparisons following a set of methods. Output can be used to compute QAP measurements using sister functions in \code{ideanet}.
 #'
-#' @param net An `igraph` or `network` object.
+#' @param net An \code{igraph} or \code{network} object.
 #' @param variables A vector of strings naming attributes to be transformed from individual-level to dyadic-level.
-#' @param methods A vector of strings naming methods to be applied to the `variables` vector. The `methods` vector must be the same length as the `variables` vector. Methods are applied in order (e.g, first method is applied to the first named attribute in `variables`)
-#' @param directed A logical statement identifying if the network should be treated as directed. Defaults to False.
-#' @param additional_vars A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an `id` or `label` variables which matches network exactly.
-#' @return `qap_setup` returns a list `qap_results` of elements that include:
+#' @param methods A vector of strings naming methods to be applied to the \code{variables} vector. The \code{methods} vector must be the same length as the \code{variables} vector. Methods are applied in order (e.g, first method is applied to the first named attribute in \code{variables})
+#' @param directed A logical statement identifying if the network should be treated as directed. Defaults to \code{FALSE}.
+#' @param additional_vars A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an \code{id} or \code{label} variables which matches network exactly.
+#' @return \code{qap_setup} returns a list \code{qap_results} of elements that include:
 #'
-#' - `qap_graph`, an updated `igraph` object containing the newly constructed dyadic variables and additional individual-level variables.
+#' - \code{qap_graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
 #'
-#' - `nodes`, a nodelist reflecting additional variables if included.
+#' - \code{nodes}, a nodelist reflecting additional variables if included.
 #'
-#' - `edges`, a nodelist reflecting new dyadic variables.
+#' - \code{edges}, a nodelist reflecting new dyadic variables.
 #' @export
 #'
 #' @examples

@@ -2,7 +2,7 @@
 % Please edit documentation in R/community_detection.R
 \name{communities}
 \alias{communities}
-\title{Community Detection Across Multiple Routines (`communities`)}
+\title{Community Detection Across Multiple Routines (\code{communities})}
 \usage{
 communities(g, modres = 1, shiny = FALSE)
 }
@@ -11,13 +11,13 @@ communities(g, modres = 1, shiny = FALSE)
 
 \item{modres}{A modularity resolution parameter used when performing community detection using the Leiden method.}
 
-\item{shiny}{An argument indicating whether the output from the `communities` function will be fed into the IDEANet visualization app.}
+\item{shiny}{An argument indicating whether the output from the \code{communities} function will be fed into the IDEANet visualization app.}
 }
 \value{
-`communities` returns three data frames. `comm_members` indicates each node's assigned community membership from each community detection routine. `comm_summaries` indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. `comp_scores` contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. If `shiny == FALSE`, this function will also plot a series of network visualizations in which nodes are colored by their assigned community memberships from each routine.
+\code{communities} returns three data frames. \code{comm_members} indicates each node's assigned community membership from each community detection routine. \code{comm_summaries} indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. \code{comp_scores} contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. If \code{shiny == FALSE}, this function will also plot a series of network visualizations in which nodes are colored by their assigned community memberships from each routine.
 }
 \description{
-The `communities` function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is used.
+The \code{communities} function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is used.
 }
 \examples{
 # Run netwrite

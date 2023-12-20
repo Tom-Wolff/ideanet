@@ -1,3 +1,16 @@
+#' Reading and Reshaping Network Canvas Data (\code{nc_read})
+#'
+#' @description The \code{nc_read} function reads in and processes CSV files produced by \href{https://networkcanvas.com/}{Network Canvas}, a popular tool for egocentric data capture. \code{nc_read} produces three dataframes optimized for use with \code{\link{ego_netwrite}}.
+#'
+#' @param path A character value indicating the directory in which Network Canvas CSVs are located. \code{nc_read} will read in all CSV files located in this directory and process them.
+#' @param cat.to.factor A logical value indicating whether categorical variables, originally stored as a series of TRUE/FALSE columns, should be converted into a single factor column.
+#' @param output_list A logical value indicating whether output should be stored as three separate objects in the Global Environment or as a single list of objects in the Global Environment.
+#'
+#' @return \code{nc_read} returns three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}. Data frames are either stored individually in the Global Environment or as elements in a single list in the Global Environment depending on how \code{output_list} is specified. \cr \cr
+#' Note that in the \code{alters} data frame, column \code{node_type} reflects the "node type" assigned to a given alter as specified in a Network Canvas protocol. Values in \code{node_type} are likely not those which should be fed into the \code{alter_types} argument in \code{\link{ego_netwrite}}.
+#'
+#' @export
+
 nc_read <- function(
                     # ARGUMENTS:
 
@@ -14,7 +27,7 @@ nc_read <- function(
                     # Is this being used within ideanet?
                     # If yes, store output as a list for downstream processing
                     # If no, assign data frames to global environment
-                    ideanet = TRUE
+                    output_list = TRUE
 
                     ) {
 
@@ -55,17 +68,17 @@ for (i in 1:length(alter_files)) {
   if (i == 1) {
     alters <- read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
     ### Record type of alter
-    alter_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
-    alter_type <- stringr::str_replace(alter_type, "attributeList_", "")
-    alter_type <- stringr::str_replace(alter_type, ".csv", "")
-    alters$alter_type <- alter_type
+    node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
+    node_type <- stringr::str_replace(node_type, "attributeList_", "")
+    node_type <- stringr::str_replace(node_type, ".csv", "")
+    alters$node_type <- node_type
   } else {
     this_alter <- read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
     ### Record type of alter
-    alter_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
-    alter_type <- stringr::str_replace(alter_type, "attributeList_", "")
-    alter_type <- stringr::str_replace(alter_type, ".csv", "")
-    this_alter$alter_type <- alter_type
+    node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
+    node_type <- stringr::str_replace(node_type, "attributeList_", "")
+    node_type <- stringr::str_replace(node_type, ".csv", "")
+    this_alter$node_type <- node_type
     alters <- dplyr::bind_rows(alters, this_alter)
   }
 }
@@ -134,14 +147,14 @@ ego_basic <- egos %>%
 
 alters <- alters %>%
   dplyr::left_join(ego_basic, by = "networkCanvasEgoUUID") %>%
-  dplyr::select(ego_id, alter_id = nodeID, dplyr::everything())
+  dplyr::select(ego_id, alter_id = nodeID, node_type, dplyr::everything())
 
 el <- el %>%
   dplyr::left_join(ego_basic, by = "networkCanvasEgoUUID") %>%
   dplyr::select(ego_id, edge_id = edgeID, from, to, edge_type, dplyr::everything())
 
 
-if (ideanet == FALSE) {
+if (output_list == FALSE) {
   # We'll want to extract the protocol name from the filenames for naming
   # the objects we output to the global environment
   protocol_name <- egos$networkCanvasProtocolName[[1]]
@@ -149,11 +162,12 @@ if (ideanet == FALSE) {
   assign(x = paste(protocol_name, "_egos", sep = ""), value = egos, .GlobalEnv)
   assign(x = paste(protocol_name, "_alters", sep = ""), value = alters, .GlobalEnv)
   assign(x = paste(protocol_name, "_alter_edgelists", sep = ""), value = el, .GlobalEnv)
+
 } else {
   nc_list <- list(egos = egos,
                   alters = alters,
                   alter_edgelists = el)
-  return(nc_list)
+  assign(x = paste(protocol_name, "_list", sep = ""), value = nc_list, .GlobalEnv)
 }
 
 }

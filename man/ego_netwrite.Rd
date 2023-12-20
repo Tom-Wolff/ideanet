@@ -2,66 +2,74 @@
 % Please edit documentation in R/netwrite_ego.R
 \name{ego_netwrite}
 \alias{ego_netwrite}
-\title{Ego Network Cleaning and Measure Calculation (`ego_netwrite`)}
+\title{Ego Network Cleaning and Measure Calculation (\code{ego_netwrite})}
 \usage{
 ego_netwrite(
   egos,
   ego_id,
-  alters,
+  alters = NULL,
   alter_id = NULL,
   alter_ego = NULL,
+  alter_type = NULL,
+  alter_types = NULL,
+  max_alters = Inf,
   alter_alter = NULL,
   aa_ego = NULL,
   i_elements = NULL,
   j_elements = NULL,
+  directed = FALSE,
+  aa_type = NULL,
   missing_code = 99999,
   na.rm = FALSE,
   output_name = "egonet",
-  network_canvas_path = NULL,
-  cat.to.factor = TRUE,
   egor = FALSE,
-  egor_design = NULL,
-  egor_alter_design = list(max = Inf)
+  egor_design = NULL
 )
 }
 \arguments{
 \item{egos}{A data frame containing measures of ego attributes.}
 
-\item{ego_id}{A vector of unique identifiers corresponding to each ego, or a single character value indicating the name of the column in `egos` containing ego identifiers.}
+\item{ego_id}{A vector of unique identifiers corresponding to each ego, or a single character value indicating the name of the column in \code{egos} containing ego identifiers.}
 
 \item{alters}{A data frame containing measures of alter attributes.}
 
-\item{alter_id}{A vector of identifiers indicating which alter is associated with a given row in `alters`, or a single character value indicating the name of the column in `alters` containing alter identifiers.}
+\item{alter_id}{A vector of identifiers indicating which alter is associated with a given row in \code{alters}, or a single character value indicating the name of the column in \code{alters} containing alter identifiers.}
 
-\item{alter_ego}{A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in `alters` containing ego identifiers.}
+\item{alter_ego}{A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in \code{alters} containing ego identifiers.}
 
-\item{alter_alter}{A data frame containing an edgelist indicataing ties between alters in each ego's network. This edgelist is optional, but `ego_netwrite` wil not provide certain measures without it.}
+\item{alter_type}{(DEPRECATED) A numeric or character vector indicating the types of relationships existing between ego and a given alter, or a single character value indicating the name of the column in \code{alters} containing relationship type. If \code{alter_type} is specified, \code{ego_netwrite} will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.}
 
-\item{aa_ego}{A vector of identifiers indicating which ego is associated with a given tie between alters, or a single character indicating the name of the column in `alter_alter` containing ego identifiers.}
+\item{alter_types}{A character vector indicating the columns in \code{alters} that indicate whether a given alter has certain types of relations with ego. These columns should all contain binary measures indicating whether alter has a particular type of relation with ego.}
 
-\item{i_elements}{A vector of identifiers indicating which alter is on one end of an alter-alter tie, or a single character indicating the name of the column in `alter_alter` containing these identifiers.}
+\item{max_alters}{A numeric value indicating the maximum number of alters an ego in the dataset could have nominated}
 
-\item{j_elements}{A vector of identifiers indicating which alter is on the other end of an alter-alter tie, or a single character indicating the name of the column in `alter_alter` containing these identifiers.}
+\item{alter_alter}{A data frame containing an edgelist indicating ties between alters in each ego's network. This edgelist is optional, but \code{ego_netwrite} will not provide certain measures without it.}
+
+\item{aa_ego}{A vector of identifiers indicating which ego is associated with a given tie between alters, or a single character indicating the name of the column in \code{alter_alter} containing ego identifiers.}
+
+\item{i_elements}{A vector of identifiers indicating which alter is on one end of an alter-alter tie, or a single character indicating the name of the column in \code{alter_alter} containing these identifiers.}
+
+\item{j_elements}{A vector of identifiers indicating which alter is on the other end of an alter-alter tie, or a single character indicating the name of the column in \code{alter_alter} containing these identifiers.}
+
+\item{directed}{A logical value indicating whether network ties are directed or undirected.}
+
+\item{aa_type}{A numeric or character vector indicating the types of relationships represented in the alter edgelist, or a single character value indicating the name of the column in \code{alter_alter} containing relationship type. If \code{alter_type} is specified, \code{ego_netwrite} will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.}
 
 \item{missing_code}{A numeric value indicating "missing" values in the alter-alter edgelist.}
 
-\item{na.rm}{A logical value indicating whether `NA` values should be excluded when calculating continuous measures.}
+\item{na.rm}{A logical value indicating whether \code{NA} values should be excluded when calculating continuous measures.}
 
 \item{output_name}{A character value indicating the name or prefix that should be given to output objects.}
 
-\item{network_canvas_path}{If using data from Network Canvas, a character value indicating the directory in which Network Canvas CSVs are located. `ego_netwrite` will automatically read in all CSV files located in this directory and process them.}
+\item{egor}{A logical value indicating whether output should include an \code{egor} object, which is often useful for visualizaton and for simulation larger networks from egocentric data.}
 
-\item{cat.to.factor}{When using Network Canvas data, a logical vaue indicating whether categorical variables, originally stored as a series of TRUE/FALSE columns, should be converted into a single factor column.}
+\item{egor_design}{If creating an \code{egor} object, a list of arguments to \code{\link[srvyr:as_survey_design]{srvyr::as_survey_design}} specifying the sampling design for egos. This argument corresponds to \code{ego_design} in \code{\link[egor:egor]{egor::egor}}.}
 
-\item{egor}{A logical value indicating whether output should include an `egor` object, which is often useful for visualizaton and for simulation larger networks from egocentric data.}
-
-\item{egor_design}{If creating an `egor` object, a list of arguments to `srvyr::as_survey_design()` specifying the sampling design for egos. This argument corresponds to `ego_design` in `egor::egor`.}
-
-\item{egor_alter_design}{If creating an `egor` object, the maximum number of alters than an ego can nominate. This argument corresponds to `alter_design` in `egor::egor`.}
+\item{egor_alter_design}{If creating an \code{egor} object, the maximum number of alters than an ego can nominate. This argument corresponds to \code{alter_design} in \code{\link[egor:egor]{egor::egor}}.}
 }
 \value{
-`ego_netwrite` returns several data frames, one containing measures of ego attributes, another containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, `ego_netwrite`  returns a list of igraph objects constructed for each individual ego network, as well as an `egor` object for the overall dataset if desired.
+\code{ego_netwrite} returns several data frames, one containing measures of ego attributes, another containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite}  returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.
 }
 \description{
-The `ego_netwrite` function reads in data pertaining to ego networks and processes them into a set of standardized outputs, including measures commonly calculated for ego networks. `ego_netwrite` is also designed to process data produced by Network Canvas, a popular tool for egocentric data capture.
+The \code{ego_netwrite} function reads in data pertaining to ego networks and processes them into a set of standardized outputs, including measures commonly calculated for ego networks.
 }
