@@ -22,6 +22,12 @@
 #' ego_homophily(ego_id = egos32$.EGOID, ego_measure = egos32$country,
 #' alter_ego = alters32$.EGOID, alter_measure = alters32$country)
 
+ego_id = egonet_egos$ego_id
+ego_measure = egonet_egos$country
+alter_ego = egonet_alters$ego_id
+alter_measure = egonet_egos$country
+prefix = "country"
+prop = FALSE
 
 
 ego_homophily <- function(ego_id,
@@ -42,7 +48,7 @@ ego_homophily <- function(ego_id,
   hom_counts <- var_df %>%
     dplyr::group_by(ego_id) %>%
     dplyr::summarize(num_sim = sum(as.character(alter_val) == as.character(ego_val), na.rm = T),
-                                            prop_sim = num_sim/length) %>%
+                                            prop_sim = num_sim/dplyr::n()) %>%
     dplyr::ungroup()
 
   if (prop == TRUE) {
