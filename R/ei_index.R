@@ -29,7 +29,7 @@ ei_index <- function(ego_id,
 
   ego_df <- data.frame(ego_id = ego_id,
                        ego_val = ego_measure)
-  alter_df <- data.frame(alter_ego,
+  alter_df <- data.frame(ego_id = alter_ego,
                          alter_val = alter_measure)
 
   var_df <- dplyr::left_join(alter_df, ego_df, by = "ego_id")
