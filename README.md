@@ -99,9 +99,11 @@ Users applying `ideanet` to sociocentric data can use the `netwrite` function to
 
 `ideanet` includes modules for advanced analysis, allowing researchers to extend the utility of `netwrite` and its outputs. Modules for Multiple Regression Quadratic Assignment Procedure (MRQAP) and Positional (Role) Analysis are currently available, and additional modules are expected to come in the near future.
 
+
 ## Interactive GUI for Sociocentric Networks
 
 The `ideanetViz` Shiny app presents the output of `ideanet`'s workflow for sociocentric data in a clear and accessible GUI. This GUI is convenient for users with limited R experience and is useful for classrooms, workshops, and other educational spaces. It is also useful for experienced users interested in quick exploration of network data. Moreover, `ideanetViz` streamlines customization of network visualizations and provides quick access into `ideanet`'s advanced anlysis modules.
+
 
 ## Support and Compatibility with Other Network Analysis Packages
 
