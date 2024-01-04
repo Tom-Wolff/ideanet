@@ -56,16 +56,16 @@ alter_centrality <- function(x, directed) {
 
       total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
       # WEIGHTED DEGREE TBD
-      comp_membership <- ideanet:::component_memberships(x$igraph)
-      closeness <- ideanet:::closeness_igraph(x$igraph)
+      comp_membership <- component_memberships(x$igraph)
+      closeness <- closeness_igraph(x$igraph)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
-      betweenness_scores <- ideanet:::betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
+      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
       # Remove the final value here, as that's ego's score
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
       eigen_cen <- rep(NA, length(total_degree))
-      constraint <- ideanet:::burt_ch(x$igraph)
-      effective_size <- ideanet:::ens(x$igraph)
-      reachability <- ideanet:::reachable_igraph(x$igraph, directed = FALSE)
+      constraint <- burt_ch(x$igraph)
+      effective_size <- ens(x$igraph)
+      reachability <- reachable_igraph(x$igraph, directed = FALSE)
 
 
       bonpow <- rep(NA, length(total_degree))
@@ -88,16 +88,16 @@ alter_centrality <- function(x, directed) {
       outdegree <- igraph::degree(x$igraph, mode = "out", loops = FALSE)
       total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
       # WEIGHTED DEGREE TBD
-      comp_membership <- ideanet:::component_memberships(x$igraph)
-      closeness <- ideanet:::closeness_igraph(x$igraph)
+      comp_membership <- component_memberships(x$igraph)
+      closeness <- closeness_igraph(x$igraph)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
-      betweenness_scores <- ideanet:::betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
+      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
       # Remove the final value here, as that's ego's score
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
       eigen_cen <- rep(NA, length(total_degree))
-      constraint <- ideanet:::burt_ch(x$igraph)
-      effective_size <- ideanet:::ens(x$igraph)
-      reachability <- ideanet:::reachable_igraph(x$igraph, directed = TRUE)
+      constraint <- burt_ch(x$igraph)
+      effective_size <- ens(x$igraph)
+      reachability <- reachable_igraph(x$igraph, directed = TRUE)
 
 
       bonpow <- rep(NA, length(total_degree))
@@ -122,19 +122,19 @@ alter_centrality <- function(x, directed) {
 
       total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
       # WEIGHTED DEGREE TBD
-      comp_membership <- ideanet:::component_memberships(x$igraph)
-      closeness <- ideanet:::closeness_igraph(x$igraph)
+      comp_membership <- component_memberships(x$igraph)
+      closeness <- closeness_igraph(x$igraph)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
-      betweenness_scores <- ideanet:::betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
+      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
       # Remove the final value here, as that's ego's score
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
-      bonpow <- ideanet:::bonacich_igraph(x$igraph, directed = FALSE, message = TRUE)
-      bonpow_negative <- ideanet:::bonacich_igraph(x$igraph, directed = FALSE, bpct = -.75, message = TRUE)
+      bonpow <- bonacich_igraph(x$igraph, directed = FALSE, message = TRUE)
+      bonpow_negative <- bonacich_igraph(x$igraph, directed = FALSE, bpct = -.75, message = TRUE)
       colnames(bonpow_negative) <- c("bonacich_negative", "bon_centralization_negative")
-      eigen_cen <- ideanet:::eigen_igraph(x$igraph, directed = FALSE, message = TRUE)
-      constraint <- ideanet:::burt_ch(x$igraph)
-      effective_size <- ideanet:::ens(x$igraph)
-      reachability <- ideanet:::reachable_igraph(x$igraph, directed = FALSE)
+      eigen_cen <- eigen_igraph(x$igraph, directed = FALSE, message = TRUE)
+      constraint <- burt_ch(x$igraph)
+      effective_size <- ens(x$igraph)
+      reachability <- reachable_igraph(x$igraph, directed = FALSE)
 
       bon_cent <- bonpow[[2]]
       bonpow <- bonpow[[1]]
@@ -158,19 +158,19 @@ alter_centrality <- function(x, directed) {
       outdegree <- igraph::degree(x$igraph, mode = "out", loops = FALSE)
       total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
       # WEIGHTED DEGREE TBD
-      comp_membership <- ideanet:::component_memberships(x$igraph)
-      closeness <- ideanet:::closeness_igraph(x$igraph)
+      comp_membership <- component_memberships(x$igraph)
+      closeness <- closeness_igraph(x$igraph)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
-      betweenness_scores <- ideanet:::betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
+      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
       # Remove the final value here, as that's ego's score
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
-      bonpow <- ideanet:::bonacich_igraph(x$igraph, directed = TRUE, message = TRUE)
-      bonpow_negative <- ideanet:::bonacich_igraph(x$igraph, directed = TRUE, bpct = -.75, message = TRUE)
+      bonpow <- bonacich_igraph(x$igraph, directed = TRUE, message = TRUE)
+      bonpow_negative <- bonacich_igraph(x$igraph, directed = TRUE, bpct = -.75, message = TRUE)
       colnames(bonpow_negative) <- c("bonacich_negative", "bon_centralization_negative")
-      eigen_cen <- ideanet:::eigen_igraph(x$igraph, directed = TRUE, message = TRUE)
-      constraint <- ideanet:::burt_ch(x$igraph)
-      effective_size <- ideanet:::ens(x$igraph)
-      reachability <- ideanet:::reachable_igraph(x$igraph, directed = TRUE)
+      eigen_cen <- eigen_igraph(x$igraph, directed = TRUE, message = TRUE)
+      constraint <- burt_ch(x$igraph)
+      effective_size <- ens(x$igraph)
+      reachability <- reachable_igraph(x$igraph, directed = TRUE)
 
       bon_cent <- bonpow[[2]]
       bonpow <- bonpow[[1]]
