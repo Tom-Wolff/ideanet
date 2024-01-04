@@ -67,6 +67,10 @@ alter_files <- just_csv[stringr::str_detect(just_csv, "attributeList")]
 for (i in 1:length(alter_files)) {
   if (i == 1) {
     alters <- read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
+    # Need to handle the case in which ego 1 is an isolate
+    if (nrow(alters) == 0) {
+      alters[1,] <- NA
+    }
     ### Record type of alter
     node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
     node_type <- stringr::str_replace(node_type, "attributeList_", "")
@@ -74,14 +78,23 @@ for (i in 1:length(alter_files)) {
     alters$node_type <- node_type
   } else {
     this_alter <- read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
-    ### Record type of alter
-    node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
-    node_type <- stringr::str_replace(node_type, "attributeList_", "")
-    node_type <- stringr::str_replace(node_type, ".csv", "")
-    this_alter$node_type <- node_type
-    alters <- dplyr::bind_rows(alters, this_alter)
+    # Only need to do the rest if there are actually alter nominated by ego,
+    # otherwise can skip
+    if (nrow(this_alter) > 0) {
+      ### Record type of alter
+      node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
+      node_type <- stringr::str_replace(node_type, "attributeList_", "")
+      node_type <- stringr::str_replace(node_type, ".csv", "")
+      this_alter$node_type <- node_type
+      alters <- dplyr::bind_rows(alters, this_alter)
+    }
   }
 }
+
+# If the first ego was an isolate, go ahead and remove the first row in `alters`
+alters <- alters[!is.na(alters$nodeID), ]
+
+
 
 # Compile Alter-Alter Edgelists
 
@@ -90,6 +103,11 @@ edge_files <- just_csv[stringr::str_detect(just_csv, "edgeList")]
 for (i in 1:length(edge_files)) {
   if (i == 1) {
     el <- read.csv(paste(path, edge_files[[i]], sep = "/"), header = T)
+    # Handling if first ego is an isolate
+    if (nrow(el) == 0) {
+      el[1,] <- NA
+    }
+
     ### Record type of edge
     edge_type <- stringr::str_extract(edge_files[[i]], "edgeList.*.csv")
     edge_type <- stringr::str_replace(edge_type, "edgeList_", "")
@@ -110,6 +128,9 @@ for (i in 1:length(edge_files)) {
     }
   }
 }
+
+# If the first ego was an isolate, go ahead and remove the first row in `el`
+el <- el[!is.na(el$edgeID), ]
 
 # Apply catToFactor, if desired
 if (cat.to.factor == TRUE) {
@@ -154,10 +175,11 @@ el <- el %>%
   dplyr::select(ego_id, edge_id = edgeID, from, to, edge_type, dplyr::everything())
 
 
+# We'll want to extract the protocol name from the filenames for naming
+# the objects we output to the global environment
+protocol_name <- egos$networkCanvasProtocolName[[1]]
+
 if (output_list == FALSE) {
-  # We'll want to extract the protocol name from the filenames for naming
-  # the objects we output to the global environment
-  protocol_name <- egos$networkCanvasProtocolName[[1]]
 
   assign(x = paste(protocol_name, "_egos", sep = ""), value = egos, .GlobalEnv)
   assign(x = paste(protocol_name, "_alters", sep = ""), value = alters, .GlobalEnv)
@@ -213,9 +235,14 @@ apply_catToFactor <- function(df) {
 
   # LIMIT TO ONLY THE T/F VARIABLES FIRST
   df_keep <- c()
+  df_keep_na <- c()
   for (i in 1:ncol(df)) {
     df_keep[i] <- sum(!(df[,i] %in% c("true", "false", NA))) == 0
+    # If we have variables that are technically logicals but only contain `NA`
+    # values, we'll want to skip them
+    df_keep_na[i] <- sum(!is.na(df[,i])) == 0
   }
+  df_keep[df_keep_na] <- FALSE
   df <- df[,df_keep]
 
   # THEN REMOVE STUFF FOLLOWING THE LAST UNDERSCORE
