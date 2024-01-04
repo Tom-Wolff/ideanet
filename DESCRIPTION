@@ -5,7 +5,7 @@ Version: 0.1.0
 Author: Tom Wolff, Jonathan Howard Morgan, Gabriel Varela, Kieran Lele, Ethan Bhojani, Dana Pasquale, Peter Mucha, James Moody 
 Maintainer: Tom Wolff <tom.wolff@northwestern.edu>
 Description: A set of tools designed for streamlining social network analysis, particularly geared toward entry-level users.
-License: What license is it under?
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Imports:
@@ -16,8 +16,12 @@ Imports:
     cowplot,
     devtools,
     dplyr,
+    DT,
+    egor,
+    ergm,
     forcats,
     ggplot2,
+    grDevices,
     igraph,
     intergraph,
     linkcomm,
@@ -27,6 +31,8 @@ Imports:
     moments,
     network,
     readxl,
+    rlang,
+    shiny,
     sna,
     stringr,
     tibble,

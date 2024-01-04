@@ -16,11 +16,15 @@ ei_index(
 \arguments{
 \item{ego_id}{A vector of unique ego identifiers located in an ego dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{egos}.}
 
-\item{ego_measure}{A vector of attributes corresponding to each ego.}
+\item{ego_measure}{A vector of attributes corresponding to each ego}
 
 \item{alter_ego}{A vector of ego identifiers located in an alter dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{alters}.}
 
 \item{alter_measure}{A vector of attributes corresponding to each alter}
+
+\item{prefix}{A character value indicating the desired prefix for the calculated E-I measure}
+
+\item{suffix}{A character value indicating the desired suffix for the calculated E-I measure}
 }
 \value{
 \code{ei_index} returns a dataframe of vectors that include the ego identifier and the ei-index value for the selected attribute

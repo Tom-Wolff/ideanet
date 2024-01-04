@@ -3,9 +3,11 @@
 #' @description Linear transformation of the proportion homophilous measure (Krackhardt and Stern 1988; Perry et al. 2018)
 #'
 #' @param ego_id A vector of unique ego identifiers located in an ego dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{egos}.
-#' @param ego_measure A vector of attributes corresponding to each ego.
+#' @param ego_measure A vector of attributes corresponding to each ego
 #' @param alter_ego A vector of ego identifiers located in an alter dataframe. If using data objects created by \code{\link{ego_netwrite}}, this should be the data frame entitled \code{alters}.
 #' @param alter_measure A vector of attributes corresponding to each alter
+#' @param prefix A character value indicating the desired prefix for the calculated E-I measure
+#' @param suffix A character value indicating the desired suffix for the calculated E-I measure
 #'
 #' @return \code{ei_index} returns a dataframe of vectors that include the ego identifier and the ei-index value for the selected attribute
 #'
@@ -29,7 +31,7 @@ ei_index <- function(ego_id,
 
   ego_df <- data.frame(ego_id = ego_id,
                        ego_val = ego_measure)
-  alter_df <- data.frame(alter_ego,
+  alter_df <- data.frame(ego_id = alter_ego,
                          alter_val = alter_measure)
 
   var_df <- dplyr::left_join(alter_df, ego_df, by = "ego_id")

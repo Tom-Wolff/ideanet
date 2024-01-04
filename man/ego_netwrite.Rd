@@ -64,8 +64,6 @@ ego_netwrite(
 \item{egor}{A logical value indicating whether output should include an \code{egor} object, which is often useful for visualizaton and for simulation larger networks from egocentric data.}
 
 \item{egor_design}{If creating an \code{egor} object, a list of arguments to \code{\link[srvyr:as_survey_design]{srvyr::as_survey_design}} specifying the sampling design for egos. This argument corresponds to \code{ego_design} in \code{\link[egor:egor]{egor::egor}}.}
-
-\item{egor_alter_design}{If creating an \code{egor} object, the maximum number of alters than an ego can nominate. This argument corresponds to \code{alter_design} in \code{\link[egor:egor]{egor::egor}}.}
 }
 \value{
 \code{ego_netwrite} returns several data frames, one containing measures of ego attributes, another containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite}  returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.

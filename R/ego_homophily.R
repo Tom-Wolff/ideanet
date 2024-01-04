@@ -22,13 +22,6 @@
 #' ego_homophily(ego_id = egos32$.EGOID, ego_measure = egos32$country,
 #' alter_ego = alters32$.EGOID, alter_measure = alters32$country)
 
-ego_id = egonet_egos$ego_id
-ego_measure = egonet_egos$country
-alter_ego = egonet_alters$ego_id
-alter_measure = egonet_egos$country
-prefix = "country"
-prop = FALSE
-
 
 ego_homophily <- function(ego_id,
                         ego_measure,
