@@ -102,9 +102,11 @@ Users applying `ideanet` to sociocentric data can use the `netwrite` function to
 
 ## Interactive GUI for Sociocentric Networks
 
-<img width="800" alt="ideanetViz_screen" src="https://github.com/Tom-Wolff/ideanet/assets/36702189/20907279-d195-4439-ab1f-e44e6d7f070f">
-
 The `ideanetViz` Shiny app presents the output of `ideanet`'s workflow for sociocentric data in a clear and accessible GUI. This GUI is convenient for users with limited R experience and is useful for classrooms, workshops, and other educational spaces. It is also useful for experienced users interested in quick exploration of network data. Moreover, `ideanetViz` streamlines customization of network visualizations and provides quick access into `ideanet`'s advanced anlysis modules.
+
+<p align="center">
+<img width="800" alt="ideanetViz_screen" src="https://github.com/Tom-Wolff/ideanet/assets/36702189/20907279-d195-4439-ab1f-e44e6d7f070f">
+</p>
 
 
 ## Support and Compatibility with Other Network Analysis Packages
