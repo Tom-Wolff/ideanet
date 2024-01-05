@@ -1459,6 +1459,24 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     asym <- suppressWarnings(igraph::dyad_census(g)$asym)
     null_ties <- suppressWarnings(igraph::dyad_census(g)$null)
 
+    # Triad census
+    triad_003 = igraph::triad_census(g)[[1]]
+    triad_012 = igraph::triad_census(g)[[2]]
+    triad_102 = igraph::triad_census(g)[[3]]
+    triad_021D = igraph::triad_census(g)[[4]]
+    triad_021U = igraph::triad_census(g)[[5]]
+    triad_021C = igraph::triad_census(g)[[6]]
+    triad_111D = igraph::triad_census(g)[[7]]
+    triad_111U = igraph::triad_census(g)[[8]]
+    triad_030T = igraph::triad_census(g)[[9]]
+    triad_030C = igraph::triad_census(g)[[10]]
+    triad_201 = igraph::triad_census(g)[[11]]
+    triad_120D = igraph::triad_census(g)[[12]]
+    triad_120U = igraph::triad_census(g)[[13]]
+    triad_120C = igraph::triad_census(g)[[14]]
+    triad_210 = igraph::triad_census(g)[[15]]
+    triad_300 = igraph::triad_census(g)[[16]]
+
     avg_geodesic <- igraph::average.path.length(g, directed = directed)
 
     ### Jim wanted to add transitivity correlation score as an additional
@@ -1583,6 +1601,23 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         'Number of Mutual Ties', 'Number of Asymmetric Ties',
                         'Number of Null Ties',
 
+                        "Number of 003 Triads",
+                        "Number of 012 Triads",
+                        "Number of 102 Triads",
+                        "Number of 021D Triads",
+                        "Number of 021U Triads",
+                        "Number of 021C Triads",
+                        "Number of 111D Triads",
+                        "Number of 111U Triads",
+                        "Number of 030T Triads",
+                        "Number of 030C Triads",
+                        "Number of 201 Triads",
+                        "Number of 120D Triads",
+                        "Number of 120U Triads",
+                        "Number of 120C Triads",
+                        "Number of 210 Triads",
+                        "Number of 300 Triads",
+
                         'Degree Assortativity', 'Reciprocity Rate', 'Transitivity Rate',
 
                         'Transitivity Correlation',
@@ -1630,7 +1665,22 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               'The number of asymmetric ties in the graph',
                               'The number of null ties in the graph',
 
-
+                              "The number of 003 triads in the graph",
+                              "The number of 012 triads in the graph",
+                              "The number of 102 triads in the graph",
+                              "The number of 021D triads in the graph",
+                              "The number of 021U triads in the graph",
+                              "The number of 021C triads in the graph",
+                              "The number of 111D triads in the graph",
+                              "The number of 111U triads in the graph",
+                              "The number of 030T triads in the graph",
+                              "The number of 030C triads in the graph",
+                              "The number of 201 triads in the graph",
+                              "The number of 120D triads in the graph",
+                              "The number of 120U triads in the graph",
+                              "The number of 120C triads in the graph",
+                              "The number of 210 triads in the graph",
+                              "The number of 300 triads in the graph",
 
                               'Edgewise correlation of degree', 'The proportion of directed ties that are reciprocated',
                               'The proportion of two-step paths that are also one-step paths',
@@ -1681,6 +1731,24 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
                   as.character(mutual), as.character(asym), as.character(null_ties),
 
+                  as.character(triad_003),
+                  as.character(triad_012),
+                  as.character(triad_102),
+                  as.character(triad_021D),
+                  as.character(triad_021U),
+                  as.character(triad_021C),
+                  as.character(triad_111D),
+                  as.character(triad_111U),
+                  as.character(triad_030T),
+                  as.character(triad_030C),
+                  as.character(triad_201),
+                  as.character(triad_120D),
+                  as.character(triad_120U),
+                  as.character(triad_120C),
+                  as.character(triad_210),
+                  as.character(triad_300),
+
+
                   as.character(degree_assortativity), as.character(reciprocity_rate),
                   as.character(transitivity_rate), as.character(trans_cor),
 
@@ -1696,6 +1764,22 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(k_core_cohesion))
 
     system_level_measures <- cbind(as.data.frame(measure_labels), measure_descriptions, measures)
+
+    # If network is undirected, we don't need a lot of the triad counts. Let's filter those out.
+    if (directed == FALSE) {
+      system_level_measures <- system_level_measures[!(system_level_measures$measure_labels %in% c("Number of 012 Triads",
+                                                                                                   "Number of 021D Triads",
+                                                                                                   "Number of 021U Triads",
+                                                                                                   "Number of 021C Triads",
+                                                                                                   "Number of 111D Triads",
+                                                                                                   "Number of 111U Triads",
+                                                                                                   "Number of 030T Triads",
+                                                                                                   "Number of 030C Triads",
+                                                                                                   "Number of 120D Triads",
+                                                                                                   "Number of 120U Triads",
+                                                                                                   "Number of 120C Triads",
+                                                                                                   "Number of 210 Triads")), ]
+    }
 
     # If nodelist is in output, create indicator of singular Adjmat
     if ("nodelist" %in% output & directed == TRUE) {
