@@ -321,11 +321,18 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
     el_together[is.na(el_together)] <- 0
 
     el_together <- el_together %>%
+      dplyr::mutate(num_ties = tie_ij + tie_ji + tie_jk + tie_kj
+                    + tie_ik + tie_ki) %>%
       dplyr::group_by(i, j, k) %>%
+      dplyr::mutate(triad_id = dplyr::cur_group_id()) %>%
+      dplyr::arrange(triad_id, desc(num_ties)) %>%
       dplyr::slice(1) %>%
       dplyr::filter(i != j) %>%
       dplyr::filter(j != k) %>%
-      dplyr::filter(i != k)
+      dplyr::filter(i != k) %>%
+      dplyr::select(-triad_id, -num_ties)
+
+
 
 
     # all_triads <- all_triads %>%
@@ -349,68 +356,68 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
 
     # Make numeric identifier of triad type
     all_combos$triad_type <- c("003",
-                               "012_e",
-                               "012_s",
-                               "102_d",
-                               "012_i",
-                               "021d_e",
-                               "021c_s",
-                               "111u_s",
-                               "012_i",
-                               "021c_e",
-                               "021u_s",
-                               "111d_e",
-                               "102_i",
-                               "111u_e",
-                               "111d_s",
-                               "201_s",
-                               "012_e",
-                               "021u_e",
-                               "021c_b",
-                               "111d_b",
-                               "021c_e",
-                               "030t_e",
-                               "030c",
-                               "120c_e",
-                               "021d_e",
-                               "030t_e",
-                               "030t_b",
-                               "120d_e",
-                               "111u_e",
-                               "120u_e",
-                               "120c_b",
-                               "210_b",
-                               "012_s",
-                               "021c_b",
-                               "021d_s",
-                               "111u_b",
-                               "021u_s",
-                               "030t_b",
-                               "030t_s",
-                               "120u_s",
-                               "021c_s",
-                               "030c",
-                               "030t_s",
-                               "120c_s",
-                               "111d_s",
-                               "120c_b",
-                               "120d_s",
-                               "210_s",
-                               "102_d",
-                               "111d_b",
-                               "111u_b",
-                               "201_b",
-                               "111d_e",
-                               "120d_e",
-                               "120c_s",
-                               "210_e",
-                               "111u_s",
-                               "120c_e",
-                               "120u_s",
-                               "210_e",
-                               "201_s",
-                               "210_b",
-                               "210_s",
+                               "012_E",
+                               "012_S",
+                               "102_D",
+                               "012_I",
+                               "021D_E",
+                               "021C_S",
+                               "111U_S",
+                               "012_I",
+                               "021C_E",
+                               "021U_S",
+                               "111D_E",
+                               "102_I",
+                               "111U_E",
+                               "111D_S",
+                               "201_S",
+                               "012_E",
+                               "021U_E",
+                               "021C_B",
+                               "111D_B",
+                               "021C_E",
+                               "030T_E",
+                               "030C",
+                               "120C_E",
+                               "021D_E",
+                               "030T_E",
+                               "030T_B",
+                               "120D_E",
+                               "111U_E",
+                               "120U_E",
+                               "120C_B",
+                               "210_B",
+                               "012_S",
+                               "021C_B",
+                               "021D_S",
+                               "111U_B",
+                               "021U_S",
+                               "030T_B",
+                               "030T_S",
+                               "120U_S",
+                               "021C_S",
+                               "030C",
+                               "030T_S",
+                               "120C_S",
+                               "111D_S",
+                               "120C_B",
+                               "120D_S",
+                               "210_S",
+                               "102_D",
+                               "111D_B",
+                               "111U_B",
+                               "201_B",
+                               "111D_E",
+                               "120D_E",
+                               "120C_S",
+                               "210_E",
+                               "111U_S",
+                               "120C_E",
+                               "120U_S",
+                               "210_E",
+                               "201_S",
+                               "210_B",
+                               "210_S",
                                "300")
 
     # Merge `all_combos` into complete triad list
@@ -472,11 +479,17 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
     el_together[is.na(el_together)] <- 0
 
     el_together <- el_together %>%
+      dplyr::mutate(num_ties = tie_ij + tie_ji + tie_jk + tie_kj
+                    + tie_ik + tie_ki) %>%
       dplyr::group_by(i, j, k) %>%
+      dplyr::mutate(triad_id = dplyr::cur_group_id()) %>%
+      dplyr::arrange(triad_id, desc(num_ties)) %>%
       dplyr::slice(1) %>%
       dplyr::filter(i != j) %>%
       dplyr::filter(j != k) %>%
-      dplyr::filter(i != k)
+      dplyr::filter(i != k) %>%
+      dplyr::select(-triad_id, -num_ties)
+
 
     # all_triads <- all_triads %>%
     #   left_join(el1, by = c("i", "j")) %>%
@@ -513,7 +526,7 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
   # Now we count how many of each triad type each ego has
   triad_count <- all_triads %>%
     dplyr::group_by(i, triad_type) %>%
-    dplyr::summarize(count = dplyr::n()) %>%
+    dplyr::summarize(count = dplyr::n()/2) %>%
     tidyr::pivot_wider(names_from = triad_type,
                 values_from = count) %>%
     dplyr::ungroup()

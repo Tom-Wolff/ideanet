@@ -306,9 +306,13 @@ cluster_method <- function(graph, # igraph object generated from netwrite
     }
 
     # Label `triad_census` columns according to triad type
+    # colnames(triad_census) <- c("003", "012_S", "021D_S", "012_E", "021U_E", "102_D", "201_B", "021C_B", "111U_B", "111D_B",
+    #                             "102_I", "111D_S", "120D_S", "111U_E", "120U_E", "201_S", "300", "120C_B", "210_S", "210_B",
+    #                             "012_I","021C_S", "030T_S", "012D_E", "030T_E","111U_S", "210_E", "030T_B", "120U_S", "120C_E",
+    #                             "021U_S", "021C_E","111D_E", "030C","120C_S", "120D_E")
     colnames(triad_census) <- c("003", "012_S", "021D_S", "012_E", "021U_E", "102_D", "201_B", "021C_B", "111U_B", "111D_B",
                                 "102_I", "111D_S", "120D_S", "111U_E", "120U_E", "201_S", "300", "120C_B", "210_S", "210_B",
-                                "012_I","021C_S", "030T_S", "012D_E","030T_E","111U_S", "210_E", "030T_B", "120U_S", "120C_E",
+                                "012_I","021C_S", "030T_S", "021D_E", "030T_E","111U_S", "210_E", "030T_B", "120U_S", "120C_E",
                                 "021U_S", "021C_E","111D_E", "030C","120C_S", "120D_E")
 
 

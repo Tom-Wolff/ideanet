@@ -1460,9 +1460,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     null_ties <- suppressWarnings(igraph::dyad_census(g)$null)
 
     # Triad census
-    triad_003 = igraph::triad_census(g)[[1]]
-    triad_012 = igraph::triad_census(g)[[2]]
-    triad_102 = igraph::triad_census(g)[[3]]
+    triad_003 =  igraph::triad_census(g)[[1]]
+    triad_012 =  igraph::triad_census(g)[[2]]
+    triad_102 =  igraph::triad_census(g)[[3]]
     triad_021D = igraph::triad_census(g)[[4]]
     triad_021U = igraph::triad_census(g)[[5]]
     triad_021C = igraph::triad_census(g)[[6]]
@@ -1470,12 +1470,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     triad_111U = igraph::triad_census(g)[[8]]
     triad_030T = igraph::triad_census(g)[[9]]
     triad_030C = igraph::triad_census(g)[[10]]
-    triad_201 = igraph::triad_census(g)[[11]]
+    triad_201 =  igraph::triad_census(g)[[11]]
     triad_120D = igraph::triad_census(g)[[12]]
     triad_120U = igraph::triad_census(g)[[13]]
     triad_120C = igraph::triad_census(g)[[14]]
-    triad_210 = igraph::triad_census(g)[[15]]
-    triad_300 = igraph::triad_census(g)[[16]]
+    triad_210 =  igraph::triad_census(g)[[15]]
+    triad_300 =  igraph::triad_census(g)[[16]]
 
     avg_geodesic <- igraph::average.path.length(g, directed = directed)
 
