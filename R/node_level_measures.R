@@ -3,15 +3,19 @@
 ###############################################
 
 node_level_igraph <- function(nodes, g, directed, message) {
-  total_degree <- igraph::degree(g, mode='all', loops=FALSE)
+
+  # Degree Per Jim's specification
+  custom_degree <- total_degree(g, directed = directed)
+
+  total_degree <- custom_degree$total_degree_all
   weighted_degree <- igraph::strength(g, mode='all', loops=FALSE)
   comp_membership <- component_memberships(g)
 
 
   if(directed == TRUE){
 
-    in_degree <- igraph::degree(g, mode='in', loops=FALSE)
-    out_degree <- igraph::degree(g, mode='out', loops=FALSE)
+    in_degree <- custom_degree$total_degree_in
+    out_degree <- custom_degree$total_degree_out
     weighted_indegree <- igraph::strength(g, mode='in', loops=FALSE)
     weighted_outdegree <- igraph::strength(g, mode='out', loops=FALSE)
     closeness <- closeness_igraph(g)
@@ -116,6 +120,100 @@ node_level_igraph <- function(nodes, g, directed, message) {
 
 
   return(nodes)
+
+}
+
+
+
+
+#################################
+#    T O T A L   D E G R E E    #
+#################################
+
+# Jim wants total degree to be measured as the number of (unique) nodes ego is
+# adjacent to, rather than the number of arcs ego is associated with.
+
+
+total_degree <- function(g,
+                         directed = directed) {
+
+
+  # Extract edgelist from igraph object.
+  el1 <- as.data.frame(igraph::get.edgelist(g, names = TRUE))
+  colnames(el1) <- c("ego", "alter")
+  el1$mode <- "out"
+  # Flip edgelist to count inbound ties
+  el2 <- data.frame(ego = el1$alter,
+                    alter = el1$ego,
+                    mode = "in")
+
+  # Combine into a single edgelist
+  full_el <- dplyr::bind_rows(el1, el2)
+  # Need unique values here to avoid counting duplicate arcs
+  full_el <- unique(full_el)
+
+  # Filter out self-loops
+  full_el <- full_el %>%
+    dplyr::filter(ego != alter)
+
+  # Handling Directed Networks
+  if (directed == TRUE) {
+
+    # Group by `ego` and `mode` to get number of nodes ego is tied to for both
+    # in and outbound ties
+    directed_degree <- full_el %>%
+      dplyr::group_by(ego, mode) %>%
+      dplyr::summarize(total_degree = dplyr::n()) %>%
+      tidyr::pivot_wider(names_from = "mode",
+                         names_prefix = "total_degree_",
+                         values_from = "total_degree",
+                         values_fill = 0) %>%
+      dplyr::ungroup()
+
+    # For total degree for both in and outbound ties, we just group by `ego` so as
+    # not to double-count alters who both send ties to ego and receive ties from ego
+    undirected_degree <- full_el %>%
+      dplyr::select(-mode) %>%
+      unique() %>%
+      dplyr::group_by(ego) %>%
+      dplyr::summarize(total_degree_all = dplyr::n()) %>%
+      dplyr::ungroup()
+
+    # Merge `directed_degree` and `undirected_degree` together
+    tot_degree <- dplyr::full_join(directed_degree, undirected_degree, by = "ego") %>%
+      dplyr::rename(id = ego)
+
+  } else {
+
+    tot_degree <- full_el %>%
+      dplyr::select(-mode) %>%
+      unique() %>%
+      dplyr::group_by(ego) %>%
+      dplyr::summarize(total_degree_all = dplyr::n()) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(total_degree_in = NA,
+                    total_degree_out = NA) %>%
+      dplyr::rename(id = ego)
+
+  }
+
+  # Get full list of node IDs (In case we had isolates)
+  final_df <- data.frame(id = igraph::V(g)$name)
+  # Merge in total degree counts
+  final_df <- dplyr::left_join(final_df, tot_degree, by = "id")
+  # Replace `NA` values for zeros to properly assign values to isolates
+  final_df[is.na(final_df)] <- 0
+
+  # If undirected network, resent `total_degree_in` and `total_degree_out` as
+  # `NA` values
+  if (directed == FALSE) {
+    final_df$total_degree_in <- NA
+    final_df$total_degree_out <- NA
+  }
+
+
+  # Return `final_df` as function output
+  return(final_df)
 
 }
 
@@ -232,9 +330,12 @@ reachable_igraph <- function(g, directed){
     for(i in seq_along(proportion_reachable_in)){
 
 
-      proportion_reachable_in[[i]] <- length(igraph::subcomponent(g, v = i, mode = "in"))/num_nodes
-      proportion_reachable_out[[i]] <- length(igraph::subcomponent(g, v = i, mode = "out"))/num_nodes
-      proportion_reachable_all[[i]] <- length(igraph::subcomponent(g, v = i, mode = "all"))/num_nodes
+      # We have to subtract 1 from the numerator because `igraph` counts ego itself
+      # in the set of reacable nodes. For similar reasons, we also need to subtract 1 from the denominator
+
+      proportion_reachable_in[[i]] <- (length(igraph::subcomponent(g, v = i, mode = "in")) - 1)/(num_nodes-1)
+      proportion_reachable_out[[i]] <- (length(igraph::subcomponent(g, v = i, mode = "out")) - 1)/(num_nodes-1)
+      proportion_reachable_all[[i]] <- (length(igraph::subcomponent(g, v = i, mode = "all")) - 1)/(num_nodes-1)
 
 
     }
@@ -250,7 +351,7 @@ reachable_igraph <- function(g, directed){
       # Isolating connected vertices
 
       # Calculating the proportion reachable
-      proportion_reachable[[i]]  <- length(igraph::subcomponent(g, v = i, mode = "all"))/num_nodes
+      proportion_reachable[[i]]  <- (length(igraph::subcomponent(g, v = i, mode = "all")) - 1)/(num_nodes-1)
       #  rm(ego_net)
     }
 

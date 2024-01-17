@@ -176,27 +176,60 @@ trans_rate_igraph <- function(g) {
 }
 
 
+###################################################################
+#    G L O B A L   C L U S T E R I N G   C O E F F I C I E N T    #
+###################################################################
+
+# Jim specifies the calculation for GCC as the ratio of closed triads to open
+# triads
+
+gcc <- function(g) {
+
+  t_census <- igraph::triad.census(g)
+
+  # Numerator is number of closed triads
+  closed_t <- sum(t_census[c(9:10, 12:16)])
+  # Open triads
+  open_t <- sum(t_census[c(4:8, 11)])
+
+  gcc <- closed_t/(open_t + closed_t)
+
+  return(gcc)
+
+}
+
 
 #################################################
 #    D E G R E E   A S S O R T A T I V I T Y    #
 #################################################
 
-assortativity_degree <- function(edges, g) {
+
+
+assortativity_degree <- function(g, directed = directed) {
   # Extracting the graph's edgelist
-  edges <- as.data.frame(edges)
+  edges <- as.data.frame(igraph::get.edgelist(g, names = FALSE))
+  colnames(edges) <- c("ego", "alter")
 
   # Calculating the total degree for each node
-  node_degree <- sna::degree(g, gmode=gmode, cmode='freeman', ignore.eval=TRUE)
-  node_degree <- as.data.frame(cbind(seq(1, length(node_degree), 1), node_degree))
+  # node_degree <- sna::degree(g2, gmode="digraph", cmode='freeman', ignore.eval=TRUE)
+  # node_degree <- as.data.frame(cbind(seq(1, length(node_degree), 1), node_degree))
+
+  node_degree <- total_degree(g, directed = TRUE)$total_degree_all
+  # node_degree <- igraph::degree(g, mode = "all", loops = FALSE)
+  node_degree <- data.frame("ego" = seq(1, length(node_degree), 1),
+                            "degree" = node_degree)
+
+    # as.data.frame(cbind(seq(1, length(node_degree), 1), node_degree))
 
   # Joining i & j ids
-  colnames(node_degree)[[1]] <- colnames(edges)[[3]]
-  edges <- dplyr::left_join(edges, node_degree, by=colnames(edges)[[3]])
-  colnames(edges)[[7]] <- c('i_degree')
+  colnames(node_degree)[[1]] <- colnames(edges)[[1]]
+  colnames(node_degree)[[2]] <- "degree"
+  edges <- dplyr::left_join(edges, node_degree, by="ego")
+  colnames(edges)[[3]] <- c('i_degree')
 
-  colnames(node_degree)[[1]] <- colnames(edges)[[5]]
-  edges <- dplyr::left_join(edges, node_degree, by=colnames(edges)[[5]])
-  colnames(edges)[[8]] <- c('j_degree')
+  colnames(node_degree)[[1]] <- colnames(edges)[[2]]
+  edges <- dplyr::left_join(edges, node_degree, by=colnames(edges)[[2]])
+  colnames(edges)[[4]] <- c('j_degree')
   rm(node_degree)
 
   # Calculating the Pearson Correlation of i and j degree variables
@@ -206,7 +239,7 @@ assortativity_degree <- function(edges, g) {
   assign(x = 'degree_assortatvity', value = degree_assortatvity,.GlobalEnv)
 }
 
-
+assortativity_degree(g, directed = TRUE)
 
 #########################################
 #    A V E R A G E   G E O D E S I C    #
