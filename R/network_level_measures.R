@@ -239,7 +239,6 @@ assortativity_degree <- function(g, directed = directed) {
   assign(x = 'degree_assortatvity', value = degree_assortatvity,.GlobalEnv)
 }
 
-assortativity_degree(g, directed = TRUE)
 
 #########################################
 #    A V E R A G E   G E O D E S I C    #
