@@ -106,7 +106,7 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
 
       # If method "multi_category", create an tidyselect::all_of(variable) for each value and then dichotomize.
       if (method == "multi_category") {
-        opts <- nodes %>% dplyr::select(tidyselect::all_of(variable)) %>% dplyr::distinct() %>% tidyr::drop_na() %>% pull()
+        opts <- nodes %>% dplyr::select(tidyselect::all_of(variable)) %>% dplyr::distinct() %>% tidyr::drop_na() %>% dplyr::pull()
 
         for (n in 1:length(opts)) {
           edges <- edges %>%
@@ -135,7 +135,7 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
                              is.na(!!rlang::sym(paste0(variable, "_ego"))) |
                                is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
 
-        opts <- nodes %>% dplyr::select(tidyselect::all_of(variable)) %>% dplyr::distinct() %>% tidyr::drop_na() %>% pull()
+        opts <- nodes %>% dplyr::select(tidyselect::all_of(variable)) %>% dplyr::distinct() %>% tidyr::drop_na() %>% dplyr::pull()
 
         for (n in 1:length(opts)) {
           edges <- edges %>%
@@ -150,5 +150,7 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
   }
 
   qap_graph <- igraph::graph_from_data_frame(edges, directed = directed, vertices = nodes)
-  qap_results <<- list(qap_graph, nodes, edges)
+  qap_results <- list(qap_graph, nodes, edges)
+  assign("qap_results", qap_results, .GlobalEnv)
+
 }

@@ -402,21 +402,21 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$raw_nodes, {
     shiny::insertTab(inputId = "processtabs",
-              shiny::tabPanel("Process Node Data",
-                       shiny::sidebarPanel(
-                         shiny::uiOutput("node_ids"),
-                         shiny::uiOutput("node_labels"),
-                         shiny::uiOutput("node_factor"),
-                         shiny::uiOutput("node_numeric"),
-                         tags$p(shiny::span("Questions with an asterisk are required.", style = "color:red")),
-                         tags$p(shiny::HTML("<b>Process</b> the node data by assigning the columns to their function.")),
-                         tags$p(shiny::HTML("The <b>node</b> <b>ids</b> should reflect ids in the edge list. It's required to correctly link the node attributes.")),
-                       ),
-                       shiny::mainPanel(
-                         style = "overflow-x: auto;",
-                         shiny::dataTableOutput('node_processed')
-                       )
-              ), target = "Process Edge Data ")
+                     shiny::tabPanel("Process Node Data",
+                                     shiny::sidebarPanel(
+                                       shiny::uiOutput("node_ids"),
+                                       shiny::uiOutput("node_labels"),
+                                       shiny::uiOutput("node_factor"),
+                                       shiny::uiOutput("node_numeric"),
+                                       tags$p(shiny::span("Questions with an asterisk are required.", style = "color:red")),
+                                       tags$p(shiny::HTML("<b>Process</b> the node data by assigning the columns to their function.")),
+                                       tags$p(shiny::HTML("The <b>node</b> <b>ids</b> should reflect ids in the edge list. It's required to correctly link the node attributes.")),
+                                     ),
+                                     shiny::mainPanel(
+                                       style = "overflow-x: auto;",
+                                       shiny::dataTableOutput('node_processed')
+                                     )
+                     ), target = "Process Edge Data ")
   })
   #Node Processing Options
 
@@ -486,44 +486,44 @@ server <- function(input, output, session) {
       if (input$node_id_col != "Empty") {
         print('started netwrite 1')
         netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                          adjacency_list=FALSE, nodelist=node_data(),
-                          node_id=input$node_id_col,
-                          i_elements=edge_data()[,input$edge_in_col],
-                          j_elements=edge_data()[,input$edge_out_col],
-                          weights=initial_edge(),
-                          type=type_ret, package='igraph',
-                          missing_code=99999, weight_type='frequency',
-                          directed=input$direction_toggle,
-                          net_name='init_net',
-                          shiny=TRUE)
+                 adjacency_list=FALSE, nodelist=node_data(),
+                 node_id=input$node_id_col,
+                 i_elements=edge_data()[,input$edge_in_col],
+                 j_elements=edge_data()[,input$edge_out_col],
+                 weights=initial_edge(),
+                 type=type_ret, package='igraph',
+                 missing_code=99999, weight_type='frequency',
+                 directed=input$direction_toggle,
+                 net_name='init_net',
+                 shiny=TRUE)
         print('processed netwrite')
         init_net
 
       } else {
         print('started netwrite 2')
         netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                          adjacency_list=FALSE,
-                          i_elements=edge_data()[,input$edge_in_col],
-                          j_elements=edge_data()[,input$edge_out_col],
-                          weights=initial_edge(),
-                          type=type_ret, package='igraph',
-                          missing_code=99999, weight_type='frequency',
-                          directed=input$direction_toggle,
-                          net_name='init_net',shiny=TRUE)
+                 adjacency_list=FALSE,
+                 i_elements=edge_data()[,input$edge_in_col],
+                 j_elements=edge_data()[,input$edge_out_col],
+                 weights=initial_edge(),
+                 type=type_ret, package='igraph',
+                 missing_code=99999, weight_type='frequency',
+                 directed=input$direction_toggle,
+                 net_name='init_net',shiny=TRUE)
         print('processed netwrite')
         init_net
       }
     } else {
       print('started netwrite 3')
       netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                        adjacency_list=FALSE,
-                        i_elements=edge_data()[,input$edge_in_col],
-                        j_elements=edge_data()[,input$edge_out_col],
-                        weights=initial_edge(),
-                        type=type_ret, package='igraph',
-                        missing_code=99999, weight_type='frequency',
-                        directed=input$direction_toggle,
-                        net_name='init_net',shiny=TRUE)
+               adjacency_list=FALSE,
+               i_elements=edge_data()[,input$edge_in_col],
+               j_elements=edge_data()[,input$edge_out_col],
+               weights=initial_edge(),
+               type=type_ret, package='igraph',
+               missing_code=99999, weight_type='frequency',
+               directed=input$direction_toggle,
+               net_name='init_net',shiny=TRUE)
       print('processed netwrite')
       init_net
     }
@@ -930,7 +930,7 @@ server <- function(input, output, session) {
   output$set_seed <-
     shiny::renderUI({
       shiny::actionButton("set_seed", "Generate New Layout",
-                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                          style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
     })
 
   seed_number <-
@@ -1068,7 +1068,7 @@ server <- function(input, output, session) {
 
   output$save_image <- shiny::renderUI({
     shiny::actionButton("save_image", "Save Graph as HTML", icon("download"),
-                 style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
   })
 
   output$image_type <- shiny::renderUI({
@@ -1148,7 +1148,7 @@ server <- function(input, output, session) {
 
   output$show_vars <- shiny::renderUI({
     shiny::checkboxGroupInput("show_vars", "Columns in node variables to show:",
-                       names(node_measures), selected = names(node_measures)[1:5])
+                              names(node_measures), selected = names(node_measures)[1:5])
   })
 
 
@@ -1269,8 +1269,8 @@ server <- function(input, output, session) {
   shiny::observeEvent(chosen_methods(), {
     shiny::req(chosen_methods())
     shiny::updateSelectInput(session, "chosen_methods",
-                      selected = "None",
-                      choices = c("None","multi_category","reduced_category","both","difference")
+                             selected = "None",
+                             choices = c("None","multi_category","reduced_category","both","difference")
     )
   })
 
@@ -1303,8 +1303,8 @@ server <- function(input, output, session) {
   shiny::observeEvent(chosen_var(), {
     shiny::req(chosen_var())
     shiny::updateSelectInput(session, "var_cols",
-                      selected = "None",
-                      choices = append("None",colnames(node_data()))
+                             selected = "None",
+                             choices = append("None",colnames(node_data()))
 
     )
   })
@@ -1324,22 +1324,25 @@ server <- function(input, output, session) {
         shiny::need(!is.null(chosen_var),"Choose a variable")
       )
       shiny::actionButton("run_QAP_setup", "Run Initial QAP measures",
-                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                          style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
     })
 
   ran_toggle_qap <- shiny::reactiveValues(x=0)
 
   shiny::observeEvent(input$run_QAP_setup, {
     net <- net5()
-    foreach(i=1:length(chosen_var())) %do% {
-      net <- set_vertex_attr(net,chosen_var()[i],value=nodelist3() %>% dplyr::pull(parse_expr(chosen_var()[i])))
-    }
+    print("FOREACH")
+    # foreach::foreach(i=1:length(chosen_var())) %do% {
+    #   net <- igraph::set_vertex_attr(net,chosen_var()[i],value=nodelist3() %>% dplyr::pull(parse_expr(chosen_var()[i])))
+    # }
+    print("IS THIS WHERE QAP BREAKS?")
     qap_setup(net,chosen_var(),chosen_methods())
     ran_toggle_qap$x <- 1
   })
 
   #Run QAP MODEL
   output$qap_run_choices <- shiny::renderUI({
+    print("qap_run_choices")
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
@@ -1347,6 +1350,7 @@ server <- function(input, output, session) {
   })
 
   output$qap_run_dependent <- shiny::renderUI({
+    print("qap_run_dependent")
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
@@ -1355,20 +1359,30 @@ server <- function(input, output, session) {
 
 
   output$run_QAP_model <- shiny::renderUI({
+    print("run_QAP_model")
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
-    shiny::actionButton("run_QAP_model", "Run Initial QAP measures",
-                 style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+    shiny::actionButton("run_QAP_model", "Run QAP Model",
+                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
   })
 
 
   shiny::observeEvent(input$run_QAP_model, {
-    require(exists('qap_results'))
+    shiny::validate(
+      shiny::need(qap_results, message = "Need to Run QAP Setup"),
+    )
+    print("AT QAP RUN STEP")
     print(input$qap_run_choices)
     print(input$qap_run_dependent)
+    if (input$qap_run_dependent == "None") {
+      dep_var <- NULL
+    } else {
+      dep_var <- input$qap_run_dependent
+    }
     qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
-                     dependent = input$qap_run_dependent, directed = T)
+            dependent = dep_var, directed = T)
+    print(model_results[[1]])
   })
 
 
@@ -1391,7 +1405,7 @@ server <- function(input, output, session) {
         shiny::need(input$raw_edges, 'Input edge data!')
       )
       shiny::actionButton("run_role_detect", "Run Role Detection",
-                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                          style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
     })
 
   output$select_role_type <- shiny::renderUI({
@@ -1495,13 +1509,13 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$run_role_detect, {
     role_analysis(init_net,
-                           nodes = node_measures,
-                           directed = input$direction_toggle,
-                           method = input$select_role_type,
-                           min_partitions = input$role_det_min,
-                           max_partitions = input$role_det_max,
-                           min_partition_size = as.integer(input$min_cluster_size),
-                           viz = TRUE)
+                  nodes = node_measures,
+                  directed = input$direction_toggle,
+                  method = input$select_role_type,
+                  min_partitions = input$role_det_min,
+                  max_partitions = input$role_det_max,
+                  min_partition_size = as.integer(input$min_cluster_size),
+                  viz = TRUE)
     ran_toggle_role_detect$x <- 1
   })
 
