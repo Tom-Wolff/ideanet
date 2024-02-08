@@ -18,7 +18,10 @@ node_level_igraph <- function(nodes, g, directed, message) {
     out_degree <- custom_degree$total_degree_out
     weighted_indegree <- igraph::strength(g, mode='in', loops=FALSE)
     weighted_outdegree <- igraph::strength(g, mode='out', loops=FALSE)
-    closeness <- closeness_igraph(g)
+    # Closeness has three elements now
+    closeness_in <- closeness_igraph(g, directed = TRUE)$closeness_in
+    closeness_out <- closeness_igraph(g, directed = TRUE)$closeness_out
+    closeness_undirected <- closeness_igraph(g, directed = TRUE)$closeness_un
     betweenness_scores <- betweenness(g, weights, directed)
     # bonpow <- igraph::bonpow(g, loops=FALSE, exponent = 0.75)
     bonpow <- bonacich_igraph(g, directed=as.logical(directed),
@@ -53,7 +56,8 @@ node_level_igraph <- function(nodes, g, directed, message) {
 
       nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree, weighted_degree, in_degree, out_degree,
                                    weighted_indegree, weighted_outdegree,
-                                   closeness, betweenness_scores,
+                                   closeness_in, closeness_out, closeness_undirected,
+                                   betweenness_scores,
                                    bonpow_in, bonpow_out, bonpow_sym,
                                    bonpow_in_negative, bonpow_out_negative, bonpow_sym_negative,
                                    eigen_cen, constraint, effective_size, reachability))
@@ -76,7 +80,8 @@ node_level_igraph <- function(nodes, g, directed, message) {
 
       nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree, weighted_degree, in_degree, out_degree,
                                    weighted_indegree, weighted_outdegree,
-                                   closeness, betweenness_scores, bonpow, bonpow_negative,
+                                   closeness_in, closeness_out, closeness_undirected,
+                                   betweenness_scores, bonpow, bonpow_negative,
                                    eigen_cen, constraint, effective_size, reachability))
 
       assign(x = "bon_cent", bon_cent)
@@ -87,7 +92,7 @@ node_level_igraph <- function(nodes, g, directed, message) {
 
   }else{
 
-    closeness <- closeness_igraph(g)
+    closeness <- closeness_igraph(g, directed = FALSE)
     betweenness_scores <- betweenness(g, weights, directed)
     # bonpow <- igraph::bonpow(g, loops=FALSE, exponent = 0.75)
     bonpow <- bonacich_igraph(g, directed=as.logical(directed),
@@ -227,10 +232,25 @@ total_degree <- function(g,
 # We need indegree and outdegree closeness. At the moment we have it based on total degree.
 
 # Create an alternate closeness function
-closeness_igraph <- function(g){
+closeness_igraph <- function(g, directed){
   geo <- 1/igraph::distances(g, mode='out')
   diag(geo) <- 0 # Define self-ties as 0
-  apply(geo, 1, sum) # Return sum(1/geodist) for each vertex
+
+  if (directed == TRUE) {
+
+    # Need to create an undirected version of the network and do the same process above
+    g_un <- igraph::as.undirected(g)
+    geo2 <- 1/igraph::distances(g_un, mode = "out")
+    diag(geo2) <- 0
+
+    closeness_list <- list(closeness_out = rowSums(geo),
+                           closeness_in = colSums(geo),
+                           closeness_un = rowSums(geo2))
+    return(closeness_list)
+  } else {
+    closeness <- rowSums(geo)
+    return(closeness)
+  }
 }
 
 
@@ -378,6 +398,18 @@ burt_ch <- function(g) {
   # }
 
   adj <- as.matrix(igraph::get.adjacency(g))
+
+  # See if this is a weighted matrix
+  weighted <- max(adj, na.rm = TRUE) > 1
+
+  # Symmetrize the matrix
+  adj <- adj + t(adj)
+
+  # If not weighted, binarize the symmetrized matrix
+  if (weighted == FALSE) {
+    adj <- adj > 1
+  }
+
 
   # Calculate ego's degree
   degree <- rowSums(adj)

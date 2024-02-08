@@ -204,50 +204,96 @@ ui <- shiny::fluidPage(
       )
     ),
     ### Analysis tab ----
+    # shiny::tabPanel(
+    #   "Advanced Analysis Modules",
+    #   shiny::uiOutput('analysis_chooser'),
+    #   shiny::sidebarLayout(
+    #     shiny::sidebarPanel(
+    #       shiny::tabsetPanel(
+    #         id = "analytic_panels",
+    #         type = "hidden",
+    #         shiny::tabPanelBody(
+    #           "QAP",
+    #           tags$p(shiny::HTML("<u>QAP Setup Options</u>")),
+    #           tags$p(shiny::span("You must choose analysis type and variable as paired selections.", style = "color:red")),
+    #           shiny::uiOutput('method_chooser'),
+    #           shiny::uiOutput('var_cols'),
+    #           tags$p(shiny::span("Method selections:", style = "color:black")),
+    #           shiny::verbatimTextOutput("method_list"),
+    #           tags$p(shiny::span("Variable selections:", style = "color:black")),
+    #           shiny::verbatimTextOutput("var_list"),
+    #           shiny::uiOutput('run_QAP_setup'),
+    #           tags$p(shiny::HTML("<u>QAP Run Options</u>")),
+    #           shiny::uiOutput('qap_run_dependent'),
+    #           shiny::uiOutput('qap_run_choices'),
+    #           shiny::uiOutput('run_QAP_model')
+    #         ),
+    #         shiny::tabPanelBody(
+    #           "Role Detection",
+    #           shiny::uiOutput('select_role_type'),
+    #           shiny::uiOutput('select_role_viz'),
+    #           shiny::uiOutput('role_det_min'),
+    #           shiny::uiOutput('role_det_max'),
+    #           shiny::uiOutput('min_cluster_size'),
+    #           shinycssloaders::withSpinner(
+    #             shiny::uiOutput('run_role_detect')
+    #           )
+    #         ))),
+    #     shiny::mainPanel(
+    #       shiny::conditionalPanel(
+    #         condition = "input.analysis_chooser == 'Role Detection'",
+    #         tags$h3(shiny::HTML("<b>Visualize Role Detection Output</b>")),
+    #         shinycssloaders::withSpinner(
+    #           shiny::plotOutput('role_viz')
+    #         )
+    #       )
+    #     )
+    #   ))
     shiny::tabPanel(
       "Advanced Analysis Modules",
-      shiny::uiOutput('analysis_chooser'),
-      shiny::sidebarLayout(
-        shiny::sidebarPanel(
-          shiny::tabsetPanel(
-            id = "analytic_panels",
-            type = "hidden",
-            shiny::tabPanelBody(
-              "QAP",
-              tags$p(shiny::HTML("<u>QAP Setup Options</u>")),
-              tags$p(shiny::span("You must choose analysis type and variable as paired selections.", style = "color:red")),
-              shiny::uiOutput('method_chooser'),
-              shiny::uiOutput('var_cols'),
-              tags$p(shiny::span("Method selections:", style = "color:black")),
-              shiny::verbatimTextOutput("method_list"),
-              tags$p(shiny::span("Variable selections:", style = "color:black")),
-              shiny::verbatimTextOutput("var_list"),
-              shiny::uiOutput('run_QAP_setup'),
-              tags$p(shiny::HTML("<u>QAP Run Options</u>")),
-              shiny::uiOutput('qap_run_dependent'),
-              shiny::uiOutput('qap_run_choices'),
-              shiny::uiOutput('run_QAP_model')
-            ),
-            shiny::tabPanelBody(
-              "Role Detection",
-              shiny::uiOutput('select_role_type'),
-              shiny::uiOutput('select_role_viz'),
-              shiny::uiOutput('role_det_min'),
-              shiny::uiOutput('role_det_max'),
-              shiny::uiOutput('min_cluster_size'),
-              shinycssloaders::withSpinner(
-                shiny::uiOutput('run_role_detect')
-              )
-            ))),
-        shiny::mainPanel(
-          shiny::conditionalPanel(
-            condition = "input.analysis_chooser == 'Role Detection'",
-            tags$h3(shiny::HTML("<b>Visualize Role Detection Output</b>")),
-            shinycssloaders::withSpinner(
-              shiny::plotOutput('role_viz')
-            )
+      shiny::tabsetPanel(
+        type = "tabs",
+        shiny::tabPanel(
+          "QAP",
+          shiny::sidebarPanel(
+            tags$p(HTML("<u>QAP Setup Options</u>")),
+            tags$p(span("You must choose analysis type and variable as paired selections.", style = "color:red")),
+            shiny::uiOutput('method_chooser'),
+            shiny::uiOutput('var_cols'),
+            tags$p(span("Method selections:", style = "color:black")),
+            shiny::verbatimTextOutput("method_list"),
+            tags$p(span("Variable selections:", style = "color:black")),
+            shiny::verbatimTextOutput("var_list"),
+            shiny::uiOutput('run_QAP_setup'),
+            tags$p(HTML("<u>QAP Run Options</u>")),
+            shiny::uiOutput('qap_run_dependent'),
+            shiny::uiOutput('qap_run_choices'),
+            shiny::uiOutput('run_QAP_model')
+          ),
+          shiny::mainPanel(
+            style = "overflow-x: auto;",
+            DT::DTOutput('qap_table')
           )
-        )
+        ),
+        shiny::tabPanel(
+          "Role Detection",
+          shiny::sidebarPanel(
+            shiny::uiOutput('select_role_type'),
+            shiny::uiOutput('select_role_viz'),
+            shiny::uiOutput('role_det_min'),
+            shiny::uiOutput('role_det_max'),
+            shiny::uiOutput('min_cluster_size'),
+            shinycssloaders::withSpinner(
+              shiny::uiOutput('run_role_detect')
+            )
+          ),
+          shiny::mainPanel(
+            style = "overflow-x: auto;",
+            tags$h3(HTML("<b>Visualize Role Detection Output</b>")),
+            shinycssloaders::withSpinner(
+              plotOutput('role_viz')
+            )
+          ))
       ))
   )
 )
@@ -894,9 +940,9 @@ server <- function(input, output, session) {
 
   #### Pick Network layout ----
 
-  layout_choices <- c("layout_as_star", "layout_as_tree", "layout_in_circle",
-                      "layout_nicely", "layout_on_grid", "layout_on_sphere", "layout_randomly", "layout_with_dh", "layout_with_fr",
-                      "layout_with_gem", "layout_with_graphopt", "layout_with_kk", "layout_with_lgl", "layout_with_mds"
+  layout_choices <- c("Star" = "layout_as_star", "Tree" = "layout_as_tree", "Circle" = "layout_in_circle",
+                      "Nicely" = "layout_nicely", "Grid" = "layout_on_grid", "Sphere" = "layout_on_sphere", "Random" = "layout_randomly", "Davidson-Harel" = "layout_with_dh", "Fruchterman-Reingold" = "layout_with_fr",
+                      "GEM" = "layout_with_gem", "Graphopt" = "layout_with_graphopt", "Kamada-Kawai" = "layout_with_kk", "Large Graph Layout (LGL)" = "layout_with_lgl", "Multidimensional Scaling (MDS)" = "layout_with_mds"
   )
 
   #set the layout of the network
@@ -1250,8 +1296,21 @@ server <- function(input, output, session) {
 
   #CHOOSE METHODS
   output$method_chooser <- shiny::renderUI({
-    shiny::selectInput(input="method_chooser", label = "Choose your method", choices = c("None","multi_category","reduced_category","both","difference"), selected="None",multiple=FALSE)
+    shiny::selectInput(input="method_chooser", label = "Choose your method", choices = c("None",
+                                                                                         "Multi-Category" = "multi_category",
+                                                                                         "Reduced Category" = "reduced_category",
+                                                                                         "Both Multi- and Reduced Category" = "both",
+                                                                                         "Difference" = "difference"), selected="None",multiple=FALSE)
   })
+
+  # output$method_chooser <- shiny::renderUI({
+  #   shiny::selectInput(input="method_chooser", label = "Choose your method", choices = c("None",
+  #                                                                                        "multi_category",
+  #                                                                                        "reduced_category",
+  #                                                                                        "both",
+  #                                                                                        "difference"), selected="None",multiple=FALSE)
+  # })
+
 
   chosen_methods <- shiny::reactiveVal(c())
 
@@ -1354,7 +1413,7 @@ server <- function(input, output, session) {
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
-    shiny::selectInput(inputId = "qap_run_dependent", label = "QAP Run Dependent Variable", choices = append("None",setdiff(qap_results[[3]] %>% names(),c("to","from","weight"))), selected = "None", multiple = FALSE)
+    shiny::selectInput(inputId = "qap_run_dependent", label = "QAP Run Dependent Variable", choices = append("Tie Exists",setdiff(qap_results[[3]] %>% names(),c("to","from","weight"))), selected = "None", multiple = FALSE)
   })
 
 
@@ -1367,23 +1426,92 @@ server <- function(input, output, session) {
                         style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
   })
 
+  qap_df <- shiny::reactive(
+    data.frame(message = "Awaiting QAP Run")
+  )
 
-  shiny::observeEvent(input$run_QAP_model, {
+
+  # shiny::observeEvent(input$run_QAP_model, {
+  #   shiny::validate(
+  #     shiny::need(qap_results, message = "Need to Run QAP Setup"),
+  #   )
+  #   print("AT QAP RUN STEP")
+  #   print(input$qap_run_choices)
+  #   print(input$qap_run_dependent)
+  #   if (input$qap_run_dependent == "Tie Exists") {
+  #     dep_var <- NULL
+  #   } else {
+  #     dep_var <- input$qap_run_dependent
+  #   }
+  #   qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
+  #           dependent = dep_var, directed = T)
+  #   print(model_results[[1]])
+  #   model_results[[1]]
+  # })
+
+  qap_df <- shiny::eventReactive(input$run_QAP_model, {
     shiny::validate(
       shiny::need(qap_results, message = "Need to Run QAP Setup"),
     )
     print("AT QAP RUN STEP")
     print(input$qap_run_choices)
     print(input$qap_run_dependent)
-    if (input$qap_run_dependent == "None") {
+    if (input$qap_run_dependent == "Tie Exists") {
       dep_var <- NULL
     } else {
       dep_var <- input$qap_run_dependent
     }
+    print(input$qap_run_choices)
     qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
             dependent = dep_var, directed = T)
     print(model_results[[1]])
+    test <- model_results[[1]]
+    test$estimate <- round(test$estimate, digits = 3)
+    test
   })
+
+
+  # shiny::observeEvent(input$run_QAP_model, {
+  #   shiny::validate(
+  #     shiny::need(qap_results, message = "Need to Run QAP Setup"),
+  #   )
+  #   print("AT QAP RUN STEP")
+  #   print(input$qap_run_choices)
+  #   print(input$qap_run_dependent)
+  #   if (input$qap_run_dependent == "None") {
+  #     dep_var <- NULL
+  #   } else {
+  #     dep_var <- input$qap_run_dependent
+  #   }
+  #   qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
+  #           dependent = dep_var, directed = T)
+  #   qap_df <- model_results[[1]]
+  #   print(model_results[[1]])
+  # })
+
+  #replace table
+  output$qap_table <- DT::renderDataTable({
+    qap_df()
+  })
+
+  # #second attempt if that doesnt work
+  # output$qap_table <- DT::renderDataTable({
+  #   DT::datatable(qap_df())
+  # })
+
+  # #third attempt
+  # output$qap_table <- DT::renderDataTable({
+  #   DT::datatable(model_results[[1]])
+  # })
+
+  # output$qap_model_results <- shiny::reactive({
+  #   model_results[[1]]
+  # })
+  #
+  # output$qap_table <- DT::renderDataTable({
+  #  #  model_results[[1]]
+  #   input$qap_model_results()
+  # })
 
 
 
@@ -1409,30 +1537,31 @@ server <- function(input, output, session) {
     })
 
   output$select_role_type <- shiny::renderUI({
-    shiny::selectInput('select_role_type', label = "Choose Role Detection Method", choices = c('concor','cluster'))
+    shiny::selectInput('select_role_type', label = "Choose Role Detection Method", choices = c("CONCOR" = 'concor',
+                                                                                               "Hierarchical Clustering" = 'cluster'))
   })
 
   role_detect_choices <- shiny::reactive({
     choices_yah <- c()
     if (input$select_role_type == 'cluster') {
-      choices_yah <- c('cluster_modularity',
-                       'cluster_dendrogram',
-                       'cluster_relations_heatmaps_chisq',
-                       'cluster_relations_heatmaps_density_centered',
-                       'cluster_relations_heatmaps_density_std',
-                       'cluster_relations_heatmaps_density',
-                       'cluster_relations_sociogram',
-                       'cluster_summaries_cent',
-                       'cluster_summaries_triad')
+      choices_yah <- c("Modularity" = 'cluster_modularity',
+                       "Dendrogram" = 'cluster_dendrogram',
+                       "Heatmap (Chi-Squared)" = 'cluster_relations_heatmaps_chisq',
+                       "Heatmap (Density, Centered)" ='cluster_relations_heatmaps_density_centered',
+                       "Heatmap (Density, Standardized)" = 'cluster_relations_heatmaps_density_std',
+                       "Heatmap (Density)" = 'cluster_relations_heatmaps_density',
+                       "Cluster Relations Sociogram" = 'cluster_relations_sociogram',
+                       "Cluster Summaries (Centrality)" = 'cluster_summaries_cent',
+                       "Cluster Summaries (Motifs)" = 'cluster_summaries_triad')
     }
     else if (input$select_role_type == 'concor') {
-      choices_yah <- c('concor_block_tree',
-                       'concor_modularity',
-                       'concor_relations_heatmaps_chisq',
-                       'concor_relations_heatmaps_density',
-                       'concor_relations_heatmaps_density_std',
-                       'concor_relations_heatmaps_density_centered',
-                       'concor_relations_sociogram')
+      choices_yah <- c("Block Tree" = 'concor_block_tree',
+                       "Modularity" = 'concor_modularity',
+                       "Heatmap (Chi-Squared)" = 'concor_relations_heatmaps_chisq',
+                       "Heatmap (Density)" = 'concor_relations_heatmaps_density',
+                       "Heatmap (Density, Standardized)" = 'concor_relations_heatmaps_density_std',
+                       "Heatmap (Density, Centered)" = 'concor_relations_heatmaps_density_centered',
+                       "Cluster Relations Sociogram" = 'concor_relations_sociogram')
     }
     choices_yah
   })

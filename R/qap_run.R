@@ -41,33 +41,46 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
 
   # Get IV matrices
   ivs <- list()
+  rem <- list() # list of empty matrices
   for (i in 1:length(variables)) {
-    iv <- variables[[i]]
-    iv <- as.matrix(igraph::as_adjacency_matrix(net, attr = iv))
-    ivs[[i]] <- iv
+    iv_name <- variables[[i]]
+    iv <- as.matrix(igraph::as_adjacency_matrix(net, attr = iv_name))
+    if (sum(iv) == 0) {
+      warning(paste0("The variable ", iv_name, " is empty. It is excluded from the model."))
+      rem[[i]] <- iv_name
+    } else {ivs[[i]] <- iv}
   }
 
-  # Run QAP
-  if (directed == T) {mode = "digraph"} else {mode = "graph"}
-  if (family == "binomial"){
-    # if (all(dv %in% 0:1) == T){
-    res <- sna::netlogit(dv, ivs, reps = 10, mode = mode)
-  } else if (family == "linear") {
-    res <- sna::netlm(dv, ivs, reps = 100, mode = mode)
-  } else {print("Not an available family -- Try 'linear' or 'binomial'")}
+  ivs <- ivs[lapply(ivs,length)>0]
 
-  # Tidy results
-  variables <- c("intercept", variables)
-  if (class(res) == "sna::netlogit"){
-    covs_df <- dplyr::tibble(covars = variables, estimate = res$coefficients,
-                      `exp(estimate)` = exp(res$coefficients), se = res$se,
-                      pvalue = res$pgreqabs)
-    mods_df <- dplyr::tibble(num_obs = res$n, aic = res$aic, bic = res$bic)
-  } else {
-    covs_df <- dplyr::tibble(covars = variables, estimate = res$coefficients,
-                      se = res$se, pvalue = res$pgreqabs)
-    mods_df <- dplyr::tibble(num_obs = res$n, aic = res$aic, bic = res$bic)
-  }
+  if (length(ivs) != 0) {
+    # Run QAP
+    if (directed == T) {mode = "digraph"} else {mode = "graph"}
+    if (family == "binomial"){
+      # if (all(dv %in% 0:1) == T){
+      res <- sna::netlogit(dv, ivs, reps = 10, mode = mode)
+    } else if (family == "linear") {
+      res <- sna::netlm(dv, ivs, reps = 100, mode = mode)
+    } else {print("Not an available family -- Try 'linear' or 'binomial'")}
 
-  model_results <<- list(covs_df, mods_df)
+    # Tidy results
+    rem <- unlist(rem[lapply(rem,length)>0])
+    if (!is.null(rem)) {variables <- variables[-which(variables %in% rem)]}
+    variables <- c("intercept", variables)
+    if (class(res) == "sna::netlogit"){
+      covs_df <- dplyr::tibble(covars = variables, estimate = res$coefficients,
+                               `exp(estimate)` = exp(res$coefficients), se = res$se,
+                               pvalue = res$pgreqabs)
+      mods_df <- dplyr::tibble(num_obs = res$n, aic = res$aic, bic = res$bic)
+    } else {
+      covs_df <- dplyr::tibble(covars = variables, estimate = res$coefficients,
+                               se = res$se, pvalue = res$pgreqabs)
+      mods_df <- dplyr::tibble(num_obs = res$n, aic = res$aic, bic = res$bic)
+    }
+
+    model_results <<- list(covs_df, mods_df)
+  } else {warning("All IVs are empty. Try a different set of IVs")}
 }
+
+
+

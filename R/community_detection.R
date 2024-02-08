@@ -242,19 +242,40 @@ communities <- function(g, modres=1, shiny = FALSE) {
   ## Clique Percolation ##
   cf1 <- CliquePercolation::cpAlgorithm(W = g_sym, k = 3, method = "unweighted") # Running as unweighted
   clust <- cf1$list.of.communities.labels # extract cluster assignments
-  clust <- lapply(clust, as.numeric)
-  cf1_membership <- multigroup_assign(g_sym, clust)
-  colnames(cf1_membership) <- c("cp_cluster", "id")
+  #### In some cases, such as when given a star graph, `CliquePercolation` won't detect any communities.
+  #### if this is the case, just create the `cf1_membership` dataframe manually and assign all nodes
+  #### to the same community (or `NA`s depending on our team's ultimate preference)
+  if (length(clust) != 0) {
+      clust <- lapply(clust, as.numeric)
+      cf1_membership <- multigroup_assign(g_sym, clust)
+      colnames(cf1_membership) <- c("cp_cluster", "id")
+  } else {
+      warning("Clique Percolation did not detect any distinct communities. All nodes will be assigned to the same single community (1).")
+      cf1_membership <- data.frame(id = memberships$id,
+                                   cp_cluster = 1)
+  }
   # cf1_membership$id <- as.character(cf1_membership$id)
 
   ## Link comm ##
   #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
   linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(from, to)
-  lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
-  clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
-  clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
-  lc_membership <- multigroup_assign(g_sym, clust)
-  colnames(lc_membership) <- c("lc_cluster", "id")
+  #### In some cases, such as when given a star graph, `linkcomm` won't detect any communities.
+  #### if this is the case, just create the `lc_membership` dataframe manually and assign all nodes
+  #### to the same community (or `NA`s depending on our team's ultimate preference)
+  lc <- tryCatch(linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F),
+                 error = function(e) {return(NULL)})# Defaulting to false for now)
+  if (!is.null(lc)) {
+        lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
+        clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
+        clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
+        lc_membership <- multigroup_assign(g_sym, clust)
+        colnames(lc_membership) <- c("lc_cluster", "id")
+  } else {
+    warning("linkcomm did not detect any distinct communities. All nodes will be assigned to the same single community (1).")
+    lc_membership <- data.frame(id = memberships$id,
+                                 lc_cluster = 1)
+  }
+
   lc_membership$id <- as.character(lc_membership$id)
   cf1_membership$id <- as.character(cf1_membership$id)
 

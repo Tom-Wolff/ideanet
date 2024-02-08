@@ -910,7 +910,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         if ("nodelist" %in% output | "node_measure_plot" %in% output) {
           nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
         }
-        degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+        degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
         reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
         trans_rate_igraph(g)
         global_clustering_coefficient <- igraph::transitivity(g, type='global')
@@ -991,7 +991,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         if ("nodelist" %in% output | "node_measure_plot" %in% output) {
           nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
         }
-        degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+        degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
         reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
         trans_rate_igraph(g)
         global_clustering_coefficient <- igraph::transitivity(g, type='global')
@@ -1115,7 +1115,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
         nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
       }
-      degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+      degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
       trans_rate_igraph(g)
       global_clustering_coefficient <- igraph::transitivity(g, type='global')
@@ -1314,7 +1314,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
         nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
       }
-      degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+      degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
       trans_rate_igraph(g)
       global_clustering_coefficient <- igraph::transitivity(g, type='global')
@@ -1513,77 +1513,187 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     if (directed == TRUE) {
 
       ### Betweenness
-      cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
-                                                           directed = FALSE,
-                                                           normalized = TRUE)$centralization
-      cent_bet_dir <- igraph::centralization.betweenness(g_no_iso,
-                                                           directed = TRUE,
-                                                           normalized = TRUE)$centralization
+      # cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
+      #                                                      directed = FALSE,
+      #                                                      normalized = TRUE)$centralization
+      # cent_bet_dir <- igraph::centralization.betweenness(g_no_iso,
+      #                                                      directed = TRUE,
+      #                                                      normalized = TRUE)$centralization
+
+      bet_centr_u <- betweenness_centralization(g = g_no_iso,
+                                              weights = igraph::E(g_no_iso)$weight,
+                                              directed = FALSE)
+
+      cent_bet_undir <- bet_centr_u$betweenness_centralization
+      cent_bet_undir_bin <- bet_centr_u$binarized_betweenness_centralization
+
+      bet_centr_d <- betweenness_centralization(g = g_no_iso,
+                                                weights = igraph::E(g_no_iso)$weight,
+                                                directed = TRUE)
+
+      cent_bet_dir <- bet_centr_d$betweenness_centralization
+      cent_bet_dir_bin <- bet_centr_d$binarized_betweenness_centralization
+
+      ##### Standard deviations for betweenness
+      sd_bet <- sd(nodes$betweenness, na.rm = TRUE)
+      sd_bet_bin <- sd(nodes$binarized_betweenness, na.rm = TRUE)
+      ##### Herfindahl Index for betweenness
+      herf_bet <- herfindahl(nodes$betweenness)
+      herf_bet_bin <- herfindahl(nodes$binarized_betweenness)
+
 
       ### Degree
-      cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
-                                                      loops = FALSE,
-                                                      normalized = TRUE)$centralization
-      cent_deg_out <- igraph::centralization.degree(g, mode = "out",
-                                                      loops = FALSE,
-                                                      normalized = TRUE)$centralization
-      cent_deg_in <- igraph::centralization.degree(g, mode = "in",
-                                                      loops = FALSE,
-                                                      normalized = TRUE)$centralization
+      # cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
+      #                                                 loops = FALSE,
+      #                                                 normalized = TRUE)$centralization
+      # cent_deg_out <- igraph::centralization.degree(g, mode = "out",
+      #                                                 loops = FALSE,
+      #                                                 normalized = TRUE)$centralization
+      # cent_deg_in <- igraph::centralization.degree(g, mode = "in",
+      #                                                 loops = FALSE,
+      #                                                 normalized = TRUE)$centralization
+
+      deg_centr <-  degree_centralization(g, directed = TRUE)
+
+      cent_deg_undir <- deg_centr$centralization_un
+      cent_deg_out <- deg_centr$centralization_out
+      cent_deg_in <- deg_centr$centralization_in
+
+      ##### Standard deviations for degree
+      sd_indegree <- sd(nodes$in_degree, na.rm = TRUE)
+      sd_outdegree <- sd(nodes$out_degree, na.rm = TRUE)
+      sd_total_degree <- sd(nodes$total_degree, na.rm = TRUE)
+      ##### Herfindahl Index for Degree
+      herf_indegree <- herfindahl(nodes$in_degree)
+      herf_outdegree <- herfindahl(nodes$out_degree)
+      herf_total_degree <- herfindahl(nodes$total_degree)
+
 
       ### Closeness
-      cent_close_undir <- igraph::centralization.closeness(g_no_iso,
-                                                         mode = "all",
-                                                         normalized = TRUE)$centralization
-      cent_close_out <- igraph::centralization.closeness(g_no_iso,
-                                                       mode = "out",
-                                                       normalized = TRUE)$centralization
-      cent_close_in <- igraph::centralization.closeness(g_no_iso,
-                                                      mode = "in",
-                                                      normalized = TRUE)$centralization
+      # cent_close_undir <- igraph::centralization.closeness(g_no_iso,
+      #                                                    mode = "all",
+      #                                                    normalized = TRUE)$centralization
+      # cent_close_out <- igraph::centralization.closeness(g_no_iso,
+      #                                                  mode = "out",
+      #                                                  normalized = TRUE)$centralization
+      # cent_close_in <- igraph::centralization.closeness(g_no_iso,
+      #                                                 mode = "in",
+      #                                                 normalized = TRUE)$centralization
+      close_centr <- closeness_centralization(g, directed = TRUE)
+
+      cent_close_undir <- close_centr$centralization_un
+      cent_close_out <- close_centr$centralization_out
+      cent_close_in <- close_centr$centralization_in
+
+      ##### Standard deviations for closeness
+      sd_closeness_in <- sd(nodes$closeness_in, na.rm = TRUE)
+      sd_closeness_out <- sd(nodes$closeness_out, na.rm = TRUE)
+      sd_closeness_un <- sd(nodes$closeness_undirected, na.rm = TRUE)
+      #####. Herfindahl Index for Closeness
+      herf_close_in <- herfindahl(nodes$closeness_in)
+      herf_close_out <- herfindahl(nodes$closeness_out)
+      herf_close_un <- herfindahl(nodes$closeness_undirected)
 
       ### Eigen
-      cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
-                                                        directed = FALSE,
-                                                        normalized = TRUE)$centralization
-      cent_eigen_dir <- igraph::centralization.evcent(g_no_iso,
-                                                      directed = TRUE,
-                                                      normalized = TRUE)$centralization
+      # cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
+      #                                                   directed = FALSE,
+      #                                                   normalized = TRUE)$centralization
+      # cent_eigen_dir <- igraph::centralization.evcent(g_no_iso,
+      #                                                 directed = TRUE,
+      #                                                 normalized = TRUE)$centralization
+      eigen_centr <- eigen_centralization(g, directed = TRUE)
+
+      cent_eigen_undir <- eigen_centr$undirected
+      cent_eigen_dir <- eigen_centr$directed
+
+      ##### Standard deviation for eigen
+      sd_eigen <- sd(nodes$eigen_centrality, na.rm = TRUE)
+      ##### Herfindahl Index for Eigen
+      herf_eigen <- herfindahl(nodes$eigen_centrality)
 
     } else {
 
       ### Betweenness
-      cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
-                                                           directed = FALSE,
-                                                           normalized = TRUE)$centralization
+      # cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
+      #                                                      directed = FALSE,
+      #                                                      normalized = TRUE)$centralization
+      bet_centr_u <- betweenness_centralization(g = g_no_iso,
+                                                weights = igraph::E(g_no_iso)$weight,
+                                                directed = FALSE)
+
+      cent_bet_undir <- bet_centr_u$betweenness_centralization
+      cent_bet_undir_bin <- bet_centr_u$binarized_betweenness_centralization
+
+      # cent_bet_dir <- NA
+
       cent_bet_dir <- NA
+      cent_bet_dir_bin <- NA
+
+      ##### Standard deviations for betweenness
+      sd_bet <- sd(nodes$betweenness, na.rm = TRUE)
+      sd_bet_bin <- sd(nodes$binarized_betweenness, na.rm = TRUE)
+      ##### Herfindahl Index for betweenness
+      herf_bet <- herfindahl(nodes$betweenness)
+      herf_bet_bin <- herfindahl(nodes$binarized_betweenness)
+
 
       ### Degree
-      cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
-                                                      loops = FALSE,
-                                                      normalized = TRUE)$centralization
+
+      # cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
+      #                                                 loops = FALSE,
+      #                                                 normalized = TRUE)$centralization
+
+      cent_deg_undir <- degree_centralization(g, directed = FALSE)
+
       cent_deg_out <- NA
       cent_deg_in <- NA
 
+      ##### Standard deviations for degree
+      sd_indegree <- NA
+      sd_outdegree <- NA
+      sd_total_degree <- sd(nodes$total_degree, na.rm = TRUE)
+      ##### Herfindahl Index for Degree
+      herf_indegree <- NA
+      herf_outdegree <- NA
+      herf_total_degree <- herfindahl(nodes$total_degree)
+
       ### Closeness
-      cent_close_undir <- igraph::centralization.closeness(g_no_iso,
-                                                         mode = "all",
-                                                         normalized = TRUE)$centralization
+      # cent_close_undir <- igraph::centralization.closeness(g_no_iso,
+      #                                                    mode = "all",
+      #                                                    normalized = TRUE)$centralization
+      cent_close_undir <- closeness_centralization(g_no_iso,
+                                                   directed = FALSE)
       cent_close_out <- NA
       cent_close_in <- NA
 
+      ##### Standard Deviations for Closeness
+      sd_closeness_in <- NA
+      sd_closeness_out <- NA
+      sd_closeness_un <- sd(nodes$closeness, na.rm = TRUE)
+      #####. Herfindahl Index for Closeness
+      herf_close_in <- NA
+      herf_close_out <- NA
+      herf_close_un <- herfindahl(nodes$closeness)
+
       ### Eigen
-      cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
-                                                        directed = FALSE,
-                                                        normalized = TRUE)$centralization
+      # cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
+      #                                                   directed = FALSE,
+      #                                                   normalized = TRUE)$centralization
+      eigen_centr <- eigen_centralization(g, directed = FALSE)
+      cent_eigen_undir <- eigen_centr$undirected
+
       cent_eigen_dir <- NA
+
+      ##### Standard deviation for eigen
+      sd_eigen <- sd(nodes$eigen_centrality, na.rm = TRUE)
+      ##### Herfindahl Index for Eigen
+      herf_eigen <- herfindahl(nodes$eigen_centrality)
 
     }
 
 
     # K-core cohesion (ask Jim for best name for this measure)
     k_core_cohesion <- k_cohesion(graph = g)
-
 
 
     measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties',
@@ -1618,7 +1728,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         "Number of 210 Triads",
                         "Number of 300 Triads",
 
-                        'Degree Assortativity', 'Reciprocity Rate', 'Transitivity Rate',
+                        'Degree Assortativity (Total)', 'Degree Assortativity (Indegree)', 'Degree Assortativity (Outdegree)',
+                        'Reciprocity Rate', 'Transitivity Rate',
 
                         'Transitivity Correlation',
 
@@ -1630,10 +1741,20 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         'Pairwise Reachability (Weak, Undirected)', 'Pairwise Reachability (Strong, Undirected)',
                         'Pairwise Reachability (Weak, Directed)', 'Pairwise Reachability (Strong, Directed)',
 
-                        "Betweenness Centralization (Undirected)", "Betweenness Centralization (Directed)",
+                        "Betweenness Centralization (Undirected)", "Betweenness Centralization (Undirected, Binarized)",
+                        "Betweenness Centralization (Directed)", "Betweenness Centralization (Directed, Binarized)",
+                        "Standard Deviation, Betweenness", "Standard Deviation, Binarized Betweeness",
+                        "Herfindahl Index, Betweenness", "Herfindahl Index, Binarized Betweeness",
                         "Degree Centralization (Undirected)", "Degree Centralization (In)", "Degree Centralization (Out)",
+                        "Standard Deviation, Total Degree", "Standard Deviation, Indegree", "Standard Deviation, Outdegree",
+                        "Herfindahl Index, Total Degree", "Herfindahl Index, Indegree", "Herfindahl Index, Outdegree",
                         "Closeness Centralization (Undirected)", "Closeness Centralization (In)", "Closeness Centralization (Out)",
+                        "Standard Deviation, Closeness (Undirected)", "Standard Deviation, Closeness (Indegree)", "Standard Deviation, Closeness (Outdegree)",
+                        "Herfindahl Index, Closeness (Undirected)", "Herfindahl Index, Closeness (Indegree)", "Herfindahl Index, Closeness (Outdegree)",
                         "Eigenvector Centralization (Undirected)", "Eigenvector Centralization (Directed)",
+                        "Standard Deviation, Eigenvector Centrality",
+                        "Herfindahl Index, Eigenvector Centrality",
+
                         "K-Core Cohesion"
     )
 
@@ -1682,7 +1803,11 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "The number of 210 triads in the graph",
                               "The number of 300 triads in the graph",
 
-                              'Edgewise correlation of degree', 'The proportion of directed ties that are reciprocated',
+                              'Edgewise correlation of total degree',
+                              'Edgewise correlation of total indegree',
+                              'Edgewise correlation of total outdegree',
+
+                              'The proportion of directed ties that are reciprocated',
                               'The proportion of two-step paths that are also one-step paths',
 
                               "The observed correlation between a tie and the number of two-step paths connecting the two nodes in a tie",
@@ -1699,9 +1824,25 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
                               # Betweeness
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Undirected shortest paths used when calculating betweenness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Undirected shortest paths used when calculating betweenness, edge weights are binarized)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Directed shortest paths used when calculating betweenness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Directed shortest paths used when calculating betweenness, edge weights are binarized)",
+                              ##### SD Betweenness
+                              "Standard deviation of betweenness centrality scores",
+                              "Standard deviation of binarized betweenness centrality scores",
+                              ##### Herf Betweenness
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (edge weights are binarized)",
 
-                              #Degree
+                              # Degree
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Undirected edges used when calculating degree)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Incoming edges used when calculating degree)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Outgoing edges used when calculating degree)",
+                              ##### SD Degree
+                              "Standard deviation of total degree centrality scores",
+                              "Standard deviation of indegree centrality scores",
+                              "Standard deviation of outdegree centrality scores",
+                              ##### Herf Degree
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Undirected edges used when calculating degree)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Incoming edges used when calculating degree)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Outgoing edges used when calculating degree)",
@@ -1710,10 +1851,22 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Undirected edges used when calculating closeness)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Incoming edges used when calculating closeness)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Outgoing edges used when calculating closeness)",
+                              ##### SD Closeness
+                              "Standard deviation of closeness centrality scores (undirected)",
+                              "Standard deviation of closeness centrality scores (incoming edges used when calculating closeness)",
+                              "Standard deviation of closeness centrality scores (outgoing edges used when calculating closeness)",
+                              ##### Herf Closeness
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Undirected edges used when calculating closeness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Incoming edges used when calculating closeness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Outgoing edges used when calculating closeness)",
 
                               # Eigenvector centrality
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Undirected edges used when calculating eigenvector centrality)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Directed edges paths used when calculating eigenvector centrality)",
+                              ##### SD Eigenvector centrality
+                              "Standard deviation of eigenvector centrality scores",
+                              ##### Herf Eigen
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores",
 
                               # K-core Cohesion
                               "The average across all pairs of the maximum k-core to which each pair is a joint member (Measures the average level of shared contacts)"
@@ -1749,7 +1902,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(triad_300),
 
 
-                  as.character(degree_assortativity), as.character(reciprocity_rate),
+                  as.character(degree_assortativity$total),
+                  as.character(degree_assortativity$indegree),
+                  as.character(degree_assortativity$outdegree),
+
+
+                  as.character(reciprocity_rate),
                   as.character(transitivity_rate), as.character(trans_cor),
 
                   as.character(global_clustering_coefficient), average_path_length,
@@ -1757,11 +1915,26 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(pairwise_weak_un), as.character(pairwise_strong_un),
                   as.character(pairwise_weak_dir), as.character(pairwise_strong_dir),
 
-                  as.character(cent_bet_undir), as.character(cent_bet_dir),
+                  as.character(cent_bet_undir), as.character(cent_bet_undir_bin),
+                  as.character(cent_bet_dir), as.character(cent_bet_dir_bin),
+                  as.character(sd_bet), as.character(sd_bet_bin),
+                  as.character(herf_bet), as.character(herf_bet_bin),
                   as.character(cent_deg_undir), as.character(cent_deg_in), as.character(cent_deg_out),
+                  as.character(sd_total_degree), as.character(sd_indegree), as.character(sd_outdegree),
+                  as.character(herf_total_degree), as.character(herf_indegree), as.character(herf_outdegree),
                   as.character(cent_close_undir), as.character(cent_close_in), as.character(cent_close_out),
+                  as.character(sd_closeness_un), as.character(sd_closeness_in), as.character(sd_closeness_out),
+                  as.character(herf_close_un), as.character(herf_close_in), as.character(herf_close_out),
                   as.character(cent_eigen_undir), as.character(cent_eigen_dir),
+                  as.character(sd_eigen),
+                  as.character(herf_eigen),
                   as.character(k_core_cohesion))
+
+    # print(length(measures))
+    #
+    # assign("measure_labels", measure_labels, .GlobalEnv)
+    # assign("measure_descriptions", measure_descriptions, .GlobalEnv)
+    # assign("measures", measures, .GlobalEnv)
 
     system_level_measures <- cbind(as.data.frame(measure_labels), measure_descriptions, measures)
 
@@ -1863,7 +2036,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Populating Subplots
       system_plot_names <- c("Number of Weak Components",
                              "Proportion in the Largest Weak Component",
-                             "Degree Assortativity",
+                             "Degree Assortativity (Total)",
                              "Reciprocity Rate",
                              "Transitivity Rate",
                              "Global Clustering Coefficient",
@@ -1975,8 +2148,18 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       legend_elements <- vector("list", length(plot_labels))
       legend_elements[[1]] <- c("degree", "indegree", "outdegree")
       legend_elements[[2]] <- c("degree", "indegree", "outdegree")
-      legend_elements[[3]] <- c()
-      legend_elements[[4]] <- c("binarized", "weighted")
+
+      if ("closeness_in" %in% names(nodes)) {
+        legend_elements[[3]] <- c("inbound", "outbound", "undirected")
+      } else {
+        legend_elements[[3]] <- c()
+      }
+
+      if ("binarized_betweenness" %in% names(nodes)) {
+        legend_elements[[4]] <- c("binarized", "weighted")
+      } else {
+        legend_elements[[4]] <- c()
+      }
 
       # Handling different amounts of bonacich measures
       if ("bonpow_in" %in% names(nodes)) {
@@ -2054,7 +2237,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
           measure_ranges <- as.data.frame(cbind(legend_elements[[i]], measure_ranges))
           colnames(measure_ranges)[[1]] <- c("name")
-          measure_ranges <- measure_ranges[!duplicated(measure_ranges[[2]]), ]
+#          measure_ranges <- measure_ranges[!duplicated(measure_ranges[[2]]), ]
+          measure_ranges <- measure_ranges[!duplicated(measure_ranges[[1]]), ]
           colors <- colors[1:nrow(measure_ranges)]
 
         }

@@ -54,10 +54,11 @@ alter_centrality <- function(x, directed) {
 
     if (directed == FALSE) {
 
-      total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      # total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      total_degree <- total_degree(x$igraph, directed = FALSE)$total_degree_all
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph)
+      closeness <- closeness_igraph(x$igraph, directed = FALSE)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
       # Remove the final value here, as that's ego's score
@@ -84,12 +85,17 @@ alter_centrality <- function(x, directed) {
 
     } else {
 
-      indegree <- igraph::degree(x$igraph, mode = "in", loops = FALSE)
-      outdegree <- igraph::degree(x$igraph, mode = "out", loops = FALSE)
-      total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      custom_degree <- total_degree(x$igraph, directed = TRUE)
+
+      indegree <- custom_degree$total_degree_in
+      outdegree <- custom_degree$total_degree_out
+      total_degree <- custom_degree$total_degree_all
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph)
+      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE)
+      closeness_in <- closeness_scores$closeness_in
+      closeness_out <- closeness_scores$closeness_out
+      closeness_un <- closeness_scores$closeness_un
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
       # Remove the final value here, as that's ego's score
@@ -108,7 +114,9 @@ alter_centrality <- function(x, directed) {
       alter_ids <- as.numeric(igraph::V(x$igraph)$name)
 
       # Compile into data frame
-      out <- cbind(indegree, outdegree, total_degree, closeness, betweenness_scores,
+      out <- cbind(indegree, outdegree, total_degree,
+                   closeness_in, closeness_out, closeness_un,
+                   betweenness_scores,
                    bonpow, bonpow_negative, eigen_cen, constraint, effective_size,
                    reachability)
       out$ego_id <- ego_ids
@@ -120,10 +128,10 @@ alter_centrality <- function(x, directed) {
 
     if (directed == FALSE) {
 
-      total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      total_degree <- total_degree(x$igraph, directed = FALSE)$total_degree_all
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph)
+      closeness <- closeness_igraph(x$igraph, directed = FALSE)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
       # Remove the final value here, as that's ego's score
@@ -159,7 +167,10 @@ alter_centrality <- function(x, directed) {
       total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph)
+      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE)
+      closeness_in <- closeness_scores$closeness_in
+      closeness_out <- closeness_scores$closeness_out
+      closeness_un <- closeness_scores$closeness_un
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
       # Remove the final value here, as that's ego's score
@@ -182,7 +193,9 @@ alter_centrality <- function(x, directed) {
       alter_ids <- as.numeric(igraph::V(x$igraph)$name)
 
       # Compile into data frame
-      out <- cbind(indegree, outdegree, total_degree, closeness, betweenness_scores,
+      out <- cbind(indegree, outdegree, total_degree,
+                   closeness_in, closeness_out, closeness_un,
+                   betweenness_scores,
                    bonpow, bonpow_negative, eigen_cen, constraint, effective_size,
                    reachability)
       out$ego_id <- ego_ids
