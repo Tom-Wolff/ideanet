@@ -479,8 +479,7 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
     el_together[is.na(el_together)] <- 0
 
     el_together <- el_together %>%
-      dplyr::mutate(num_ties = tie_ij + tie_ji + tie_jk + tie_kj
-                    + tie_ik + tie_ki) %>%
+      dplyr::mutate(num_ties = tie_ij + tie_jk + tie_ik) %>%
       dplyr::group_by(i, j, k) %>%
       dplyr::mutate(triad_id = dplyr::cur_group_id()) %>%
       dplyr::arrange(triad_id, desc(num_ties)) %>%
@@ -524,12 +523,25 @@ positions_dplyr <- function(nodes = NULL, edges, directed = FALSE) {
 
 
   # Now we count how many of each triad type each ego has
-  triad_count <- all_triads %>%
-    dplyr::group_by(i, triad_type) %>%
-    dplyr::summarize(count = dplyr::n()/2) %>%
-    tidyr::pivot_wider(names_from = triad_type,
-                values_from = count) %>%
-    dplyr::ungroup()
+  if (directed == TRUE) {
+
+    triad_count <- all_triads %>%
+      dplyr::group_by(i, triad_type) %>%
+      dplyr::summarize(count = dplyr::n()/2) %>%
+      tidyr::pivot_wider(names_from = triad_type,
+                         values_from = count) %>%
+      dplyr::ungroup()
+
+  } else {
+
+    triad_count <- all_triads %>%
+      dplyr::group_by(i, triad_type) %>%
+      dplyr::summarize(count = dplyr::n()) %>%
+      tidyr::pivot_wider(names_from = triad_type,
+                         values_from = count) %>%
+      dplyr::ungroup()
+
+  }
 
   triad_count[is.na(triad_count)] <- 0
 
