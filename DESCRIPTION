@@ -21,6 +21,7 @@ Imports:
     ergm,
     forcats,
     ggplot2,
+    glasso,
     grDevices,
     gridGraphics,
     igraph,
