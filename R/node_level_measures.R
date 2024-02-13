@@ -407,7 +407,7 @@ burt_ch <- function(g) {
 
   # If not weighted, binarize the symmetrized matrix
   if (weighted == FALSE) {
-    adj <- adj > 1
+    adj <- adj >= 1
   }
 
 
@@ -538,7 +538,7 @@ bonacich_igraph <- function(g, directed, bpct = .75,
   if (0 %in% igraph::degree(g, mode = "all")) {
     # If isolates are present, indicate that isolates are going to be removed
     if (message == TRUE) {
-      message("(Bonacich power centrality) Isolates detected in network. Isolates will be removed from network when calculating power centrality measure, and will be assigned NA values in final output.")
+      warning("(Bonacich power centrality) Isolates detected in network. Isolates will be removed from network when calculating power centrality measure, and will be assigned NA values in final output.")
     }
     # Remove isolates
     g <- igraph::delete.vertices(g, v = igraph::degree(g, mode = "all", loops = F) == 0)
@@ -558,7 +558,7 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
     if (singular_check < nrow(nodelist)) {
       if (message == TRUE){
-        message("(Bonacich power centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
+        warning("(Bonacich power centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
       }
       directed <- FALSE
       g <- igraph::as.undirected(g)
@@ -667,7 +667,7 @@ eigen_igraph <- function(g, directed,
   if (0 %in% igraph::degree(g, mode = "all")) {
     # If isolates are present, indicate that isolates are going to be removed
     if (message == TRUE){
-      message("(Eigenvector centrality) Isolates detected in network. Isolates will be removed from network when calculating eigenvector centrality measure, and will be assigned NA values in final output.\n")
+      warning("(Eigenvector centrality) Isolates detected in network. Isolates will be removed from network when calculating eigenvector centrality measure, and will be assigned NA values in final output.\n")
     }
     # Remove isolates
     g <- igraph::delete.vertices(g, v = igraph::degree(g, mode = "all", loops = F) == 0)
@@ -693,7 +693,7 @@ eigen_igraph <- function(g, directed,
 
     if (singular_check < nrow(nodelist)) {
       if (message == TRUE){
-        message("(Eigenvector centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
+        warning("(Eigenvector centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
       }
       directed <- FALSE
       g <- igraph::as.undirected(g)
@@ -704,7 +704,7 @@ eigen_igraph <- function(g, directed,
   if (length(unique_components) > 1) {
     # Outputting message to the user
     if (message == TRUE){
-      message("(Eigenvector centrality) Network consists of 2+ unconnected components. Eigenvector centrality scores will be calculated for nodes based on their position within their respective components.\n")
+      warning("(Eigenvector centrality) Network consists of 2+ unconnected components. Eigenvector centrality scores will be calculated for nodes based on their position within their respective components.\n")
     }
     # Initialize data frame for storing eigen centrality measures
     eigen_scores <- data.frame()
