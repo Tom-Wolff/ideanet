@@ -15,7 +15,7 @@
 #'
 #' @examples
 #' # Run netwrite
-#' faux_mesa <- netwrite(nodelist = fauxmesa_nodes,
+#' nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
 #'                       node_id = "id",
 #'                       i_elements = fauxmesa_edges$from,
 #'                       j_elements = fauxmesa_edges$to,
@@ -23,7 +23,7 @@
 #'                       net_name = "faux_mesa")
 #'
 #' # Run community detection function
-#' faux_communities <- communities(g = faux_mesa$igraph_object)
+#' faux_communities <- communities(g = nw_fauxmesa$faux_mesa)
 
 
 ###############################################

@@ -63,8 +63,38 @@ ego_netwrite(
 \item{egor_design}{If creating an \code{egor} object, a list of arguments to \code{\link[srvyr:as_survey_design]{srvyr::as_survey_design}} specifying the sampling design for egos. This argument corresponds to \code{ego_design} in \code{\link[egor:egor]{egor::egor}}.}
 }
 \value{
-\code{ego_netwrite} returns several data frames, one containing measures of ego attributes, another containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite}  returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.
+\code{ego_netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Outputs include a data frame containing measures of ego attributes, another data frame containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite} returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.
 }
 \description{
 The \code{ego_netwrite} function reads in data pertaining to ego networks and processes them into a set of standardized outputs, including measures commonly calculated for ego networks.
+}
+\examples{
+
+egonets <- ego_netwrite(egos = egor::egos32,
+                        ego_id = ".EGOID",
+
+                        alters = egor::alters32,
+                        alter_id = ".ALTID",
+                        alter_ego = ".EGOID",
+
+                        alter_alter = egor::aaties32,
+                        aa_ego = ".EGOID",
+                        i_elements = ".SRCID",
+                        j_elements = ".TGTID",
+
+                        missing_code = NULL,
+                        directed = FALSE,
+
+                        egor = TRUE)
+
+list2env(egonets, .GlobalEnv)
+
+# View summaries of individual ego networks
+head(summaries)
+
+# View summary of overall dataset
+head(overall_summary)
+
+# View sociogram of second ego network
+plot(igraph_objects[[2]]$igraph_ego)
 }

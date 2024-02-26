@@ -16,7 +16,6 @@ netwrite(
   weights = NULL,
   type = NULL,
   remove_loops = FALSE,
-  package = "igraph",
   missing_code = 99999,
   weight_type = "frequency",
   directed = FALSE,
@@ -50,8 +49,6 @@ netwrite(
 
 \item{remove_loops}{A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.}
 
-\item{package}{(Deprecated) A character value indicating what format network objects should be produced by \code{netwrite}. Available options are \code{igraph} and \code{network}.}
-
 \item{missing_code}{A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.}
 
 \item{weight_type}{A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"} and \code{"distance"}.}
@@ -67,7 +64,7 @@ netwrite(
 \item{message}{A logical value indicating whether warning messages should be displayed in the R console during processing.}
 }
 \value{
-\code{netwrite} returns a variety of outputs and assigns them to the R global environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
+\code{netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
 
 If \code{output} contains \code{graph}, \code{netwrite} will return an igraph object of the network represented in the original data.
 If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing igraph objects for each unique relation type as well as the overall network. These output objects are named according to the value specified in the \code{net_name} argument.
@@ -91,35 +88,38 @@ The \code{netwrite} function reads in relational data of several formats and pro
 }
 \examples{
 # Use netwrite on an edgelist
-faux_mesa <- netwrite(nodelist = fauxmesa_nodes,
+nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
                       node_id = "id",
                       i_elements = fauxmesa_edges$from,
                       j_elements = fauxmesa_edges$to,
                       directed = TRUE,
                       net_name = "faux_mesa")
 
+# For easier access of output objects, call `list2env` on output
+list2env(nw_fauxmesa, .GlobalEnv)
+
 ### Inspect updated edgelist
-head(faux_mesa$edgelist)
+head(edgelist)
 
 ### Inspect data frame of node-level measures
-head(faux_mesa$node_measures)
+head(node_measures)
 
 ### Inspect system-level summary
-faux_mesa$system_level_measures
+head(system_level_measures)
 
 ### Plot sociogram of network
-plot(faux_mesa$igraph_object)
+plot(faux_mesa)
 
 ### View node-level summary visualization
-faux_mesa$node_measure_plot
+node_measure_plot
 
 ### View system-level summary visualization
-faux_mesa$system_measure_plot
+system_measure_plot
 
 
 
 # Run netwrite on an adjacency matrix
-fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa$igraph_object))
+fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa))
 
 faux_adj <- netwrite(data_type = "adjacency_matrix",
                      adjacency_matrix = fauxmesa_adjmat,

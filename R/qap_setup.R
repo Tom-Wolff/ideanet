@@ -7,7 +7,7 @@
 #' @param methods A vector of strings naming methods to be applied to the \code{variables} vector. The \code{methods} vector must be the same length as the \code{variables} vector. Methods are applied in order (e.g, first method is applied to the first named attribute in \code{variables})
 #' @param directed A logical statement identifying if the network should be treated as directed. Defaults to \code{FALSE}.
 #' @param additional_vars A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an \code{id} or \code{label} variables which matches network exactly.
-#' @return \code{qap_setup} returns a list \code{qap_results} of elements that include:
+#' @return \code{qap_setup} returns a list of elements that include:
 #'
 #' - \code{graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
 #'
@@ -27,7 +27,7 @@
 #'                  directed = FALSE,
 #'                  net_name = "florentine_graph")
 #'
-#' flor_setup <- qap_setup(flor$igraph_object,
+#' flor_setup <- qap_setup(flor$florentine_graph,
 #'                         variables = c("total_degree"),
 #'                         methods = c("difference"))
 

@@ -18,7 +18,7 @@ qap_setup(net, variables, methods, directed = F, additional_vars = NULL)
 \item{additional_vars}{A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an \code{id} or \code{label} variables which matches network exactly.}
 }
 \value{
-\code{qap_setup} returns a list \code{qap_results} of elements that include:
+\code{qap_setup} returns a list of elements that include:
 
 - \code{graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
 
@@ -37,7 +37,7 @@ flor <- netwrite(i_elements = florentine$node,
                  directed = FALSE,
                  net_name = "florentine_graph")
 
-flor_setup <- qap_setup(flor$igraph_object,
+flor_setup <- qap_setup(flor$florentine_graph,
                         variables = c("total_degree"),
                         methods = c("difference"))
 }

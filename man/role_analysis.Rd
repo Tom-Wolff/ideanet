@@ -57,9 +57,9 @@ role_analysis(
 \item{max_iter}{(CONCOR only.) A numeric value indicating the maximum number of iteractions allowed for CONCOR calculattion.}
 }
 \value{
-The \code{role_analysis} function assigns a set of objects to the Global Environment that users can access to help interpret results. This set varies somewhat depending on the method being used for positional analysis.
+The \code{role_analysis} returns a list of outputs that users can access to help interpret results. This contents of this list varies somewhat depending on the method being used for positional analysis.
 
-When hierarchical clustering is used, \code{role_analysis} creates the following:
+When hierarchical clustering is used, the list contains the following:
 \code{cluster_assignments} is a data frame indicating each node's membership within inferred clusters at each level of partitioning.
 \code{cluster_sociogram} contains a visualization of the network wherein nodes are colored by their membership within clusters at the optimal level of partitioning.
 \code{cluster_dendrogram} is a visualization of the dendrogram produced from clustering nodes. Red boxes on the visualization indicate nodes' cluster memberships at the optimal level of partitioning.
@@ -69,7 +69,7 @@ When hierarchical clustering is used, \code{role_analysis} creates the following
 \code{cluster_relations_heatmaps} is a list object containing several heatmap visualizations representing the extent to which nodes in one inferred cluster are connected to nodes in another cluster.
 \code{cluster_relations_sociogram} contains a network visualization representing the extent to which nodes in clusters inferred at the optimal level of partitioning are tied to one another. Nodes in this visualization represent inferred clusters in the aggregate.
 
-When CONCOR is used, \code{role_analysis} creates the following:
+When CONCOR is used, this list contains the following:
 \code{concor_assignments} is a data frame indicating each node's membership within inferred blocks at each level of partitioning.
 \code{concor_sociogram} contains a visualization of the network wherein nodes are colored by their membership within blocks at the optimal level of partitioning.
 \code{concor_block_tree} is a visualization representing how smaller blocks are derived from larger blocks at each level of partitioning using CONCOR.
@@ -88,7 +88,7 @@ flor <- netwrite(i_elements = florentine$node,
                  net_name = "florentine")
 
 # Clustering method
-flor_cluster <- role_analysis(graph = flor$igraph_object,
+flor_cluster <- role_analysis(graph = flor$florentine,
                               nodes = flor$node_measures,
                               directed = TRUE,
                               method = "cluster",
@@ -115,7 +115,7 @@ flor_cluster$cluster_summaries_triad$`1`
 
 
 # CONCOR method
-flor_concor <- role_analysis(graph = flor$igraph_object,
+flor_concor <- role_analysis(graph = flor$florentine,
                              nodes = flor$node_measures,
                              directed = TRUE,
                              method = "concor",

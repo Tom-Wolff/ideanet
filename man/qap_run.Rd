@@ -18,7 +18,7 @@ qap_run(net, dependent = NULL, variables, directed = F, family = "linear")
 \item{family}{A string identifying the functional form. Options are \code{"linear"} and \code{"binomial"}. Defauts to \code{"linear"}.}
 }
 \value{
-`qap_run` returns a list of elements \code{model_results} that include:
+`qap_run` returns a list of elements that include:
 
 - \code{covs_df}, a data frame containing term labels, estimates, standard errors and p-values
 
@@ -34,7 +34,7 @@ The \code{qap_run} function is a wrapper around \code{sna}'s Quadratic Assignmen
                   directed = FALSE,
                   net_name = "florentine_graph")
 
- flor_setup <- qap_setup(flor$igraph_object,
+ flor_setup <- qap_setup(flor$florentine_graph,
                          variables = c("total_degree"),
                          methods = c("difference"))
 
@@ -42,5 +42,5 @@ flor_qap <- qap_run(flor_setup$graph,
                     variables = c("diff_total_degree"))
 
 # Inspect results
-flor_qap$results
+flor_qap$covs_df
 }

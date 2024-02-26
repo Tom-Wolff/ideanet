@@ -7,7 +7,7 @@
 #' @param variables A vector of strings naming the independent variables of interest.
 #' @param directed A logical statement identifying if the network should be treated as directed. Defaults to \code{FALSE}.
 #' @param family A string identifying the functional form. Options are \code{"linear"} and \code{"binomial"}. Defauts to \code{"linear"}.
-#' @return `qap_run` returns a list of elements \code{model_results} that include:
+#' @return `qap_run` returns a list of elements that include:
 #'
 #' - \code{covs_df}, a data frame containing term labels, estimates, standard errors and p-values
 #'
@@ -21,7 +21,7 @@
 #'                   directed = FALSE,
 #'                   net_name = "florentine_graph")
 #'
-#'  flor_setup <- qap_setup(flor$igraph_object,
+#'  flor_setup <- qap_setup(flor$florentine_graph,
 #'                          variables = c("total_degree"),
 #'                          methods = c("difference"))
 #'
@@ -29,7 +29,7 @@
 #'                     variables = c("diff_total_degree"))
 #'
 #' # Inspect results
-#' flor_qap$results
+#' flor_qap$covs_df
 
 qap_run <- function(net, dependent = NULL, variables, directed = F, family = "linear") {
 
@@ -83,7 +83,7 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
       mods_df <- dplyr::tibble(num_obs = res$n, aic = res$aic, bic = res$bic)
     }
 
-    output_list <- list(results = covs_df, model_info = mods_df)
+    output_list <- list(covs_df = covs_df, mods_df = mods_df)
 
     return(output_list)
     # assign(x = "model_results", value = list(covs_df, mods_df), .GlobalEnv)

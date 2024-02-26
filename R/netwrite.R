@@ -13,7 +13,6 @@
 #' @param weights A numeric vector indicating the weight of ties in the edgelist.
 #' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
-#' @param package (Deprecated) A character value indicating what format network objects should be produced by \code{netwrite}. Available options are \code{igraph} and \code{network}.
 #' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
 #' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"} and \code{"distance"}.
 #' @param directed A logical value indicating whether edges should be treated as a directed or undirected when constructing the network.
@@ -22,7 +21,7 @@
 #' @param output A character vector indicating the kinds of objects \code{netwrite} should assign to the global environment. \code{netwrite} produces several outputs that may not all be necessary to a user's needs. Users can specify which outputs they specifically want in order to minimize the number of objects appearing in the global environment. Potential outputs include igraph object(s) (\code{"graph"}), subgraph(s) of only nodes that appear in the largest component and/or bicomponent of the network (\code{"largest_component"}, \code{"largest_bi_component"}), data frame(s) containing node-level measures (\code{"node_measure_plot"}), a processed edgelist of the network (\code{"edgelist"}), a data frame indicating network-level summaries (\code{"system_level_measures"}), and summary visualizations for node- and network-level measures (\code{"node_measure_plot"}, \code{"system_measure_plot"}).
 #' @param message A logical value indicating whether warning messages should be displayed in the R console during processing.
 #'
-#' @return \code{netwrite} returns a variety of outputs and assigns them to the R global environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
+#' @return \code{netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
 #'
 #' If \code{output} contains \code{graph}, \code{netwrite} will return an igraph object of the network represented in the original data.
 #' If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing igraph objects for each unique relation type as well as the overall network. These output objects are named according to the value specified in the \code{net_name} argument.
@@ -47,35 +46,38 @@
 #'
 #' @examples
 #' # Use netwrite on an edgelist
-#' faux_mesa <- netwrite(nodelist = fauxmesa_nodes,
+#' nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
 #'                       node_id = "id",
 #'                       i_elements = fauxmesa_edges$from,
 #'                       j_elements = fauxmesa_edges$to,
 #'                       directed = TRUE,
 #'                       net_name = "faux_mesa")
 #'
+#' # For easier access of output objects, call `list2env` on output
+#' list2env(nw_fauxmesa, .GlobalEnv)
+#'
 #' ### Inspect updated edgelist
-#' head(faux_mesa$edgelist)
+#' head(edgelist)
 #'
 #' ### Inspect data frame of node-level measures
-#' head(faux_mesa$node_measures)
+#' head(node_measures)
 #'
 #' ### Inspect system-level summary
-#' faux_mesa$system_level_measures
+#' head(system_level_measures)
 #'
 #' ### Plot sociogram of network
-#' plot(faux_mesa$igraph_object)
+#' plot(faux_mesa)
 #'
 #' ### View node-level summary visualization
-#' faux_mesa$node_measure_plot
+#' node_measure_plot
 #'
 #' ### View system-level summary visualization
-#' faux_mesa$system_measure_plot
+#' system_measure_plot
 #'
 #'
 #'
 #' # Run netwrite on an adjacency matrix
-#' fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa$igraph_object))
+#' fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa))
 #'
 #' faux_adj <- netwrite(data_type = "adjacency_matrix",
 #'                      adjacency_matrix = fauxmesa_adjmat,
@@ -122,7 +124,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
                      weights=NULL, type=NULL,
                      remove_loops = FALSE,
-                     package='igraph', missing_code=99999,
+                     missing_code=99999,
                      weight_type='frequency', directed=FALSE,
                      net_name='network',
                      shiny = FALSE,
@@ -307,7 +309,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                         weights = weights,
                                         type = type,
                                         remove_loops = remove_loops,
-                                        package = package,
                                         missing_code = missing_code,
                                         weight_type = weight_type,
                                         directed = directed,
@@ -328,7 +329,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                         weights = weights,
                                         type = type,
                                         remove_loops = remove_loops,
-                                        package = package,
                                         missing_code = missing_code,
                                         weight_type = weight_type,
                                         directed = directed,
@@ -449,7 +449,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                           weights=edges_list[[i]]$weights,
                                           type=edges_list[[i]]$type,
                                           remove_loops = remove_loops,
-                                          package=package,
                                           missing_code = missing_code,
                                           weight_type = weight_type, directed=directed,
                                           net_name = "this_igraph", # Giving a consistent name for igraph object
@@ -481,7 +480,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                           weights = NULL,
                                           type=edges_list[[i]]$type,
                                           remove_loops = remove_loops,
-                                          package=package,
                                           missing_code = missing_code,
                                           weight_type = weight_type, directed=directed,
                                           net_name = "this_igraph",
@@ -521,7 +519,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                           weights = edges_list[[i]]$weights,
                                           type=edges_list[[i]]$type,
                                           remove_loops = remove_loops,
-                                          package=package,
                                           missing_code = missing_code,
                                           weight_type = weight_type, directed=directed,
                                           net_name = "this_igraph",
@@ -548,7 +545,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                           weights = NULL,
                                           type=edges_list[[i]]$type,
                                           remove_loops = remove_loops,
-                                          package=package,
                                           missing_code = missing_code,
                                           weight_type = weight_type, directed=directed,
                                           net_name = "this_igraph",
@@ -569,7 +565,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Store netwrite outputs into respective lists
 
       # igraph object list
-      graphs_list[[i]] <- this_netwrite$igraph_object
+      graphs_list[[i]] <- this_netwrite$this_igraph
       # suppressWarnings(rm(this_igraph))
 
       # Largest bicomponent list
@@ -644,9 +640,9 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # 4. Keep only those objects that the original `output` argument specified
 
     if ("graph" %in% final_output) {
-      # netwrite_output$`net_name` <- graph
+      netwrite_output[[`net_name`]] <- graph
       # assign(x = net_name, value = graph, .GlobalEnv)
-      netwrite_output$igraph_object <- graphs_list
+      netwrite_output$igraph_list <- graphs_list
       # assign(x = "network_list", value = graphs_list, .GlobalEnv)
       # suppressWarnings(rm(graph))
     } # else {
@@ -828,7 +824,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                            # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
                            weights=NULL, type=NULL,
                            remove_loops = FALSE,
-                           package='igraph', missing_code=99999,
+                           missing_code=99999,
                            weight_type='frequency', directed=FALSE,
                            net_name='network',
                            shiny = FALSE,
@@ -1078,7 +1074,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # Assign to global environment
     if ("graph" %in% output) {
-      basic_output$igraph_object <- g
+      basic_output[[`net_name`]] <- g
       # assign(x = net_name, value = g,.GlobalEnv)
     }
 
@@ -1429,7 +1425,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # Assign to global environment
     if ("graph" %in% output) {
-      basic_output$igraph_object <- g
+      basic_output[[`net_name`]] <- g
       # assign(x = net_name, value = g,.GlobalEnv)
     }
   } # End edgelist condition
