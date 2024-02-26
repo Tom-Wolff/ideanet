@@ -14,6 +14,8 @@
 #'
 #' @export
 #'
+#' @importFrom rlang .data
+#'
 #' @examples
 #'
 #' data(package = "egor", "egos32")
@@ -24,12 +26,12 @@
 
 
 ego_homophily <- function(ego_id,
-                        ego_measure,
-                        alter_ego,
-                        alter_measure,
-                        prefix = NULL,
-                        suffix = NULL,
-                        prop = FALSE) {
+                          ego_measure,
+                          alter_ego,
+                          alter_measure,
+                          prefix = NULL,
+                          suffix = NULL,
+                          prop = FALSE) {
 
   ego_df <- data.frame(ego_id = ego_id,
                        ego_val = ego_measure)
@@ -40,14 +42,14 @@ ego_homophily <- function(ego_id,
 
   hom_counts <- var_df %>%
     dplyr::group_by(ego_id) %>%
-    dplyr::summarize(num_sim = sum(as.character(alter_val) == as.character(ego_val), na.rm = T),
-                                            prop_sim = num_sim/dplyr::n()) %>%
+    dplyr::summarize(num_sim = sum(as.character(.data$alter_val) == as.character(.data$ego_val), na.rm = T),
+                     prop_sim = .data$num_sim/dplyr::n()) %>%
     dplyr::ungroup()
 
   if (prop == TRUE) {
-    hom_counts <- hom_counts %>% dplyr::select(ego_id, prop_same = prop_sim)
+    hom_counts <- hom_counts %>% dplyr::select(ego_id, prop_same = .data$prop_sim)
   } else {
-    hom_counts <- hom_counts %>% dplyr::select(ego_id, num_same = num_sim)
+    hom_counts <- hom_counts %>% dplyr::select(ego_id, num_same = .data$num_sim)
   }
 
   if (!is.null(prefix)) {

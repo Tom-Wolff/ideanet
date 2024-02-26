@@ -21,7 +21,6 @@ ego_netwrite(
   aa_type = NULL,
   missing_code = 99999,
   na.rm = FALSE,
-  output_name = "egonet",
   egor = FALSE,
   egor_design = NULL
 )
@@ -58,8 +57,6 @@ ego_netwrite(
 \item{missing_code}{A numeric value indicating "missing" values in the alter-alter edgelist.}
 
 \item{na.rm}{A logical value indicating whether \code{NA} values should be excluded when calculating continuous measures.}
-
-\item{output_name}{A character value indicating the name or prefix that should be given to output objects.}
 
 \item{egor}{A logical value indicating whether output should include an \code{egor} object, which is often useful for visualizaton and for simulation larger networks from egocentric data.}
 
