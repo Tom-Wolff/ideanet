@@ -21,13 +21,13 @@ The \code{communities} function runs a set of several commonly-used community de
 }
 \examples{
 # Run netwrite
-netwrite(nodelist = fauxmesa_nodes,
-        node_id = "id",
-        i_elements = fauxmesa_edges$from,
-        j_elements = fauxmesa_edges$to,
-        directed = TRUE,
-        net_name = "faux_mesa")
+faux_mesa <- netwrite(nodelist = fauxmesa_nodes,
+                      node_id = "id",
+                      i_elements = fauxmesa_edges$from,
+                      j_elements = fauxmesa_edges$to,
+                      directed = TRUE,
+                      net_name = "faux_mesa")
 
 # Run community detection function
-communities(g = faux_mesa)
+faux_communities <- communities(g = faux_mesa$igraph_object)
 }

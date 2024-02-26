@@ -5,8 +5,8 @@
 #' @param net An \code{igraph} or \code{network} object.
 #' @param dependent A string naming the dependent variable of interest.
 #' @param variables A vector of strings naming the independent variables of interest.
-#' @param directed A logical statement identifying if the network should be treated as directed. Defaults to False.
-#' @param family A string identifying the functional form. Options are "linear" and "binomial". Defauts to "linear".
+#' @param directed A logical statement identifying if the network should be treated as directed. Defaults to \code{FALSE}.
+#' @param family A string identifying the functional form. Options are \code{"linear"} and \code{"binomial"}. Defauts to \code{"linear"}.
 #' @return `qap_run` returns a list of elements \code{model_results} that include:
 #'
 #' - \code{covs_df}, a data frame containing term labels, estimates, standard errors and p-values
@@ -15,16 +15,21 @@
 #' @export
 #'
 #' @examples
-#' data("florentine", package = "ideanet")
 #'
-#'  ideanet::netwrite(i_elements = florentine$node,
-#'                    j_elements = florentine$target,
-#'                    directed = FALSE,
-#'                    net_name = "florentine_graph")
+#'  flor <- netwrite(i_elements = florentine$node,
+#'                   j_elements = florentine$target,
+#'                   directed = FALSE,
+#'                   net_name = "florentine_graph")
 #'
-#' ideanet::qap_setup(florentine_graph, variables = c("total_degree"), methods = c("difference"))
+#'  flor_setup <- qap_setup(flor$igraph_object,
+#'                          variables = c("total_degree"),
+#'                          methods = c("difference"))
 #'
-#' ideanet::qap_run(qap_results[[1]], variables = c("diff_total_degree"))
+#' flor_qap <- qap_run(flor_setup$graph,
+#'                     variables = c("diff_total_degree"))
+#'
+#' # Inspect results
+#' flor_qap$results
 
 qap_run <- function(net, dependent = NULL, variables, directed = F, family = "linear") {
 
@@ -67,7 +72,7 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
     rem <- unlist(rem[lapply(rem,length)>0])
     if (!is.null(rem)) {variables <- variables[-which(variables %in% rem)]}
     variables <- c("intercept", variables)
-    if (class(res) == "sna::netlogit"){
+    if (methods::is(res, "sna::netlogit")) {
       covs_df <- dplyr::tibble(covars = variables, estimate = res$coefficients,
                                `exp(estimate)` = exp(res$coefficients), se = res$se,
                                pvalue = res$pgreqabs)
@@ -78,7 +83,11 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
       mods_df <- dplyr::tibble(num_obs = res$n, aic = res$aic, bic = res$bic)
     }
 
-    model_results <<- list(covs_df, mods_df)
+    output_list <- list(results = covs_df, model_info = mods_df)
+
+    return(output_list)
+    # assign(x = "model_results", value = list(covs_df, mods_df), .GlobalEnv)
+
   } else {warning("All IVs are empty. Try a different set of IVs")}
 }
 

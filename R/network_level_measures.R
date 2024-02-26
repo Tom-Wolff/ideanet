@@ -3,6 +3,10 @@
 #####################################################
 
 largest_weak_component_igraph <- function(g){
+
+  # Create a list for storing output
+  output_list <- list()
+
   # Isolating the graph's components
   components <- igraph::clusters(g, mode="weak")
   biggest_cluster_id <- which.max(components$csize)
@@ -15,8 +19,12 @@ largest_weak_component_igraph <- function(g){
 
   # Assigning the ID list and Subgraph to the Global Environment
   # assign(x = 'weak_membership', value = weak_membership,.GlobalEnv)
-  assign(x = 'largest_component_ids', value = largest_component_ids,.GlobalEnv)
-  assign(x = 'largest_component', value = largest_component,.GlobalEnv)
+  output_list$largest_component_ids <- largest_component_ids
+  # assign(x = 'largest_component_ids', value = largest_component_ids,.GlobalEnv)
+  output_list$largest_component <- largest_component
+  # assign(x = 'largest_component', value = largest_component,.GlobalEnv)
+
+  return(output_list)
 }
 
 
@@ -26,6 +34,10 @@ largest_weak_component_igraph <- function(g){
 ###############################################
 
 largest_bicomponent_igraph <- function(g) {
+
+  # Create a list
+  output_list <- list()
+
   # Extracting bi-components
   bi_components <- igraph::biconnected_components(g)
   bi_component_list <- as.list(bi_components$components)
@@ -54,14 +66,18 @@ largest_bicomponent_igraph <- function(g) {
                                       size_bicomponent = sum(merge_df$in_largest_bicomponent, na.rm = T),
                                       prop_bicomponent = sum(merge_df$in_largest_bicomponent, na.rm = T)/nrow(merge_df))
 
-    assign(x = "bicomponent_summary", value = bicomponent_summary, .GlobalEnv)
-    assign(x = "largest_bicomponent_memberships", value = merge_df, .GlobalEnv)
-    rm(bicomponent_df, merge_df)
+    output_list$bicomponent_summary <- bicomponent_summary
+    # assign(x = "bicomponent_summary", value = bicomponent_summary, .GlobalEnv)
+    output_list$largest_bicomponent_memberships <- merge_df
+    # assign(x = "largest_bicomponent_memberships", value = merge_df, .GlobalEnv)
+    # rm(bicomponent_df, merge_df)
 
 
     # Assigning the ID list and Subgraph to the Global Environment
-    assign(x = 'largest_bicomponent_ids', value = largest_bicomp_ids,.GlobalEnv)
-    assign(x = 'largest_bi_component', value = largest_bi_component,.GlobalEnv)
+    output_list$largest_bicomponent_ids <- largest_bicomp_ids
+    # assign(x = 'largest_bicomponent_ids', value = largest_bicomp_ids,.GlobalEnv)
+    output_list$largest_bi_component <- largest_bi_component
+    # assign(x = 'largest_bi_component', value = largest_bi_component,.GlobalEnv)
 
   } else {
 
@@ -96,13 +112,15 @@ largest_bicomponent_igraph <- function(g) {
 
       largest_bi_component[[i]] <- igraph::induced_subgraph(g, largest_bicomp_ids)
 
-      assign(x = paste('largest_bicomponent_ids', i, sep = "_"), value = largest_bicomp_ids,.GlobalEnv)
- #      assign(x = paste('largest_bi_component', i, sep = "_"), value = largest_bi_component,.GlobalEnv)
+      output_list$largest_bicomponent_ids <- largest_bicomp_ids
+      # assign(x = paste('largest_bicomponent_ids', i, sep = "_"), value = largest_bicomp_ids,.GlobalEnv)
+      #      assign(x = paste('largest_bi_component', i, sep = "_"), value = largest_bi_component,.GlobalEnv)
 
 
     }
 
-    assign(x = 'largest_bi_component', value = largest_bi_component,.GlobalEnv)
+    output_list$largest_bi_component <- largest_bi_component
+    # assign(x = 'largest_bi_component', value = largest_bi_component,.GlobalEnv)
 
     bicomponent_df2 <- data.frame()
 
@@ -124,13 +142,16 @@ largest_bicomponent_igraph <- function(g) {
     merge_df <- dplyr::left_join(merge_df, bicomponent_df2, by = "id")
     merge_df$id <- as.numeric(merge_df$id)
 
-    assign(x = "bicomponent_summary", value = bicomponent_summary, .GlobalEnv)
-    assign(x = "largest_bicomponent_memberships", value = merge_df, .GlobalEnv)
+    output_list$bicomponent_summary <- bicomponent_summary
+    # assign(x = "bicomponent_summary", value = bicomponent_summary, .GlobalEnv)
+    output_list$largest_bicomponent_memberships <- merge_df
+    # assign(x = "largest_bicomponent_memberships", value = merge_df, .GlobalEnv)
 
-    rm(bi_components, bi_component_list, bi_lengths, largest_id, this_node, bicomponent_df, bicomponent_df2, merge_df, sum_df)
-
-
+    # rm(bi_components, bi_component_list, bi_lengths, largest_id, this_node, bicomponent_df, bicomponent_df2, merge_df, sum_df)
   }
+
+  return(output_list)
+
 }
 
 #############################################################
@@ -444,8 +465,11 @@ trans_rate_igraph <- function(g) {
   tv <- t3/a3
 
   # Assigning transitivity_rate to the global environment
-  assign(x = 'transitivity_rate', value = tv,.GlobalEnv)
-  rm(inmat, i2, t3, a3)
+  # assign(x = 'transitivity_rate', value = tv,.GlobalEnv)
+  # rm(inmat, i2, t3, a3)
+
+  return(tv)
+
 }
 
 
@@ -486,16 +510,16 @@ degree_assortativity <- function(g, directed) {
 
   # Symmetrize Edgelist
 
-    el2 <- el1
-    colnames(el2) <- c("alter", "ego")
+  el2 <- el1
+  colnames(el2) <- c("alter", "ego")
 
-    sym_el <- dplyr::bind_rows(el1, el2) %>%
-      unique()
+  sym_el <- dplyr::bind_rows(el1, el2) %>%
+    unique()
 
-    el2 <- el1
-    colnames(el2) <- c("alter", "ego")
-    sym_el <- dplyr::bind_rows(el1, el2) %>%
-      unique()
+  el2 <- el1
+  colnames(el2) <- c("alter", "ego")
+  sym_el <- dplyr::bind_rows(el1, el2) %>%
+    unique()
 
 
   # Get edgewise correlation on total degree
@@ -509,7 +533,7 @@ degree_assortativity <- function(g, directed) {
     dplyr::left_join(total_ego, by = "ego") %>%
     dplyr::left_join(total_alter, by = "alter")
 
-  total_cor <- cor(total_el[,3], total_el[,4])
+  total_cor <- stats::cor(total_el[,3], total_el[,4])
 
   # If directed, do the same for indegree and outdegree
   if (directed == TRUE) {
@@ -524,7 +548,7 @@ degree_assortativity <- function(g, directed) {
       dplyr::left_join(in_ego, by = "ego") %>%
       dplyr::left_join(in_alter, by = "alter")
 
-    in_cor <- cor(in_el[,3], in_el[,4])
+    in_cor <- stats::cor(in_el[,3], in_el[,4])
 
     # Outdegre
     out_ego <- degree_counts[,c("id", "total_degree_out")]
@@ -536,7 +560,7 @@ degree_assortativity <- function(g, directed) {
       dplyr::left_join(out_ego, by = "ego") %>%
       dplyr::left_join(out_alter, by = "alter")
 
-    out_cor <- cor(out_el[,3], out_el[,4])
+    out_cor <- stats::cor(out_el[,3], out_el[,4])
 
   } else {
 
@@ -606,8 +630,9 @@ average_geodesic <- function(g) {
   average_path_length <- mean(geodesics)
 
   # Assgining to the global environment
-  assign(x = 'average_path_length', value = average_path_length,.GlobalEnv)
-  rm(gd, geodesics)
+  return(average_path_length)
+  # assign(x = 'average_path_length', value = average_path_length,.GlobalEnv)
+  # rm(gd, geodesics)
 }
 
 
@@ -653,7 +678,7 @@ multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
       }
 
       # Calculating the Correlation for Unique Combination of Types
-      pairs <- t(combn(paste0(types,'_','weight'), 2))
+      pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
       for(i in nrow(pairs)) {
         column_set <- pairs[i,]
         tie_set <- ties[,column_set]
@@ -729,7 +754,7 @@ multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
       }
 
       # Calculating the Correlation for Unique Combination of Types
-      pairs <- t(combn(paste0(types,'_','weight'), 2))
+      pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
       for(i in nrow(pairs)) {
         column_set <- pairs[i,]
         tie_set <- ties[,column_set]
@@ -740,11 +765,12 @@ multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
     }
 
     # Assigning final scores to global environment
-    assign(x = 'multiplex_edge_correlation', value = multiplex_edge_correlation,.GlobalEnv)
+    # assign(x = 'multiplex_edge_correlation', value = multiplex_edge_correlation,.GlobalEnv)
   }else{
     edgelist <- edgelist[,]
     multiplex_edge_correlation <- 'Simplex Network'
   }
+  return(multiplex_edge_correlation)
 }
 
 

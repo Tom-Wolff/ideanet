@@ -42,7 +42,7 @@ ego_reshape(
 \item{output_name}{A character value indicating the name or prefix that should be given to output objects.}
 }
 \value{
-\code{ego_reshape} returns three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}.
+A list containing three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}.
 }
 \description{
 The \code{ego_reshape} function reshapes egocentric network data stored in a single wide dataset into three dataframes optimized for use with \code{\link{ego_netwrite}}.

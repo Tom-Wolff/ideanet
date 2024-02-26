@@ -1,6 +1,6 @@
 #' Goodreau's Faux Mesa High School (Nodelist)
 #'
-#' This data set (originally found in as a \code{network} object in the \code{\link[ergm:faux.mesa.high]{ergm}} package)
+#' This data set (originally found in as a \code{network} object in the \code{ergm} package)
 #' represents a simulation of an in-school friendship network. The network is named "Faux Mesa High" because the school
 #' community on which it is based is in the rural western US, with a student body that is largely Hispanic and Native American.
 #'
@@ -23,7 +23,7 @@
 #' Missing values for each were randomly assigned with weights determined by
 #' the size of the attribute classes in the school.
 #'
-#' The following \code{\link{ergm}} formula was used to fit a model to the
+#' The following \code{ergm} formula was used to fit a model to the
 #' original data:
 #'
 #' \preformatted{ ~ edges + nodefactor("Grade") + nodefactor("Race") +
@@ -42,7 +42,7 @@
 
 #' Goodreau's Faux Mesa High School (Edgelist)
 #'
-#' This data set (originally found in as a \code{network} object in the \code{\link[ergm:faux.mesa.high]{ergm}} package)
+#' This data set (originally found in as a \code{network} object in the \code{ergm} package)
 #' represents a simulation of an in-school friendship network. The network is named "Faux Mesa High" because the school
 #' community on which it is based is in the rural western US, with a student body that is largely Hispanic and Native American.
 #'
@@ -63,7 +63,7 @@
 #' Missing values for each were randomly assigned with weights determined by
 #' the size of the attribute classes in the school.
 #'
-#' The following \code{\link{ergm}} formula was used to fit a model to the
+#' The following \code{ergm} formula was used to fit a model to the
 #' original data:
 #'
 #' \preformatted{ ~ edges + nodefactor("Grade") + nodefactor("Race") +

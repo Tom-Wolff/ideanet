@@ -6,7 +6,7 @@
 \usage{
 role_analysis(
   graph,
-  nodes = node_measures,
+  nodes,
   directed = NA,
   method = "cluster",
   min_partitions = NA,
@@ -65,7 +65,7 @@ When hierarchical clustering is used, \code{role_analysis} creates the following
 \code{cluster_dendrogram} is a visualization of the dendrogram produced from clustering nodes. Red boxes on the visualization indicate nodes' cluster memberships at the optimal level of partitioning.
 \code{cluster_modularity} is a visualization of the modularity scores of the matrix of similarity scores between nodes for each level of partitioning. This visualization helps identify the optimal level of partitioning inferred by the \code{role_analysis} function.
 \code{cluster_summaries_cent} contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on several important node-level measures.
-\code{cluster_summaries_cent} contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on in terms of their positions within certain kinds of triads in the network.
+\code{cluster_summaries_triad} contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on in terms of their positions within certain kinds of triads in the network.
 \code{cluster_relations_heatmaps} is a list object containing several heatmap visualizations representing the extent to which nodes in one inferred cluster are connected to nodes in another cluster.
 \code{cluster_relations_sociogram} contains a network visualization representing the extent to which nodes in clusters inferred at the optimal level of partitioning are tied to one another. Nodes in this visualization represent inferred clusters in the aggregate.
 
@@ -81,57 +81,57 @@ When CONCOR is used, \code{role_analysis} creates the following:
 The \code{role_analysis} function takes networks processed by the \code{\link{netwrite}} function and performs positional analysis on them. Positional analysis methods allows users to infer distinct "roles" in networks from patterns in network activity. \code{role_analysis} currently supports the identification of roles using two methods: hierarchical clustering (cite) and convergence of correlations (CONCOR, Breiger 1975).
 }
 \examples{
-netwrite(i_elements = florentine$node,
-         j_elements = florentine$target,
-         type = florentine$layer,
-         directed = TRUE,
-         net_name = "florentine")
+flor <- netwrite(i_elements = florentine$node,
+                 j_elements = florentine$target,
+                 type = florentine$layer,
+                 directed = TRUE,
+                 net_name = "florentine")
 
 # Clustering method
-role_analysis(graph = network_list,
-              nodes = node_measures,
-              directed = TRUE,
-              method = "cluster",
-              min_partitions = 2,
-              max_partitions = 8,
-              viz = TRUE)
+flor_cluster <- role_analysis(graph = flor$igraph_object,
+                              nodes = flor$node_measures,
+                              directed = TRUE,
+                              method = "cluster",
+                              min_partitions = 2,
+                              max_partitions = 8,
+                              viz = TRUE)
 
 ### View cluster dendrogram
-cluster_dendrogram
+flor_cluster$cluster_dendrogram
 
 ### View modularity summary plot
-cluster_modularity
+flor_cluster$cluster_modularity
 
 ### View cluster assignments
-head(cluster_assignments)
+head(flor_cluster$cluster_assignments)
 
 ### View centrality summary plot for aggregate network
-cluster_summaries_cent$summary_graph
+flor_cluster$cluster_summaries_cent$summary_graph
 ### View cenrality summary plot for network of relation `type 1`
-cluster_summaries_cent$`1`
+flor_cluster$cluster_summaries_cent$`1`
 
 ### View triad position summary plot for network of relation `type 1`
-cluster_summaries_triad$`1`
+flor_cluster$cluster_summaries_triad$`1`
 
 
 # CONCOR method
-role_analysis(graph = network_list,
-              nodes = node_measures,
-              directed = TRUE,
-              method = "concor",
-              min_partitions = 1,
-              max_partitions = 4,
-              viz = TRUE)
+flor_concor <- role_analysis(graph = flor$igraph_object,
+                             nodes = flor$node_measures,
+                             directed = TRUE,
+                             method = "concor",
+                             min_partitions = 1,
+                             max_partitions = 4,
+                             viz = TRUE)
 
 ### View CONCOR tree
-concor_block_tree
+flor_concor$concor_block_tree
 
 ### View modularity summary plot
-concor_modularity
+flor_concor$concor_modularity
 
 ### View cluster assignments
-head(concor_assignments)
+head(flor_concor$concor_assignments)
 
 ### View chi-squared heatmaps of relations between blocks
-concor_relations_heatmaps$chisq
+flor_concor$concor_relations_heatmaps$chisq
 }

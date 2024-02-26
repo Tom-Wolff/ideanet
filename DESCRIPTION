@@ -5,7 +5,7 @@ Version: 0.1.0
 Author: Tom Wolff, Jonathan Howard Morgan, Gabriel Varela, Kieran Lele, Ethan Bhojani, Dana Pasquale, Peter Mucha, James Moody 
 Maintainer: Tom Wolff <tom.wolff@northwestern.edu>
 Description: A set of tools designed for streamlining social network analysis, particularly geared toward entry-level users.
-License: GPL (>= 3)
+License: GPL (>= 3) + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
@@ -14,36 +14,35 @@ Imports:
     colorspace,
     concorR,
     cowplot,
-    devtools,
+    data.table,
     dplyr,
-    DT,
     egor,
-    ergm,
     forcats,
     ggplot2,
-    glasso,
     grDevices,
-    gridGraphics,
     igraph,
     intergraph,
     linkcomm,
     magrittr,
     MASS,
     Matrix,
+    methods,
     moments,
     network,
     readxl,
     rlang,
     shiny,
-    shinycssloaders,
-    shinythemes,
-    shinyWidgets,
     sna,
     stringr,
     tibble,
     tidyr,
-    tidyselect,
-    visNetwork
+    tidyselect
+Suggests:
+    DT,
+    devtools,
+    ergm,
+    gridGraphics,
+    shinythemes
 RoxygenNote: 7.2.3
 Depends: 
     R (>= 2.10)

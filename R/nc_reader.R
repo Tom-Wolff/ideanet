@@ -4,193 +4,183 @@
 #'
 #' @param path A character value indicating the directory in which Network Canvas CSVs are located. \code{nc_read} will read in all CSV files located in this directory and process them.
 #' @param cat.to.factor A logical value indicating whether categorical variables, originally stored as a series of TRUE/FALSE columns, should be converted into a single factor column.
-#' @param output_list A logical value indicating whether output should be stored as three separate objects in the Global Environment or as a single list of objects in the Global Environment.
 #'
 #' @return \code{nc_read} returns three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}. Data frames are either stored individually in the Global Environment or as elements in a single list in the Global Environment depending on how \code{output_list} is specified. \cr \cr
 #' Note that in the \code{alters} data frame, column \code{node_type} reflects the "node type" assigned to a given alter as specified in a Network Canvas protocol. Values in \code{node_type} are likely not those which should be fed into the \code{alter_types} argument in \code{\link{ego_netwrite}}.
 #'
 #' @export
+#'
+#' @importFrom rlang .data
 
 nc_read <- function(
-                    # ARGUMENTS:
+    # ARGUMENTS:
 
-                    # Path to folder containing exported NC .csv files
-                    path,
+  # Path to folder containing exported NC .csv files
+  path,
 
-                    # Whether to convert categorical booleans to a factor
-                    # (i.e. apply Pat's catToFactor function)
-                    # See lines 192-235 to see how I tried to automatically
-                    # detect which sets of variables should be treated as
-                    # booleans corresponding to a single response item
-                    cat.to.factor = TRUE,
+  # Whether to convert categorical booleans to a factor
+  # (i.e. apply Pat's catToFactor function)
+  # See lines 192-235 to see how I tried to automatically
+  # detect which sets of variables should be treated as
+  # booleans corresponding to a single response item
+  cat.to.factor = TRUE
 
-                    # Is this being used within ideanet?
-                    # If yes, store output as a list for downstream processing
-                    # If no, assign data frames to global environment
-                    output_list = TRUE
+) {
 
-                    ) {
-
-# If user puts a forward slash at the end of the directory path they define,
-# it will cause problems. Check if this happens and correct
-if (stringr::str_detect(path, "/$")) {
-  path <- stringr::str_replace(path, "/$", "")
-}
-
-
-# Get list of files in directory
-file_list <- list.files(path)
-# Remove non-CSV files in case graphMLs are exported
-just_csv <- file_list[stringr::str_detect(file_list, "csv$")]
-
-# Compile Ego information
-ego_files <- just_csv[stringr::str_detect(just_csv, "ego.csv$")]
-
-for (i in 1:length(ego_files)) {
-  if (i == 1) {
-    egos <- read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE)
-    egos$networkCanvasCaseID <- as.character(egos$networkCanvasCaseID)
-  } else {
-    this_ego <- read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE)
-    this_ego$networkCanvasCaseID <- as.character(this_ego$networkCanvasCaseID)
-    egos <- dplyr::bind_rows(egos, this_ego)
+  # If user puts a forward slash at the end of the directory path they define,
+  # it will cause problems. Check if this happens and correct
+  if (stringr::str_detect(path, "/$")) {
+    path <- stringr::str_replace(path, "/$", "")
   }
-}
 
-# Compile Alter information
-### This one is a bit tricky because alter properties for each node type have
-### their own unique CSV files, and they won't necessarily have the same
-### column names
 
-alter_files <- just_csv[stringr::str_detect(just_csv, "attributeList")]
+  # Get list of files in directory
+  file_list <- list.files(path)
+  # Remove non-CSV files in case graphMLs are exported
+  just_csv <- file_list[stringr::str_detect(file_list, "csv$")]
 
-for (i in 1:length(alter_files)) {
-  if (i == 1) {
-    alters <- read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
-    # Need to handle the case in which ego 1 is an isolate
-    if (nrow(alters) == 0) {
-      alters[1,] <- NA
+  # Compile Ego information
+  ego_files <- just_csv[stringr::str_detect(just_csv, "ego.csv$")]
+
+  for (i in 1:length(ego_files)) {
+    if (i == 1) {
+      egos <- utils::read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE)
+      egos$networkCanvasCaseID <- as.character(egos$networkCanvasCaseID)
+    } else {
+      this_ego <- utils::read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE)
+      this_ego$networkCanvasCaseID <- as.character(this_ego$networkCanvasCaseID)
+      egos <- dplyr::bind_rows(egos, this_ego)
     }
-    ### Record type of alter
-    node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
-    node_type <- stringr::str_replace(node_type, "attributeList_", "")
-    node_type <- stringr::str_replace(node_type, ".csv", "")
-    alters$node_type <- node_type
-  } else {
-    this_alter <- read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
-    # Only need to do the rest if there are actually alter nominated by ego,
-    # otherwise can skip
-    if (nrow(this_alter) > 0) {
+  }
+
+  # Compile Alter information
+  ### This one is a bit tricky because alter properties for each node type have
+  ### their own unique CSV files, and they won't necessarily have the same
+  ### column names
+
+  alter_files <- just_csv[stringr::str_detect(just_csv, "attributeList")]
+
+  for (i in 1:length(alter_files)) {
+    if (i == 1) {
+      alters <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
+      # Need to handle the case in which ego 1 is an isolate
+      if (nrow(alters) == 0) {
+        alters[1,] <- NA
+      }
       ### Record type of alter
       node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
       node_type <- stringr::str_replace(node_type, "attributeList_", "")
       node_type <- stringr::str_replace(node_type, ".csv", "")
-      this_alter$node_type <- node_type
-      alters <- dplyr::bind_rows(alters, this_alter)
+      alters$node_type <- node_type
+    } else {
+      this_alter <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
+      # Only need to do the rest if there are actually alter nominated by ego,
+      # otherwise can skip
+      if (nrow(this_alter) > 0) {
+        ### Record type of alter
+        node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
+        node_type <- stringr::str_replace(node_type, "attributeList_", "")
+        node_type <- stringr::str_replace(node_type, ".csv", "")
+        this_alter$node_type <- node_type
+        alters <- dplyr::bind_rows(alters, this_alter)
+      }
     }
   }
-}
 
-# If the first ego was an isolate, go ahead and remove the first row in `alters`
-alters <- alters[!is.na(alters$nodeID), ]
-
+  # If the first ego was an isolate, go ahead and remove the first row in `alters`
+  alters <- alters[!is.na(alters$nodeID), ]
 
 
-# Compile Alter-Alter Edgelists
 
-edge_files <- just_csv[stringr::str_detect(just_csv, "edgeList")]
+  # Compile Alter-Alter Edgelists
 
-for (i in 1:length(edge_files)) {
-  if (i == 1) {
-    el <- read.csv(paste(path, edge_files[[i]], sep = "/"), header = T)
-    # Handling if first ego is an isolate
-    if (nrow(el) == 0) {
-      el[1,] <- NA
-    }
+  edge_files <- just_csv[stringr::str_detect(just_csv, "edgeList")]
 
-    ### Record type of edge
-    edge_type <- stringr::str_extract(edge_files[[i]], "edgeList.*.csv")
-    edge_type <- stringr::str_replace(edge_type, "edgeList_", "")
-    edge_type <- stringr::str_replace(edge_type, ".csv", "")
-    el$edge_type <- edge_type
-  } else {
-    this_el <- read.csv(paste(path, edge_files[[i]], sep = "/"), header = T)
+  for (i in 1:length(edge_files)) {
+    if (i == 1) {
+      el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = T)
+      # Handling if first ego is an isolate
+      if (nrow(el) == 0) {
+        el[1,] <- NA
+      }
 
-    if (nrow(this_el) == 0) {
-      next
-    } else {
       ### Record type of edge
       edge_type <- stringr::str_extract(edge_files[[i]], "edgeList.*.csv")
       edge_type <- stringr::str_replace(edge_type, "edgeList_", "")
       edge_type <- stringr::str_replace(edge_type, ".csv", "")
-      this_el$edge_type <- edge_type
-      el <- dplyr::bind_rows(el, this_el)
+      el$edge_type <- edge_type
+    } else {
+      this_el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = T)
+
+      if (nrow(this_el) == 0) {
+        next
+      } else {
+        ### Record type of edge
+        edge_type <- stringr::str_extract(edge_files[[i]], "edgeList.*.csv")
+        edge_type <- stringr::str_replace(edge_type, "edgeList_", "")
+        edge_type <- stringr::str_replace(edge_type, ".csv", "")
+        this_el$edge_type <- edge_type
+        el <- dplyr::bind_rows(el, this_el)
+      }
     }
   }
-}
 
-# If the first ego was an isolate, go ahead and remove the first row in `el`
-el <- el[!is.na(el$edgeID), ]
+  # If the first ego was an isolate, go ahead and remove the first row in `el`
+  el <- el[!is.na(el$edgeID), ]
 
-# Apply catToFactor, if desired
-if (cat.to.factor == TRUE) {
-  egos <- apply_catToFactor(egos)
-  alters <- apply_catToFactor(alters)
-  el <- apply_catToFactor(el)
-}
+  # Apply catToFactor, if desired
+  if (cat.to.factor == TRUE) {
+    egos <- apply_catToFactor(egos)
+    alters <- apply_catToFactor(alters)
+    el <- apply_catToFactor(el)
+  }
 
-# Converting boolean columns to R logical vectors
-egos <- dplyr::mutate_all(egos, to_logical)
-alters <- dplyr::mutate_all(alters, to_logical)
-el <- dplyr::mutate_all(el, to_logical)
+  # Converting boolean columns to R logical vectors
+  egos <- dplyr::mutate_all(egos, to_logical)
+  alters <- dplyr::mutate_all(alters, to_logical)
+  el <- dplyr::mutate_all(el, to_logical)
 
-# Convert date columns to POSIXct objects
-egos <- dplyr::mutate_all(egos, to_date)
-alters <- dplyr::mutate_all(alters, to_date)
-el <- dplyr::mutate_all(el, to_date)
-
-
-# Convert session info to POSIXct
-egos$sessionStart <- to_posix(egos$sessionStart)
-egos$sessionFinish <- to_posix(egos$sessionFinish)
-egos$sessionExported <- to_posix(egos$sessionExported)
-
-# Easier ego ID numbers
-egos <- egos %>%
-  dplyr::group_by(networkCanvasEgoUUID) %>%
-  dplyr::mutate(ego_id = dplyr::cur_group_id()) %>%
-  dplyr::ungroup() %>%
-  dplyr::select(ego_id, dplyr::everything())
-
-# Get the basics to merge into other dataframes
-ego_basic <- egos %>%
-  dplyr::select(ego_id, networkCanvasEgoUUID)
-
-alters <- alters %>%
-  dplyr::left_join(ego_basic, by = "networkCanvasEgoUUID") %>%
-  dplyr::select(ego_id, alter_id = nodeID, node_type, dplyr::everything())
-
-el <- el %>%
-  dplyr::left_join(ego_basic, by = "networkCanvasEgoUUID") %>%
-  dplyr::select(ego_id, edge_id = edgeID, from, to, edge_type, dplyr::everything())
+  # Convert date columns to POSIXct objects
+  egos <- dplyr::mutate_all(egos, to_date)
+  alters <- dplyr::mutate_all(alters, to_date)
+  el <- dplyr::mutate_all(el, to_date)
 
 
-# We'll want to extract the protocol name from the filenames for naming
-# the objects we output to the global environment
-protocol_name <- egos$networkCanvasProtocolName[[1]]
+  # Convert session info to POSIXct
+  egos$sessionStart <- to_posix(egos$sessionStart)
+  egos$sessionFinish <- to_posix(egos$sessionFinish)
+  egos$sessionExported <- to_posix(egos$sessionExported)
 
-if (output_list == FALSE) {
+  # Easier ego ID numbers
+  egos <- egos %>%
+    dplyr::group_by(.data$networkCanvasEgoUUID) %>%
+    dplyr::mutate(ego_id = dplyr::cur_group_id()) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(.data$ego_id, dplyr::everything())
 
-  assign(x = paste(protocol_name, "_egos", sep = ""), value = egos, .GlobalEnv)
-  assign(x = paste(protocol_name, "_alters", sep = ""), value = alters, .GlobalEnv)
-  assign(x = paste(protocol_name, "_alter_edgelists", sep = ""), value = el, .GlobalEnv)
+  # Get the basics to merge into other dataframes
+  ego_basic <- egos %>%
+    dplyr::select(.data$ego_id, .data$networkCanvasEgoUUID)
 
-} else {
+  alters <- alters %>%
+    dplyr::left_join(ego_basic, by = "networkCanvasEgoUUID") %>%
+    dplyr::select(.data$ego_id, alter_id = .data$nodeID, .data$node_type, dplyr::everything())
+
+  el <- el %>%
+    dplyr::left_join(ego_basic, by = "networkCanvasEgoUUID") %>%
+    dplyr::select(.data$ego_id, edge_id = .data$edgeID, .data$from, .data$to, .data$edge_type, dplyr::everything())
+
+
+  # We'll want to extract the protocol name from the filenames for naming
+  # the objects we output to the global environment
+  protocol_name <- egos$networkCanvasProtocolName[[1]]
+
+
   nc_list <- list(egos = egos,
                   alters = alters,
                   alter_edgelists = el)
-  assign(x = paste(protocol_name, "_list", sep = ""), value = nc_list, .GlobalEnv)
-}
+  return(nc_list)
+
 
 }
 
@@ -212,17 +202,17 @@ catToFactor <- function(dataframe,variableName) {
     return(c(NA))
     # Check if "true" in multiple columns of a single row
   } else if (sum(apply(dataframe[,catVariables], 1, function(x) sum(x %in% "true")>1))>0) {
-  #  stop(paste0("Your variable -",variableName,"  - appears to take multiple values.")) }
+    #  stop(paste0("Your variable -",variableName,"  - appears to take multiple values.")) }
     warning(paste0("Your variable -",variableName,"  - appears to take multiple values. This variable will not be recoded."))
     return(c(NA))
-} else {
-  catValues <- sub(paste0('.*',fullVariableName), '', catVariables)
-  factorVariable <- c()
-  for(i in 1:length(catVariables)){
-    factorVariable[dataframe[catVariables[i]]=="true"] <- catValues[i]
+  } else {
+    catValues <- sub(paste0('.*',fullVariableName), '', catVariables)
+    factorVariable <- c()
+    for(i in 1:length(catVariables)){
+      factorVariable[dataframe[catVariables[i]]=="true"] <- catValues[i]
+    }
+    return(factor(factorVariable,levels=catValues))
   }
-  return(factor(factorVariable,levels=catValues))
-}
 }
 
 # Identifying which variables to which we apply `catToFactor`
@@ -330,7 +320,7 @@ to_date <- function(x) {
   check_na <- string_check[!is.na(string_check)]
   check_na2 <- string_check2[!is.na(string_check2)]
 
-# Check if criteria are met and process
+  # Check if criteria are met and process
   if (sum(check_na) == length(check_na)) {
     x <- as.POSIXct(x, format = "%Y-%m-%d")
     return(x)
@@ -346,9 +336,9 @@ to_date <- function(x) {
 # POSIXct converter for session info
 
 to_posix <- function(x) {
-x <- stringr::str_replace_all(x, "T", " ")
-x <- stringr::str_replace_all(x, "Z", "")
-x <- as.POSIXct(x, format = "%Y-%m-%d %H:%M:%OS")
+  x <- stringr::str_replace_all(x, "T", " ")
+  x <- stringr::str_replace_all(x, "Z", "")
+  x <- as.POSIXct(x, format = "%Y-%m-%d %H:%M:%OS")
 }
 
 ###############################################################################

@@ -13,6 +13,8 @@
 #'
 #' @export
 #'
+#' @importFrom rlang .data
+#'
 #' @examples
 #'
 #' data(package = "egor", "egos32")
@@ -36,29 +38,29 @@ pearson_phi <- function(ego_id,
 
   var_df <- dplyr::left_join(alter_df, ego_df, by = "ego_id")
 
-  alter_tot <- data.frame(alter_val = var_df$alter_val) %>% dplyr::count(alter_val) %>%
-    dplyr::mutate(n_tot = sum(n),
-                  n_prop = n/n_tot) %>%
-    dplyr::rename(n_alter_tot = n)
+  alter_tot <- data.frame(alter_val = var_df$alter_val) %>% dplyr::count(.data$alter_val) %>%
+    dplyr::mutate(n_tot = sum(.data$n),
+                  n_prop = .data$n/.data$n_tot) %>%
+    dplyr::rename(n_alter_tot = .data$n)
 
-  alter_obs <- var_df %>% dplyr::group_by(ego_id) %>%
-    dplyr::count(alter_val) %>%
-    dplyr::rename(n_alter_obs = n)
+  alter_obs <- var_df %>% dplyr::group_by(.data$ego_id) %>%
+    dplyr::count(.data$alter_val) %>%
+    dplyr::rename(n_alter_obs = .data$n)
 
   alter_tots <- alter_tot %>% dplyr::left_join(alter_obs, by = "alter_val") %>%
-    dplyr::select(ego_id, dplyr::everything()) %>%
-    dplyr::mutate(n_alter_obs = tidyr::replace_na(n_alter_obs, 0)) %>%
-    dplyr::arrange(ego_id)
+    dplyr::select(.data$ego_id, dplyr::everything()) %>%
+    dplyr::mutate(n_alter_obs = tidyr::replace_na(.data$n_alter_obs, 0)) %>%
+    dplyr::arrange(.data$ego_id)
 
   p_phi <- alter_tots %>%
-    dplyr::group_by(ego_id) %>%
-    dplyr::mutate(exp_val = n_prop * sum(n_alter_obs),
-                  diff = (n_alter_obs - exp_val)^2 / exp_val) %>%
-    dplyr::summarize(chisq = sum(diff),
-                     length = sum(n_alter_obs)) %>%
-    dplyr::mutate(p_phi = sqrt(chisq/length)) %>%
+    dplyr::group_by(.data$ego_id) %>%
+    dplyr::mutate(exp_val = .data$n_prop * sum(.data$n_alter_obs),
+                  diff = (.data$n_alter_obs - .data$exp_val)^2 / .data$exp_val) %>%
+    dplyr::summarize(chisq = sum(.data$diff),
+                     length = sum(.data$n_alter_obs)) %>%
+    dplyr::mutate(p_phi = sqrt(.data$chisq/.data$length)) %>%
     dplyr::ungroup() %>%
-    dplyr::select(-chisq, -length)
+    dplyr::select(-.data$chisq, -.data$length)
 
   if (!is.null(prefix)) {
     colnames(p_phi) <- paste(prefix, colnames(p_phi), sep = "_")

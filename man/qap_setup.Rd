@@ -20,7 +20,7 @@ qap_setup(net, variables, methods, directed = F, additional_vars = NULL)
 \value{
 \code{qap_setup} returns a list \code{qap_results} of elements that include:
 
-- \code{qap_graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
+- \code{graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
 
 - \code{nodes}, a nodelist reflecting additional variables if included.
 
@@ -30,12 +30,14 @@ qap_setup(net, variables, methods, directed = F, additional_vars = NULL)
 The \code{qap_setup} function transform an individual level attributes into dyadic comparisons following a set of methods. Output can be used to compute QAP measurements using sister functions in \code{ideanet}.
 }
 \examples{
-data("florentine", package = "ideanet")
 
- ideanet::netwrite(i_elements = florentine$node,
-                   j_elements = florentine$target,
-                   directed = FALSE,
-                   net_name = "florentine_graph")
 
-ideanet::qap_setup(florentine_graph, variables = c("total_degree"), methods = c("difference"))
+flor <- netwrite(i_elements = florentine$node,
+                 j_elements = florentine$target,
+                 directed = FALSE,
+                 net_name = "florentine_graph")
+
+flor_setup <- qap_setup(flor$igraph_object,
+                        variables = c("total_degree"),
+                        methods = c("difference"))
 }

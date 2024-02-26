@@ -11,6 +11,8 @@
 #'
 #' @export
 #'
+#' @importFrom rlang .data
+#'
 #' @examples
 #'
 #' data(package = "egor", "egos32")
@@ -30,8 +32,8 @@ iqv <- function(ego_id,
                        val = measure)
 
   iqv_df <- ego_df %>%
-    dplyr::group_by(ego_id) %>%
-    dplyr::summarize(iqv = single_iqv(val)) %>%
+    dplyr::group_by(.data$ego_id) %>%
+    dplyr::summarize(iqv = single_iqv(.data$val)) %>%
     dplyr::ungroup()
 
   if (!is.null(prefix)) {
@@ -57,7 +59,7 @@ single_iqv <- function(x) {
 
   # To deal with treating `NAs` as their own category, let's rely on `dplyr`
   h_df <- data.frame(value = x) %>%
-    dplyr::group_by(value) %>%
+    dplyr::group_by(.data$value) %>%
     dplyr::summarize(prop_sq = (dplyr::n()/num_vals)^2) %>%
     dplyr::ungroup()
 

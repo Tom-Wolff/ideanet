@@ -2,7 +2,7 @@
 #    N O D E - L E V E L   M E A S U R E S    #
 ###############################################
 
-node_level_igraph <- function(nodes, g, directed, message) {
+node_level_igraph <- function(nodes, g, directed, message, weights) {
 
   # Degree Per Jim's specification
   custom_degree <- total_degree(g, directed = directed)
@@ -62,13 +62,13 @@ node_level_igraph <- function(nodes, g, directed, message) {
                                    bonpow_in_negative, bonpow_out_negative, bonpow_sym_negative,
                                    eigen_cen, constraint, effective_size, reachability))
 
-      assign(x = "bon_cent_in", bon_cent_in)
-      assign(x = "bon_cent_out", bon_cent_out)
-      assign(x = "bon_cent_sym", bon_cent_sym)
+      # assign(x = "bon_cent_in", bon_cent_in)
+      # assign(x = "bon_cent_out", bon_cent_out)
+      # assign(x = "bon_cent_sym", bon_cent_sym)
 
-      assign(x = "bon_cent_in_negative", bon_cent_in_negative)
-      assign(x = "bon_cent_out_negative", bon_cent_out_negative)
-      assign(x = "bon_cent_sym_negative", bon_cent_sym_negative)
+      # assign(x = "bon_cent_in_negative", bon_cent_in_negative)
+      # assign(x = "bon_cent_out_negative", bon_cent_out_negative)
+      # assign(x = "bon_cent_sym_negative", bon_cent_sym_negative)
 
 
     } else {
@@ -84,8 +84,8 @@ node_level_igraph <- function(nodes, g, directed, message) {
                                    betweenness_scores, bonpow, bonpow_negative,
                                    eigen_cen, constraint, effective_size, reachability))
 
-      assign(x = "bon_cent", bon_cent)
-      assign(x = "bon_cent_neg", bon_cent_neg)
+      # assign(x = "bon_cent", bon_cent)
+      # assign(x = "bon_cent_neg", bon_cent_neg)
 
     }
 
@@ -118,8 +118,8 @@ node_level_igraph <- function(nodes, g, directed, message) {
                                  eigen_cen, constraint, effective_size,
                                  reachability))
 
-    assign(x = "bon_cent", bon_cent)
-    assign(x = "bon_cent_neg", bon_cent_neg)
+    # assign(x = "bon_cent", bon_cent)
+    # assign(x = "bon_cent_neg", bon_cent_neg)
 
   }
 
@@ -159,7 +159,7 @@ total_degree <- function(g,
 
   # Filter out self-loops
   full_el <- full_el %>%
-    dplyr::filter(ego != alter)
+    dplyr::filter(.data$ego != .data$alter)
 
   # Handling Directed Networks
   if (directed == TRUE) {
@@ -167,7 +167,7 @@ total_degree <- function(g,
     # Group by `ego` and `mode` to get number of nodes ego is tied to for both
     # in and outbound ties
     directed_degree <- full_el %>%
-      dplyr::group_by(ego, mode) %>%
+      dplyr::group_by(.data$ego, .data$mode) %>%
       dplyr::summarize(total_degree = dplyr::n()) %>%
       tidyr::pivot_wider(names_from = "mode",
                          names_prefix = "total_degree_",
@@ -178,27 +178,27 @@ total_degree <- function(g,
     # For total degree for both in and outbound ties, we just group by `ego` so as
     # not to double-count alters who both send ties to ego and receive ties from ego
     undirected_degree <- full_el %>%
-      dplyr::select(-mode) %>%
+      dplyr::select(-.data$mode) %>%
       unique() %>%
-      dplyr::group_by(ego) %>%
+      dplyr::group_by(.data$ego) %>%
       dplyr::summarize(total_degree_all = dplyr::n()) %>%
       dplyr::ungroup()
 
     # Merge `directed_degree` and `undirected_degree` together
     tot_degree <- dplyr::full_join(directed_degree, undirected_degree, by = "ego") %>%
-      dplyr::rename(id = ego)
+      dplyr::rename(id = .data$ego)
 
   } else {
 
     tot_degree <- full_el %>%
-      dplyr::select(-mode) %>%
+      dplyr::select(-.data$mode) %>%
       unique() %>%
-      dplyr::group_by(ego) %>%
+      dplyr::group_by(.data$ego) %>%
       dplyr::summarize(total_degree_all = dplyr::n()) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(total_degree_in = NA,
                     total_degree_out = NA) %>%
-      dplyr::rename(id = ego)
+      dplyr::rename(id = .data$ego)
 
   }
 
@@ -379,7 +379,9 @@ reachable_igraph <- function(g, directed){
   }
 
   # Writing to global environment
-  assign(x = 'reachability', value = proportion_reachable,.GlobalEnv)
+  # assign(x = 'reachability', value = proportion_reachable,.GlobalEnv)
+  return(proportion_reachable)
+
 }
 
 

@@ -15,7 +15,8 @@
 #' @return \code{ego_alter_measures} returns a data frame containing the measures specified by the user for each individual ego network. This data frame is complementary to the \code{summaries} data frame created by \code{\link{ego_netwrite}}, and the two can easily be merged.
 #'
 #' @export
-
+#'
+#' @importFrom rlang .data
 
 ego_alter_measures <- function(ego_df,
                                alter_df,
@@ -31,11 +32,11 @@ ego_alter_measures <- function(ego_df,
 
   # 1. Remove ego and alter prefixes and suffixes, if applicable
   if (!is.null(ego_prefix) == TRUE) {
-        ##### Store original colnames
-        orig_egonames <- colnames(ego_df)
-        colnames(ego_df) <- stringr::str_remove_all(colnames(ego_df), paste("^", ego_prefix, sep = ""))
-        ##### Make sure `ego_id` remains `ego_id` though
-        colnames(ego_df)[[which(orig_egonames == "ego_id")]] <- "ego_id"
+    ##### Store original colnames
+    orig_egonames <- colnames(ego_df)
+    colnames(ego_df) <- stringr::str_remove_all(colnames(ego_df), paste("^", ego_prefix, sep = ""))
+    ##### Make sure `ego_id` remains `ego_id` though
+    colnames(ego_df)[[which(orig_egonames == "ego_id")]] <- "ego_id"
   }
 
   if (!is.null(alter_prefix) == TRUE) {
@@ -168,37 +169,37 @@ ego_alter_measures <- function(ego_df,
                             name = vars[[i]])
     } else {
 
-    var_df <- alter_info %>%
-      dplyr::left_join(ego_info, by = "ego_id")
-    colnames(var_df) <- c("ego_id", "alter_val", "ego_val")
+      var_df <- alter_info %>%
+        dplyr::left_join(ego_info, by = "ego_id")
+      colnames(var_df) <- c("ego_id", "alter_val", "ego_val")
 
 
-    # Add a warning indicating if unique values don't overlap for both columns
-    # (if categorical)
-    if ("categorical" %in% combined_class) {
+      # Add a warning indicating if unique values don't overlap for both columns
+      # (if categorical)
+      if ("categorical" %in% combined_class) {
 
-      # Get unique values of `ego_val` column that aren't NAs
-      unique_ego_val <- unique(var_df$ego_val)
-      unique_ego_val <- unique_ego_val[!is.na(unique_ego_val)]
-      # Same for `alter_val` column
-      unique_alter_val <- unique(var_df$alter_val)
-      unique_alter_val <- unique_alter_val[!is.na(unique_alter_val)]
-      # Determine if there's any overlap
-      val_overlaps <- sum(unique_ego_val %in% unique_alter_val)
-      # Display warning message if `val_overlaps == 0`
-      if (val_overlaps == 0) {
-        warning(paste("No values in variable ", vars[[i]], " appear for both egos and alters. You may want to ensure that this variable is similarly coded for both egos and alters.",
-                      sep = ""))
+        # Get unique values of `ego_val` column that aren't NAs
+        unique_ego_val <- unique(var_df$ego_val)
+        unique_ego_val <- unique_ego_val[!is.na(unique_ego_val)]
+        # Same for `alter_val` column
+        unique_alter_val <- unique(var_df$alter_val)
+        unique_alter_val <- unique_alter_val[!is.na(unique_alter_val)]
+        # Determine if there's any overlap
+        val_overlaps <- sum(unique_ego_val %in% unique_alter_val)
+        # Display warning message if `val_overlaps == 0`
+        if (val_overlaps == 0) {
+          warning(paste("No values in variable ", vars[[i]], " appear for both egos and alters. You may want to ensure that this variable is similarly coded for both egos and alters.",
+                        sep = ""))
+        }
       }
-    }
 
 
-    # both_class_label <- ego_class_label[which(ego_class_label %in% alter_class_label)]
+      # both_class_label <- ego_class_label[which(ego_class_label %in% alter_class_label)]
 
-    var_list[[i]] <- list(#class = both_class_label,
-                          class = combined_class,
-                          var_df = var_df,
-                          name = vars[[i]])
+      var_list[[i]] <- list(#class = both_class_label,
+        class = combined_class,
+        var_df = var_df,
+        name = vars[[i]])
     }
 
   }
@@ -209,54 +210,54 @@ ego_alter_measures <- function(ego_df,
 
   # 6. For each class of variable, generate measures for selected variables
 
-var_measures <- lapply(var_list, get_measures)
+  var_measures <- lapply(var_list, get_measures)
 
-# Set up DF for final output
-final_df <- ego_df %>%
-  dplyr::select(ego_id)
+  # Set up DF for final output
+  final_df <- ego_df %>%
+    dplyr::select(.data$ego_id)
 
-# Loop over elements of `var_measures` and merge into `final_df` if there's anything
-# in there
-for (i in 1:length(var_measures)) {
-  if (!is.null(var_measures[[i]]) == TRUE) {
-    final_df <- final_df %>%
-      dplyr::left_join(var_measures[[i]], by = "ego_id")
+  # Loop over elements of `var_measures` and merge into `final_df` if there's anything
+  # in there
+  for (i in 1:length(var_measures)) {
+    if (!is.null(var_measures[[i]]) == TRUE) {
+      final_df <- final_df %>%
+        dplyr::left_join(var_measures[[i]], by = "ego_id")
+    }
   }
-}
 
 
-# If user specified only a specific set of measures to calculate, return only
-# those values in `final_df`
+  # If user specified only a specific set of measures to calculate, return only
+  # those values in `final_df`
 
-if (!("diversity" %in% measures)) {
+  if (!("diversity" %in% measures)) {
     final_df <- final_df[,!stringr::str_detect(colnames(final_df), "diversity")]
-}
+  }
 
-if (!("number_homophilous" %in% measures)) {
-  final_df <- final_df[,!stringr::str_detect(colnames(final_df), "num_sim")]
-}
+  if (!("number_homophilous" %in% measures)) {
+    final_df <- final_df[,!stringr::str_detect(colnames(final_df), "num_sim")]
+  }
 
-if (!("proportion_homophilous" %in% measures)) {
-  final_df <- final_df[,!stringr::str_detect(colnames(final_df), "prop_sim")]
-}
+  if (!("proportion_homophilous" %in% measures)) {
+    final_df <- final_df[,!stringr::str_detect(colnames(final_df), "prop_sim")]
+  }
 
-if (!("ei_index" %in% measures)) {
-  final_df <- final_df[,!stringr::str_detect(colnames(final_df), "ei_index")]
-}
+  if (!("ei_index" %in% measures)) {
+    final_df <- final_df[,!stringr::str_detect(colnames(final_df), "ei_index")]
+  }
 
-if (!("pearson_phi" %in% measures)) {
-  final_df <- final_df[,!stringr::str_detect(colnames(final_df), "p_phi")]
-}
+  if (!("pearson_phi" %in% measures)) {
+    final_df <- final_df[,!stringr::str_detect(colnames(final_df), "p_phi")]
+  }
 
-if (!("euclidean_distance" %in% measures)) {
-  final_df <- final_df[,!stringr::str_detect(colnames(final_df), "euclidean_distance")]
-}
+  if (!("euclidean_distance" %in% measures)) {
+    final_df <- final_df[,!stringr::str_detect(colnames(final_df), "euclidean_distance")]
+  }
 
 
-# Return output
-return(final_df)
+  # Return output
+  return(final_df)
 
-# End main function
+  # End main function
 }
 
 
@@ -274,101 +275,101 @@ get_measures <- function(x) {
 
   } else {
 
-  df_made <- FALSE
+    df_made <- FALSE
 
-  if ("categorical" %in% x$class) {
+    if ("categorical" %in% x$class) {
 
 
 
-    cat_vars <- x$var_df %>%
-      dplyr::group_by(ego_id) %>%
-      dplyr::summarize(length = dplyr::n(),
-                       diversity = length(unique(alter_val)),
-                       num_sim = sum(as.character(alter_val) == as.character(ego_val), na.rm = T),
-                       prop_sim = num_sim/length,
-                       num_diff = sum(as.character(alter_val) != as.character(ego_val), na.rm = T),
-                       prop_diff = num_diff/length,
-                       ei_index = (prop_diff - prop_sim)/length) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(-length, -num_diff, -prop_diff)
+      cat_vars <- x$var_df %>%
+        dplyr::group_by(.data$ego_id) %>%
+        dplyr::summarize(length = dplyr::n(),
+                         diversity = length(unique(.data$alter_val)),
+                         num_sim = sum(as.character(.data$alter_val) == as.character(.data$ego_val), na.rm = T),
+                         prop_sim = .data$num_sim/.data$length,
+                         num_diff = sum(as.character(.data$alter_val) != as.character(.data$ego_val), na.rm = T),
+                         prop_diff = .data$num_diff/.data$length,
+                         ei_index = (.data$prop_diff - .data$prop_sim)/length) %>%
+        dplyr::ungroup() %>%
+        dplyr::select(-.data$length, -.data$num_diff, -.data$prop_diff)
 
-    p_phi <- pearson_phi(x$var_df)
+      p_phi <- pearson_phi(x$var_df)
 
-    ego_df <- cat_vars %>%
-      dplyr::left_join(p_phi, by = "ego_id")
+      ego_df <- cat_vars %>%
+        dplyr::left_join(p_phi, by = "ego_id")
 
-    df_made = TRUE
+      df_made = TRUE
 
-  }
-
-  if ("continuous" %in% x$class) {
-
-    cont_vars <- x$var_df %>%
-      # Setup for eucidean distance
-      dplyr::mutate(diff = (alter_val - ego_val)^2) %>%
-      # Summarize
-      dplyr::group_by(ego_id) %>%
-      dplyr::summarize(mean_diff = mean(ego_val - alter_val, na.rm = T),
-                       mean_abs_diff = mean(abs(ego_val - alter_val), na.rm = T),
-                       length = dplyr::n(),
-                       euc_num = sqrt(sum(diff, na.rm = T))) %>%
-      dplyr::ungroup() %>%
-      dplyr::mutate(euclidean_distance = euc_num/length) %>%
-      dplyr::select(-euc_num, -length)
-
-    if (df_made == TRUE) {
-      ego_df <- ego_df %>%
-        dplyr::left_join(cont_vars, by = "ego_id")
-    } else {
-      ego_df <- cont_vars
-    }
-  }
-
-  if ("binary" %in% x$class) {
-
-    bin_vars <- x$var_df %>%
-      dplyr::group_by(ego_id) %>%
-      dplyr::summarize(length = dplyr::n(),
-                       num_sim = sum(alter_val == ego_val, na.rm = T),
-                       prop_sim = num_sim/length) %>%
-      dplyr::ungroup() %>%
-      dplyr::select(-length)
-
-    if (df_made == TRUE) {
-    ego_df <- ego_df %>%
-      dplyr::left_join(bin_vars, by = "ego_id")
-    } else {
-      ego_df <- bin_vars
     }
 
-  }
+    if ("continuous" %in% x$class) {
 
-  if ("date" %in% x$class) {
-    date_vars <- x$var_df %>%
-      dplyr::mutate(diff = as.numeric(difftime(ego_val, alter_val, units = "days")),
-                    abs_diff = abs(diff)) %>%
-      dplyr::group_by(ego_id) %>%
-      dplyr::summarize(mean_diff = mean(diff, na.rm = TRUE),
-                       mean_abs_diff = mean(abs_diff, na.rm = TRUE)) %>%
-      dplyr::ungroup()
+      cont_vars <- x$var_df %>%
+        # Setup for eucidean distance
+        dplyr::mutate(diff = (.data$alter_val - .data$ego_val)^2) %>%
+        # Summarize
+        dplyr::group_by(.data$ego_id) %>%
+        dplyr::summarize(mean_diff = mean(.data$ego_val - .data$alter_val, na.rm = T),
+                         mean_abs_diff = mean(abs(.data$ego_val - .data$alter_val), na.rm = T),
+                         length = dplyr::n(),
+                         euc_num = sqrt(sum(.data$diff, na.rm = T))) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(euclidean_distance = .data$euc_num/.data$length) %>%
+        dplyr::select(-.data$euc_num, -.data$length)
 
-    if (df_made == TRUE) {
-      ego_df <- ego_df %>%
-        dplyr::left_join(date_vars, by = "ego_id")
-    } else {
-      ego_df <- date_vars
+      if (df_made == TRUE) {
+        ego_df <- ego_df %>%
+          dplyr::left_join(cont_vars, by = "ego_id")
+      } else {
+        ego_df <- cont_vars
+      }
     }
 
+    if ("binary" %in% x$class) {
+
+      bin_vars <- x$var_df %>%
+        dplyr::group_by(.data$ego_id) %>%
+        dplyr::summarize(length = dplyr::n(),
+                         num_sim = sum(.data$alter_val == .data$ego_val, na.rm = T),
+                         prop_sim = .data$num_sim/.data$length) %>%
+        dplyr::ungroup() %>%
+        dplyr::select(-.data$length)
+
+      if (df_made == TRUE) {
+        ego_df <- ego_df %>%
+          dplyr::left_join(bin_vars, by = "ego_id")
+      } else {
+        ego_df <- bin_vars
+      }
+
+    }
+
+    if ("date" %in% x$class) {
+      date_vars <- x$var_df %>%
+        dplyr::mutate(diff = as.numeric(difftime(.data$ego_val, .data$alter_val, units = "days")),
+                      abs_diff = abs(.data$diff)) %>%
+        dplyr::group_by(.data$ego_id) %>%
+        dplyr::summarize(mean_diff = mean(.data$diff, na.rm = TRUE),
+                         mean_abs_diff = mean(.data$abs_diff, na.rm = TRUE)) %>%
+        dplyr::ungroup()
+
+      if (df_made == TRUE) {
+        ego_df <- ego_df %>%
+          dplyr::left_join(date_vars, by = "ego_id")
+      } else {
+        ego_df <- date_vars
+      }
+
+    }
+
+    colnames(ego_df) <- paste(colnames(ego_df), x$name, sep = "_")
+    colnames(ego_df)[[1]] <- "ego_id"
+
+    return(ego_df)
+
   }
 
-colnames(ego_df) <- paste(colnames(ego_df), x$name, sep = "_")
-colnames(ego_df)[[1]] <- "ego_id"
-
-return(ego_df)
-
-}
-
-# End `get_measures`
+  # End `get_measures`
 }
 
 

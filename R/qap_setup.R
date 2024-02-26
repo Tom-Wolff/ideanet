@@ -9,22 +9,27 @@
 #' @param additional_vars A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an \code{id} or \code{label} variables which matches network exactly.
 #' @return \code{qap_setup} returns a list \code{qap_results} of elements that include:
 #'
-#' - \code{qap_graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
+#' - \code{graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
 #'
 #' - \code{nodes}, a nodelist reflecting additional variables if included.
 #'
 #' - \code{edges}, a nodelist reflecting new dyadic variables.
 #' @export
 #'
+#' @importFrom rlang .data
+#' @importFrom data.table :=
+#'
 #' @examples
-#' data("florentine", package = "ideanet")
 #'
-#'  ideanet::netwrite(i_elements = florentine$node,
-#'                    j_elements = florentine$target,
-#'                    directed = FALSE,
-#'                    net_name = "florentine_graph")
 #'
-#' ideanet::qap_setup(florentine_graph, variables = c("total_degree"), methods = c("difference"))
+#' flor <- netwrite(i_elements = florentine$node,
+#'                  j_elements = florentine$target,
+#'                  directed = FALSE,
+#'                  net_name = "florentine_graph")
+#'
+#' flor_setup <- qap_setup(flor$igraph_object,
+#'                         variables = c("total_degree"),
+#'                         methods = c("difference"))
 
 qap_setup <- function(net, variables, methods, directed = F, additional_vars = NULL) {
 
@@ -39,15 +44,15 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
   if (!("id" %in% igraph::vertex_attr_names(net))) {
     nodes <- igraph::as_data_frame(net, what = "vertices") %>%
       tibble::rownames_to_column(var = "id") %>%
-      dplyr::mutate(id = as.numeric(id))
+      dplyr::mutate(id = as.numeric(.data$id))
   } else {
     nodes <- igraph::as_data_frame(net, what = "vertices") %>%
-      dplyr::mutate(id = as.numeric(id))
+      dplyr::mutate(id = as.numeric(.data$id))
   }
 
   # Create edgelist
   edges <- igraph::as_data_frame(net, what = "edges") %>%
-    dplyr::mutate_at(dplyr::vars(from, to), as.numeric)
+    dplyr::mutate_at(dplyr::vars(.data$from, .data$to), as.numeric)
 
   # Check if additional_vars was called
   if (!is.null(additional_vars)) {
@@ -89,19 +94,19 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
 
       # Add each value with _ego or _alter suffix to edge dataframe
       edges <- edges %>%
-        dplyr::left_join(nodes %>% dplyr::select(id, tidyselect::all_of(variable)), by = c("from" = "id")) %>%
+        dplyr::left_join(nodes %>% dplyr::select(.data$id, tidyselect::all_of(variable)), by = c("from" = "id")) %>%
         dplyr::rename(!!paste0(variable, "_ego") := variable) %>%
-        dplyr::left_join(nodes %>% dplyr::select(id, tidyselect::all_of(variable)), by = c("to" = "id")) %>%
+        dplyr::left_join(nodes %>% dplyr::select(.data$id, tidyselect::all_of(variable)), by = c("to" = "id")) %>%
         dplyr::rename(!!paste0(variable, "_alter") := variable)
 
       # If method "reduced_category", create simple dichotomy
       if (method == "reduced_category") {
         edges <- edges %>%
           dplyr::mutate(!!rlang::sym((paste0("same_", variable))) :=
-                   dplyr::case_when(!!rlang::sym(paste0(variable, "_alter")) ==
-                               !!rlang::sym(paste0(variable, "_ego")) ~ 1,
-                             is.na(!!rlang::sym(paste0(variable, "_ego"))) |
-                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+                          dplyr::case_when(!!rlang::sym(paste0(variable, "_alter")) ==
+                                             !!rlang::sym(paste0(variable, "_ego")) ~ 1,
+                                           is.na(!!rlang::sym(paste0(variable, "_ego"))) |
+                                             is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
       }
 
       # If method "multi_category", create an tidyselect::all_of(variable) for each value and then dichotomize.
@@ -111,10 +116,10 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
         for (n in 1:length(opts)) {
           edges <- edges %>%
             dplyr::mutate(!!rlang::sym((paste0("both_", variable, "_", opts[n]))) :=
-                     dplyr::case_when((!!rlang::sym(paste0(variable, "_alter")) == opts[n]) &
-                                 (!!rlang::sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
-                               is.na(!!rlang::sym(paste0(variable, "_ego"))) |
-                                 is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+                            dplyr::case_when((!!rlang::sym(paste0(variable, "_alter")) == opts[n]) &
+                                               (!!rlang::sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
+                                             is.na(!!rlang::sym(paste0(variable, "_ego"))) |
+                                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
         }
       }
 
@@ -122,35 +127,37 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
       if (method == "difference") {
         edges <- edges %>%
           dplyr::mutate(!!rlang::sym((paste0("diff_", variable))) :=
-                   as.numeric(!!rlang::sym(paste0(variable, "_ego"))) -
-                   as.numeric(!!rlang::sym(paste0(variable, "_alter"))))
+                          as.numeric(!!rlang::sym(paste0(variable, "_ego"))) -
+                          as.numeric(!!rlang::sym(paste0(variable, "_alter"))))
       }
 
       # If diff is "both", run both reduced and multi categories.
       if (method == "both") {
         edges <- edges %>%
           dplyr::mutate(!!rlang::sym((paste0("same_", variable))) :=
-                   dplyr::case_when(!!rlang::sym(paste0(variable, "_alter")) ==
-                               !!rlang::sym(paste0(variable, "_ego")) ~ 1,
-                             is.na(!!rlang::sym(paste0(variable, "_ego"))) |
-                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+                          dplyr::case_when(!!rlang::sym(paste0(variable, "_alter")) ==
+                                             !!rlang::sym(paste0(variable, "_ego")) ~ 1,
+                                           is.na(!!rlang::sym(paste0(variable, "_ego"))) |
+                                             is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
 
         opts <- nodes %>% dplyr::select(tidyselect::all_of(variable)) %>% dplyr::distinct() %>% tidyr::drop_na() %>% dplyr::pull()
 
         for (n in 1:length(opts)) {
           edges <- edges %>%
             dplyr::mutate(!!rlang::sym((paste0("both_", variable, "_", opts[n]))) :=
-                     dplyr::case_when((!!rlang::sym(paste0(variable, "_alter")) == opts[n]) &
-                                 (!!rlang::sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
-                               is.na(!!rlang::sym(paste0(variable, "_ego"))) |
-                                 is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+                            dplyr::case_when((!!rlang::sym(paste0(variable, "_alter")) == opts[n]) &
+                                               (!!rlang::sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
+                                             is.na(!!rlang::sym(paste0(variable, "_ego"))) |
+                                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
         }
       }
     }
   }
 
   qap_graph <- igraph::graph_from_data_frame(edges, directed = directed, vertices = nodes)
-  qap_results <- list(qap_graph, nodes, edges)
-  assign("qap_results", qap_results, .GlobalEnv)
+  qap_results <- list(graph = qap_graph, nodes = nodes, edges = edges)
+
+  return(qap_results)
+  # assign("qap_results", qap_results, .GlobalEnv)
 
 }

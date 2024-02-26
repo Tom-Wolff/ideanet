@@ -18,13 +18,14 @@
 #' @param aa_type A numeric or character vector indicating the types of relationships represented in the alter edgelist, or a single character value indicating the name of the column in \code{alter_alter} containing relationship type. If \code{alter_type} is specified, \code{ego_netwrite} will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.
 #' @param missing_code A numeric value indicating "missing" values in the alter-alter edgelist.
 #' @param na.rm A logical value indicating whether \code{NA} values should be excluded when calculating continuous measures.
-#' @param output_name A character value indicating the name or prefix that should be given to output objects.
 #' @param egor A logical value indicating whether output should include an \code{egor} object, which is often useful for visualizaton and for simulation larger networks from egocentric data.
 #' @param egor_design If creating an \code{egor} object, a list of arguments to \code{\link[srvyr:as_survey_design]{srvyr::as_survey_design}} specifying the sampling design for egos. This argument corresponds to \code{ego_design} in \code{\link[egor:egor]{egor::egor}}.
 #'
 #' @return \code{ego_netwrite} returns several data frames, one containing measures of ego attributes, another containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite}  returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.
 #'
 #' @export
+#'
+#' @importFrom rlang .data
 
 
 ego_netwrite <- function(egos,
@@ -46,214 +47,216 @@ ego_netwrite <- function(egos,
                          # Do we remove NA values when calculating continuous measures?
                          na.rm = FALSE,
 
-                         # Name for output objects
-                         output_name = "egonet",
-
                          # Egor compatibility
                          egor = FALSE,
                          egor_design = NULL) {
 
   # browser()
 
-    ################################################################################
-    # Basic Formatting
-    ################################################################################
-    # In case tibbles are entered, convert to basic data frames
-    egos <- as.data.frame(egos)
-    alters <- as.data.frame(alters)
+  # Create output list
+  output_list <- list()
 
-    if (!is.null(alter_alter)) {
-      alter_alter <- as.data.frame(alter_alter)
+
+
+  ################################################################################
+  # Basic Formatting
+  ################################################################################
+  # In case tibbles are entered, convert to basic data frames
+  egos <- as.data.frame(egos)
+  alters <- as.data.frame(alters)
+
+  if (!is.null(alter_alter)) {
+    alter_alter <- as.data.frame(alter_alter)
+  }
+
+
+  ################################################################################
+  # Handling type indicator variables
+  ################################################################################
+
+
+
+
+
+
+  # Indictors for renaming objects
+  ego_id_fix <- FALSE
+  alter_ego_fix <- FALSE
+  alter_id_fix <- FALSE
+  aa_ego_fix <- FALSE
+  i_elements_fix <- FALSE
+  j_elements_fix <- FALSE
+  alter_types_fix <- FALSE
+  aa_type_fix <- FALSE
+
+  # If ID columns are specified by character values, extract those columns
+
+  if (methods::is(ego_id, "character") & length(ego_id) == 1) {
+    ego_id1 <- egos[,(which(colnames(egos) == ego_id))]
+    ego_id_fix <- TRUE
+  }
+
+  if (is.null(alter_ego) == TRUE) {
+    alter_ego1 <- alters[,(which(colnames(alters) == ego_id))]
+    alter_ego_fix <- TRUE
+  } else if (methods::is(alter_ego, "character") & length(alter_ego) == 1) {
+    alter_ego1 <- alters[,(which(colnames(alters) == alter_ego))]
+    alter_ego_fix <- TRUE
+  }
+
+  if (methods::is(alter_id, "character") & length(alter_id) == 1) {
+    alter_id1 <- alters[,(which(colnames(alters) == alter_id))]
+    alter_id_fix <- TRUE
+  }
+
+  # if (class(alter_types) == "character" & length(alter_types) == 1) {
+  #   alter_types1 <- alters[,(which(colnames(alters) == alter_types))]
+  #   alter_types_fix <- TRUE
+  # }
+
+
+
+  if (!is.null(alter_alter)) {
+
+    if (is.null(aa_ego) == TRUE) {
+      aa_ego1 <- alter_alter[,(which(colnames(alter_alter) == aa_ego))]
+      aa_ego_fix <- TRUE
+    } else if (methods::is(aa_ego, "character") & length(aa_ego) == 1) {
+      aa_ego1 <- alter_alter[,(which(colnames(alter_alter) == aa_ego))]
+      aa_ego_fix <- TRUE
     }
 
-
-    ################################################################################
-    # Handling type indicator variables
-    ################################################################################
-
-
-
-
-
-
-    # Indictors for renaming objects
-    ego_id_fix <- FALSE
-    alter_ego_fix <- FALSE
-    alter_id_fix <- FALSE
-    aa_ego_fix <- FALSE
-    i_elements_fix <- FALSE
-    j_elements_fix <- FALSE
-    alter_types_fix <- FALSE
-    aa_type_fix <- FALSE
-
-    # If ID columns are specified by character values, extract those columns
-
-    if (class(ego_id) == "character" & length(ego_id) == 1) {
-      ego_id1 <- egos[,(which(colnames(egos) == ego_id))]
-      ego_id_fix <- TRUE
+    if (methods::is(i_elements, "character") & length(i_elements) == 1) {
+      i_elements1 <- alter_alter[,(which(colnames(alter_alter) == i_elements))]
+      i_elements_fix <- TRUE
     }
 
-    if (is.null(alter_ego) == TRUE) {
-      alter_ego1 <- alters[,(which(colnames(alters) == ego_id))]
-      alter_ego_fix <- TRUE
-    } else if (class(alter_ego) == "character" & length(alter_ego) == 1) {
-      alter_ego1 <- alters[,(which(colnames(alters) == alter_ego))]
-      alter_ego_fix <- TRUE
+    if (methods::is(j_elements, "character") & length(j_elements) == 1) {
+      j_elements1 <- alter_alter[,(which(colnames(alter_alter) == j_elements))]
+      j_elements_fix <- TRUE
     }
 
-    if (class(alter_id) == "character" & length(alter_id) == 1) {
-      alter_id1 <- alters[,(which(colnames(alters) == alter_id))]
-      alter_id_fix <- TRUE
+    if (methods::is(aa_type, "character") & length(aa_type) == 1) {
+      aa_type1 <- alter_alter[,(which(colnames(alter_alter) == aa_type))]
+      aa_type_fix <- TRUE
     }
 
-    # if (class(alter_types) == "character" & length(alter_types) == 1) {
-    #   alter_types1 <- alters[,(which(colnames(alters) == alter_types))]
-    #   alter_types_fix <- TRUE
-    # }
+  }
+  # If characters were used to identify ID columns, assign them to the correct
+  # objects
 
+  if (ego_id_fix == TRUE) {
+    ego_id <- ego_id1
+  }
 
+  if (alter_ego_fix == TRUE) {
+    alter_ego <- alter_ego1
+  }
 
-    if (!is.null(alter_alter)) {
+  if (alter_id_fix == TRUE) {
+    alter_id <- alter_id1
+  }
 
-      if (is.null(aa_ego) == TRUE) {
-        aa_ego1 <- alter_alter[,(which(colnames(alter_alter) == aa_ego))]
-        aa_ego_fix <- TRUE
-      } else if (class(aa_ego) == "character" & length(aa_ego) == 1) {
-        aa_ego1 <- alter_alter[,(which(colnames(alter_alter) == aa_ego))]
-        aa_ego_fix <- TRUE
-      }
+  # if (alter_types_fix == TRUE) {
+  #   alter_types <- alter_types1
+  # }
 
-      if (class(i_elements) == "character" & length(i_elements) == 1) {
-        i_elements1 <- alter_alter[,(which(colnames(alter_alter) == i_elements))]
-        i_elements_fix <- TRUE
-      }
+  if (!is.null(alter_alter)) {
 
-      if (class(j_elements) == "character" & length(j_elements) == 1) {
-        j_elements1 <- alter_alter[,(which(colnames(alter_alter) == j_elements))]
-        j_elements_fix <- TRUE
-      }
-
-      if (class(aa_type) == "character" & length(aa_type) == 1) {
-        aa_type1 <- alter_alter[,(which(colnames(alter_alter) == aa_type))]
-        aa_type_fix <- TRUE
-      }
-
-    }
-    # If characters were used to identify ID columns, assign them to the correct
-    # objects
-
-    if (ego_id_fix == TRUE) {
-      ego_id <- ego_id1
+    if (aa_ego_fix == TRUE) {
+      aa_ego <- aa_ego1
     }
 
-    if (alter_ego_fix == TRUE) {
-      alter_ego <- alter_ego1
+    if (i_elements_fix == TRUE) {
+      i_elements <- i_elements1
     }
 
-    if (alter_id_fix == TRUE) {
-      alter_id <- alter_id1
+    if (j_elements_fix == TRUE) {
+      j_elements <- j_elements1
     }
 
-    # if (alter_types_fix == TRUE) {
-    #   alter_types <- alter_types1
-    # }
-
-    if (!is.null(alter_alter)) {
-
-      if (aa_ego_fix == TRUE) {
-        aa_ego <- aa_ego1
-      }
-
-      if (i_elements_fix == TRUE) {
-        i_elements <- i_elements1
-      }
-
-      if (j_elements_fix == TRUE) {
-        j_elements <- j_elements1
-      }
-
-      if (aa_type_fix == TRUE) {
-        aa_type <- aa_type1
-      }
-
+    if (aa_type_fix == TRUE) {
+      aa_type <- aa_type1
     }
 
-
-    # EGO NAME FORMATTING
-    if ("id" %in% colnames(egos)) {
-      colnames(egos) <- stringr::str_replace_all(colnames(egos), "^id$", "original_id")
-    } else if ("ego_id" %in% colnames(egos)) {
-      colnames(egos) <- stringr::str_replace_all(colnames(egos), "^ego_id$", "original_ego_id")
-    }
-
-    # Define `ego_id` as whatever column was specified by user
-    egos$ego_id <- ego_id
-
-    egos <- egos %>%
-      dplyr::select(ego_id, dplyr::everything())
+  }
 
 
-    # ALTER NAME FORMATTING
-    if ("ego_id" %in% colnames(alters)) {
-      colnames(alters) <- stringr::str_replace_all(colnames(alters), "^ego_id$", "original_ego_id")
-    }
-    alters$ego_id <- alter_ego
+  # EGO NAME FORMATTING
+  if ("id" %in% colnames(egos)) {
+    colnames(egos) <- stringr::str_replace_all(colnames(egos), "^id$", "original_id")
+  } else if ("ego_id" %in% colnames(egos)) {
+    colnames(egos) <- stringr::str_replace_all(colnames(egos), "^ego_id$", "original_ego_id")
+  }
 
-    if ("alter_id" %in% colnames(alters)) {
-      colnames(alters) <- stringr::str_replace_all(colnames(alters), "^alter_id$", "original_alter_id")
-    }
-    alters$alter_id <- alter_id
+  # Define `ego_id` as whatever column was specified by user
+  egos$ego_id <- ego_id
 
-    # Columns named `weight` can lead to downstream issues with igraph. If such a column exists in `alters`,
+  egos <- egos %>%
+    dplyr::select(ego_id, dplyr::everything())
+
+
+  # ALTER NAME FORMATTING
+  if ("ego_id" %in% colnames(alters)) {
+    colnames(alters) <- stringr::str_replace_all(colnames(alters), "^ego_id$", "original_ego_id")
+  }
+  alters$ego_id <- alter_ego
+
+  if ("alter_id" %in% colnames(alters)) {
+    colnames(alters) <- stringr::str_replace_all(colnames(alters), "^alter_id$", "original_alter_id")
+  }
+  alters$alter_id <- alter_id
+
+  # Columns named `weight` can lead to downstream issues with igraph. If such a column exists in `alters`,
+  # we'll need to preemptively rename it here
+  if ("weight" %in% colnames(alters)) {
+    colnames(alters) <- stringr::str_replace_all(colnames(alters), "^weight$", "original_weight_alter")
+  }
+
+
+
+
+  # Adjust this to clearly label ego-alter edge type variables
+  if (!is.null(alter_types)) {
+
+    alter_types_df <- alters[, c("ego_id", "alter_id", alter_types)]
+    # Rename to indicate type variables
+    colnames(alter_types_df) <- paste("type", colnames(alter_types_df), sep = "_")
+    colnames(alter_types_df)[[1]] <- "ego_id"
+    colnames(alter_types_df)[[2]] <- "alter_id"
+
+    alters <- alters %>%
+      dplyr::left_join(alter_types_df, by = c("ego_id", "alter_id")) %>%
+      dplyr::select(ego_id, alter_id, tidyr::starts_with("type"), dplyr::everything())
+
+  } else {
+    alters <- alters %>%
+      dplyr::select(ego_id, alter_id, dplyr::everything())
+  }
+
+
+  if (!is.null(alter_alter)) {
+
+    # Columns named `weight` can lead to downstream issues with igraph. If such a column exists in `alter_alter`,
     # we'll need to preemptively rename it here
-    if ("weight" %in% colnames(alters)) {
-      colnames(alters) <- stringr::str_replace_all(colnames(alters), "^weight$", "original_weight_alter")
+    if ("weight" %in% colnames(alter_alter)) {
+      colnames(alter_alter) <- stringr::str_replace_all(colnames(alter_alter), "^weight$", "original_weight_aa")
     }
 
+    alter_alter$i_elements <- i_elements
+    alter_alter$j_elements <- j_elements
+    alter_alter$ego_id <- aa_ego
 
+    if (!is.null(aa_type)) {
+      alter_alter$type <- aa_type
 
-
-    # Adjust this to clearly label ego-alter edge type variables
-    if (!is.null(alter_types)) {
-
-      alter_types_df <- alters[, c("ego_id", "alter_id", alter_types)]
-      # Rename to indicate type variables
-      colnames(alter_types_df) <- paste("type", colnames(alter_types_df), sep = "_")
-      colnames(alter_types_df)[[1]] <- "ego_id"
-      colnames(alter_types_df)[[2]] <- "alter_id"
-
-      alters <- alters %>%
-        dplyr::left_join(alter_types_df, by = c("ego_id", "alter_id")) %>%
-        dplyr::select(ego_id, alter_id, tidyr::starts_with("type"), dplyr::everything())
-
+      alter_alter <- alter_alter %>%
+        dplyr::select(.data$ego_id, .data$i_elements, .data$j_elements, .data$type, dplyr::everything())
     } else {
-      alters <- alters %>%
-        dplyr::select(ego_id, alter_id, dplyr::everything())
+      alter_alter <- alter_alter %>%
+        dplyr::select(.data$ego_id, .data$i_elements, .data$j_elements, dplyr::everything())
     }
-
-
-    if (!is.null(alter_alter)) {
-
-      # Columns named `weight` can lead to downstream issues with igraph. If such a column exists in `alter_alter`,
-      # we'll need to preemptively rename it here
-      if ("weight" %in% colnames(alter_alter)) {
-        colnames(alter_alter) <- stringr::str_replace_all(colnames(alter_alter), "^weight$", "original_weight_aa")
-      }
-
-      alter_alter$i_elements <- i_elements
-      alter_alter$j_elements <- j_elements
-      alter_alter$ego_id <- aa_ego
-
-      if (!is.null(aa_type)) {
-        alter_alter$type <- aa_type
-
-        alter_alter <- alter_alter %>%
-          dplyr::select(ego_id, i_elements, j_elements, type, dplyr::everything())
-      } else {
-        alter_alter <- alter_alter %>%
-          dplyr::select(ego_id, i_elements, j_elements, dplyr::everything())
-      }
-    }
+  }
 
 
   ################################################################################
@@ -266,54 +269,54 @@ ego_netwrite <- function(egos,
 
   egos <- egos %>%
     dplyr::left_join(ego_id_relabel, by = "ego_id") %>%
-    dplyr::select(-ego_id) %>%
-    dplyr::rename(ego_id = new_ego_id) %>%
-    dplyr::select(ego_id, dplyr::everything())
+    dplyr::select(-.data$ego_id) %>%
+    dplyr::rename(ego_id = .data$new_ego_id) %>%
+    dplyr::select(.data$ego_id, dplyr::everything())
   alters <- alters %>%
     dplyr::left_join(ego_id_relabel, by = "ego_id") %>%
-    dplyr::select(-ego_id) %>%
-    dplyr::rename(ego_id = new_ego_id) %>%
-    dplyr::select(ego_id, dplyr::everything())
+    dplyr::select(-.data$ego_id) %>%
+    dplyr::rename(ego_id = .data$new_ego_id) %>%
+    dplyr::select(.data$ego_id, dplyr::everything())
   if (!is.null(alter_alter)) {
-  alter_alter <- alter_alter %>%
-    dplyr::left_join(ego_id_relabel, by = "ego_id") %>%
-    dplyr::select(-ego_id) %>%
-    dplyr::rename(ego_id = new_ego_id) %>%
-    dplyr::select(ego_id, dplyr::everything())
+    alter_alter <- alter_alter %>%
+      dplyr::left_join(ego_id_relabel, by = "ego_id") %>%
+      dplyr::select(-.data$ego_id) %>%
+      dplyr::rename(ego_id = .data$new_ego_id) %>%
+      dplyr::select(.data$ego_id, dplyr::everything())
   }
 
   # Create new numeric `alter_id` values
   alter_id_relabel <- alters %>%
-    dplyr::group_by(ego_id) %>%
+    dplyr::group_by(.data$ego_id) %>%
     dplyr::mutate(new_alter_id = dplyr::row_number()) %>%
     dplyr::ungroup() %>%
-    dplyr::select(ego_id, alter_id, new_alter_id)
+    dplyr::select(.data$ego_id, .data$alter_id, .data$new_alter_id)
 
   alters <- alters %>%
     dplyr::left_join(alter_id_relabel, by = c("ego_id", "alter_id")) %>%
-    dplyr::select(-alter_id) %>%
-    dplyr::rename(alter_id = new_alter_id) %>%
-    dplyr::select(ego_id, alter_id, dplyr::everything())
+    dplyr::select(-.data$alter_id) %>%
+    dplyr::rename(alter_id = .data$new_alter_id) %>%
+    dplyr::select(.data$ego_id, .data$alter_id, dplyr::everything())
 
   if (!is.null(alter_alter)) {
 
-  # These are used to identify i and j in the alter-alter edgelist
-  i_elements_relabel <- alter_id_relabel %>%
-    dplyr::rename(i_elements = alter_id,
-                  new_i_elements = new_alter_id)
-  j_elements_relabel <- alter_id_relabel %>%
-    dplyr::rename(j_elements = alter_id,
-                  new_j_elements = new_alter_id)
+    # These are used to identify i and j in the alter-alter edgelist
+    i_elements_relabel <- alter_id_relabel %>%
+      dplyr::rename(i_elements = .data$alter_id,
+                    new_i_elements = .data$new_alter_id)
+    j_elements_relabel <- alter_id_relabel %>%
+      dplyr::rename(j_elements = .data$alter_id,
+                    new_j_elements = .data$new_alter_id)
 
-  alter_alter <- alter_alter %>%
-    dplyr::left_join(i_elements_relabel, by = c("ego_id", "i_elements")) %>%
-    dplyr::left_join(j_elements_relabel, by = c("ego_id", "j_elements")) %>%
-    dplyr::select(-i_elements, -j_elements) %>%
-    dplyr::rename(i_elements = new_i_elements,
-                  j_elements = new_j_elements) %>%
-    dplyr::select(ego_id, i_elements, j_elements, dplyr::everything())
+    alter_alter <- alter_alter %>%
+      dplyr::left_join(i_elements_relabel, by = c("ego_id", "i_elements")) %>%
+      dplyr::left_join(j_elements_relabel, by = c("ego_id", "j_elements")) %>%
+      dplyr::select(-.data$i_elements, -.data$j_elements) %>%
+      dplyr::rename(i_elements = .data$new_i_elements,
+                    j_elements = .data$new_j_elements) %>%
+      dplyr::select(.data$ego_id, .data$i_elements, .data$j_elements, dplyr::everything())
 
-}
+  }
 
   ################################################################################
   # Creating list of igraph objects for each ego network
@@ -374,8 +377,8 @@ ego_netwrite <- function(egos,
           # final output
           this_alters$id <- NA
 
-        # If ego isn't an isolate, though, just that alters aren't connected,
-        # proceed this way
+          # If ego isn't an isolate, though, just that alters aren't connected,
+          # proceed this way
         } else {
 
           unique_alters <- unique(this_alters$alter_id)
@@ -384,7 +387,7 @@ ego_netwrite <- function(egos,
 
           this_alters <- this_alters %>%
             dplyr::left_join(alter_id_merge, by = "alter_id") %>%
-            dplyr::select(id, alter_id, ego_id, dplyr::everything())
+            dplyr::select(.data$id, .data$alter_id, .data$ego_id, dplyr::everything())
 
           # If there's a variable in `this_alters` called `name`, it'll mess up igraph
           # processing. Because of this, we have to rename
@@ -394,7 +397,7 @@ ego_netwrite <- function(egos,
           }
 
           this_alter_alter <- this_alter_alter %>%
-            dplyr::select(i_elements, j_elements, ego_id, dplyr::everything())
+            dplyr::select(.data$i_elements, .data$j_elements, .data$ego_id, dplyr::everything())
 
           this_igraph <- igraph::graph_from_data_frame(this_alter_alter, vertices = this_alters,
                                                        directed = directed)
@@ -413,7 +416,7 @@ ego_netwrite <- function(egos,
 
         }
 
-      # Alters have edges with each other, proceed normally
+        # Alters have edges with each other, proceed normally
       } else {
 
         # this_aa_i <- aa_i[aa_ego == this_ego]
@@ -435,7 +438,7 @@ ego_netwrite <- function(egos,
 
         this_alters <- this_alters %>%
           dplyr::left_join(alter_id_merge, by = "alter_id") %>%
-          dplyr::select(id, alter_id, ego_id, dplyr::everything())
+          dplyr::select(.data$id, .data$alter_id, .data$ego_id, dplyr::everything())
 
         # If there's a variable in `this_alters` called `name`, it'll mess up igraph
         # processing. Because of this, we have to rename
@@ -447,7 +450,7 @@ ego_netwrite <- function(egos,
         this_alter_alter <- this_alter_alter %>%
           dplyr::left_join(aa_i_merge, by = "i_elements") %>%
           dplyr::left_join(aa_j_merge, by = "j_elements") %>%
-          dplyr::select(i_id, j_id, i_elements, j_elements, ego_id, dplyr::everything())
+          dplyr::select(.data$i_id, .data$j_id, .data$i_elements, .data$j_elements, .data$ego_id, dplyr::everything())
 
         # # Make simplified versions of data frames for the purposes of creating these
         # # igraph objects
@@ -487,10 +490,10 @@ ego_netwrite <- function(egos,
 
         # Reorder columns of alter edgelist for final output
         this_alter_alter <- this_alter_alter %>%
-          dplyr::select(ego_id, i_elements, i_id, j_elements, j_id, dplyr::everything())
+          dplyr::select(.data$ego_id, .data$i_elements, .data$i_id, .data$j_elements, .data$j_id, dplyr::everything())
 
         # Storing updated alter edgelist
-        if (class(alter_alter_output) == "character") {
+        if (methods::is(alter_alter_output, "character")) {
           if (alter_alter_output == "to_populate") {
             alter_alter_output <- this_alter_alter
           }
@@ -502,10 +505,10 @@ ego_netwrite <- function(egos,
 
       # Reorder columns of alters list for final output
       this_alters <- this_alters %>%
-        dplyr::select(ego_id, id, alter_id, dplyr::everything())
+        dplyr::select(.data$ego_id, .data$id, .data$alter_id, dplyr::everything())
 
       # Storing updated alters list
-      if (class(alters_output) == "character") {
+      if (methods::is(alters_output, "character")) {
         if (alters_output == "to_populate") {
           alters_output <- this_alters
         }
@@ -523,7 +526,7 @@ ego_netwrite <- function(egos,
     # Add Obs_ID column to alter edgelist object
     alter_alter_output$Obs_ID <- 1:nrow(alter_alter_output)
     alter_alter_output <- alter_alter_output %>%
-      dplyr::select(Obs_ID, dplyr::everything())
+      dplyr::select(.data$Obs_ID, dplyr::everything())
 
 
     # WITHIN-RELATION TYPE
@@ -574,33 +577,33 @@ ego_netwrite <- function(egos,
 
           # If ego is an isolate, though, we don't need to create an igraph object
           if (this_iso == TRUE) {
-              # Store in list of igraph objects
-              igraph_list2[[i]] <- list(ego = this_ego,
-                                        type = this_type,
-                                        ego_info = this_ego_info,
-                                        igraph = NA)
+            # Store in list of igraph objects
+            igraph_list2[[i]] <- list(ego = this_ego,
+                                      type = this_type,
+                                      ego_info = this_ego_info,
+                                      igraph = NA)
 
-              # Need to add column `id` to `alters` to make compatible for merging in
-              # final output
-              this_alters$id <- NA
+            # Need to add column `id` to `alters` to make compatible for merging in
+            # final output
+            this_alters$id <- NA
 
-              # Also store in main `igraph_list`. This is a bit involved,
-              # so I'll do my best to walk through the steps in the comments here
-              #### First, we need to use `lappy` to figure out which item in `igraph_list`
-              #### corresponds to the ego we're interested in
-              list_id <- which(unlist(lapply(igraph_list, function(x, num) {x$ego == num}, num = this_ego)))
-              #### Now that we have this, we're going to store `igraph` and `igraph_ego`,
-              #### as constructed in this step of the loop, into the appropriate item
-              #### in igraph_list (which is the corresponding ego). Placeholder names
-              #### are used in this step
-              igraph_list[[list_id]]$this_igraph <- NA
-              igraph_list[[list_id]]$this_igraph_ego <- NA
-              #### Now we rename the new additions to this_ego's item in `igraph_list`
-              names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]]))-1)] <- paste("igraph", this_type, sep = "_")
-              names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]])))] <-   paste("igraph_ego", this_type, sep = "_")
+            # Also store in main `igraph_list`. This is a bit involved,
+            # so I'll do my best to walk through the steps in the comments here
+            #### First, we need to use `lappy` to figure out which item in `igraph_list`
+            #### corresponds to the ego we're interested in
+            list_id <- which(unlist(lapply(igraph_list, function(x, num) {x$ego == num}, num = this_ego)))
+            #### Now that we have this, we're going to store `igraph` and `igraph_ego`,
+            #### as constructed in this step of the loop, into the appropriate item
+            #### in igraph_list (which is the corresponding ego). Placeholder names
+            #### are used in this step
+            igraph_list[[list_id]]$this_igraph <- NA
+            igraph_list[[list_id]]$this_igraph_ego <- NA
+            #### Now we rename the new additions to this_ego's item in `igraph_list`
+            names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]]))-1)] <- paste("igraph", this_type, sep = "_")
+            names(igraph_list[[list_id]])[(length(names(igraph_list[[list_id]])))] <-   paste("igraph_ego", this_type, sep = "_")
 
-          # If ego isn't an isolate, though, just that alters aren't connected,
-          # proceed this way
+            # If ego isn't an isolate, though, just that alters aren't connected,
+            # proceed this way
           } else {
 
             unique_alters <- unique(this_alters$alter_id)
@@ -608,7 +611,7 @@ ego_netwrite <- function(egos,
                                          id = (1:length(unique_alters)) - 1)
             this_alters <- this_alters %>%
               dplyr::left_join(alter_id_merge, by = "alter_id") %>%
-              dplyr::select(id, alter_id, ego_id, dplyr::everything())
+              dplyr::select(.data$id, .data$alter_id, .data$ego_id, dplyr::everything())
 
             # If there's a variable in `this_alters` called `name`, it'll mess up igraph
             # processing. Because of this, we have to rename
@@ -618,7 +621,7 @@ ego_netwrite <- function(egos,
             }
 
             this_alter_alter <- this_alter_alter %>%
-              dplyr::select(i_elements, j_elements, ego_id, dplyr::everything())
+              dplyr::select(.data$i_elements, .data$j_elements, .data$ego_id, dplyr::everything())
 
             this_igraph <- igraph::graph_from_data_frame(this_alter_alter, vertices = this_alters,
                                                          directed = directed)
@@ -653,11 +656,11 @@ ego_netwrite <- function(egos,
 
             # Reorder columns of alter edgelist for final output
             this_alter_alter <- this_alter_alter %>%
-              dplyr::select(ego_id, i_elements, i_id, j_elements, j_id, dplyr::everything())
+              dplyr::select(.data$ego_id, .data$i_elements, .data$i_id, .data$j_elements, .data$j_id, dplyr::everything())
           }
 
 
-    # Not an isolate, at least one dyad has an edge. Proceed normally
+          # Not an isolate, at least one dyad has an edge. Proceed normally
         } else {
 
           # this_aa_i <- aa_i[aa_ego == this_ego]
@@ -679,7 +682,7 @@ ego_netwrite <- function(egos,
 
           this_alters <- this_alters %>%
             dplyr::left_join(alter_id_merge, by = "alter_id") %>%
-            dplyr::select(id, alter_id, ego_id, dplyr::everything())
+            dplyr::select(.data$id, .data$alter_id, .data$ego_id, dplyr::everything())
 
           # If there's a variable in `this_alters` called `name`, it'll mess up igraph
           # processing. Because of this, we have to rename
@@ -691,7 +694,7 @@ ego_netwrite <- function(egos,
           this_alter_alter <- this_alter_alter %>%
             dplyr::left_join(aa_i_merge, by = "i_elements") %>%
             dplyr::left_join(aa_j_merge, by = "j_elements") %>%
-            dplyr::select(i_id, j_id, i_elements, j_elements, ego_id, dplyr::everything())
+            dplyr::select(.data$i_id, .data$j_id, .data$i_elements, .data$j_elements, .data$ego_id, dplyr::everything())
 
           # # Make simplified versions of data frames for the purposes of creating these
           # # igraph objects
@@ -735,7 +738,7 @@ ego_netwrite <- function(egos,
 
           # Reorder columns of alter edgelist for final output
           this_alter_alter <- this_alter_alter %>%
-            dplyr::select(ego_id, i_elements, i_id, j_elements, j_id, dplyr::everything())
+            dplyr::select(.data$ego_id, .data$i_elements, .data$i_id, .data$j_elements, .data$j_id, dplyr::everything())
 
           # Storing updated alter edgelist
           # if (class(alter_alter_output) == "character") {
@@ -777,9 +780,9 @@ ego_netwrite <- function(egos,
       # Reshape to wide format
       alter_cent2 <- alter_cent2 %>%
         tidyr::pivot_wider(id_cols = c("ego_id", "id"),
-                           names_from = type,
-                           values_from = total_degree:reachability) %>%
-        dplyr::filter(!is.na(id))
+                           names_from = .data$type,
+                           values_from = .data$total_degree:.data$reachability) %>%
+        dplyr::filter(!is.na(.data$id))
 
 
       alters_output <- dplyr::left_join(alters_output, alter_cent2, by = c("ego_id", "id"))
@@ -810,34 +813,34 @@ ego_netwrite <- function(egos,
 
     # Within-relation type, if applicable
     if (!is.null(aa_type)) {
-        egonet_summaries2 <- lapply(igraph_list2, igraph_apply, directed = directed)
-        # Rename columns
-        for (i in 1:length(egonet_summaries2)) {
-            egonet_summaries2[[i]]$type <- type_index$type[[i]]
-        }
-        # Bind rows
-        egonet_summaries2 <- dplyr::bind_rows(egonet_summaries2)
-        # Reshape to wide format
-        egonet_summaries2 <- egonet_summaries2 %>%
-          tidyr::pivot_wider(names_from = type,
-                             values_from = -ego_id)
-        # Remove `type_` artifact columns
-        egonet_summaries2 <- egonet_summaries2[,1:(ncol(egonet_summaries2)-length(unique(aa_type)))]
-        # Merge into `egonet_summaries`
-        egonet_summaries <- dplyr::left_join(egonet_summaries, egonet_summaries2, by = "ego_id")
+      egonet_summaries2 <- lapply(igraph_list2, igraph_apply, directed = directed)
+      # Rename columns
+      for (i in 1:length(egonet_summaries2)) {
+        egonet_summaries2[[i]]$type <- type_index$type[[i]]
+      }
+      # Bind rows
+      egonet_summaries2 <- dplyr::bind_rows(egonet_summaries2)
+      # Reshape to wide format
+      egonet_summaries2 <- egonet_summaries2 %>%
+        tidyr::pivot_wider(names_from = .data$type,
+                           values_from = -.data$ego_id)
+      # Remove `type_` artifact columns
+      egonet_summaries2 <- egonet_summaries2[,1:(ncol(egonet_summaries2)-length(unique(aa_type)))]
+      # Merge into `egonet_summaries`
+      egonet_summaries <- dplyr::left_join(egonet_summaries, egonet_summaries2, by = "ego_id")
     }
 
-  # If we don't have data on alter-alter ties, we may still need `egonet_summaries`
-  # for multiplex edge correlation on the ego-alter edgelist. But at this stage
-  # the only thing that really needs to be calculated is network size
+    # If we don't have data on alter-alter ties, we may still need `egonet_summaries`
+    # for multiplex edge correlation on the ego-alter edgelist. But at this stage
+    # the only thing that really needs to be calculated is network size
   } else {
     ### Create `egonet_summaries`
     egonet_summaries <- data.frame(ego_id = unique(egos$ego_id))
 
     ### Use `dplyr` to get ego network sizes
-    alter_hold <- alters %>% dplyr::select(ego_id, alter_id, dplyr::starts_with("type_"))
-    net_sizes <- alter_hold %>% dplyr::group_by(ego_id) %>%
-      dplyr::summarize(network_size = length(unique(alter_id))) %>%
+    alter_hold <- alters %>% dplyr::select(.data$ego_id, .data$alter_id, dplyr::starts_with("type_"))
+    net_sizes <- alter_hold %>% dplyr::group_by(.data$ego_id) %>%
+      dplyr::summarize(network_size = length(unique(.data$alter_id))) %>%
       dplyr::ungroup()
 
     ### Merge into `egonet_summaries`
@@ -847,8 +850,8 @@ ego_netwrite <- function(egos,
     ##### If we have multiple relation types, we'll want degree counts for those as well
     if (!is.null(alter_types)) {
       type_sizes <- alter_hold %>%
-        dplyr::select(-alter_id) %>%
-        dplyr::group_by(ego_id) %>%
+        dplyr::select(-.data$alter_id) %>%
+        dplyr::group_by(.data$ego_id) %>%
         dplyr::summarize_all(~sum(.x == 1, na.rm = T)) %>%
         dplyr::ungroup()
 
@@ -886,12 +889,12 @@ ego_netwrite <- function(egos,
 
       # Handling if ego is an isolate
       if (nrow(this_el) > 0) {
-            this_cors <- suppressWarnings(as.data.frame(t(multiplex_ego(edgelist = this_el,
-                                                                         directed = directed,
-                                                                         type = aa_multi$type))))
-            this_cors$ego_id <- this_ego_id
+        this_cors <- suppressWarnings(as.data.frame(t(multiplex_ego(edgelist = this_el,
+                                                                    directed = directed,
+                                                                    type = aa_multi$type))))
+        this_cors$ego_id <- this_ego_id
 
-            cors_list[[i]] <- this_cors
+        cors_list[[i]] <- this_cors
       }
 
     }
@@ -922,16 +925,16 @@ ego_netwrite <- function(egos,
       tidyr::pivot_longer(cols = tidyr::starts_with("type"),
                           names_to = "type",
                           values_to = "type_bin") %>%
-      dplyr::filter(type_bin == 1) %>%
+      dplyr::filter(.data$type_bin == 1) %>%
       # Some reformatting to work with `multiplex_ego`
       dplyr::mutate(Obs_ID = dplyr::row_number(),
-                    i_elements = ego_id,
+                    i_elements = .data$ego_id,
                     i_id = 0,
-                    j_elements = alter_id,
-                    j_id = j_elements,
+                    j_elements = .data$alter_id,
+                    j_id = .data$j_elements,
                     weight = 1,
-                    type = stringr::str_replace_all(type, "^type_", "")) %>%
-      dplyr::select(Obs_ID, i_elements, i_id, j_elements, j_id, weight, type, ego_id)
+                    type = stringr::str_replace_all(.data$type, "^type_", "")) %>%
+      dplyr::select(.data$Obs_ID, .data$i_elements, .data$i_id, .data$j_elements, .data$j_id, .data$weight, .data$type, .data$ego_id)
 
     # Store unique values for edge types
     alter_edge_types <- unique(alter_cor_df$type)
@@ -944,15 +947,15 @@ ego_netwrite <- function(egos,
       # Get edgelist for only this ego
       this_el <- alter_cor_df[alter_cor_df$ego_id == this_ego_id, ]
 
-    # Handling if ego is an isolate
-    if (nrow(this_el) > 0) {
-      this_cors <- suppressWarnings(as.data.frame(t(multiplex_ego(edgelist = this_el,
-                                                                  directed = directed,
-                                                                  type = alter_edge_types))))
-      this_cors$ego_id <- this_ego_id
+      # Handling if ego is an isolate
+      if (nrow(this_el) > 0) {
+        this_cors <- suppressWarnings(as.data.frame(t(multiplex_ego(edgelist = this_el,
+                                                                    directed = directed,
+                                                                    type = alter_edge_types))))
+        this_cors$ego_id <- this_ego_id
 
-      alter_cors_list[[i]] <- this_cors
-    }
+        alter_cors_list[[i]] <- this_cors
+      }
     }
 
     alter_cors_list <- dplyr::bind_rows(alter_cors_list)
@@ -1002,8 +1005,8 @@ ego_netwrite <- function(egos,
 
   # Combine into single dataframe
   summary_labels <- data.frame(var_name = summary_names,
-                              measure_labels = summary_titles,
-                              measure_descriptions = summary_descriptions)
+                               measure_labels = summary_titles,
+                               measure_descriptions = summary_descriptions)
 
   # If we have an alter-alter edgelist, this gets us what we need
 
@@ -1014,18 +1017,18 @@ ego_netwrite <- function(egos,
     # 2. Merge in ego-level network summaries, selecting only the variables we need
     summary_df <- summary_df %>%
       dplyr::left_join(egonet_summaries, by = "ego_id") %>%
-      dplyr::select(ego_id, network_size, mean_degree, density, fragmentation_index) %>%
+      dplyr::select(.data$ego_id, .data$network_size, .data$mean_degree, .data$density, .data$fragmentation_index) %>%
       # Handle egos who nominate zero alters
-      dplyr::mutate(network_size = ifelse(is.na(network_size), 0, network_size)) %>%
+      dplyr::mutate(network_size = ifelse(is.na(.data$network_size), 0, .data$network_size)) %>%
       # 3. Create summary measures
       dplyr::summarize(num_egos =          as.character(dplyr::n()),
-                       num_alters =        as.character(sum(network_size, na.rm = TRUE)),
-                       num_isolates =      as.character(sum(network_size == 0)),
-                       min_net_size =      as.character(min(network_size[network_size != 0])),
-                       max_net_size =      as.character(max(network_size, na.rm = TRUE)),
-                       avg_net_size =      as.character(mean(network_size, na.rm = TRUE)),
-                       avg_density =       as.character(mean(density, na.rm = TRUE)),
-                       avg_fragmentation = as.character(mean(fragmentation_index, na.rm = TRUE)))
+                       num_alters =        as.character(sum(.data$network_size, na.rm = TRUE)),
+                       num_isolates =      as.character(sum(.data$network_size == 0)),
+                       min_net_size =      as.character(min(.data$network_size[.data$network_size != 0])),
+                       max_net_size =      as.character(max(.data$network_size, na.rm = TRUE)),
+                       avg_net_size =      as.character(mean(.data$network_size, na.rm = TRUE)),
+                       avg_density =       as.character(mean(.data$density, na.rm = TRUE)),
+                       avg_fragmentation = as.character(mean(.data$fragmentation_index, na.rm = TRUE)))
     # 4. Transpose
     summary_t <- as.data.frame(t(summary_df))
     summary_t$var_name <- rownames(summary_t)
@@ -1033,7 +1036,7 @@ ego_netwrite <- function(egos,
     # 5. Merge into `summary_merge`
     summary_merge <- summary_labels %>%
       dplyr::left_join(summary_t, by = "var_name") %>%
-      dplyr::select(-var_name)
+      dplyr::select(-.data$var_name)
 
     # If there are multiple alter-alter edge types, we'll want to do the same process
     # within each edge type
@@ -1052,18 +1055,18 @@ ego_netwrite <- function(egos,
         colnames(summary_df) <- c("ego_id", "network_size", "mean_degree", "density", "fragmentation_index")
 
         summary_df <- summary_df %>%
-          dplyr::select(ego_id, network_size, mean_degree, density, fragmentation_index) %>%
+          dplyr::select(.data$ego_id, .data$network_size, .data$mean_degree, .data$density, .data$fragmentation_index) %>%
           # Handle egos who nominate zero alters
-          dplyr::mutate(network_size = ifelse(is.na(network_size), 0, network_size)) %>%
+          dplyr::mutate(network_size = ifelse(is.na(.data$network_size), 0, .data$network_size)) %>%
           # 3. Create summary measures
           dplyr::summarize(num_egos =          as.character(dplyr::n()),
-                           num_alters =        as.character(sum(network_size, na.rm = TRUE)),
-                           num_isolates =      as.character(sum(network_size == 0)),
-                           min_net_size =      as.character(min(network_size[network_size != 0])),
-                           max_net_size =      as.character(max(network_size, na.rm = TRUE)),
-                           avg_net_size =      as.character(mean(network_size, na.rm = TRUE)),
-                           avg_density =       as.character(mean(density, na.rm = TRUE)),
-                           avg_fragmentation = as.character(mean(fragmentation_index, na.rm = TRUE)))
+                           num_alters =        as.character(sum(.data$network_size, na.rm = TRUE)),
+                           num_isolates =      as.character(sum(.data$network_size == 0)),
+                           min_net_size =      as.character(min(.data$network_size[.data$network_size != 0])),
+                           max_net_size =      as.character(max(.data$network_size, na.rm = TRUE)),
+                           avg_net_size =      as.character(mean(.data$network_size, na.rm = TRUE)),
+                           avg_density =       as.character(mean(.data$density, na.rm = TRUE)),
+                           avg_fragmentation = as.character(mean(.data$fragmentation_index, na.rm = TRUE)))
 
         # 4. Transpose
         summary_t <- as.data.frame(t(summary_df))
@@ -1072,9 +1075,9 @@ ego_netwrite <- function(egos,
         # 5. Merge into `summary_merge`
         this_merge <- summary_labels %>%
           dplyr::left_join(summary_t, by = "var_name") %>%
-          dplyr::select(-var_name)
+          dplyr::select(-.data$var_name)
 
-        this_merge$measure_labels <-paste("(", unique(aa_type)[[i]], ") ", this_merge$measure_labels, sep = "")
+        this_merge$measure_labels <- paste("(", unique(aa_type)[[i]], ") ", this_merge$measure_labels, sep = "")
         # We don't need the top row
         this_merge <- this_merge[2:nrow(this_merge),]
 
@@ -1083,7 +1086,7 @@ ego_netwrite <- function(egos,
         } else {
           multi_summary <- dplyr::bind_rows(multi_summary, this_merge)
         }
-      # End for loop
+        # End for loop
       }
       # Merge into `summary_merge`
       summary_merge <- dplyr::bind_rows(summary_merge, multi_summary)
@@ -1096,18 +1099,18 @@ ego_netwrite <- function(egos,
     summary_df <- data.frame(ego_id = egos$ego_id)
     # 2. Get network sizes from alters dataframe
     net_sizes <- alters_output %>%
-      dplyr::group_by(ego_id) %>%
-      dplyr::summarize(network_size = sum(!is.na(alter_id))) %>%
+      dplyr::group_by(.data$ego_id) %>%
+      dplyr::summarize(network_size = sum(!is.na(.data$alter_id))) %>%
       dplyr::ungroup()
     summary_df <- summary_df %>%
       dplyr::left_join(net_sizes, by = "ego_id") %>%
-      dplyr::mutate(network_size = ifelse(is.na(network_size), 0, network_size)) %>%
+      dplyr::mutate(network_size = ifelse(is.na(.data$network_size), 0, .data$network_size)) %>%
       dplyr::summarize(num_egos =          as.character(dplyr::n()),
-                       num_alters =        as.character(sum(network_size, na.rm = TRUE)),
-                       num_isolates =      as.character(sum(network_size == 0)),
-                       min_net_size =      as.character(min(network_size)),
-                       max_net_size =      as.character(max(network_size)),
-                       avg_net_size =      as.character(mean(network_size, na.rm = TRUE)))
+                       num_alters =        as.character(sum(.data$network_size, na.rm = TRUE)),
+                       num_isolates =      as.character(sum(.data$network_size == 0)),
+                       min_net_size =      as.character(min(.data$network_size)),
+                       max_net_size =      as.character(max(.data$network_size)),
+                       avg_net_size =      as.character(mean(.data$network_size, na.rm = TRUE)))
     # 3. Transpose
     summary_t <- as.data.frame(t(summary_df))
     summary_t$var_name <- rownames(summary_t)
@@ -1115,8 +1118,8 @@ ego_netwrite <- function(egos,
     # 4. Merge into `summary_merge`
     summary_merge <- summary_t %>%
       dplyr::left_join(summary_labels, by = "var_name") %>%
-      dplyr::select(-var_name) %>%
-      dplyr::select(measure_labels, measure_descriptions, measures)
+      dplyr::select(-.data$var_name) %>%
+      dplyr::select(.data$measure_labels, .data$measure_descriptions, .data$measures)
 
   }
 
@@ -1128,17 +1131,17 @@ ego_netwrite <- function(egos,
       this_sizes$this_var <- this_sizes[, paste("type", alter_types[[i]], sep = "_")]
       # Get network sizes from alters dataframe
       this_sizes <- this_sizes %>%
-        dplyr::group_by(ego_id) %>%
-        dplyr::summarize(network_size = sum(this_var)) %>%
+        dplyr::group_by(.data$ego_id) %>%
+        dplyr::summarize(network_size = sum(.data$this_var)) %>%
         dplyr::ungroup() %>%
-        dplyr::mutate(network_size2 = network_size,
-                      network_size = ifelse(is.na(network_size), 0, network_size),
-                      network_size2 = ifelse(network_size2 == 0, NA, network_size2)) %>%
-        dplyr::summarize(num_alters =        as.character(sum(network_size, na.rm = TRUE)),
-                         num_isolates =      as.character(sum(network_size == 0)),
-                         min_net_size =      as.character(min(network_size2, na.rm = TRUE)),
-                         max_net_size =      as.character(max(network_size2, na.rm = TRUE)),
-                         avg_net_size =      as.character(mean(network_size2, na.rm = TRUE)))
+        dplyr::mutate(network_size2 = .data$network_size,
+                      network_size = ifelse(is.na(.data$network_size), 0, .data$network_size),
+                      network_size2 = ifelse(.data$network_size2 == 0, NA, .data$network_size2)) %>%
+        dplyr::summarize(num_alters =        as.character(sum(.data$network_size, na.rm = TRUE)),
+                         num_isolates =      as.character(sum(.data$network_size == 0)),
+                         min_net_size =      as.character(min(.data$network_size2, na.rm = TRUE)),
+                         max_net_size =      as.character(max(.data$network_size2, na.rm = TRUE)),
+                         avg_net_size =      as.character(mean(.data$network_size2, na.rm = TRUE)))
       # Transpose
       this_t <- as.data.frame(t(this_sizes))
       this_t$var_name <- rownames(this_t)
@@ -1146,9 +1149,9 @@ ego_netwrite <- function(egos,
       # Merge into `summary_merge`
       this_t <- this_t %>%
         dplyr::left_join(summary_labels, by = "var_name") %>%
-        dplyr::mutate(measure_labels = paste("(", alter_types[[i]], ") ", measure_labels, sep = "")) %>%
-        dplyr::select(-var_name) %>%
-        dplyr::select(measure_labels, measure_descriptions, measures)
+        dplyr::mutate(measure_labels = paste("(", alter_types[[i]], ") ", .data$measure_labels, sep = "")) %>%
+        dplyr::select(-.data$var_name) %>%
+        dplyr::select(.data$measure_labels, .data$measure_descriptions, .data$measures)
       summary_merge <- dplyr::bind_rows(summary_merge, this_t)
     }
   }
@@ -1169,23 +1172,31 @@ ego_netwrite <- function(egos,
   }
 
 
-  assign(x = paste(output_name, "_egos", sep = ""), value = egos, .GlobalEnv)
+  output_list$egos <- egos
+  # assign(x = paste(output_name, "_egos", sep = ""), value = egos, .GlobalEnv)
 
   # Remove placeholder rows in `alter_output` given for isolate egos
   # only needed when alter-alter edgelist is present
-      if (!is.null(alter_alter)) {
-          alters_output <- alters_output[!is.na(alters_output$id),]
-      }
-  assign(x = paste(output_name, "_alters", sep = ""), value = alters_output, .GlobalEnv)
+  if (!is.null(alter_alter)) {
+    alters_output <- alters_output[!is.na(alters_output$id),]
+  }
 
-  assign(x = paste(output_name, "_summaries", sep = ""), value = egonet_summaries, .GlobalEnv)
-  assign(x = paste(output_name, "_overall_summary", sep = ""), value = summary_merge, .GlobalEnv)
+  output_list$alters <- alters_output
+  # assign(x = paste(output_name, "_alters", sep = ""), value = alters_output, .GlobalEnv)
+
+  output_list$summaries <- egonet_summaries
+  # assign(x = paste(output_name, "_summaries", sep = ""), value = egonet_summaries, .GlobalEnv)
+
+  output_list$overall_summary <- summary_merge
+  # assign(x = paste(output_name, "_overall_summary", sep = ""), value = summary_merge, .GlobalEnv)
 
   if (!is.null(alter_alter)) {
 
-    assign(x = paste(output_name, "_alter_edgelist", sep = ""), value = alter_alter_output, .GlobalEnv)
+    output_list$alter_edgelist <- alter_alter_output
+    # assign(x = paste(output_name, "_alter_edgelist", sep = ""), value = alter_alter_output, .GlobalEnv)
 
-    assign(x = paste(output_name, "_igraph", sep = ""), value = igraph_list, .GlobalEnv)
+    output_list$igraph_objects <- igraph_list
+    # assign(x = paste(output_name, "_igraph", sep = ""), value = igraph_list, .GlobalEnv)
   }
 
   ################################################################################
@@ -1199,16 +1210,16 @@ ego_netwrite <- function(egos,
     # names in theory, but in practice using other names can result in bugs when
     # trying to incorporate survey weights.
     egos_egor <- egos %>%
-      dplyr::rename(.egoID = ego_id)
+      dplyr::rename(.egoID = .data$ego_id)
     alters_egor <- alters %>%
-      dplyr::rename(.altID = alter_id,
-                    .egoID = ego_id)
+      dplyr::rename(.altID = .data$alter_id,
+                    .egoID = .data$ego_id)
 
     if (!is.null(alter_alter)) {
       alter_alter_egor <- alter_alter %>%
-        dplyr::rename(.egoID = ego_id,
-                      .srcID = i_elements,
-                      .tgtID = j_elements)
+        dplyr::rename(.egoID = .data$ego_id,
+                      .srcID = .data$i_elements,
+                      .tgtID = .data$j_elements)
     } else {
       alter_alter_egor <- NULL
     }
@@ -1223,7 +1234,8 @@ ego_netwrite <- function(egos,
                               ego_design = egor_design,
                               alter_design = list(max = max_alters))
 
-    assign(x = paste(output_name, "_egor", sep = ""), value = egor_object, .GlobalEnv)
+    output_list$egor <- egor_object
+    # assign(x = paste(output_name, "_egor", sep = ""), value = egor_object, .GlobalEnv)
 
   }
 
@@ -1307,11 +1319,11 @@ get_prop_df <- function(x, ego_id) {
   denom <- length(x)
 
   prop_df <- data.frame(val = as.character(x)) %>%
-    dplyr::group_by(val) %>%
+    dplyr::group_by(.data$val) %>%
     dplyr::summarize(prop = dplyr::n()/denom) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(ego_id = ego_id) %>%
-    dplyr::select(ego_id, dplyr::everything())
+    dplyr::select(.data$ego_id, dplyr::everything())
 
   return(prop_df)
 
@@ -1323,21 +1335,21 @@ get_count_df <- function(x, ego_id) {
   denom <- length(x)
 
   count_df <- data.frame(cat = as.character(x)) %>%
-    dplyr::group_by(cat) %>%
+    dplyr::group_by(.data$cat) %>%
     dplyr::summarize(val = dplyr::n()) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(ego_id = ego_id,
                   type = "count") %>%
-    dplyr::select(ego_id, cat, type, dplyr::everything())
+    dplyr::select(.data$ego_id, .data$cat, .data$type, dplyr::everything())
 
   prop_df <- count_df %>%
-    dplyr::mutate(val = val/denom,
+    dplyr::mutate(val = .data$val/denom,
                   type = "prop")
 
   comb_df <- dplyr::bind_rows(count_df, prop_df) %>%
-    dplyr::mutate(name = paste(type, cat, sep = "_")) %>%
-    dplyr::select(-cat, -type) %>%
-    dplyr::select(ego_id, name, val)
+    dplyr::mutate(name = paste(.data$type, .data$cat, sep = "_")) %>%
+    dplyr::select(-.data$cat, -.data$type) %>%
+    dplyr::select(.data$ego_id, .data$name, .data$val)
 
   return(comb_df)
 

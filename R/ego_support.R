@@ -10,9 +10,9 @@ alter_centrality <- function(x, directed) {
   ego_isolate <- !("igraph" %in% class(x$igraph))
   ### 2. Does ego have ties but no ties exist between alters?
   if (ego_isolate == FALSE) {
-      alters_noties <- length(igraph::E(x$igraph)) == 0
+    alters_noties <- length(igraph::E(x$igraph)) == 0
   } else {
-      alters_noties <- FALSE
+    alters_noties <- FALSE
   }
 
   # If ego is an isolate (no nominated ties)
@@ -48,8 +48,8 @@ alter_centrality <- function(x, directed) {
       out$id <- NA
     }
 
-  # Handling if ego is not an isolate but alters have no ties to one another.
-  # May need to revisit how we decide on measure values here.
+    # Handling if ego is not an isolate but alters have no ties to one another.
+    # May need to revisit how we decide on measure values here.
   } else if (alters_noties == TRUE) {
 
     if (directed == FALSE) {
@@ -123,7 +123,7 @@ alter_centrality <- function(x, directed) {
       out$id <- alter_ids
     }
 
-  # Handling if ego is not an isolate and at least one tie exists between two alters
+    # Handling if ego is not an isolate and at least one tie exists between two alters
   } else {
 
     if (directed == FALSE) {
@@ -427,7 +427,7 @@ multiplex_ego <- function(edgelist, directed, type, weight_type = "frequency") {
     }
 
     # Calculating the Correlation for Unique Combination of Types
-    pairs <- t(combn(paste0(types,'_','weight'), 2))
+    pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
     pair_cors <- c()
     for(i in 1:nrow(pairs)) {
       column_set <- pairs[i, ]
@@ -443,9 +443,9 @@ multiplex_ego <- function(edgelist, directed, type, weight_type = "frequency") {
                               sep = "_")
 
     rm(pairs, types, subnets, ties)
-  # End Directed Ties Condition
+    # End Directed Ties Condition
 
-  # Start Undirected Ties Condition
+    # Start Undirected Ties Condition
   }else{
     # Creating a separate edgelist (Symmetric Edges) to Perform Operations
     s_edges <- edges[,c('i_id', 'j_id', 'type', 'weight')]
@@ -514,7 +514,7 @@ multiplex_ego <- function(edgelist, directed, type, weight_type = "frequency") {
     }
 
     # Calculating the Correlation for Unique Combination of Types
-    pairs <- t(combn(paste0(types,'_','weight'), 2))
+    pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
     pair_cors <- c()
     for(i in 1:nrow(pairs)) {
       column_set <- pairs[i, ]

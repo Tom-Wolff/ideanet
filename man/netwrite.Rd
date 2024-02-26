@@ -91,52 +91,52 @@ The \code{netwrite} function reads in relational data of several formats and pro
 }
 \examples{
 # Use netwrite on an edgelist
-netwrite(nodelist = fauxmesa_nodes,
-        node_id = "id",
-        i_elements = fauxmesa_edges$from,
-        j_elements = fauxmesa_edges$to,
-        directed = TRUE,
-        net_name = "faux_mesa")
+faux_mesa <- netwrite(nodelist = fauxmesa_nodes,
+                      node_id = "id",
+                      i_elements = fauxmesa_edges$from,
+                      j_elements = fauxmesa_edges$to,
+                      directed = TRUE,
+                      net_name = "faux_mesa")
 
 ### Inspect updated edgelist
-head(edgelist)
+head(faux_mesa$edgelist)
 
 ### Inspect data frame of node-level measures
-head(node_measures)
+head(faux_mesa$node_measures)
 
 ### Inspect system-level summary
-system_level_measures
+faux_mesa$system_level_measures
 
 ### Plot sociogram of network
-plot(faux_mesa)
+plot(faux_mesa$igraph_object)
 
 ### View node-level summary visualization
-node_measure_plot
+faux_mesa$node_measure_plot
 
 ### View system-level summary visualization
-system_measure_plot
+faux_mesa$system_measure_plot
 
 
 
 # Run netwrite on an adjacency matrix
-fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa))
+fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa$igraph_object))
 
-netwrite(data_type = "adjacency_matrix",
-        adjacency_matrix = fauxmesa_adjmat,
-        directed = TRUE,
-        net_name = "faux_mesa")
+faux_adj <- netwrite(data_type = "adjacency_matrix",
+                     adjacency_matrix = fauxmesa_adjmat,
+                     directed = TRUE,
+                     net_name = "faux_mesa")
 
 
 # Run netwrite on a multirelational network
-netwrite(i_elements = florentine$node,
-        j_elements = florentine$target,
-        type = florentine$layer,
-        directed = TRUE,
-        net_name = "florentine")
+flor <- netwrite(i_elements = florentine$node,
+                 j_elements = florentine$target,
+                 type = florentine$layer,
+                 directed = TRUE,
+                 net_name = "florentine")
 
-# View system level summary for aggregate network
-system_level_measures_list$summary_graph
+# View system level summary
+flor$system_level_measures
 
 # View system level summary for network of `type 1` relations
-system_level_measures_list$`1`
+flor$system_measure_plot$`1`
 }

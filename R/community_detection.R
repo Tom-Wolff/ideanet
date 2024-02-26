@@ -11,17 +11,19 @@
 #'
 #' @export
 #'
+#' @importFrom rlang .data
+#'
 #' @examples
 #' # Run netwrite
-#' netwrite(nodelist = fauxmesa_nodes,
-#'         node_id = "id",
-#'         i_elements = fauxmesa_edges$from,
-#'         j_elements = fauxmesa_edges$to,
-#'         directed = TRUE,
-#'         net_name = "faux_mesa")
+#' faux_mesa <- netwrite(nodelist = fauxmesa_nodes,
+#'                       node_id = "id",
+#'                       i_elements = fauxmesa_edges$from,
+#'                       j_elements = fauxmesa_edges$to,
+#'                       directed = TRUE,
+#'                       net_name = "faux_mesa")
 #'
 #' # Run community detection function
-#' communities(g = faux_mesa)
+#' faux_communities <- communities(g = faux_mesa$igraph_object)
 
 
 ###############################################
@@ -43,8 +45,11 @@
 
 communities <- function(g, modres=1, shiny = FALSE) {
 
+  # Create a list for storing output
+  output_list <- list()
+
   # Remove self-loops
- # g <- igraph::simplify(g, remove.multiple = FALSE, remove.loops = TRUE)
+  # g <- igraph::simplify(g, remove.multiple = FALSE, remove.loops = TRUE)
 
   # Maybe add an option to plot communities.
   # Create a similarity matrix. How similar outputs to each other
@@ -121,8 +126,8 @@ communities <- function(g, modres=1, shiny = FALSE) {
   num_components <- igraph::components(g_undir)
 
   if (num_components$no == 1) {
-        spinglass <- igraph::cluster_spinglass(g_undir, weights = igraph::E(g_undir)$weight) # Works with directed, but need to ask about arguments (there are many)
-        leading_eigen <- igraph::cluster_leading_eigen(g_undir, weights = igraph::E(g_undir)$weight) # Needs to be undirected
+    spinglass <- igraph::cluster_spinglass(g_undir, weights = igraph::E(g_undir)$weight) # Works with directed, but need to ask about arguments (there are many)
+    leading_eigen <- igraph::cluster_leading_eigen(g_undir, weights = igraph::E(g_undir)$weight) # Needs to be undirected
   } else {
 
     igraph::V(g_undir)$component <- num_components$membership
@@ -149,7 +154,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
       } else {
 
         this_leading_eigen <- igraph::cluster_leading_eigen(this_component,
-                                                  weights = igraph::E(this_component)$weight)$membership
+                                                            weights = igraph::E(this_component)$weight)$membership
         this_spinglass <- igraph::cluster_spinglass(this_component,
                                                     weights = igraph::E(this_component)$weight)$membership # Works with directed, but need to ask about arguments (there are many)
 
@@ -174,7 +179,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
                                     new_leading_eigen = 1:length(unique(subgraph_memberships$leading_eigen_paste)))
 
     spinglass_ids <- data.frame(spinglass_paste = unique(subgraph_memberships$spinglass_paste),
-                                    new_spinglass = 1:length(unique(subgraph_memberships$spinglass_paste)))
+                                new_spinglass = 1:length(unique(subgraph_memberships$spinglass_paste)))
 
     subgraph_memberships <- dplyr::left_join(subgraph_memberships, leading_eigen_ids, by = "leading_eigen_paste")
     subgraph_memberships <- dplyr::left_join(subgraph_memberships, spinglass_ids, by = "spinglass_paste")
@@ -199,20 +204,20 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   if (num_components$no == 1) {
 
-  memberships <- data.frame(id = as.numeric(edge_betweenness$names),
-                            edge_betweenness_membership = edge_betweenness$membership,
-                            fast_greedy_membership = fast_greedy$membership,
-                            infomap_membership = infomap$membership,
-                            label_prop_membership = label_prop$membership,
-                            leading_eigen_membership = leading_eigen$membership,
-                            leiden_mod_membership = leiden_mod$membership,
-                            leiden_cpm_membership = leiden_cpm$membership,
-                            # louvain_membership = louvain$membership,
-                            # optimal_membership = optimal$membership,
-                            spinglass_membership = spinglass$membership,
-                            walktrap_membership = walktrap$membership)
+    memberships <- data.frame(id = as.numeric(edge_betweenness$names),
+                              edge_betweenness_membership = edge_betweenness$membership,
+                              fast_greedy_membership = fast_greedy$membership,
+                              infomap_membership = infomap$membership,
+                              label_prop_membership = label_prop$membership,
+                              leading_eigen_membership = leading_eigen$membership,
+                              leiden_mod_membership = leiden_mod$membership,
+                              leiden_cpm_membership = leiden_cpm$membership,
+                              # louvain_membership = louvain$membership,
+                              # optimal_membership = optimal$membership,
+                              spinglass_membership = spinglass$membership,
+                              walktrap_membership = walktrap$membership)
 
-  memberships$id <- as.character(memberships$id)
+    memberships$id <- as.character(memberships$id)
 
 
   } else {
@@ -222,12 +227,12 @@ communities <- function(g, modres=1, shiny = FALSE) {
                               fast_greedy_membership = fast_greedy$membership,
                               infomap_membership = infomap$membership,
                               label_prop_membership = label_prop$membership,
-                             # leading_eigen_membership = leading_eigen$membership,
+                              # leading_eigen_membership = leading_eigen$membership,
                               leiden_mod_membership = leiden_mod$membership,
                               leiden_cpm_membership = leiden_cpm$membership,
                               # louvain_membership = louvain$membership,
                               # optimal_membership = optimal$membership,
-                            #  spinglass_membership = spinglass$membership,
+                              #  spinglass_membership = spinglass$membership,
                               walktrap_membership = walktrap$membership)
 
     memberships <- dplyr::left_join(memberships, subgraph_memberships, by = "id")
@@ -246,40 +251,40 @@ communities <- function(g, modres=1, shiny = FALSE) {
   #### if this is the case, just create the `cf1_membership` dataframe manually and assign all nodes
   #### to the same community (or `NA`s depending on our team's ultimate preference)
   if (length(clust) != 0) {
-      clust <- lapply(clust, as.numeric)
-      cf1_membership <- multigroup_assign(g_sym, clust)
-      colnames(cf1_membership) <- c("cp_cluster", "id")
+    clust <- lapply(clust, as.numeric)
+    cf1_membership <- multigroup_assign(g_sym, clust)
+    colnames(cf1_membership) <- c("cp_cluster", "id")
   } else {
-      warning("Clique Percolation did not detect any distinct communities. All nodes will be assigned to the same single community (1).")
-      cf1_membership <- data.frame(id = memberships$id,
-                                   cp_cluster = 1)
+    warning("Clique Percolation did not detect any distinct communities. All nodes will be assigned to the same single community (1).")
+    cf1_membership <- data.frame(id = memberships$id,
+                                 cp_cluster = 1)
   }
   # cf1_membership$id <- as.character(cf1_membership$id)
 
   ## Link comm ##
   #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
-  linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(from, to)
+  linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(.data$from, .data$to)
   #### In some cases, such as when given a star graph, `linkcomm` won't detect any communities.
   #### if this is the case, just create the `lc_membership` dataframe manually and assign all nodes
   #### to the same community (or `NA`s depending on our team's ultimate preference)
   lc <- tryCatch(linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F),
                  error = function(e) {return(NULL)})# Defaulting to false for now)
   if (!is.null(lc)) {
-        lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
-        clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
-        clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
-        lc_membership <- multigroup_assign(g_sym, clust)
-        colnames(lc_membership) <- c("lc_cluster", "id")
+    lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
+    clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
+    clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
+    lc_membership <- multigroup_assign(g_sym, clust)
+    colnames(lc_membership) <- c("lc_cluster", "id")
   } else {
     warning("linkcomm did not detect any distinct communities. All nodes will be assigned to the same single community (1).")
     lc_membership <- data.frame(id = memberships$id,
-                                 lc_cluster = 1)
+                                lc_cluster = 1)
   }
 
   lc_membership$id <- as.character(lc_membership$id)
   cf1_membership$id <- as.character(cf1_membership$id)
 
- # Add into overall memberships dataframe
+  # Add into overall memberships dataframe
   memberships <- dplyr::left_join(memberships, cf1_membership, by = "id")
   memberships <- dplyr::left_join(memberships, lc_membership, by = "id")
 
@@ -310,9 +315,9 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   if (num_components$no == 1) {
 
-  leading_eigen_stats <- data.frame(method = "leading_eigen",
-                                    num_communities = max(leading_eigen$membership),
-                                    modularity = leading_eigen$modularity)
+    leading_eigen_stats <- data.frame(method = "leading_eigen",
+                                      num_communities = max(leading_eigen$membership),
+                                      modularity = leading_eigen$modularity)
   } else {
 
     igraph::V(g_undir)$leading_eigen <- memberships$leading_eigen_membership
@@ -340,16 +345,16 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   if (num_components$no == 1) {
 
-  spinglass_stats <- data.frame(method = "spinglass",
-                                num_communities = max(spinglass$membership),
-                                modularity = spinglass$modularity)
+    spinglass_stats <- data.frame(method = "spinglass",
+                                  num_communities = max(spinglass$membership),
+                                  modularity = spinglass$modularity)
   } else {
 
     igraph::V(g_undir)$spinglass <- memberships$spinglass_membership
 
     spinglass_stats <- data.frame(method = "spinglass",
-                                      num_communities = max(memberships$spinglass_membership, na.rm = T),
-                                      modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$spinglass))
+                                  num_communities = max(memberships$spinglass_membership, na.rm = T),
+                                  modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$spinglass))
 
 
   }
@@ -370,8 +375,8 @@ communities <- function(g, modres=1, shiny = FALSE) {
                           num_communities = length(unique(memberships$cp_cluster)),
                           modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster + 1)))
   lc_stats <- data.frame(method = "lc",
-                          num_communities = length(unique(memberships$cp_cluster)),
-                          modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster + 1)))
+                         num_communities = length(unique(memberships$cp_cluster)),
+                         modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster + 1)))
 
   community_summaries <- rbind(edge_betweenness_stats,
                                fast_greedy_stats,
@@ -395,7 +400,7 @@ communities <- function(g, modres=1, shiny = FALSE) {
   # Some functions create modularity scores that vary depending on seed. Something to keep in mind for later.
 
   # Get median k and feed into stochastic block model
-  median_k <- median(community_summaries$num_communities)
+  median_k <- stats::median(community_summaries$num_communities)
 
 
   # Turn graph `g` into an adjacency matrix
@@ -441,17 +446,17 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   } else {
 
-  memberships <- memberships[, c("id", "component",
-                                 "edge_betweenness_membership",
-                                 "fast_greedy_membership","infomap_membership",
-                                 "label_prop_membership", "leiden_mod_membership",
-                                 "leiden_cpm_membership", "walktrap_membership",
-                                 "leading_eigen_membership",
-                                 "spinglass_membership", "sbm_membership",
-                                 "cp_cluster", "lc_cluster")]
+    memberships <- memberships[, c("id", "component",
+                                   "edge_betweenness_membership",
+                                   "fast_greedy_membership","infomap_membership",
+                                   "label_prop_membership", "leiden_mod_membership",
+                                   "leiden_cpm_membership", "walktrap_membership",
+                                   "leading_eigen_membership",
+                                   "spinglass_membership", "sbm_membership",
+                                   "cp_cluster", "lc_cluster")]
 
-  start_col <- 3
-  sub_val <- 2
+    start_col <- 3
+    sub_val <- 2
 
   }
 
@@ -477,9 +482,9 @@ communities <- function(g, modres=1, shiny = FALSE) {
 
   # Plot network with nodes colored by community membership
   if (!shiny) {
-  fr <- igraph::layout.fruchterman.reingold(g)
+    fr <- igraph::layout.fruchterman.reingold(g)
 
-  par(mfrow = c(2, 3))
+    graphics::par(mfrow = c(2, 3))
 
 
     # Edge betweenness
@@ -605,25 +610,30 @@ communities <- function(g, modres=1, shiny = FALSE) {
   #assign(x = 'comm_members_net', value = memberships,.GlobalEnv)
   # Make `id` variable to ensure consistent merging with other ideanet dataframes
   memberships$id <- as.numeric(memberships$id)
-  comm_members_net <<- memberships
+  output_list$memberships <- memberships
+  # assign(x = "comm_members_net", value = memberships, .GlobalEnv)
 
   # Assigns summaries of community detection output to global environment
 
-   cn<-paste0("comm_summaries_",gname)
+  cn<-paste0("comm_summaries_",gname)
 
   #assign(x = "community_summaries", value = community_summaries,.GlobalEnv)
-  assign(x = cn, value = community_summaries,.GlobalEnv)
+  output_list$summaries <- community_summaries
+  # assign(x = cn, value = community_summaries,.GlobalEnv)
 
 
   # Assigns the matrix of adjusted rand scores to global environment
   # assign(x = "community_comparison", value = compare_scores,.GlobalEnv)
 
   #want to have everything as a dataframe
-   cs<-as.data.frame(compare_scores)
-   cn<-paste0("comp_scores_",gname)
+  cs<-as.data.frame(compare_scores)
+  cn<-paste0("comp_scores_",gname)
 
   # Assigns the matrix of adjusted rand scores to global environment
-   assign(x= cn, value = cs,.GlobalEnv)
+  output_list$score_comparison <- cs
+  # assign(x= cn, value = cs,.GlobalEnv)
+
+  return(output_list)
 
 }
 
@@ -650,8 +660,8 @@ spectral_sbm <- function(Adj, ##adjacency matrix
   if(!absol)svdLL <- eigenLL$vec[,order((eigenLL$val),decreasing=TRUE)[1:k]]
   if(absol)svdLL <- eigenLL$vec[,order(abs(eigenLL$val),decreasing=TRUE)[1:k]]
   # svdLL <- eigen(LL)$vec[,1:k]
-  if(type=="clusters")return(kmeans(svdLL,k,nstart=nstart)$cluster)
-  if(type=="centers")return(kmeans(svdLL,k)$centers,nstart=nstart)
+  if(type=="clusters")return(stats::kmeans(svdLL,k,nstart=nstart)$cluster)
+  if(type=="centers")return(stats::kmeans(svdLL,k)$centers,nstart=nstart)
 }
 
 # Function that assigns nodes with multiple communities to a single community to which they are most connected to.

@@ -26,7 +26,7 @@
 #' \code{cluster_dendrogram} is a visualization of the dendrogram produced from clustering nodes. Red boxes on the visualization indicate nodes' cluster memberships at the optimal level of partitioning.
 #' \code{cluster_modularity} is a visualization of the modularity scores of the matrix of similarity scores between nodes for each level of partitioning. This visualization helps identify the optimal level of partitioning inferred by the \code{role_analysis} function.
 #' \code{cluster_summaries_cent} contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on several important node-level measures.
-#' \code{cluster_summaries_cent} contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on in terms of their positions within certain kinds of triads in the network.
+#' \code{cluster_summaries_triad} contains one or more visualization representing how clusters inferred at the optimal level of partitioning differ from one another on in terms of their positions within certain kinds of triads in the network.
 #' \code{cluster_relations_heatmaps} is a list object containing several heatmap visualizations representing the extent to which nodes in one inferred cluster are connected to nodes in another cluster.
 #' \code{cluster_relations_sociogram} contains a network visualization representing the extent to which nodes in clusters inferred at the optimal level of partitioning are tied to one another. Nodes in this visualization represent inferred clusters in the aggregate.
 #'
@@ -40,91 +40,93 @@
 #'
 #' @export
 #'
+#' @importFrom rlang .data
+#'
 #' @examples
 # Run netwrite
-#' netwrite(i_elements = florentine$node,
-#'          j_elements = florentine$target,
-#'          type = florentine$layer,
-#'          directed = TRUE,
-#'          net_name = "florentine")
+#' flor <- netwrite(i_elements = florentine$node,
+#'                  j_elements = florentine$target,
+#'                  type = florentine$layer,
+#'                  directed = TRUE,
+#'                  net_name = "florentine")
 #'
 #' # Clustering method
-#' role_analysis(graph = network_list,
-#'               nodes = node_measures,
-#'               directed = TRUE,
-#'               method = "cluster",
-#'               min_partitions = 2,
-#'               max_partitions = 8,
-#'               viz = TRUE)
+#' flor_cluster <- role_analysis(graph = flor$igraph_object,
+#'                               nodes = flor$node_measures,
+#'                               directed = TRUE,
+#'                               method = "cluster",
+#'                               min_partitions = 2,
+#'                               max_partitions = 8,
+#'                               viz = TRUE)
 #'
 #' ### View cluster dendrogram
-#' cluster_dendrogram
+#' flor_cluster$cluster_dendrogram
 #'
 #' ### View modularity summary plot
-#' cluster_modularity
+#' flor_cluster$cluster_modularity
 #'
 #' ### View cluster assignments
-#' head(cluster_assignments)
+#' head(flor_cluster$cluster_assignments)
 #'
 #' ### View centrality summary plot for aggregate network
-#' cluster_summaries_cent$summary_graph
+#' flor_cluster$cluster_summaries_cent$summary_graph
 #' ### View cenrality summary plot for network of relation `type 1`
-#' cluster_summaries_cent$`1`
+#' flor_cluster$cluster_summaries_cent$`1`
 #'
 #' ### View triad position summary plot for network of relation `type 1`
-#' cluster_summaries_triad$`1`
+#' flor_cluster$cluster_summaries_triad$`1`
 #'
 #'
 #' # CONCOR method
-#' role_analysis(graph = network_list,
-#'               nodes = node_measures,
-#'               directed = TRUE,
-#'               method = "concor",
-#'               min_partitions = 1,
-#'               max_partitions = 4,
-#'               viz = TRUE)
+#' flor_concor <- role_analysis(graph = flor$igraph_object,
+#'                              nodes = flor$node_measures,
+#'                              directed = TRUE,
+#'                              method = "concor",
+#'                              min_partitions = 1,
+#'                              max_partitions = 4,
+#'                              viz = TRUE)
 #'
 #' ### View CONCOR tree
-#' concor_block_tree
+#' flor_concor$concor_block_tree
 #'
 #' ### View modularity summary plot
-#' concor_modularity
+#' flor_concor$concor_modularity
 #'
 #' ### View cluster assignments
-#' head(concor_assignments)
+#' head(flor_concor$concor_assignments)
 #'
 #' ### View chi-squared heatmaps of relations between blocks
-#' concor_relations_heatmaps$chisq
+#' flor_concor$concor_relations_heatmaps$chisq
 
 
 
 role_analysis <- function(graph, # igraph object generated from netwrite
-                                            # Or list of igraph objects
-                                            nodes = node_measures, # node-level measures generated from netwrite
-                                            # Or list of node information
-                                            directed = NA, # whether or not network is directed
-                                            method = "cluster", # method of role inference/assignment (more options later)
-                                            min_partitions = NA, # minimum number of clusters to test
-                                            max_partitions = NA, # maximum number of clusters to test
-                                            min_partition_size = NA, # minimum number of nodes required for a cluster to exist
-                                            # If a numeric value is specified, this program uses the `cluster_collapse` function
-                                            # to try and aggregate smaller clusters into larger ones based on their parent brances
-                                            # in the dendrogram
-                                            backbone = .9, # When calculating optimal modularity, it helps to backbone the similarity/correlation
-                                            # matrix according to the nth percentile. How much you backbone tends to vary depending on the size of
-                                            # the network, which larger nets requiring higher thresholds.
-                                            viz = FALSE, # Produce summary visualizations
+                          # Or list of igraph objects
+                          nodes, # node-level measures generated from netwrite
+                          # Or list of node information
+                          directed = NA, # whether or not network is directed
+                          method = "cluster", # method of role inference/assignment (more options later)
+                          min_partitions = NA, # minimum number of clusters to test
+                          max_partitions = NA, # maximum number of clusters to test
+                          min_partition_size = NA, # minimum number of nodes required for a cluster to exist
+                          # If a numeric value is specified, this program uses the `cluster_collapse` function
+                          # to try and aggregate smaller clusters into larger ones based on their parent brances
+                          # in the dendrogram
+                          backbone = .9, # When calculating optimal modularity, it helps to backbone the similarity/correlation
+                          # matrix according to the nth percentile. How much you backbone tends to vary depending on the size of
+                          # the network, which larger nets requiring higher thresholds.
+                          viz = FALSE, # Produce summary visualizations
 
-                                            # Arguments Specific to Clustering Method
-                                            fast_triad = TRUE, # Whether to use dplyr method for triad position counting
-                                            retain_variables = FALSE, # Export a dataframe of variables used in clustering
-                                            cluster_summaries = FALSE, # Export a dataframe containing mean values of clustering variables within each cluster
-                                            dendro_names = FALSE, # If TRUE, `cluster_dendogram` lists nodel labels rathher than ID numbers
+                          # Arguments Specific to Clustering Method
+                          fast_triad = TRUE, # Whether to use dplyr method for triad position counting
+                          retain_variables = FALSE, # Export a dataframe of variables used in clustering
+                          cluster_summaries = FALSE, # Export a dataframe containing mean values of clustering variables within each cluster
+                          dendro_names = FALSE, # If TRUE, `cluster_dendogram` lists nodel labels rathher than ID numbers
 
-                                            # Arguments Specific to CONCOR
-                                            self_ties = FALSE, # Whether to include self-ties in CONCOR calculation
-                                            cutoff = .999, # Correlation cutoff for detecting convergence in CONCOR
-                                            max_iter = 50 # Maximum number of iteration for CONCOR algorithm
+                          # Arguments Specific to CONCOR
+                          self_ties = FALSE, # Whether to include self-ties in CONCOR calculation
+                          cutoff = .999, # Correlation cutoff for detecting convergence in CONCOR
+                          max_iter = 50 # Maximum number of iteration for CONCOR algorithm
 
 
 ) {
@@ -132,32 +134,37 @@ role_analysis <- function(graph, # igraph object generated from netwrite
 
   if (method == "cluster") {
 
-    cluster_method(graph = graph,
-                                     nodes = nodes,
-                                     directed = directed,
-                                     min_partitions = min_partitions,
-                                     max_partitions = max_partitions,
-                                     min_partition_size = min_partition_size,
-                                     backbone = backbone,
-                                     viz = viz,
-                                     fast_triad = fast_triad,
-                                     retain_variables = retain_variables,
-                                     cluster_summaries = cluster_summaries,
-                                     dendro_names = dendro_names)
+    role_output <- cluster_method(graph = graph,
+                                  nodes = nodes,
+                                  directed = directed,
+                                  min_partitions = min_partitions,
+                                  max_partitions = max_partitions,
+                                  min_partition_size = min_partition_size,
+                                  backbone = backbone,
+                                  viz = viz,
+                                  fast_triad = fast_triad,
+                                  retain_variables = retain_variables,
+                                  cluster_summaries = cluster_summaries,
+                                  dendro_names = dendro_names)
+
+    return(role_output)
 
   } else if (method == "concor" | method == "CONCOR") {
 
-    concor_method(graph = graph,
-                             nodes = nodes,
-                             directed = directed,
-                             min_partitions = min_partitions,
-                             max_partitions = max_partitions,
-                             min_partition_size = min_partition_size,
-                             backbone = backbone,
-                             viz = viz,
-                             self_ties = self_ties,
-                             cutoff = cutoff,
-                             max_iter = max_iter)
+    role_output <- concor_method(graph = graph,
+                                 nodes = nodes,
+                                 directed = directed,
+                                 min_partitions = min_partitions,
+                                 max_partitions = max_partitions,
+                                 min_partition_size = min_partition_size,
+                                 backbone = backbone,
+                                 viz = viz,
+                                 self_ties = self_ties,
+                                 cutoff = cutoff,
+                                 max_iter = max_iter)
+
+    return(role_output)
+
   } else {
 
     base::message("Error: Incorrect analysis method entered")
@@ -173,7 +180,7 @@ role_analysis <- function(graph, # igraph object generated from netwrite
 
 cluster_method <- function(graph, # igraph object generated from netwrite
                            # Or list of igraph objects
-                           nodes = node_measures, # node-level measures generated from netwrite
+                           nodes, # node-level measures generated from netwrite
                            # Or list of node information
                            directed = NA, # whether or not network is directed
                            method = "cluster", # method of role inference/assignment (more options later)
@@ -196,6 +203,9 @@ cluster_method <- function(graph, # igraph object generated from netwrite
 ) {
 
 
+  # Create output list
+  output_list <- list()
+
   # 1. If `graph` is a single igraph object, go ahead and store it in a list
   if (("igraph" %in% class(graph)) == TRUE) {
     graph <- list(summary_graph = graph)
@@ -207,7 +217,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
 
   # 2. Select required variables from `nodes` for clustering
   role_centrality <- dplyr::select(nodes,
-                                   id,
+                                   .data$id,
                                    dplyr::contains("degree"),
                                    dplyr::contains("betweenness"),
                                    dplyr::contains("bonpow"),
@@ -217,7 +227,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   # 3. Make dummy variable(s) indicating isolate status in each graph/subgraph
   ### Get total degree variables
   isolate_check <- dplyr::select(role_centrality,
-                                 id, dplyr::contains("total_degree"))
+                                 .data$id, dplyr::contains("total_degree"))
   ### Check if any total degree values equal zero
   isolate_check[, 2:ncol(isolate_check)] <- isolate_check[, 2:ncol(isolate_check)] == 0
   ### Rename columns in `isolate_check`
@@ -343,9 +353,9 @@ cluster_method <- function(graph, # igraph object generated from netwrite
     isolate_vector <- role_centrality$isolate
 
     # Store isolates in their own separate data frame
-    isolate_df <- dplyr::filter(role_centrality, isolate == TRUE)
+    isolate_df <- dplyr::filter(role_centrality, .data$isolate == TRUE)
     # Remove isolate nodes from `role_centrality`
-    role_centrality <- dplyr::filter(role_centrality, isolate == FALSE)
+    role_centrality <- dplyr::filter(role_centrality, .data$isolate == FALSE)
 
     # Now we need to remove isolate nodes from igraph objects in the
     # `graph` list
@@ -435,7 +445,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   # Take top nth percentile of similarity scores
   for (i in 1:nrow(dist_mat)) {
 
-    dist_mat[i, (dist_mat[i,] < quantile(dist_mat[i,], backbone, na.rm = T))] <- 0
+    dist_mat[i, (dist_mat[i,] < stats::quantile(dist_mat[i,], backbone, na.rm = T))] <- 0
 
   }
 
@@ -520,21 +530,21 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   role_std$cluster <- cut_df$best_fit
 
   role_std_summary <- role_std %>%
-    dplyr::group_by(cluster) %>%
+    dplyr::group_by(.data$cluster) %>%
     dplyr::summarize_all(mean, na.rm = T) %>%
-    dplyr::select(-id) %>%
+    dplyr::select(-.data$id) %>%
     dplyr::ungroup()
 
 
   role_std_sd <- as.data.frame(t(role_std_summary %>%
-                                   dplyr::summarize_all(sd, na.rm = T)))
+                                   dplyr::summarize_all(stats::sd, na.rm = T)))
   colnames(role_std_sd) <- "sd"
   role_std_sd$var <- rownames(role_std_sd)
 
   role_std_summary2 <- role_std_summary %>%
-    tidyr::pivot_longer(-cluster, names_to = "var") %>%
+    tidyr::pivot_longer(-.data$cluster, names_to = "var") %>%
     dplyr::left_join(role_std_sd, by = "var") %>%
-    dplyr::group_by(var)
+    dplyr::group_by(.data$var)
 
 
   # If we have total isolates in the graph, we need to add their
@@ -542,11 +552,11 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   if (has_isolates == TRUE) {
 
     isolate_summary <- role_std_summary2 %>%
-      dplyr::group_by(var) %>%
+      dplyr::group_by(.data$var) %>%
       dplyr::slice(1) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(cluster = max(cut_df2$best_fit),
-             value = ifelse(stringr::str_detect(var, "isolate"), 1, NA))
+                    value = ifelse(stringr::str_detect(.data$var, "isolate"), 1, NA))
 
     role_std_summary2 <- dplyr::bind_rows(role_std_summary2, isolate_summary)
 
@@ -560,7 +570,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
 
   role_std_summary2 <- role_std_summary2 %>%
     dplyr::left_join(order_id, by = "var") %>%
-    dplyr::arrange(dplyr::desc(sd), var)
+    dplyr::arrange(dplyr::desc(.data$sd), .data$var)
 
   role_std_summary2$var_id <- rep(1:length(unique(role_std_summary2$var)),
                                   each = length(unique(role_std_summary2$cluster)))
@@ -575,15 +585,17 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   colnames(role_std) <- c("id", paste(names(role_std), "std", sep = "_")[2:length(names(role_std))])
 
   # Store cluster assignments to global environment
-  assign(x = "cluster_assignments", value = cut_df2, .GlobalEnv)
+  output_list$cluster_assignments <- cut_df2
+  # assign(x = "cluster_assignments", value = cut_df2, .GlobalEnv)
 
   # Option to export variables used for clustering
   if (retain_variables == TRUE) {
 
     clustering_vars <- dplyr::left_join(role_centrality, role_std, by = "id") %>%
-      dplyr::select(-cluster_std)
+      dplyr::select(-.data$cluster_std)
 
-    assign(x = 'clustering_variables', value = clustering_vars, .GlobalEnv)
+    output_list$clustering_variables <- clustering_vars
+    # assign(x = 'clustering_variables', value = clustering_vars, .GlobalEnv)
 
   }
 
@@ -618,10 +630,11 @@ cluster_method <- function(graph, # igraph object generated from netwrite
                                      names(cluster_sum_start)[3:ncol(cluster_sum_start)],
                                      sep = ""))
 
-    cluster_sum <- cluster_sum %>% dplyr::select(-contains("mean_cluster"))
+    cluster_sum <- cluster_sum %>% dplyr::select(-dplyr::contains("mean_cluster"))
 
     # Assign to global environment
-    assign(x = "cluster_summaries", value = cluster_sum, .GlobalEnv)
+    output_list$cluster_summaries <- cluster_sum
+    # assign(x = "cluster_summaries", value = cluster_sum, .GlobalEnv)
 
   }
 
@@ -637,8 +650,9 @@ cluster_method <- function(graph, # igraph object generated from netwrite
     plot(hc)
     stats::rect.hclust(hc, k = max_mod$num_clusters)
     dendrogram <- grDevices::recordPlot()
-    assign(x = 'cluster_dendrogram', value = dendrogram, .GlobalEnv)
-    dev.off()
+    # assign(x = 'cluster_dendrogram', value = dendrogram, .GlobalEnv)
+    grDevices::dev.off()
+    output_list$cluster_dendrogram <- dendrogram
 
     # Sociogram with nodes labeled by optimal clusters
     ### Make a dataframe for color assignments to ensure consistency
@@ -650,7 +664,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
     # Condensed color_df for legend plotting
     color_df2 <- color_df[,2:3]
     color_df2 <- unique(color_df2)
-    color_df2 <- dplyr::arrange(color_df2, cluster)
+    color_df2 <- dplyr::arrange(color_df2, .data$cluster)
 
     # Assign colors to igraph object list
     for (i in 1:length(original_graph)){
@@ -660,29 +674,30 @@ cluster_method <- function(graph, # igraph object generated from netwrite
     }
 
 
-    cluster_sociogram(graph_list = original_graph,
-                      version = "cluster",
-                      color2 = color_df2)
-
+    output_list$cluster_sociogram <- cluster_sociogram(graph_list = original_graph,
+                                                       version = "cluster",
+                                                       color2 = color_df2)
 
 
     # Modularity plot
-    plot.new()
+    graphics::plot.new()
     plot(x = modularity_df$num_clusters,
          y = modularity_df$modularity,
          main = "Cluster Modularity",
          xlab = "Number of Clusters",
          ylab = "Modularity")
-    lines(modularity_df$num_clusters, modularity_df$modularity)
+    graphics::lines(modularity_df$num_clusters, modularity_df$modularity)
     mod_plot <- grDevices::recordPlot()
-    assign(x = "cluster_modularity", value = mod_plot, .GlobalEnv)
-    dev.off()
+    # assign(x = "cluster_modularity", value = mod_plot, .GlobalEnv)
+    grDevices::dev.off()
+    output_list$cluster_modularity <- mod_plot
 
     # "Supernode" sociograms
     cluster_relations_sociogram <- role_sociogram(graph = original_graph,
-                                                 version = "cluster",
-                                                 color2 = color_df2)
-    assign(x = "cluster_relations_sociogram", value = cluster_relations_sociogram, .GlobalEnv)
+                                                  version = "cluster",
+                                                  color2 = color_df2)
+    output_list$cluster_relations_sociogram <- cluster_relations_sociogram
+    # assign(x = "cluster_relations_sociogram", value = cluster_relations_sociogram, .GlobalEnv)
 
 
     # Summary Visualization (Cluster Mean Values)
@@ -691,24 +706,29 @@ cluster_method <- function(graph, # igraph object generated from netwrite
     ### 2. Plotting variables in panel (Not sorted)
 
 
-    cluster_summary_plots(graph_list = graph,
-                          summary_data = role_std_summary2)
+    sum_plots <- cluster_summary_plots(graph_list = graph,
+                                       summary_data = role_std_summary2)
+
+    ### Store in `output_list`
+    output_list$cluster_summaries_cent <- sum_plots$cluster_summaries_cent
+    output_list$cluster_summaries_triad <- sum_plots$cluster_summaries_triad
 
 
     if (length(graph) > 1) {
 
-      cluster_summary_cor(summary_data = role_std_summary2)
+      output_list$cluster_summaries_correlations <- cluster_summary_cor(summary_data = role_std_summary2)
 
     }
 
 
     # Summary Visualization (Cluster Relations)
-    cluster_heatmaps(node_data = cut_df2,
-                     graph_list = graph,
-                     version = "cluster")
+    output_list$cluster_relations_heatmaps <- cluster_heatmaps(node_data = cut_df2,
+                                                               graph_list = graph,
+                                                               version = "cluster")
 
   }
 
+  return(output_list)
 
 }
 
@@ -718,7 +738,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
 #####################################################################
 
 concor_method <- function(graph,
-                          nodes = node_measures,
+                          nodes,
                           directed = NA,
                           min_partitions = NA,
                           max_partitions = NA,
@@ -734,6 +754,8 @@ concor_method <- function(graph,
                           plot_all = FALSE
 ) {
 
+  # Create `output_list`
+  output_list <- list()
 
 
   # 1. If `graph` is a single igraph object, go ahead and store it in a list
@@ -828,7 +850,7 @@ concor_method <- function(graph,
   ## 1. Get correlation matrix
   ##### Stack adjacency matrices
   mat_stack <- do.call(rbind, adjmat_list)
-  cor_mat <- cor(mat_stack)
+  cor_mat <- stats::cor(mat_stack)
   diag(cor_mat) <- NA
 
   ## 2. Adjust correlation scores so that there are only non-negative
@@ -946,7 +968,8 @@ concor_method <- function(graph,
   # Store cluster assignments to global environment
   # Make sure `id` is numeric for merge consistency
   full_roster$id <- as.numeric(full_roster$id)
-  assign(x = "concor_assignments", value = full_roster, .GlobalEnv)
+  output_list$concor_assignments <- full_roster
+  # assign(x = "concor_assignments", value = full_roster, .GlobalEnv)
 
 
   # Option to produce summary visualizations
@@ -963,7 +986,7 @@ concor_method <- function(graph,
     # Condensed color_df for legend plotting
     color_df2 <- color_df[,2:3]
     color_df2 <- unique(color_df2)
-    color_df2 <- dplyr::arrange(color_df2, cluster)
+    color_df2 <- dplyr::arrange(color_df2, .data$cluster)
 
     # Assign colors to igraph object list
     for (i in 1:length(original_graph)){
@@ -973,9 +996,9 @@ concor_method <- function(graph,
     }
 
 
-    cluster_sociogram(graph_list = original_graph,
-                      version = "block",
-                      color2 = color_df2)
+    output_list$concor_sociogram <- cluster_sociogram(graph_list = original_graph,
+                                                      version = "block",
+                                                      color2 = color_df2)
     # assign(x = "concor_sociogram", value = cluster_sociogram, .GlobalEnv)
     # rm(cluster_sociogram)
 
@@ -984,39 +1007,42 @@ concor_method <- function(graph,
 
 
     # Modularity plot
-    plot.new()
+    graphics::plot.new()
     plot(x = modularity_df$num_blocks,
          y = modularity_df$modularity,
          main = "CONCOR Modularity",
          xlab = "Number of Blocks",
          ylab = "Modularity")
-    lines(modularity_df$num_blocks, modularity_df$modularity)
+    graphics::lines(modularity_df$num_blocks, modularity_df$modularity)
     mod_plot <- grDevices::recordPlot()
-    assign(x = "concor_modularity", value = mod_plot, .GlobalEnv)
-    dev.off()
+    # assign(x = "concor_modularity", value = mod_plot, .GlobalEnv)
+    grDevices::dev.off()
+    output_list$concor_modularity <- mod_plot
 
 
     # CONCOR Tree
-    concor_tree(df = assignment_df)
+    output_list$concor_block_tree <- concor_tree(df = assignment_df)
 
 
     # "Supernode" sociograms
     concor_relations_sociogram <- role_sociogram(graph = original_graph,
                                                  version = "concor",
                                                  color2 = color_df2)
-    assign(x = "concor_relations_sociogram", value = concor_relations_sociogram, .GlobalEnv)
+    output_list$concor_relations_sociogram <- concor_relations_sociogram
+    # assign(x = "concor_relations_sociogram", value = concor_relations_sociogram, .GlobalEnv)
 
 
 
 
 
     # Summary Visualization (Cluster Relations)
-    cluster_heatmaps(node_data = assignment_df,
-                     graph_list = graph, version = "block")
+    output_list$concor_relations_heatmaps <- cluster_heatmaps(node_data = assignment_df,
+                                                              graph_list = graph, version = "block")
 
 
 
   }
 
+  return(output_list)
 
 }
