@@ -531,45 +531,48 @@ server <- function(input, output, session) {
     if (!is.null(input$raw_nodes) & shiny::isTruthy(input$node_id_col))  {
       if (input$node_id_col != "Empty") {
         print('started netwrite 1')
-        netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                 adjacency_list=FALSE, nodelist=node_data(),
-                 node_id=input$node_id_col,
-                 i_elements=edge_data()[,input$edge_in_col],
-                 j_elements=edge_data()[,input$edge_out_col],
-                 weights=initial_edge(),
-                 type=type_ret, package='igraph',
-                 missing_code=99999, weight_type='frequency',
-                 directed=input$direction_toggle,
-                 net_name='init_net',
-                 shiny=TRUE)
+        list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
+                           adjacency_list=FALSE, nodelist=node_data(),
+                           node_id=input$node_id_col,
+                           i_elements=edge_data()[,input$edge_in_col],
+                           j_elements=edge_data()[,input$edge_out_col],
+                           weights=initial_edge(),
+                           type=type_ret,
+                           missing_code=99999, weight_type='frequency',
+                           directed=input$direction_toggle,
+                           net_name='init_net',
+                           shiny=TRUE),
+                 .GlobalEnv)
         print('processed netwrite')
         init_net
 
       } else {
         print('started netwrite 2')
-        netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                 adjacency_list=FALSE,
-                 i_elements=edge_data()[,input$edge_in_col],
-                 j_elements=edge_data()[,input$edge_out_col],
-                 weights=initial_edge(),
-                 type=type_ret, package='igraph',
-                 missing_code=99999, weight_type='frequency',
-                 directed=input$direction_toggle,
-                 net_name='init_net',shiny=TRUE)
+        list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
+                         adjacency_list=FALSE,
+                         i_elements=edge_data()[,input$edge_in_col],
+                         j_elements=edge_data()[,input$edge_out_col],
+                         weights=initial_edge(),
+                         type=type_ret,
+                         missing_code=99999, weight_type='frequency',
+                         directed=input$direction_toggle,
+                         net_name='init_net',shiny=TRUE),
+                 .GlobalEnv)
         print('processed netwrite')
         init_net
       }
     } else {
       print('started netwrite 3')
-      netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-               adjacency_list=FALSE,
-               i_elements=edge_data()[,input$edge_in_col],
-               j_elements=edge_data()[,input$edge_out_col],
-               weights=initial_edge(),
-               type=type_ret, package='igraph',
-               missing_code=99999, weight_type='frequency',
-               directed=input$direction_toggle,
-               net_name='init_net',shiny=TRUE)
+      list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
+                         adjacency_list=FALSE,
+                         i_elements=edge_data()[,input$edge_in_col],
+                         j_elements=edge_data()[,input$edge_out_col],
+                         weights=initial_edge(),
+                         type=type_ret,
+                         missing_code=99999, weight_type='frequency',
+                         directed=input$direction_toggle,
+                         net_name='init_net',shiny=TRUE),
+               .GlobalEnv)
       print('processed netwrite')
       init_net
     }
@@ -609,13 +612,14 @@ server <- function(input, output, session) {
 
     nodes <- nodelist2()
     print('started community detection')
-    communities(net, shiny  = TRUE)
+    list2env(communities(net, shiny  = TRUE),
+             .GlobalEnv)
     print('finished community detection')
-    comm_members_net <- comm_members_net %>%
+    memberships <- memberships %>%
       dplyr::mutate_all(~replace(., is.na(.), 0))
     #comm_members_net$id <- as.character(comm_members_net$id)
     nodes <- nodes %>%
-      dplyr::left_join(comm_members_net, by = "id")
+      dplyr::left_join(memberships, by = "id")
     if (ran_toggle_role_detect$x==1) {
       nodes <- nodes %>%
         dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id")
@@ -1395,7 +1399,7 @@ server <- function(input, output, session) {
     #   net <- igraph::set_vertex_attr(net,chosen_var()[i],value=nodelist3() %>% dplyr::pull(parse_expr(chosen_var()[i])))
     # }
     print("IS THIS WHERE QAP BREAKS?")
-    qap_setup(net,chosen_var(),chosen_methods())
+    list2env(qap_setup(net,chosen_var(),chosen_methods()), .GlobalEnv)
     ran_toggle_qap$x <- 1
   })
 
@@ -1405,7 +1409,7 @@ server <- function(input, output, session) {
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
-    shiny::selectInput(inputId = "qap_run_choices", label = "QAP Variable Run Choices", choices = append("None",setdiff(qap_results[[3]] %>% names(),c("to","from","weight"))), selected = "None", multiple = TRUE)
+    shiny::selectInput(inputId = "qap_run_choices", label = "QAP Variable Run Choices", choices = append("None",setdiff(edges %>% names(),c("to","from","weight"))), selected = "None", multiple = TRUE)
   })
 
   output$qap_run_dependent <- shiny::renderUI({
@@ -1413,7 +1417,7 @@ server <- function(input, output, session) {
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
-    shiny::selectInput(inputId = "qap_run_dependent", label = "QAP Run Dependent Variable", choices = append("Tie Exists",setdiff(qap_results[[3]] %>% names(),c("to","from","weight"))), selected = "None", multiple = FALSE)
+    shiny::selectInput(inputId = "qap_run_dependent", label = "QAP Run Dependent Variable", choices = append("Tie Exists",setdiff(edges %>% names(),c("to","from","weight"))), selected = "None", multiple = FALSE)
   })
 
 
@@ -1451,7 +1455,7 @@ server <- function(input, output, session) {
 
   qap_df <- shiny::eventReactive(input$run_QAP_model, {
     shiny::validate(
-      shiny::need(qap_results, message = "Need to Run QAP Setup"),
+      shiny::need(graph, message = "Need to Run QAP Setup"),
     )
     print("AT QAP RUN STEP")
     print(input$qap_run_choices)
@@ -1462,12 +1466,11 @@ server <- function(input, output, session) {
       dep_var <- input$qap_run_dependent
     }
     print(input$qap_run_choices)
-    qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
-            dependent = dep_var, directed = T)
-    print(model_results[[1]])
-    test <- model_results[[1]]
-    test$estimate <- round(test$estimate, digits = 3)
-    test
+    list2env(qap_run(net = graph, variables = input$qap_run_choices,
+                     dependent = dep_var, directed = T),
+             .GlobalEnv)
+    covs_df$estimate <- round(covs_df$estimate, digits = 3)
+    covs_df
   })
 
 
@@ -1637,14 +1640,15 @@ server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$run_role_detect, {
-    role_analysis(init_net,
-                  nodes = node_measures,
-                  directed = input$direction_toggle,
-                  method = input$select_role_type,
-                  min_partitions = input$role_det_min,
-                  max_partitions = input$role_det_max,
-                  min_partition_size = as.integer(input$min_cluster_size),
-                  viz = TRUE)
+    list2env(role_analysis(init_net,
+                            nodes = node_measures,
+                            directed = input$direction_toggle,
+                            method = input$select_role_type,
+                            min_partitions = input$role_det_min,
+                            max_partitions = input$role_det_max,
+                            min_partition_size = as.integer(input$min_cluster_size),
+                            viz = TRUE),
+             .GlobalEnv)
     ran_toggle_role_detect$x <- 1
   })
 
