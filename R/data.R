@@ -102,6 +102,17 @@
 "florentine"
 
 
+#' A Small Network Containing all Triads and Motifs
+#'
+#' An adjacency matrix representing a network of 9 nodes, the ties between which form all possible
+#' triads and motifs that can appear in a directed network.
+#'
+#' @format
+#' A matrix with 9 rows and 9 columns
+#'
+"triad"
+
+
 #' Multiplex Network of Relationships Between Managers of a High-Tech Company
 #'
 #' A network of a small hi-tech computer firm that sold, installed, and maintained computer

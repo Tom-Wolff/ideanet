@@ -77,12 +77,11 @@
 #'
 #'
 #' # Run netwrite on an adjacency matrix
-#' fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa))
 #'
-#' faux_adj <- netwrite(data_type = "adjacency_matrix",
-#'                      adjacency_matrix = fauxmesa_adjmat,
+#' nw_triad <- netwrite(data_type = "adjacency_matrix",
+#'                      adjacency_matrix = triad,
 #'                      directed = TRUE,
-#'                      net_name = "faux_mesa")
+#'                      net_name = "triad_igraph")
 #'
 #'
 #' # Run netwrite on a multirelational network
