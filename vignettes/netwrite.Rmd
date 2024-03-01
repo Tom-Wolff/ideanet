@@ -259,7 +259,11 @@ knitr::kable(node_measures %>%
 
 Similarly, `system_level_measures` remains a single data frame, while `system_measure_plot` has become a list containing multiple visualizations. Note that `system_level_measures` now contains additional column detailing measure values for each individual relation type.
 
-```{r system_measures_multi}
+```{r system_measures_multi, eval = FALSE}
+head(system_level_measures)
+```
+
+```{r system_measures_multi_kable, echo=FALSE}
 knitr::kable(head(system_level_measures))
 ```
 
@@ -282,14 +286,15 @@ When analyzing a network, users are often interested in whether nodes cluster to
 ```{r}
 flor_communities <- communities(florentine)
 ```
+
 The `communities` function returns a list of three data frames, and will automatically generate a set of visualizations showing each node's community membership as determined by each community detection method. Within the list produced, the `summaries` data frame details the number of communities detected by each method, as well as the modularity score associated with each method. This offers one way of comparing community detection methods— higher modularity scores generally indicate more effective partitioning of the network.
 
-```{r score_comparison, eval = FALSE}
+```{r comm_summaries, eval = FALSE}
 flor_communities$summaries
 ```
 
 
-```{r score_comparison_kable, echo = FALSE}
+```{r comm_summaries_kable, echo = FALSE}
 knitr::kable(flor_communities$summaries)
 ```
 
@@ -303,7 +308,7 @@ flor_communities$score_comparison
 knitr::kable(flor_communities$score_comparison)
 ```
 
-`memberships`, the final data frame in the list, shows each node's community membership according to each of the methods used. `memberships` is designed to be easily merged with the `node_measures` data frame produced by `netwrite`, should users be inclined to combine the two.
+`memberships`, the final data frame in the list, shows each node's community membership according to each of the methods used. 
 
 ```{r memberships, eval = FALSE}
 flor_communities$memberships
@@ -312,6 +317,8 @@ flor_communities$memberships
 ```{r memberships_kable, echo = FALSE}
 knitr::kable(head(flor_communities$memberships))
 ```
+
+`memberships` is designed to be easily merged with the `node_measures` data frame produced by `netwrite`, should users be inclined to combine the two.
 
 ```{r membership_merge, eval = FALSE}
 node_info <- node_measures %>%
