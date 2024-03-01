@@ -85,10 +85,12 @@
 #'
 #'
 #' # Run netwrite on a multirelational network
-#' flor <- netwrite(i_elements = florentine$node,
-#'                  j_elements = florentine$target,
-#'                  type = florentine$layer,
-#'                  directed = TRUE,
+#' flor <- netwrite(nodelist = florentine_nodes,
+#'                  node_id = "id",
+#'                  i_elements = florentine_edges$source,
+#'                  j_elements = florentine_edges$target,
+#'                  type = florentine_edges$type,
+#'                  directed = FALSE,
 #'                  net_name = "florentine")
 #'
 #' # View system level summary
@@ -157,6 +159,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   if (("data.frame" %in% class(nodelist)) == TRUE) {
     nodelist <- as.data.frame(nodelist)
+
   }
 
   # If `node_id` is set to be `"id"`, change its value to `"original_id"`
@@ -188,6 +191,9 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # rename to `"original_id"`
     original_nodelist_names <- colnames(original_nodelist)
     original_nodelist_names[which(original_nodelist_names == "id")] <- "original_id"
+    # If any column in the nodelist dataframe is named `"name"`,
+    # rename to `"original_name"`
+    original_nodelist_names[which(original_nodelist_names == "name")] <- "original_name"
     colnames(original_nodelist) <- original_nodelist_names
 
     # When we iterate over each relation type, we only want to input

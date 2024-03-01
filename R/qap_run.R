@@ -16,14 +16,17 @@
 #'
 #' @examples
 #'
-#'  flor <- netwrite(i_elements = florentine$node,
-#'                   j_elements = florentine$target,
-#'                   directed = FALSE,
-#'                   net_name = "florentine_graph")
+#' flor <- netwrite(nodelist = florentine_nodes,
+#'                  node_id = "id",
+#'                  i_elements = florentine_edges$source,
+#'                  j_elements = florentine_edges$target,
+#'                  type = florentine_edges$type,
+#'                  directed = FALSE,
+#'                  net_name = "florentine_graph")
 #'
-#'  flor_setup <- qap_setup(flor$florentine_graph,
-#'                          variables = c("total_degree"),
-#'                          methods = c("difference"))
+#' flor_setup <- qap_setup(flor$florentine_graph,
+#'                         variables = c("total_degree"),
+#'                         methods = c("difference"))
 #'
 #' flor_qap <- qap_run(flor_setup$graph,
 #'                     variables = c("diff_total_degree"))

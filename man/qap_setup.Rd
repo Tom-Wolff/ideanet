@@ -32,8 +32,11 @@ The \code{qap_setup} function transform an individual level attributes into dyad
 \examples{
 
 
-flor <- netwrite(i_elements = florentine$node,
-                 j_elements = florentine$target,
+flor <- netwrite(nodelist = florentine_nodes,
+                 node_id = "id",
+                 i_elements = florentine_edges$source,
+                 j_elements = florentine_edges$target,
+                 type = florentine_edges$type,
                  directed = FALSE,
                  net_name = "florentine_graph")
 

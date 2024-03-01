@@ -44,16 +44,18 @@
 #'
 #' @examples
 # Run netwrite
-#' flor <- netwrite(i_elements = florentine$node,
-#'                  j_elements = florentine$target,
-#'                  type = florentine$layer,
-#'                  directed = TRUE,
+#' flor <- netwrite(nodelist = florentine_nodes,
+#'                  node_id = "id",
+#'                  i_elements = florentine_edges$source,
+#'                  j_elements = florentine_edges$target,
+#'                  type = florentine_edges$type,
+#'                  directed = FALSE,
 #'                  net_name = "florentine")
 #'
 #' # Clustering method
-#' flor_cluster <- role_analysis(graph = flor$florentine,
+#' flor_cluster <- role_analysis(graph = flor$igraph_list,
 #'                               nodes = flor$node_measures,
-#'                               directed = TRUE,
+#'                               directed = FALSE,
 #'                               method = "cluster",
 #'                               min_partitions = 2,
 #'                               max_partitions = 8,
@@ -70,17 +72,17 @@
 #'
 #' ### View centrality summary plot for aggregate network
 #' flor_cluster$cluster_summaries_cent$summary_graph
-#' ### View cenrality summary plot for network of relation `type 1`
-#' flor_cluster$cluster_summaries_cent$`1`
+#' ### View cenrality summary plot for network of relation `business`
+#' flor_cluster$cluster_summaries_cent$business
 #'
-#' ### View triad position summary plot for network of relation `type 1`
-#' flor_cluster$cluster_summaries_triad$`1`
+#' ### View triad position summary plot for network of relation `marriage`
+#' flor_cluster$cluster_summaries_triad$marriage
 #'
 #'
 #' # CONCOR method
-#' flor_concor <- role_analysis(graph = flor$florentine,
+#' flor_concor <- role_analysis(graph = flor$igraph_list,
 #'                              nodes = flor$node_measures,
-#'                              directed = TRUE,
+#'                              directed = FALSE,
 #'                              method = "concor",
 #'                              min_partitions = 1,
 #'                              max_partitions = 4,

@@ -79,8 +79,27 @@
 #' described in Hunter, Goodreau & Handcock (2008).
 "fauxmesa_edges"
 
+#' Nodelist of marriage alliances and business relationships between Florentine families during the Italian Renaissance
+#'
+#' Breiger & Pattison (1986), in their discussion of local role analysis, use a subset of data on
+#' the social relations among Renaissance Florentine families collected by John Padgett
+#' from historical documents. The two relations are business ties (recorded financial ties such as loans,
+#' credits and joint partnerships) and marriage alliances. This dataset has since become a standard for illustrating
+#' role analysis methods and working with networks featuring multiple types of relations.
+#'
+#' @format
+#' A data frame with 16 rows and 2 columns:
+#' \describe{
+#'   \item{id}{Unique node ID number}
+#'   \item{family}{Name of family corresponding to node}
+#'   ...
+#' }
+#' @source John Padgett (\href{http://www.casos.cs.cmu.edu/computational_tools/datasets/external/padgett/index2.html}{Website})
+#' @references Ronald L. Breiger and Philippa E Pattison. 1986. "Cumulated social roles: The duality of persons and their algebras." \emph{Social Networks} 8(13):215-256.
+"florentine_nodes"
 
-#' Marriage alliances and business relationships between Florentine families during the Italian Renaissance
+
+#' Edgelist of marriage alliances and business relationships between Florentine families during the Italian Renaissance
 #'
 #' Breiger & Pattison (1986), in their discussion of local role analysis, use a subset of data on
 #' the social relations among Renaissance Florentine families collected by John Padgett
@@ -91,15 +110,15 @@
 #' @format
 #' A data frame with 35 rows and 4 columns:
 #' \describe{
-#'   \item{node}{Outgoing node}
+#'   \item{source}{Outgoing node}
 #'   \item{target}{Receiving node}
 #'   \item{weight}{A placeholder variable for tie/edge weights, set to 1}
-#'   \item{layer}{Relation type}
+#'   \item{type}{Relation type}
 #'   ...
 #' }
 #' @source John Padgett (\href{http://www.casos.cs.cmu.edu/computational_tools/datasets/external/padgett/index2.html}{Website})
 #' @references Ronald L. Breiger and Philippa E Pattison. 1986. "Cumulated social roles: The duality of persons and their algebras." \emph{Social Networks} 8(13):215-256.
-"florentine"
+"florentine_edges"
 
 
 #' A Small Network Containing all Triads and Motifs

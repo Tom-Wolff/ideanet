@@ -1141,7 +1141,7 @@ server <- function(input, output, session) {
       shiny::need(input$edge_in_col != "Empty", 'Select edge in column!'),
       shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'))
     if (input$multi_relational_toggle == TRUE) {
-      shiny::selectInput('system_level_chooser', 'Choose which relation you want to visualize', choices = names(system_measure_plot_list), selected = NULL)
+      shiny::selectInput('system_level_chooser', 'Choose which relation you want to visualize', choices = names(system_measure_plot), selected = NULL)
     }
   })
 
@@ -1151,7 +1151,7 @@ server <- function(input, output, session) {
       shiny::need(input$edge_in_col != "Empty", 'Select edge in column!'),
       shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'))
     if (input$multi_relational_toggle == TRUE) {
-      shiny::selectInput('node_level_chooser', 'Choose which relation you want to visualize', choices = names(node_measure_plot_list), selected = NULL)
+      shiny::selectInput('node_level_chooser', 'Choose which relation you want to visualize', choices = names(node_measure_plot), selected = NULL)
     }
   })
 
@@ -1166,9 +1166,9 @@ server <- function(input, output, session) {
       # Multirelational
       if(input$multi_relational_toggle == TRUE) {
         if (input$measure_chooser == "System") {
-          plot(system_measure_plot_list[[match(input$system_level_chooser,names(system_measure_plot_list))]])
+          plot(system_measure_plot[[match(input$system_level_chooser,names(system_measure_plot))]])
         } else {
-          plot(node_measure_plot_list[[match(input$node_level_chooser,names(node_measure_plot_list))]])
+          plot(node_measure_plot[[match(input$node_level_chooser,names(node_measure_plot))]])
         }
         # Single Relation
       } else {
