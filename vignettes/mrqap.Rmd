@@ -119,7 +119,7 @@ knitr::kable(faux_qap$covs_df)
 faux_qap$mods_df
 ```
 
-```{r mods_df, echo = FALSE}
+```{r mods_df_kable, echo = FALSE}
 knitr::kable(faux_qap$mods_df)
 ```
 
