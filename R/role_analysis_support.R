@@ -1416,7 +1416,7 @@ concor_tree <- function(df) {
                                                directed = TRUE,
                                                vertices = count_df)
 
-  # Make tree layout                                                                                         vertices = count_df)
+  # Make tree layout
   tree_layout <- igraph::layout_as_tree(tree_igraph)
 
 

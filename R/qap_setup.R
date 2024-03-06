@@ -131,7 +131,10 @@ qap_setup <- function(net, variables, methods, directed = F, additional_vars = N
         edges <- edges %>%
           dplyr::mutate(!!rlang::sym((paste0("diff_", variable))) :=
                           as.numeric(!!rlang::sym(paste0(variable, "_ego"))) -
-                          as.numeric(!!rlang::sym(paste0(variable, "_alter"))))
+                          as.numeric(!!rlang::sym(paste0(variable, "_alter"))),
+                        !!rlang::sym((paste0("abs_diff_", variable))) :=
+                          abs(as.numeric(!!rlang::sym(paste0(variable, "_ego"))) -
+                          as.numeric(!!rlang::sym(paste0(variable, "_alter")))))
       }
 
       # If diff is "both", run both reduced and multi categories.

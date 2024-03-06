@@ -11,7 +11,7 @@
 #' @param min_partition_size A numeric value indicating the minimum number of nodes required for inclusion in a cluster. If an inferred cluster or partition contains fewer nodes than the number assigned to \code{min_partition_size}, nodes in this cluster/partition will be labeled as members of a parent cluster/partition.
 #' @param backbone A numeric value ranging from 0-1 indicating which edges in the similarity/correlation matrix should be kept when calculating modularity of cluster/partition assignments. When calculating optimal modularity, it helps to backbone the similarity/correlation matrix according to the nth percentile. Larger networks benefit from higher \code{backbone} values, while lower values generally benefit smaller networks.
 #' @param viz A logical value indicating whether to produce summary visualizations of the positional analysis.
-#' @param fast_triad (Hierarchical clustering method only.) A logical value indicating whether to use an faster method for counting individual nodes' positions in different types of triads. This faster method may lead to memory issues and should be avoided when working with larger networks.
+#' @param fast_triad (Hierarchical clustering method only.) A logical value indicating whether to use a faster method for counting individual nodes' positions in different types of triads. This faster method may lead to memory issues and should be avoided when working with larger networks.
 #' @param retain_variables (Hierarchical clustering method only.) A logical value indicating whether output should include a data frame of all node-level measures used in hierarchical clustering.
 #' @param cluster_summaries (Hierarchical clustering method only.) A logical value indicating whether output should includde a data frame containing by-cluster mean values of variables used in hierarchical clustering.
 #' @param dendro_names (Hierarchical clustering method only.) A logical value indicating whether the cluster dendrogram visualization should display node labels rather than ID numbers.
@@ -817,7 +817,6 @@ concor_method <- function(graph,
 
   for (i in min_partitions:max_partitions) {
 
-    print(i)
 
     blks <- tryCatch(concorR::concor(m_list = adjmat_list, nsplit = i, self_ties = F),
                      error = function(e) e)
