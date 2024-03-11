@@ -42,7 +42,7 @@ role_analysis(
 
 \item{viz}{A logical value indicating whether to produce summary visualizations of the positional analysis.}
 
-\item{fast_triad}{(Hierarchical clustering method only.) A logical value indicating whether to use an faster method for counting individual nodes' positions in different types of triads. This faster method may lead to memory issues and should be avoided when working with larger networks.}
+\item{fast_triad}{(Hierarchical clustering method only.) A logical value indicating whether to use a faster method for counting individual nodes' positions in different types of triads. This faster method may lead to memory issues and should be avoided when working with larger networks.}
 
 \item{retain_variables}{(Hierarchical clustering method only.) A logical value indicating whether output should include a data frame of all node-level measures used in hierarchical clustering.}
 

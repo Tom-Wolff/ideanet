@@ -335,7 +335,7 @@ server <- function(input, output, session) {
   })
 
   output$edge_format <- shiny::renderUI({
-    shiny::selectInput('edge_format', label = "Choose edge format", choices = c('edgelist','adjacency_matrix','adjacency_list'))
+    shiny::selectInput('edge_format', label = "Choose edge format", choices = c('Edgelist', 'Adjacency Matrix'))
   })
 
 

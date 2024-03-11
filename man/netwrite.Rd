@@ -138,6 +138,6 @@ flor <- netwrite(nodelist = florentine_nodes,
 # View system level summary
 flor$system_level_measures
 
-# View system level summary for network of `type 1` relations
-flor$system_measure_plot$`1`
+# View system level summary for network of marriage relations
+flor$system_measure_plot$marriage
 }

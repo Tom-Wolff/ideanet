@@ -12,6 +12,6 @@ triad
 }
 \description{
 An adjacency matrix representing a network of 9 nodes, the ties between which form all possible
-triads and motifs that can appear in a directed network.
+triads and 3-node motifs that can appear in a directed network.
 }
 \keyword{datasets}

@@ -42,8 +42,6 @@
 #'
 #' @export
 #'
-#' @importFrom rlang .data
-#'
 #' @examples
 #' # Use netwrite on an edgelist
 #' nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
@@ -96,8 +94,8 @@
 #' # View system level summary
 #' flor$system_level_measures
 #'
-#' # View system level summary for network of `type 1` relations
-#' flor$system_measure_plot$`1`
+#' # View system level summary for network of marriage relations
+#' flor$system_measure_plot$marriage
 
 
 ##########################################################
@@ -138,6 +136,14 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 "system_level_measures",
                                 "system_measure_plot"),
                      message = TRUE) {
+
+
+  # Turn off warnings if `message == FALSE`
+  if (message == FALSE) {
+    # Save original options setting
+    warn_option <- getOption("warn")
+    options(warn = -1)
+  }
 
   # This function needs the `gridGraphics` package even though it's never called explicitly
   rlang::check_installed("gridGraphics")
@@ -349,13 +355,21 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # merge issues reappear.
 
     # If `nodelist` is a data frame, we'll want to merge it into `node_measures`
-    if (("data.frame" %in% class(nodelist)) == TRUE) {
+    if (("data.frame" %in% class(nodelist)) == TRUE & "nodelist" %in% output) {
 
       # Sometimes the original ID column we need to join on will be of a different class
       # between the two dataframes we're trying to merge here. To be safe, we'll convert both columns
       # into characters and merge
       original_nodelist[, node_id] <- as.character(unlist(original_nodelist[, node_id]))
+
+      # Need to rename the `label` column in the node measure dataframe if working with an adjmat
+      if (data_type == "adjacency_matrix") {
+        colnames(netwrite_output$node_measures)[[2]] <- node_id
+      }
+
       netwrite_output$node_measures[, node_id] <- as.character(unlist(netwrite_output$node_measures[, node_id]))
+
+
 
       node_measures <- dplyr::left_join(original_nodelist, netwrite_output$node_measures, by = node_id)
       # Rearrange columns
@@ -363,6 +377,20 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # assign(x = "node_measures", value = node_measures, .GlobalEnv)
       netwrite_output$node_measures <- node_measures
+
+
+      # We'll also want to store original node attributes in the igraph object here if we're working with an adjmat
+      if (data_type == "adjacency_matrix") {
+            nodelist_names <- names(netwrite_output$node_measures)
+
+            for (i in 2:length(nodelist_names)) {
+
+              eval(parse(
+                text = paste("igraph::V(netwrite_output[[net_name]])$", nodelist_names[[i]], "<- netwrite_output$node_measures[,i]", sep = "")
+              ))
+
+            }
+      }
 
     }
 
@@ -699,7 +727,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                              new_column_names[3:length(new_column_names)])
     }
 
-    node_measures <- Reduce(dplyr::full_join, node_measures_list)
+    node_measures <- suppressMessages(Reduce(dplyr::full_join, node_measures_list))
 
     # If `nodelist` is a data frame, we'll want to merge it into `node_measures`
     if (("data.frame" %in% class(nodelist)) == TRUE) {
@@ -741,7 +769,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # netwrite_output$system_level_measures <- system_level_measures
       # assign(x = "system_level_measures", value = system_level_measures, .GlobalEnv)
 
-      s_measures_reduce <- Reduce(dplyr::full_join, s_measures_list)
+      s_measures_reduce <- suppressMessages(Reduce(dplyr::full_join, s_measures_list))
       netwrite_output$system_level_measures <- s_measures_reduce
       # assign(x = "system_level_measures_list", value = s_measures_list, .GlobalEnv)
     } # else {
@@ -798,6 +826,10 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   # if (!("system_measure_plot" %in% final_output)) {
   #   suppressWarnings(rm(list = c("system_measure_plot", "system_measure_plot_list"), envir = .GlobalEnv))
   # }
+
+  if (message == FALSE) {
+    options(warn = warn_option)
+  }
 
   return(netwrite_output)
 
@@ -918,8 +950,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # Adding Node-level measures
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
-        nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                   message = message, weights = weights)
+
+            nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
+                                       message = message, weights = weights)
+
 
         # If original `node_id` name is specified, rename column `attr` to match
         if (!is.null(node_id)) {
@@ -1369,7 +1403,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Calculating Multiplex Edge Correlation
     # Calculating System-Level Measures
     # print('system level measures')
-    if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
+    if ("system_level_measures" %in% output | "system_measure_plot" %in% output | "largest_bi_component" %in% output | "largest_component" %in% output) {
       weak_component <- largest_weak_component_igraph(g)
       bicomponent <- largest_bicomponent_igraph(g)
       ### Merge in largest bicomponent memberships
@@ -1525,22 +1559,22 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     null_ties <- suppressWarnings(igraph::dyad_census(g)$null)
 
     # Triad census
-    triad_003 =  igraph::triad_census(g)[[1]]
-    triad_012 =  igraph::triad_census(g)[[2]]
-    triad_102 =  igraph::triad_census(g)[[3]]
-    triad_021D = igraph::triad_census(g)[[4]]
-    triad_021U = igraph::triad_census(g)[[5]]
-    triad_021C = igraph::triad_census(g)[[6]]
-    triad_111D = igraph::triad_census(g)[[7]]
-    triad_111U = igraph::triad_census(g)[[8]]
-    triad_030T = igraph::triad_census(g)[[9]]
-    triad_030C = igraph::triad_census(g)[[10]]
-    triad_201 =  igraph::triad_census(g)[[11]]
-    triad_120D = igraph::triad_census(g)[[12]]
-    triad_120U = igraph::triad_census(g)[[13]]
-    triad_120C = igraph::triad_census(g)[[14]]
-    triad_210 =  igraph::triad_census(g)[[15]]
-    triad_300 =  igraph::triad_census(g)[[16]]
+    triad_003 =  suppressWarnings(igraph::triad_census(g)[[1]])
+    triad_012 =  suppressWarnings(igraph::triad_census(g)[[2]])
+    triad_102 =  suppressWarnings(igraph::triad_census(g)[[3]])
+    triad_021D = suppressWarnings(igraph::triad_census(g)[[4]])
+    triad_021U = suppressWarnings(igraph::triad_census(g)[[5]])
+    triad_021C = suppressWarnings(igraph::triad_census(g)[[6]])
+    triad_111D = suppressWarnings(igraph::triad_census(g)[[7]])
+    triad_111U = suppressWarnings(igraph::triad_census(g)[[8]])
+    triad_030T = suppressWarnings(igraph::triad_census(g)[[9]])
+    triad_030C = suppressWarnings(igraph::triad_census(g)[[10]])
+    triad_201 =  suppressWarnings(igraph::triad_census(g)[[11]])
+    triad_120D = suppressWarnings(igraph::triad_census(g)[[12]])
+    triad_120U = suppressWarnings(igraph::triad_census(g)[[13]])
+    triad_120C = suppressWarnings(igraph::triad_census(g)[[14]])
+    triad_210 =  suppressWarnings(igraph::triad_census(g)[[15]])
+    triad_300 =  suppressWarnings(igraph::triad_census(g)[[16]])
 
     avg_geodesic <- igraph::average.path.length(g, directed = directed)
 
@@ -1585,16 +1619,20 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #                                                      directed = TRUE,
       #                                                      normalized = TRUE)$centralization
 
-      bet_centr_u <- betweenness_centralization(g = g_no_iso,
-                                                weights = igraph::E(g_no_iso)$weight,
-                                                directed = FALSE)
+          bet_centr_u <- betweenness_centralization(g = g_no_iso,
+                                                    weights = igraph::E(g_no_iso)$weight,
+                                                    directed = FALSE)
+
 
       cent_bet_undir <- bet_centr_u$betweenness_centralization
       cent_bet_undir_bin <- bet_centr_u$binarized_betweenness_centralization
 
-      bet_centr_d <- betweenness_centralization(g = g_no_iso,
-                                                weights = igraph::E(g_no_iso)$weight,
-                                                directed = TRUE)
+        bet_centr_d <- betweenness_centralization(g = g_no_iso,
+                                                  weights = igraph::E(g_no_iso)$weight,
+                                                  directed = TRUE)
+
+
+
 
       cent_bet_dir <- bet_centr_d$betweenness_centralization
       cent_bet_dir_bin <- bet_centr_d$binarized_betweenness_centralization
@@ -1644,7 +1682,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # cent_close_in <- igraph::centralization.closeness(g_no_iso,
       #                                                 mode = "in",
       #                                                 normalized = TRUE)$centralization
-      close_centr <- closeness_centralization(g, directed = TRUE)
+
+          close_centr <- closeness_centralization(g, directed = TRUE)
+
 
       cent_close_undir <- close_centr$centralization_un
       cent_close_out <- close_centr$centralization_out
@@ -2424,7 +2464,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # suppressWarnings(rm(largest_bi_component, largest_bi_component_ids))
   }
 
+
   return(basic_output)
+
+
 
 }
 
