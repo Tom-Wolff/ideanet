@@ -343,17 +343,30 @@ server <- function(input, output, session) {
 
     shiny::req(input$raw_edges)
 
-    # Reading CSV
-    if (input$select_file_type_edges == "csv") {
-      # network edgelist
-      read.csv(input$raw_edges$datapath, header = input$edge_header)
-      # Reading Excel
+    # If "Edgelist" is selected
+    if (input$edge_format == "Edgelist") {
+          # Reading CSV
+          if (input$select_file_type_edges == "csv") {
+            # network edgelist
+            read.csv(input$raw_edges$datapath, header = input$edge_header)
+            # Reading Excel
+          } else {
+            if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
+              readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header)
+            } else {
+              readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header)
+            }
+          }
+    # If "Adjacency Matrix" is selected
     } else {
-      if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
-        readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header)
-      } else {
-        readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header)
-      }
+
+
+     as.data.frame(netread(path = input$raw_edges$datapath,
+                           filetype = input$select_file_type_edges,
+                           col_names = input$edge_header,
+                           row_names = input$edge_names,
+                           format = "adjacency_matrix")$edgelist)
+
     }
     # if (input$nodes_exist & !is.null(input$raw_nodes) & !is.null(input$raw_edges)) {
     # netread(

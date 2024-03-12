@@ -207,6 +207,18 @@ netread_csv <- function(path,
       full_el$j_elements <- paste(full_el$j_elements, "2", sep = "_")
     }
 
+    # If the column names are numbers, `read.csv` will automatically put "X" characters
+    # in front of the column names to make them syntactically valid. This causes problems for us,
+    # so we need to detect when this occurs and remove the "X"s from `j_elements`
+
+    if ((sum(stringr::str_detect(this_el$j_elements, "^X")) == length(this_el$j_elements)) &
+        (sum(stringr::str_detect(this_el$i_elements, "^X")) != length(this_el$i_elements))) {
+      this_el$j_elements <- stringr::str_replace_all(this_el$j_elements, "^X", "")
+      full_el$j_elements <- stringr::str_replace_all(full_el$j_elements, "^X", "")
+    }
+
+
+
 
     # Convert to numerics where available
     for (i in 1:ncol(this_el)) {
