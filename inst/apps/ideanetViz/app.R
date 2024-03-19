@@ -1195,27 +1195,26 @@ server <- function(input, output, session) {
     })
 
   ### Visualize nodemeasures ----
-  custom_theme <- function() {
-    ggplot2::theme_minimal() +
-      ggplot2::theme(
-        text = ggplot2::element_text(family = "Helvetica", color = "#333333"),
-        plot.title = ggplot2::element_text(face = "bold", size = 14, hjust = 0.5),
-        plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5),
-        plot.caption = ggplot2::element_text(size = 8, hjust = 0.5),
-        axis.title = ggplot2::element_text(size = 10),
-        axis.text = ggplot2::element_text(size = 8),
-        legend.title = ggplot2::element_text(size = 10),
-        legend.text = ggplot2::element_text(size = 8)
-      )
-  }
+  # custom_theme <- function() {
+  #   ggplot2::theme_light() +
+  #     ggplot2::theme(
+  #       text = ggplot2::element_text(family = "Helvetica", color = "#333333"),
+  #       plot.title = ggplot2::element_text(face = "bold", size = 14, hjust = 0.5),
+  #       plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5),
+  #       plot.caption = ggplot2::element_text(size = 8, hjust = 0.5),
+  #       axis.title = ggplot2::element_text(size = 10),
+  #       axis.text = ggplot2::element_text(size = 8),
+  #       legend.title = ggplot2::element_text(size = 10),
+  #       legend.text = ggplot2::element_text(size = 8)
+  #     )
+  # }
+
+  ggplot2::theme_set(ggplot2::theme_light(base_size = 18))
 
   output$show_vars <- shiny::renderUI({
     shiny::checkboxGroupInput("show_vars", "Columns in node variables to show:",
                               names(node_measures), selected = names(node_measures)[1:5])
   })
-
-
-
 
 
   graph_wanted_val <- shiny::reactive({input$graph_wanted})
@@ -1231,45 +1230,51 @@ server <- function(input, output, session) {
   })
 
   output$data_table_vis_var <-
-
     shiny::renderUI({
       shiny::req(input$graph_wanted)
-      shiny::selectInput('data_table_vis_var',label = 'select vis var',choices = nodelist3() %>% colnames(), selected = NULL)
+      shiny::selectInput('data_table_vis_var',label = 'select variable to plot', choices = nodelist3() %>% colnames(), selected = NULL)
     })
 
   output$data_table_vis_var2 <-
-
     shiny::renderUI({
       shiny::req(input$graph_wanted)
       shiny::req(input$var_wanted)
-      shiny::selectInput('data_table_vis_var2',label = 'select second vis var',choices = nodelist3() %>% colnames(), selected = NULL)
+      shiny::selectInput('data_table_vis_var2',label = 'select second variable to plot',choices = nodelist3() %>% colnames(), selected = NULL)
     })
 
   chosen_node_graph <- shiny::reactiveVal()
+
   shiny::observeEvent(input$data_table_vis_type, {
     chosen_graph <-
       if(input$data_table_vis_type == 'boxplot') {
         chosen_node_graph('boxplot')
       }
-    else if(input$data_table_vis_type == 'histogram'){
-      chosen_node_graph('histogram')
-    }
-    else if(input$data_table_vis_type == 'density plot'){
-      chosen_node_graph('density plot')
-    }
-  })
-  shiny::observeEvent(input$data_table_vis_var2, {
-    chosen_graph <-
-      chosen_node_graph('scatterplot')
-  })
-
-
+      else if(input$data_table_vis_type == 'histogram'){
+        chosen_node_graph('histogram')
+      }
+      else if(input$data_table_vis_type == 'density plot'){
+        chosen_node_graph('density plot')
+      }
+      else if(input$data_table_vis_type == 'scatterplot'){
+        chosen_node_graph('scatterplot')
+      }
+    })
 
   output$data_table_vis_type <-
     shiny::renderUI({
       shiny::req(input$graph_wanted)
-      shiny::selectInput('data_table_vis_type', label = 'select vis type', choices = c('histogram', 'density plot', 'boxplot'), selected = NULL)
+      shiny::selectInput('data_table_vis_type', label = 'select visualisation', choices = c('histogram', 'density plot', 'boxplot'), selected = NULL)
     })
+
+  # Removed automatic scatterplotting and made it available if two variables are selected.
+  shiny::observeEvent(input$data_table_vis_var2, {
+    output$data_table_vis_type <-
+      shiny::renderUI({
+        shiny::req(input$graph_wanted)
+        shiny::selectInput('data_table_vis_type', label = 'select visualisation', choices = c('histogram', 'density plot', 'boxplot', 'scatterplot'), selected = NULL)
+      })
+  })
+
 
   output$statistics_table <- DT::renderDataTable({#print("Reached data table")
     nodelist3()[, input$show_vars, drop = FALSE]})
@@ -1287,16 +1292,36 @@ server <- function(input, output, session) {
     shiny::renderPlot({
       shiny::req(input$graph_wanted)
       if(chosen_node_graph() == 'boxplot') {
-        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) + ggplot2::geom_boxplot(color="#0073C2FF", fill="#0073C2FF", alpha=0.2) + ggplot2::labs(title = paste ("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var) + custom_theme()
+        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) +
+          ggplot2::geom_boxplot(color="#0073C2FF", fill="#0073C2FF", alpha=0.2) +
+          ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var)
       }
       else if(chosen_node_graph() == 'histogram') {
-        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) + ggplot2::geom_histogram(fill = "#0073C2FF", color = "#FFFFFF") + ggplot2::labs(title = paste ("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var) + custom_theme() + ggplot2::scale_x_continuous(labels = scales::comma)
+        if (length(unique(nodelist3()[,input$data_table_vis_var])) < 11) {
+          dat <- data.frame(table(nodelist3()[,input$data_table_vis_var]))
+          ggplot2::ggplot(dat, ggplot2::aes(x = Var1, y = Freq)) +
+            ggplot2::geom_col(fill = "#0073C2FF", color = "#FFFFFF") +
+            ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var, y = "N")
+        } else {
+          dat <- hist(nodelist3()[,input$data_table_vis_var], plot = F)
+          dat <- data.frame(x = dat$mids, y = dat$counts)
+          ggplot2::ggplot(dat, ggplot2::aes(x = x, y = y)) +
+            ggplot2::geom_col(fill = "#0073C2FF", color = "#FFFFFF") +
+            ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var, y = "N")
+        }
       }
       else if(chosen_node_graph() == 'density plot') {
-        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) + ggplot2::geom_density(alpha = 0.7, fill = "#0073C2FF") + ggplot2::labs(title = paste ("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var) + custom_theme() + ggplot2::scale_x_continuous(labels = scales::comma)
+        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) +
+          ggplot2::geom_density(alpha = 0.7, fill = "#0073C2FF") +
+          ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var) +
+          ggplot2::scale_x_continuous(labels = scales::comma)
       }
       else if(chosen_node_graph() == 'scatterplot') {
-        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var], y = nodelist3()[,input$data_table_vis_var2])) + ggplot2::geom_point(color="#0073C2FF") + ggplot2::labs(title = paste(input$data_table_vis_var, "vs", input$data_table_vis_var2)) + custom_theme() + ggplot2::scale_x_continuous(labels = scales::comma)
+        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var], y = nodelist3()[,input$data_table_vis_var2])) +
+          ggplot2::geom_point(color="#0073C2FF") +
+          ggplot2::geom_line(stat = "smooth", method = "lm", alpha = 0.5, formula = y ~ x) +
+          ggplot2::labs(title = paste(input$data_table_vis_var, "vs", input$data_table_vis_var2), x = input$data_table_vis_var, y = input$data_table_vis_var2) +
+          ggplot2::scale_x_continuous(labels = scales::comma)
       }
     })
 
