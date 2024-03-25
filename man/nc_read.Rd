@@ -12,7 +12,7 @@ nc_read(path, cat.to.factor = TRUE)
 \item{cat.to.factor}{A logical value indicating whether categorical variables, originally stored as a series of TRUE/FALSE columns, should be converted into a single factor column.}
 }
 \value{
-\code{nc_read} returns three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}. Data frames are either stored individually in the Global Environment or as elements in a single list in the Global Environment depending on how \code{output_list} is specified. \cr \cr
+\code{nc_read} returns a list containing three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}.  \cr \cr
 Note that in the \code{alters} data frame, column \code{node_type} reflects the "node type" assigned to a given alter as specified in a Network Canvas protocol. Values in \code{node_type} are likely not those which should be fed into the \code{alter_types} argument in \code{\link{ego_netwrite}}.
 }
 \description{
