@@ -31,7 +31,7 @@ ui <- shiny::fluidPage(
           shiny::sidebarPanel(
             shiny::uiOutput('select_file_type_edges'),
             shiny::uiOutput('edge_format'),
-            shiny::checkboxInput("edge_names", tags$b("Does the file have an first id column"), FALSE),
+            shiny::checkboxInput("edge_names", tags$b("Does the file have a first ID column"), FALSE),
             shiny::checkboxInput("edge_header", tags$b("Does the file have a header?"), TRUE),
             tags$p(shiny::span("Large datasets may take a few seconds to render.", style = "color:red")),
             tags$p(shiny::HTML("<b>Continue</b> on to process the data before visualizing it.")),
@@ -90,7 +90,7 @@ ui <- shiny::fluidPage(
             ),
             tags$p(shiny::span("Questions with an asterisk are required.", style = "color:red")),
             tags$p(shiny::HTML("<b>Process</b> the edge data by assigning the columns to their function.")),
-            tags$p(shiny::HTML("If the graph is undirected, the order of sender and alter id columns doesn't matter.")),
+            tags$p(shiny::HTML("If the graph is undirected, the order of sender and alter ID columns doesn't matter.")),
           ),
           shiny::mainPanel(
             style = "overflow-x: auto;",
@@ -481,7 +481,7 @@ server <- function(input, output, session) {
 
   output$node_ids <- shiny::renderUI({
 
-    shiny::selectInput(inputId = "node_id_col", label = "Column with node ids*", choices = append("Empty",colnames(node_data())), selected = "id", multiple = FALSE)
+    shiny::selectInput(inputId = "node_id_col", label = "Column with node IDs*", choices = append("Empty",colnames(node_data())), selected = "id", multiple = FALSE)
 
   })
   output$node_labels <- shiny::renderUI({
@@ -502,10 +502,10 @@ server <- function(input, output, session) {
 
   #Edge Processing Options
   output$edge_in <- shiny::renderUI({
-    shiny::selectInput(inputId = "edge_in_col", label = "Column with sender id*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
+    shiny::selectInput(inputId = "edge_in_col", label = "Column with sender IDs*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
   })
   output$edge_out <- shiny::renderUI({
-    shiny::selectInput(inputId = "edge_out_col", label = "Column with the alter id*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
+    shiny::selectInput(inputId = "edge_out_col", label = "Column with the alter IDs*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
   })
   output$edge_weight <- shiny::renderUI({
     shiny::selectInput(inputId = "edge_weight_col", label = "Column with edge weights", choices = append("Empty",colnames(edge_data())), selected = NULL, multiple = FALSE)
@@ -1232,14 +1232,14 @@ server <- function(input, output, session) {
   output$data_table_vis_var <-
     shiny::renderUI({
       shiny::req(input$graph_wanted)
-      shiny::selectInput('data_table_vis_var',label = 'select variable to plot', choices = nodelist3() %>% colnames(), selected = NULL)
+      shiny::selectInput('data_table_vis_var',label = 'Select variable to plot', choices = nodelist3() %>% colnames(), selected = NULL)
     })
 
   output$data_table_vis_var2 <-
     shiny::renderUI({
       shiny::req(input$graph_wanted)
       shiny::req(input$var_wanted)
-      shiny::selectInput('data_table_vis_var2',label = 'select second variable to plot',choices = nodelist3() %>% colnames(), selected = NULL)
+      shiny::selectInput('data_table_vis_var2',label = 'Select second variable to plot',choices = nodelist3() %>% colnames(), selected = NULL)
     })
 
   chosen_node_graph <- shiny::reactiveVal()
@@ -1263,7 +1263,9 @@ server <- function(input, output, session) {
   output$data_table_vis_type <-
     shiny::renderUI({
       shiny::req(input$graph_wanted)
-      shiny::selectInput('data_table_vis_type', label = 'select visualisation', choices = c('histogram', 'density plot', 'boxplot'), selected = NULL)
+      shiny::selectInput('data_table_vis_type', label = 'Select visualisation', choices = c("Histogram" = 'histogram',
+                                                                                            "Density Plot" = 'density plot',
+                                                                                            "Boxplot" = 'boxplot'), selected = NULL)
     })
 
   # Removed automatic scatterplotting and made it available if two variables are selected.
@@ -1271,7 +1273,10 @@ server <- function(input, output, session) {
     output$data_table_vis_type <-
       shiny::renderUI({
         shiny::req(input$graph_wanted)
-        shiny::selectInput('data_table_vis_type', label = 'select visualisation', choices = c('histogram', 'density plot', 'boxplot', 'scatterplot'), selected = NULL)
+        shiny::selectInput('data_table_vis_type', label = 'Select visualisation', choices = c("Histogram" = 'histogram',
+                                                                                              "Density Plot" = 'density plot',
+                                                                                              "Boxplot" = 'boxplot',
+                                                                                              "Scatter Plot" = 'scatterplot'), selected = NULL)
       })
   })
 
