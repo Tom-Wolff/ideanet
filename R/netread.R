@@ -1333,19 +1333,3 @@ trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 # netread_ucinet(file = "./netread_test/base_dl/random1_type4.dl",
 #                net_name = "random1_type4")
 
-
-
-
-
-
-
-
-####################################
-
-
-# Gephi
-
-
-
-
-

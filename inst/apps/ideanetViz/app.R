@@ -345,27 +345,27 @@ server <- function(input, output, session) {
 
     # If "Edgelist" is selected
     if (input$edge_format == "Edgelist") {
-          # Reading CSV
-          if (input$select_file_type_edges == "csv") {
-            # network edgelist
-            read.csv(input$raw_edges$datapath, header = input$edge_header)
-            # Reading Excel
-          } else {
-            if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
-              readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header)
-            } else {
-              readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header)
-            }
-          }
-    # If "Adjacency Matrix" is selected
+      # Reading CSV
+      if (input$select_file_type_edges == "csv") {
+        # network edgelist
+        read.csv(input$raw_edges$datapath, header = input$edge_header)
+        # Reading Excel
+      } else {
+        if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
+          readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header)
+        } else {
+          readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header)
+        }
+      }
+      # If "Adjacency Matrix" is selected
     } else {
 
 
-     as.data.frame(netread(path = input$raw_edges$datapath,
-                           filetype = input$select_file_type_edges,
-                           col_names = input$edge_header,
-                           row_names = input$edge_names,
-                           format = "adjacency_matrix")$edgelist)
+      as.data.frame(netread(path = input$raw_edges$datapath,
+                            filetype = input$select_file_type_edges,
+                            col_names = input$edge_header,
+                            row_names = input$edge_names,
+                            format = "adjacency_matrix")$edgelist)
 
     }
     # if (input$nodes_exist & !is.null(input$raw_nodes) & !is.null(input$raw_edges)) {
@@ -545,16 +545,16 @@ server <- function(input, output, session) {
       if (input$node_id_col != "Empty") {
         print('started netwrite 1')
         list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                           adjacency_list=FALSE, nodelist=node_data(),
-                           node_id=input$node_id_col,
-                           i_elements=edge_data()[,input$edge_in_col],
-                           j_elements=edge_data()[,input$edge_out_col],
-                           weights=initial_edge(),
-                           type=type_ret,
-                           missing_code=99999, weight_type='frequency',
-                           directed=input$direction_toggle,
-                           net_name='init_net',
-                           shiny=TRUE),
+                          adjacency_list=FALSE, nodelist=node_data(),
+                          node_id=input$node_id_col,
+                          i_elements=edge_data()[,input$edge_in_col],
+                          j_elements=edge_data()[,input$edge_out_col],
+                          weights=initial_edge(),
+                          type=type_ret,
+                          missing_code=99999, weight_type='frequency',
+                          directed=input$direction_toggle,
+                          net_name='init_net',
+                          shiny=TRUE),
                  .GlobalEnv)
         print('processed netwrite')
         init_net
@@ -562,14 +562,14 @@ server <- function(input, output, session) {
       } else {
         print('started netwrite 2')
         list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                         adjacency_list=FALSE,
-                         i_elements=edge_data()[,input$edge_in_col],
-                         j_elements=edge_data()[,input$edge_out_col],
-                         weights=initial_edge(),
-                         type=type_ret,
-                         missing_code=99999, weight_type='frequency',
-                         directed=input$direction_toggle,
-                         net_name='init_net',shiny=TRUE),
+                          adjacency_list=FALSE,
+                          i_elements=edge_data()[,input$edge_in_col],
+                          j_elements=edge_data()[,input$edge_out_col],
+                          weights=initial_edge(),
+                          type=type_ret,
+                          missing_code=99999, weight_type='frequency',
+                          directed=input$direction_toggle,
+                          net_name='init_net',shiny=TRUE),
                  .GlobalEnv)
         print('processed netwrite')
         init_net
@@ -577,14 +577,14 @@ server <- function(input, output, session) {
     } else {
       print('started netwrite 3')
       list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                         adjacency_list=FALSE,
-                         i_elements=edge_data()[,input$edge_in_col],
-                         j_elements=edge_data()[,input$edge_out_col],
-                         weights=initial_edge(),
-                         type=type_ret,
-                         missing_code=99999, weight_type='frequency',
-                         directed=input$direction_toggle,
-                         net_name='init_net',shiny=TRUE),
+                        adjacency_list=FALSE,
+                        i_elements=edge_data()[,input$edge_in_col],
+                        j_elements=edge_data()[,input$edge_out_col],
+                        weights=initial_edge(),
+                        type=type_ret,
+                        missing_code=99999, weight_type='frequency',
+                        directed=input$direction_toggle,
+                        net_name='init_net',shiny=TRUE),
                .GlobalEnv)
       print('processed netwrite')
       init_net
@@ -1249,16 +1249,16 @@ server <- function(input, output, session) {
       if(input$data_table_vis_type == 'boxplot') {
         chosen_node_graph('boxplot')
       }
-      else if(input$data_table_vis_type == 'histogram'){
-        chosen_node_graph('histogram')
-      }
-      else if(input$data_table_vis_type == 'density plot'){
-        chosen_node_graph('density plot')
-      }
-      else if(input$data_table_vis_type == 'scatterplot'){
-        chosen_node_graph('scatterplot')
-      }
-    })
+    else if(input$data_table_vis_type == 'histogram'){
+      chosen_node_graph('histogram')
+    }
+    else if(input$data_table_vis_type == 'density plot'){
+      chosen_node_graph('density plot')
+    }
+    else if(input$data_table_vis_type == 'scatterplot'){
+      chosen_node_graph('scatterplot')
+    }
+  })
 
   output$data_table_vis_type <-
     shiny::renderUI({
@@ -1679,13 +1679,13 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$run_role_detect, {
     list2env(role_analysis(init_net,
-                            nodes = node_measures,
-                            directed = input$direction_toggle,
-                            method = input$select_role_type,
-                            min_partitions = input$role_det_min,
-                            max_partitions = input$role_det_max,
-                            min_partition_size = as.integer(input$min_cluster_size),
-                            viz = TRUE),
+                           nodes = node_measures,
+                           directed = input$direction_toggle,
+                           method = input$select_role_type,
+                           min_partitions = input$role_det_min,
+                           max_partitions = input$role_det_max,
+                           min_partition_size = as.integer(input$min_cluster_size),
+                           viz = TRUE),
              .GlobalEnv)
     ran_toggle_role_detect$x <- 1
   })

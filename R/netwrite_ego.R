@@ -7,7 +7,6 @@
 #' @param alters A data frame containing measures of alter attributes.
 #' @param alter_id A vector of identifiers indicating which alter is associated with a given row in \code{alters}, or a single character value indicating the name of the column in \code{alters} containing alter identifiers.
 #' @param alter_ego A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in \code{alters} containing ego identifiers.
-#' @param alter_type (DEPRECATED) A numeric or character vector indicating the types of relationships existing between ego and a given alter, or a single character value indicating the name of the column in \code{alters} containing relationship type. If \code{alter_type} is specified, \code{ego_netwrite} will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.
 #' @param alter_types A character vector indicating the columns in \code{alters} that indicate whether a given alter has certain types of relations with ego. These columns should all contain binary measures indicating whether alter has a particular type of relation with ego.
 #' @param max_alters A numeric value indicating the maximum number of alters an ego in the dataset could have nominated
 #' @param alter_alter A data frame containing an edgelist indicating ties between alters in each ego's network. This edgelist is optional, but \code{ego_netwrite} will not provide certain measures without it.
@@ -29,24 +28,24 @@
 #'
 #' @examples
 #'
-#' egonets <- ego_netwrite(egos = egor::egos32,
-#'                         ego_id = ".EGOID",
+#' # Simple Processing, Ignoring Ego-Alter or Alter-Alter Relation Types
+#' ngq_nw <- ego_netwrite(egos = ngq_egos,
+#'                        ego_id = ngq_egos$ego_id,
 #'
-#'                         alters = egor::alters32,
-#'                         alter_id = ".ALTID",
-#'                         alter_ego = ".EGOID",
+#'                        alters = ngq_alters,
+#'                        alter_id = ngq_alters$alter_id,
+#'                        alter_ego = ngq_alters$ego_id,
 #'
-#'                         alter_alter = egor::aaties32,
-#'                         aa_ego = ".EGOID",
-#'                         i_elements = ".SRCID",
-#'                         j_elements = ".TGTID",
+#'                        max_alters = 10,
+#'                        alter_alter = ngq_aa,
+#'                        aa_ego = ngq_aa$ego_id,
+#'                        i_elements = ngq_aa$alter1,
+#'                        j_elements = ngq_aa$alter2,
+#'                        directed = FALSE,
 #'
-#'                         missing_code = NULL,
-#'                         directed = FALSE,
+#'                        egor = TRUE)
 #'
-#'                         egor = TRUE)
-#'
-#' list2env(egonets, .GlobalEnv)
+#' list2env(ngq_nw, .GlobalEnv)
 #'
 #' # View summaries of individual ego networks
 #' head(summaries)
@@ -56,6 +55,46 @@
 #'
 #' # View sociogram of second ego network
 #' plot(igraph_objects[[2]]$igraph_ego)
+#'
+#'
+#' #  Processing with Different Ego-Alter Relation Types
+#' ngq_altertype <- ego_netwrite(egos = ngq_egos,
+#'                               ego_id = ngq_egos$ego_id,
+#'
+#'                               alters = ngq_alters,
+#'                               alter_id = ngq_alters$alter_id,
+#'                               alter_ego = ngq_alters$ego_id,
+#'                               alter_types = c("family", "friend", "other_rel"),
+#'                               max_alters = 10,
+#'
+#'                               alter_alter = ngq_aa,
+#'                               aa_ego = ngq_aa$ego_id,
+#'                               i_elements = ngq_aa$alter1,
+#'                               j_elements = ngq_aa$alter2,
+#'
+#'                               directed = FALSE)
+#'
+#' list2env(ngq_altertype, .GlobalEnv)
+#'
+#'
+#' #  Processing with Different Alter-Alter Relation Types
+#' ngq_aatype <- ego_netwrite(egos = ngq_egos,
+#'                            ego_id = ngq_egos$ego_id,
+#'
+#'                            alters = ngq_alters,
+#'                            alter_id = ngq_alters$alter_id,
+#'                            alter_ego = ngq_alters$ego_id,
+#'                            max_alters = 10,
+#'                            alter_alter = ngq_aa,
+#'
+#'                            aa_ego = ngq_aa$ego_id,
+#'                            i_elements = ngq_aa$alter1,
+#'                            j_elements = ngq_aa$alter2,
+#'                            aa_type = ngq_aa$type,
+#'
+#'                            directed = FALSE)
+#'
+#' list2env(ngq_aatype, .GlobalEnv)
 
 
 ego_netwrite <- function(egos,
@@ -63,7 +102,6 @@ ego_netwrite <- function(egos,
                          alters = NULL,
                          alter_id = NULL,
                          alter_ego = NULL,
-                         alter_type = NULL,
                          alter_types = NULL,
                          max_alters = Inf,
                          alter_alter = NULL,
@@ -109,7 +147,7 @@ ego_netwrite <- function(egos,
 
 
 
-  # Indictors for renaming objects
+  # Indicators for renaming objects
   ego_id_fix <- FALSE
   alter_ego_fix <- FALSE
   alter_id_fix <- FALSE
@@ -686,7 +724,11 @@ ego_netwrite <- function(egos,
 
             # Reorder columns of alter edgelist for final output
             this_alter_alter <- this_alter_alter %>%
-              dplyr::select(.data$ego_id, .data$i_elements, .data$i_id, .data$j_elements, .data$j_id, dplyr::everything())
+              dplyr::select(.data$ego_id, .data$i_elements,
+                            #.data$i_id,
+                            .data$j_elements,
+                            #.data$j_id,
+                            dplyr::everything())
           }
 
 
@@ -911,7 +953,7 @@ ego_netwrite <- function(egos,
     cors_list <- list()
 
     for (i in 1:nrow(egos)) {
-      print(i)
+      # print(i)
       this_ego <- egos[i, ]
       this_ego_id <- this_ego[, "ego_id"]
       # Get edgelist for only this ego
@@ -1011,6 +1053,7 @@ ego_netwrite <- function(egos,
   summary_names <- c("num_egos",
                      "num_alters",
                      "num_isolates",
+                     "num_one_alter",
                      "min_net_size",
                      "max_net_size",
                      "avg_net_size",
@@ -1019,6 +1062,7 @@ ego_netwrite <- function(egos,
   summary_titles <- c("Number of egos/ego networks",
                       "Number of alters",
                       "Number of isolates",
+                      "Number of one-node networks",
                       "Smallest non-isolate network size",
                       "Largest network size",
                       "Average network size",
@@ -1027,11 +1071,12 @@ ego_netwrite <- function(egos,
   summary_descriptions <- c("Total number of egos providing ego networks in dataset",
                             "Total number of alters nominated by egos across entire dataset",
                             "Number of egos who did not report any alters in their personal network",
+                            "Number of egos who reported only one alter in their personal network",
                             "Smallest number of alters provided by a single ego",
                             "Largest number of alters provided by a single ego",
-                            "Average number of alters provded by a single ego",
-                            "The average density of personal networks provided by egos (networks with zero alters excluded from calculation)",
-                            "The mean fragmentation index score of personal networks provided by egos (networks with zero alters excluded from calculation)")
+                            "Average number of alters provided by a single ego",
+                            "The average density of personal networks provided by egos (networks with 0-1 alters excluded from calculation)",
+                            "The mean fragmentation index score of personal networks provided by egos (networks with 0-1 alters excluded from calculation)")
 
   # Combine into single dataframe
   summary_labels <- data.frame(var_name = summary_names,
@@ -1054,6 +1099,7 @@ ego_netwrite <- function(egos,
       dplyr::summarize(num_egos =          as.character(dplyr::n()),
                        num_alters =        as.character(sum(.data$network_size, na.rm = TRUE)),
                        num_isolates =      as.character(sum(.data$network_size == 0)),
+                       num_one_alter =     as.character(sum(.data$network_size == 1)),
                        min_net_size =      as.character(min(.data$network_size[.data$network_size != 0])),
                        max_net_size =      as.character(max(.data$network_size, na.rm = TRUE)),
                        avg_net_size =      as.character(mean(.data$network_size, na.rm = TRUE)),
@@ -1092,6 +1138,7 @@ ego_netwrite <- function(egos,
           dplyr::summarize(num_egos =          as.character(dplyr::n()),
                            num_alters =        as.character(sum(.data$network_size, na.rm = TRUE)),
                            num_isolates =      as.character(sum(.data$network_size == 0)),
+                           num_one_alter =     as.character(sum(.data$network_size == 1)),
                            min_net_size =      as.character(min(.data$network_size[.data$network_size != 0])),
                            max_net_size =      as.character(max(.data$network_size, na.rm = TRUE)),
                            avg_net_size =      as.character(mean(.data$network_size, na.rm = TRUE)),
@@ -1107,7 +1154,7 @@ ego_netwrite <- function(egos,
           dplyr::left_join(summary_t, by = "var_name") %>%
           dplyr::select(-.data$var_name)
 
-        this_merge$measure_labels <- paste("(", unique(aa_type)[[i]], ") ", this_merge$measure_labels, sep = "")
+        this_merge$measure_labels <- paste("(Alter-Alter ", unique(aa_type)[[i]], ") ", this_merge$measure_labels, sep = "")
         # We don't need the top row
         this_merge <- this_merge[2:nrow(this_merge),]
 
@@ -1138,6 +1185,7 @@ ego_netwrite <- function(egos,
       dplyr::summarize(num_egos =          as.character(dplyr::n()),
                        num_alters =        as.character(sum(.data$network_size, na.rm = TRUE)),
                        num_isolates =      as.character(sum(.data$network_size == 0)),
+                       num_one_alter =     as.character(sum(.data$network_size == 1)),
                        min_net_size =      as.character(min(.data$network_size)),
                        max_net_size =      as.character(max(.data$network_size)),
                        avg_net_size =      as.character(mean(.data$network_size, na.rm = TRUE)))
@@ -1169,6 +1217,7 @@ ego_netwrite <- function(egos,
                       network_size2 = ifelse(.data$network_size2 == 0, NA, .data$network_size2)) %>%
         dplyr::summarize(num_alters =        as.character(sum(.data$network_size, na.rm = TRUE)),
                          num_isolates =      as.character(sum(.data$network_size == 0)),
+                         num_one_alter =     as.character(sum(.data$network_size == 1)),
                          min_net_size =      as.character(min(.data$network_size2, na.rm = TRUE)),
                          max_net_size =      as.character(max(.data$network_size2, na.rm = TRUE)),
                          avg_net_size =      as.character(mean(.data$network_size2, na.rm = TRUE)))
@@ -1179,7 +1228,7 @@ ego_netwrite <- function(egos,
       # Merge into `summary_merge`
       this_t <- this_t %>%
         dplyr::left_join(summary_labels, by = "var_name") %>%
-        dplyr::mutate(measure_labels = paste("(", alter_types[[i]], ") ", .data$measure_labels, sep = "")) %>%
+        dplyr::mutate(measure_labels = paste("(Ego-Alter ", alter_types[[i]], ") ", .data$measure_labels, sep = "")) %>%
         dplyr::select(-.data$var_name) %>%
         dplyr::select(.data$measure_labels, .data$measure_descriptions, .data$measures)
       summary_merge <- dplyr::bind_rows(summary_merge, this_t)

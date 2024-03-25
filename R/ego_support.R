@@ -55,7 +55,8 @@ alter_centrality <- function(x, directed) {
     if (directed == FALSE) {
 
       # total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
-      total_degree <- total_degree(x$igraph, directed = FALSE)$total_degree_all
+      # total_degree <- total_degree(x$igraph, directed = FALSE)$total_degree_all
+      total_degree <- rep(0, length(igraph::V(x$igraph)))
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
       closeness <- closeness_igraph(x$igraph, directed = FALSE)
@@ -85,11 +86,11 @@ alter_centrality <- function(x, directed) {
 
     } else {
 
-      custom_degree <- total_degree(x$igraph, directed = TRUE)
+      # custom_degree <- total_degree(x$igraph, directed = TRUE)
 
-      indegree <- custom_degree$total_degree_in
-      outdegree <- custom_degree$total_degree_out
-      total_degree <- custom_degree$total_degree_all
+      indegree <- rep(0, length(igraph::V(x$igraph)))
+      outdegree <- rep(0, length(igraph::V(x$igraph)))
+      total_degree <- rep(0, length(igraph::V(x$igraph)))
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
       closeness_scores <- closeness_igraph(x$igraph, directed = TRUE)
@@ -391,6 +392,7 @@ igraph_apply <- function(x, directed) {
 ################################################################################
 
 multiplex_ego <- function(edgelist, directed, type, weight_type = "frequency") {
+
 
   # Creating edgelist to manipulate internally
   edges <- as.data.frame(edgelist[,])

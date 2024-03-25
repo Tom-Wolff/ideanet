@@ -10,7 +10,6 @@ ego_netwrite(
   alters = NULL,
   alter_id = NULL,
   alter_ego = NULL,
-  alter_type = NULL,
   alter_types = NULL,
   max_alters = Inf,
   alter_alter = NULL,
@@ -35,8 +34,6 @@ ego_netwrite(
 \item{alter_id}{A vector of identifiers indicating which alter is associated with a given row in \code{alters}, or a single character value indicating the name of the column in \code{alters} containing alter identifiers.}
 
 \item{alter_ego}{A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in \code{alters} containing ego identifiers.}
-
-\item{alter_type}{(DEPRECATED) A numeric or character vector indicating the types of relationships existing between ego and a given alter, or a single character value indicating the name of the column in \code{alters} containing relationship type. If \code{alter_type} is specified, \code{ego_netwrite} will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.}
 
 \item{alter_types}{A character vector indicating the columns in \code{alters} that indicate whether a given alter has certain types of relations with ego. These columns should all contain binary measures indicating whether alter has a particular type of relation with ego.}
 
@@ -70,24 +67,24 @@ The \code{ego_netwrite} function reads in data pertaining to ego networks and pr
 }
 \examples{
 
-egonets <- ego_netwrite(egos = egor::egos32,
-                        ego_id = ".EGOID",
+# Simple Processing, Ignoring Ego-Alter or Alter-Alter Relation Types
+ngq_nw <- ego_netwrite(egos = ngq_egos,
+                       ego_id = ngq_egos$ego_id,
 
-                        alters = egor::alters32,
-                        alter_id = ".ALTID",
-                        alter_ego = ".EGOID",
+                       alters = ngq_alters,
+                       alter_id = ngq_alters$alter_id,
+                       alter_ego = ngq_alters$ego_id,
 
-                        alter_alter = egor::aaties32,
-                        aa_ego = ".EGOID",
-                        i_elements = ".SRCID",
-                        j_elements = ".TGTID",
+                       max_alters = 10,
+                       alter_alter = ngq_aa,
+                       aa_ego = ngq_aa$ego_id,
+                       i_elements = ngq_aa$alter1,
+                       j_elements = ngq_aa$alter2,
+                       directed = FALSE,
 
-                        missing_code = NULL,
-                        directed = FALSE,
+                       egor = TRUE)
 
-                        egor = TRUE)
-
-list2env(egonets, .GlobalEnv)
+list2env(ngq_nw, .GlobalEnv)
 
 # View summaries of individual ego networks
 head(summaries)
@@ -97,4 +94,44 @@ head(overall_summary)
 
 # View sociogram of second ego network
 plot(igraph_objects[[2]]$igraph_ego)
+
+
+#  Processing with Different Ego-Alter Relation Types
+ngq_altertype <- ego_netwrite(egos = ngq_egos,
+                              ego_id = ngq_egos$ego_id,
+
+                              alters = ngq_alters,
+                              alter_id = ngq_alters$alter_id,
+                              alter_ego = ngq_alters$ego_id,
+                              alter_types = c("family", "friend", "other_rel"),
+                              max_alters = 10,
+
+                              alter_alter = ngq_aa,
+                              aa_ego = ngq_aa$ego_id,
+                              i_elements = ngq_aa$alter1,
+                              j_elements = ngq_aa$alter2,
+
+                              directed = FALSE)
+
+list2env(ngq_altertype, .GlobalEnv)
+
+
+#  Processing with Different Alter-Alter Relation Types
+ngq_aatype <- ego_netwrite(egos = ngq_egos,
+                           ego_id = ngq_egos$ego_id,
+
+                           alters = ngq_alters,
+                           alter_id = ngq_alters$alter_id,
+                           alter_ego = ngq_alters$ego_id,
+                           max_alters = 10,
+                           alter_alter = ngq_aa,
+
+                           aa_ego = ngq_aa$ego_id,
+                           i_elements = ngq_aa$alter1,
+                           j_elements = ngq_aa$alter2,
+                           aa_type = ngq_aa$type,
+
+                           directed = FALSE)
+
+list2env(ngq_aatype, .GlobalEnv)
 }

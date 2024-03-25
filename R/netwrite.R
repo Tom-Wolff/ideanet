@@ -381,15 +381,15 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # We'll also want to store original node attributes in the igraph object here if we're working with an adjmat
       if (data_type == "adjacency_matrix") {
-            nodelist_names <- names(netwrite_output$node_measures)
+        nodelist_names <- names(netwrite_output$node_measures)
 
-            for (i in 2:length(nodelist_names)) {
+        for (i in 2:length(nodelist_names)) {
 
-              eval(parse(
-                text = paste("igraph::V(netwrite_output[[net_name]])$", nodelist_names[[i]], "<- netwrite_output$node_measures[,i]", sep = "")
-              ))
+          eval(parse(
+            text = paste("igraph::V(netwrite_output[[net_name]])$", nodelist_names[[i]], "<- netwrite_output$node_measures[,i]", sep = "")
+          ))
 
-            }
+        }
       }
 
     }
@@ -951,8 +951,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Adding Node-level measures
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
 
-            nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                       message = message, weights = weights)
+        nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
+                                   message = message, weights = weights)
 
 
         # If original `node_id` name is specified, rename column `attr` to match
@@ -1619,17 +1619,17 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #                                                      directed = TRUE,
       #                                                      normalized = TRUE)$centralization
 
-          bet_centr_u <- betweenness_centralization(g = g_no_iso,
-                                                    weights = igraph::E(g_no_iso)$weight,
-                                                    directed = FALSE)
+      bet_centr_u <- betweenness_centralization(g = g_no_iso,
+                                                weights = igraph::E(g_no_iso)$weight,
+                                                directed = FALSE)
 
 
       cent_bet_undir <- bet_centr_u$betweenness_centralization
       cent_bet_undir_bin <- bet_centr_u$binarized_betweenness_centralization
 
-        bet_centr_d <- betweenness_centralization(g = g_no_iso,
-                                                  weights = igraph::E(g_no_iso)$weight,
-                                                  directed = TRUE)
+      bet_centr_d <- betweenness_centralization(g = g_no_iso,
+                                                weights = igraph::E(g_no_iso)$weight,
+                                                directed = TRUE)
 
 
 
@@ -1683,7 +1683,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #                                                 mode = "in",
       #                                                 normalized = TRUE)$centralization
 
-          close_centr <- closeness_centralization(g, directed = TRUE)
+      close_centr <- closeness_centralization(g, directed = TRUE)
 
 
       cent_close_undir <- close_centr$centralization_un
