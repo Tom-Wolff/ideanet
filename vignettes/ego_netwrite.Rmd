@@ -237,6 +237,7 @@ which(lapply(igraph_objects, function(x){x$ego} == 6) == TRUE)
 ```{r ego_info, eval = FALSE}
 igraph_objects[[6]]$ego_info
 ```
+
 ```{r ego_info_kable, echo = FALSE}
 knitr::kable(igraph_objects[[6]]$ego_info)
 ```
@@ -255,6 +256,7 @@ plot(ego6,
      vertex.color = igraph::V(ego6)$sex,
      layout = igraph::layout.fruchterman.reingold(ego6))
 ```
+
 By default, nodes in the plotted `igraph` object will be displayed with their zero-indexed unique ID numbers as labels, while the node representing ego will be labeled "ego."
 
 ## Processing Multiple Relationship Types
@@ -362,7 +364,7 @@ names(igraph_objects[[1]])
 
 The availability of these new objects may be convenient for users who wish to visualize differences in the prevalence of certain types of alter-alter ties in a single ego network, as shown in the example below:
 
-```{r aa_igraph_plots}
+```{r aa_igraph_plots, eval = FALSE}
 ego7 <- igraph_objects[[7]]$igraph_ego
 ego7_friends <- igraph_objects[[7]]$igraph_ego_friends
 ego7_family <- igraph_objects[[7]]$igraph_ego_related
@@ -390,6 +392,36 @@ plot(ego7_other,
      layout = ego7_layout,
      main = "Other Relationships")
 ```
+
+```{r aa_igraph_plots_kable, echo = FALSE}
+ego7 <- igraph_objects[[7]]$igraph_ego
+ego7_friends <- igraph_objects[[7]]$igraph_ego_friends
+ego7_family <- igraph_objects[[7]]$igraph_ego_related
+ego7_other <- igraph_objects[[7]]$igraph_ego_other_rel
+
+ego7_layout <- igraph::layout.fruchterman.reingold(ego7)
+
+plot(ego7,
+     vertex.color = igraph::V(ego7)$sex,
+     layout = ego7_layout,
+     main = "Overall Network")
+
+plot(ego7_friends,
+     vertex.color = igraph::V(ego7_friends)$sex,
+     layout = ego7_layout,
+     main = "Friends")
+
+plot(ego7_family,
+     vertex.color = igraph::V(ego7_family)$sex,
+     layout = ego7_layout,
+     main = "Family")
+
+plot(ego7_other,
+     vertex.color = igraph::V(ego7_other)$sex,
+     layout = ego7_layout,
+     main = "Other Relationships")
+```
+
 One might notice that the number of columns and other elements of output grows substantially when `ego_netwrite` takes alter-alter relationship types into account, particularly if the number of unique types is quite large. Moreover, the `summaries` and `overall_summary` objects may grow even larger when `ego_netwrite` is asked to process both ego-alter and alter-alter types. While `ego_netwrite` provides all of this output in the interest of being exhaustive, some users may find its volume somewhat unwieldy. If this is the case, users may want to condense relationship types into a simpler set of categories to reduce the number of additional measures generated.
 
 ## Measuring Homophily, Heterophily, and Diversity
@@ -488,9 +520,9 @@ When exporting data from a Network Canvas protocol, users are given the object t
 Below is an example of how the function is used in practice:
 
 ```{r nc_read, eval = FALSE}
-nc_read(path = "~/Desktop/network_canvas_directory/",
-        cat.to.factor = TRUE,
-        output_list = FALSE)
+nc_data <- nc_read(path = "~/Desktop/network_canvas_directory/",
+                   cat.to.factor = TRUE,
+                   output_list = FALSE)
 ```
 
 `nc_read` will read in all CSV files located in the specified directory and process them. Whether stored as separate objects in the Global Environment or as items in a list, the output of this function is formatted for full compatibility with `ego_netwrite`.
