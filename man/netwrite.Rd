@@ -43,7 +43,7 @@ netwrite(
 
 \item{fix_nodelist}{If \code{data_type} is set to \code{"edgelist"} and user inputs a vector or data frame into \code{nodelist}, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, \code{fix_nodelist} is set to \code{FALSE} to identify potential inconsistencies between the nodelist and edgelist to the user.}
 
-\item{weights}{A numeric vector indicating the weight of ties in the edgelist.}
+\item{weights}{A numeric vector indicating the weight of ties in the edgelist. \code{netwrite} requires that all edge weights be positive values.}
 
 \item{type}{A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.}
 
