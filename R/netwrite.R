@@ -141,6 +141,12 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       stop("Detected edge weight values of 0 or lower. netwrite only supports processing of positive edge weights.")
     }
   }
+  ### Need to add a similar check for values in adjacency matrix if used:
+  if (is.matrix(adjacency_matrix)) {
+    if (min(adjacency_matrix) < 0) {
+      stop("Detected edge weight values of 0 or lower. netwrite only supports processing of positive edge weights.")
+    }
+  }
 
 
   # We might need to store `output` in a separate object given that it also gets
