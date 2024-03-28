@@ -10,10 +10,9 @@
 #' @param i_elements If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the sender of ties in the edgelist.
 #' @param j_elements If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the receiver of ties in the edgelist.
 #' @param fix_nodelist If \code{data_type} is set to \code{"edgelist"} and user inputs a vector or data frame into \code{nodelist}, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, \code{fix_nodelist} is set to \code{FALSE} to identify potential inconsistencies between the nodelist and edgelist to the user.
-#' @param weights A numeric vector indicating the weight of ties in the edgelist.
+#' @param weights A numeric vector indicating the weight of ties in the edgelist. \code{netwrite} requires that all edge weights be positive values.
 #' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
-#' @param package (Deprecated) A character value indicating what format network objects should be produced by \code{netwrite}. Available options are \code{igraph} and \code{network}.
 #' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
 #' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"} and \code{"distance"}.
 #' @param directed A logical value indicating whether edges should be treated as a directed or undirected when constructing the network.
@@ -22,7 +21,7 @@
 #' @param output A character vector indicating the kinds of objects \code{netwrite} should assign to the global environment. \code{netwrite} produces several outputs that may not all be necessary to a user's needs. Users can specify which outputs they specifically want in order to minimize the number of objects appearing in the global environment. Potential outputs include igraph object(s) (\code{"graph"}), subgraph(s) of only nodes that appear in the largest component and/or bicomponent of the network (\code{"largest_component"}, \code{"largest_bi_component"}), data frame(s) containing node-level measures (\code{"node_measure_plot"}), a processed edgelist of the network (\code{"edgelist"}), a data frame indicating network-level summaries (\code{"system_level_measures"}), and summary visualizations for node- and network-level measures (\code{"node_measure_plot"}, \code{"system_measure_plot"}).
 #' @param message A logical value indicating whether warning messages should be displayed in the R console during processing.
 #'
-#' @return \code{netwrite} returns a variety of outputs and assigns them to the R global environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
+#' @return \code{netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
 #'
 #' If \code{output} contains \code{graph}, \code{netwrite} will return an igraph object of the network represented in the original data.
 #' If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing igraph objects for each unique relation type as well as the overall network. These output objects are named according to the value specified in the \code{net_name} argument.
@@ -45,12 +44,15 @@
 #'
 #' @examples
 #' # Use netwrite on an edgelist
-#' netwrite(nodelist = fauxmesa_nodes,
-#'         node_id = "id",
-#'         i_elements = fauxmesa_edges$from,
-#'         j_elements = fauxmesa_edges$to,
-#'         directed = TRUE,
-#'         net_name = "faux_mesa")
+#' nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
+#'                       node_id = "id",
+#'                       i_elements = fauxmesa_edges$from,
+#'                       j_elements = fauxmesa_edges$to,
+#'                       directed = TRUE,
+#'                       net_name = "faux_mesa")
+#'
+#' # For easier access of output objects, call `list2env` on output
+#' list2env(nw_fauxmesa, .GlobalEnv)
 #'
 #' ### Inspect updated edgelist
 #' head(edgelist)
@@ -59,7 +61,7 @@
 #' head(node_measures)
 #'
 #' ### Inspect system-level summary
-#' system_level_measures
+#' head(system_level_measures)
 #'
 #' ### Plot sociogram of network
 #' plot(faux_mesa)
@@ -73,26 +75,27 @@
 #'
 #'
 #' # Run netwrite on an adjacency matrix
-#' fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa))
 #'
-#' netwrite(data_type = "adjacency_matrix",
-#'         adjacency_matrix = fauxmesa_adjmat,
-#'         directed = TRUE,
-#'         net_name = "faux_mesa")
+#' nw_triad <- netwrite(data_type = "adjacency_matrix",
+#'                      adjacency_matrix = triad,
+#'                      directed = TRUE,
+#'                      net_name = "triad_igraph")
 #'
 #'
 #' # Run netwrite on a multirelational network
-#' netwrite(i_elements = florentine$node,
-#'         j_elements = florentine$target,
-#'         type = florentine$layer,
-#'         directed = TRUE,
-#'         net_name = "florentine")
+#' flor <- netwrite(nodelist = florentine_nodes,
+#'                  node_id = "id",
+#'                  i_elements = florentine_edges$source,
+#'                  j_elements = florentine_edges$target,
+#'                  type = florentine_edges$type,
+#'                  directed = FALSE,
+#'                  net_name = "florentine")
 #'
-#' # View system level summary for aggregate network
-#' system_level_measures_list$summary_graph
+#' # View system level summary
+#' flor$system_level_measures
 #'
-#' # View system level summary for network of `type 1` relations
-#' system_level_measures_list$`1`
+#' # View system level summary for network of marriage relations
+#' flor$system_measure_plot$marriage
 
 
 ##########################################################
@@ -120,7 +123,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
                      weights=NULL, type=NULL,
                      remove_loops = FALSE,
-                     package='igraph', missing_code=99999,
+                     missing_code=99999,
                      weight_type='frequency', directed=FALSE,
                      net_name='network',
                      shiny = FALSE,
@@ -134,6 +137,37 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 "system_measure_plot"),
                      message = TRUE) {
 
+  # If a vector of edge weights are passed, check to see that all weights exceed
+  # zero, otherwise return an error
+  if (!is.null(weights)) {
+    if (sum(weights <= 0) > 0) {
+      stop("Detected edge weight values of 0 or lower. netwrite only supports processing of positive edge weights.")
+    }
+  }
+  ### Need to add a similar check for values in adjacency matrix if used:
+  if (is.matrix(adjacency_matrix)) {
+    if (min(adjacency_matrix) < 0) {
+      stop("Detected edge weight values of 0 or lower. netwrite only supports processing of positive edge weights.")
+    }
+  }
+
+
+  # Turn off warnings if `message == FALSE`
+  if (message == FALSE) {
+    # Save original options setting
+    warn_option <- getOption("warn")
+    options(warn = -1)
+  }
+
+  # This function needs the `gridGraphics` package even though it's never called explicitly
+  rlang::check_installed("gridGraphics")
+
+  # Since we can't seem to create an environment that will go outside the function, we'll have to
+  # create a list to store all output
+  netwrite_output <- list()
+
+
+
 
   # We might need to store `output` in a separate object given that it also gets
   # defined in the subsequent `basic_netwrite` calls.
@@ -145,6 +179,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   if (("data.frame" %in% class(nodelist)) == TRUE) {
     nodelist <- as.data.frame(nodelist)
+
   }
 
   # If `node_id` is set to be `"id"`, change its value to `"original_id"`
@@ -176,6 +211,9 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # rename to `"original_id"`
     original_nodelist_names <- colnames(original_nodelist)
     original_nodelist_names[which(original_nodelist_names == "id")] <- "original_id"
+    # If any column in the nodelist dataframe is named `"name"`,
+    # rename to `"original_name"`
+    original_nodelist_names[which(original_nodelist_names == "name")] <- "original_name"
     colnames(original_nodelist) <- original_nodelist_names
 
     # When we iterate over each relation type, we only want to input
@@ -276,7 +314,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
   # If the `type` argument is left at its default (`NULL`), netwrite assumes
-  # the data entered does not reflect a multi-relational net and
+  # the data entered does not reflect a multi-relational net
   if (is.null(type) == TRUE) {
 
 
@@ -286,66 +324,87 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if (("data.frame" %in% class(nodelist)) == TRUE) {
 
-      basic_netwrite(data_type = data_type,
-                     adjacency_matrix = adjacency_matrix,
-                     adjacency_list = adjacency_list,
-                     nodelist = original_nodelist,
-                     node_id = node_id,
-                     i_elements = i_elements,
-                     j_elements = j_elements,
-                     weights = weights,
-                     type = type,
-                     remove_loops = remove_loops,
-                     package = package,
-                     missing_code = missing_code,
-                     weight_type = weight_type,
-                     directed = directed,
-                     net_name = net_name,
-                     shiny = shiny,
-                     output = output,
-                     message = message)
+      netwrite_output <- basic_netwrite(data_type = data_type,
+                                        adjacency_matrix = adjacency_matrix,
+                                        adjacency_list = adjacency_list,
+                                        nodelist = original_nodelist,
+                                        node_id = node_id,
+                                        i_elements = i_elements,
+                                        j_elements = j_elements,
+                                        weights = weights,
+                                        type = type,
+                                        remove_loops = remove_loops,
+                                        missing_code = missing_code,
+                                        weight_type = weight_type,
+                                        directed = directed,
+                                        net_name = net_name,
+                                        shiny = shiny,
+                                        output = output,
+                                        message = message)
 
     } else {
 
-      basic_netwrite(data_type = data_type,
-                     adjacency_matrix = adjacency_matrix,
-                     adjacency_list = adjacency_list,
-                     nodelist = just_ids,
-                     node_id = node_id,
-                     i_elements = i_elements,
-                     j_elements = j_elements,
-                     weights = weights,
-                     type = type,
-                     remove_loops = remove_loops,
-                     package = package,
-                     missing_code = missing_code,
-                     weight_type = weight_type,
-                     directed = directed,
-                     net_name = net_name,
-                     shiny = shiny,
-                     output = output,
-                     message = message)
+      netwrite_output <- basic_netwrite(data_type = data_type,
+                                        adjacency_matrix = adjacency_matrix,
+                                        adjacency_list = adjacency_list,
+                                        nodelist = just_ids,
+                                        node_id = node_id,
+                                        i_elements = i_elements,
+                                        j_elements = j_elements,
+                                        weights = weights,
+                                        type = type,
+                                        remove_loops = remove_loops,
+                                        missing_code = missing_code,
+                                        weight_type = weight_type,
+                                        directed = directed,
+                                        net_name = net_name,
+                                        shiny = shiny,
+                                        output = output,
+                                        message = message)
 
     }
 
 
-# The below code chunk is presumably deprecated, but saving here in case
+    # The below code chunk is presumably deprecated, but saving here in case
     # merge issues reappear.
 
     # If `nodelist` is a data frame, we'll want to merge it into `node_measures`
-    if (("data.frame" %in% class(nodelist)) == TRUE) {
+    if (("data.frame" %in% class(nodelist)) == TRUE & "nodelist" %in% output) {
 
       # Sometimes the original ID column we need to join on will be of a different class
       # between the two dataframes we're trying to merge here. To be safe, we'll convert both columns
       # into characters and merge
       original_nodelist[, node_id] <- as.character(unlist(original_nodelist[, node_id]))
-      node_measures[, node_id] <- as.character(unlist(node_measures[, node_id]))
 
-      node_measures <- dplyr::left_join(original_nodelist, node_measures, by = node_id)
+      # Need to rename the `label` column in the node measure dataframe if working with an adjmat
+      if (data_type == "adjacency_matrix") {
+        colnames(netwrite_output$node_measures)[[2]] <- node_id
+      }
+
+      netwrite_output$node_measures[, node_id] <- as.character(unlist(netwrite_output$node_measures[, node_id]))
+
+
+
+      node_measures <- dplyr::left_join(original_nodelist, netwrite_output$node_measures, by = node_id)
       # Rearrange columns
-      node_measures <- dplyr::select(node_measures, id, dplyr::everything())
+      node_measures <- dplyr::select(node_measures, .data$id, dplyr::everything())
 
-      assign(x = "node_measures", value = node_measures, .GlobalEnv)
+      # assign(x = "node_measures", value = node_measures, .GlobalEnv)
+      netwrite_output$node_measures <- node_measures
+
+
+      # We'll also want to store original node attributes in the igraph object here if we're working with an adjmat
+      if (data_type == "adjacency_matrix") {
+        nodelist_names <- names(netwrite_output$node_measures)
+
+        for (i in 2:length(nodelist_names)) {
+
+          eval(parse(
+            text = paste("igraph::V(netwrite_output[[net_name]])$", nodelist_names[[i]], "<- netwrite_output$node_measures[,i]", sep = "")
+          ))
+
+        }
+      }
 
     }
 
@@ -408,7 +467,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         # If the `type` argument is a character vector, will
         # cause issues with merging. To fix, ensure `just_ids`
         # vector going into `basic_netwrite` is also a character
-        if (class(edges_list[[i]]$type) == "character") {
+        if (methods::is(edges_list[[i]]$type, "character")) {
           just_ids2 <- as.character(just_ids)
         } else {
           just_ids2 <- just_ids
@@ -418,71 +477,69 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         # If we have a data frame for a nodelist, use that. Otherwise
         # `just_ids`
         if ("data.frame" %in% class(nodelist) == TRUE) {
-              nodelist_condition <- original_nodelist
+          nodelist_condition <- original_nodelist
         } else {
-              nodelist_condition <- just_ids2
+          nodelist_condition <- just_ids2
         }
 
 
         # If handling aggregate graph that has weights
         if ('weights' %in% colnames(edges_list[[i]]) == TRUE) {
 
-          basic_netwrite(data_type = data_type,
-                         adjacency_matrix = adjacency_matrix,
-                         adjacency_list = adjacency_list,
-                         nodelist = nodelist_condition,
-                         node_id = node_id,
-                         i_elements=edges_list[[i]]$i_elements,
-                         j_elements=edges_list[[i]]$j_elements,
-                         weights=edges_list[[i]]$weights,
-                         type=edges_list[[i]]$type,
-                         remove_loops = remove_loops,
-                         package=package,
-                         missing_code = missing_code,
-                         weight_type = weight_type, directed=directed,
-                         net_name = "this_igraph", # Giving a consistent name for igraph object
-                         # Makes it easier to place into the list of
-                         # igraph objects down the line.
-                         shiny = TRUE,
-                         # For processing multi-relational nets, we'll want to collect all the
-                         # possible output objects from `basic_netwrite` at first, then filter out
-                         # based on the original outputs specified in the `netwrite` call
-                         output = c("graph",
-                                    "largest_bi_component",
-                                    "largest_component",
-                                    "node_measure_plot",
-                                    "nodelist",
-                                    "edgelist",
-                                    "system_level_measures",
-                                    "system_measure_plot"),
-                         message = message)
+          this_netwrite <- basic_netwrite(data_type = data_type,
+                                          adjacency_matrix = adjacency_matrix,
+                                          adjacency_list = adjacency_list,
+                                          nodelist = nodelist_condition,
+                                          node_id = node_id,
+                                          i_elements=edges_list[[i]]$i_elements,
+                                          j_elements=edges_list[[i]]$j_elements,
+                                          weights=edges_list[[i]]$weights,
+                                          type=edges_list[[i]]$type,
+                                          remove_loops = remove_loops,
+                                          missing_code = missing_code,
+                                          weight_type = weight_type, directed=directed,
+                                          net_name = "this_igraph", # Giving a consistent name for igraph object
+                                          # Makes it easier to place into the list of
+                                          # igraph objects down the line.
+                                          shiny = TRUE,
+                                          # For processing multi-relational nets, we'll want to collect all the
+                                          # possible output objects from `basic_netwrite` at first, then filter out
+                                          # based on the original outputs specified in the `netwrite` call
+                                          output = c("graph",
+                                                     "largest_bi_component",
+                                                     "largest_component",
+                                                     "node_measure_plot",
+                                                     "nodelist",
+                                                     "edgelist",
+                                                     "system_level_measures",
+                                                     "system_measure_plot"),
+                                          message = message)
 
         }else{
           # Aggregate graph, unweighted
-          basic_netwrite(data_type = data_type,
-                         adjacency_matrix = adjacency_matrix,
-                         adjacency_list = adjacency_list,
-                         nodelist = nodelist_condition,
-                         node_id = node_id,
-                         i_elements=edges_list[[i]]$i_elements,
-                         j_elements=edges_list[[i]]$j_elements,
-                         weights = NULL,
-                         type=edges_list[[i]]$type,
-                         remove_loops = remove_loops,
-                         package=package,
-                         missing_code = missing_code,
-                         weight_type = weight_type, directed=directed,
-                         net_name = "this_igraph",
-                         shiny = TRUE,
-                         output = c("graph",
-                                    "largest_bi_component",
-                                    "largest_component",
-                                    "node_measure_plot",
-                                    "nodelist",
-                                    "edgelist",
-                                    "system_level_measures",
-                                    "system_measure_plot"),
-                         message = message)
+          this_netwrite <- basic_netwrite(data_type = data_type,
+                                          adjacency_matrix = adjacency_matrix,
+                                          adjacency_list = adjacency_list,
+                                          nodelist = nodelist_condition,
+                                          node_id = node_id,
+                                          i_elements=edges_list[[i]]$i_elements,
+                                          j_elements=edges_list[[i]]$j_elements,
+                                          weights = NULL,
+                                          type=edges_list[[i]]$type,
+                                          remove_loops = remove_loops,
+                                          missing_code = missing_code,
+                                          weight_type = weight_type, directed=directed,
+                                          net_name = "this_igraph",
+                                          shiny = TRUE,
+                                          output = c("graph",
+                                                     "largest_bi_component",
+                                                     "largest_component",
+                                                     "node_measure_plot",
+                                                     "nodelist",
+                                                     "edgelist",
+                                                     "system_level_measures",
+                                                     "system_measure_plot"),
+                                          message = message)
 
 
         }
@@ -499,57 +556,55 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
         if('weights' %in% colnames(edges_list[[i]]) == TRUE){
           # Subgraphs, with weights
-          basic_netwrite(data_type = data_type,
-                         adjacency_matrix = adjacency_matrix,
-                         adjacency_list = adjacency_list,
-                         nodelist = nodelist_condition,
-                         node_id = node_id,
-                         i_elements=edges_list[[i]]$i_elements,
-                         j_elements=edges_list[[i]]$j_elements,
-                         weights = edges_list[[i]]$weights,
-                         type=edges_list[[i]]$type,
-                         remove_loops = remove_loops,
-                         package=package,
-                         missing_code = missing_code,
-                         weight_type = weight_type, directed=directed,
-                         net_name = "this_igraph",
-                         shiny = TRUE,
-                         output = c("graph",
-                                    "largest_bi_component",
-                                    "largest_component",
-                                    "node_measure_plot",
-                                    "nodelist",
-                                    "edgelist",
-                                    "system_level_measures",
-                                    "system_measure_plot"),
-                         message = message)
+          this_netwrite <- basic_netwrite(data_type = data_type,
+                                          adjacency_matrix = adjacency_matrix,
+                                          adjacency_list = adjacency_list,
+                                          nodelist = nodelist_condition,
+                                          node_id = node_id,
+                                          i_elements=edges_list[[i]]$i_elements,
+                                          j_elements=edges_list[[i]]$j_elements,
+                                          weights = edges_list[[i]]$weights,
+                                          type=edges_list[[i]]$type,
+                                          remove_loops = remove_loops,
+                                          missing_code = missing_code,
+                                          weight_type = weight_type, directed=directed,
+                                          net_name = "this_igraph",
+                                          shiny = TRUE,
+                                          output = c("graph",
+                                                     "largest_bi_component",
+                                                     "largest_component",
+                                                     "node_measure_plot",
+                                                     "nodelist",
+                                                     "edgelist",
+                                                     "system_level_measures",
+                                                     "system_measure_plot"),
+                                          message = message)
 
         } else {
           # Subgraphs, without weights
-          basic_netwrite(data_type = data_type,
-                         adjacency_matrix = adjacency_matrix,
-                         adjacency_list = adjacency_list,
-                         nodelist = nodelist_condition,
-                         node_id = node_id,
-                         i_elements=edges_list[[i]]$i_elements,
-                         j_elements=edges_list[[i]]$j_elements,
-                         weights = NULL,
-                         type=edges_list[[i]]$type,
-                         remove_loops = remove_loops,
-                         package=package,
-                         missing_code = missing_code,
-                         weight_type = weight_type, directed=directed,
-                         net_name = "this_igraph",
-                         shiny = TRUE,
-                         output = c("graph",
-                                    "largest_bi_component",
-                                    "largest_component",
-                                    "node_measure_plot",
-                                    "nodelist",
-                                    "edgelist",
-                                    "system_level_measures",
-                                    "system_measure_plot"),
-                         message = message)
+          this_netwrite <- basic_netwrite(data_type = data_type,
+                                          adjacency_matrix = adjacency_matrix,
+                                          adjacency_list = adjacency_list,
+                                          nodelist = nodelist_condition,
+                                          node_id = node_id,
+                                          i_elements=edges_list[[i]]$i_elements,
+                                          j_elements=edges_list[[i]]$j_elements,
+                                          weights = NULL,
+                                          type=edges_list[[i]]$type,
+                                          remove_loops = remove_loops,
+                                          missing_code = missing_code,
+                                          weight_type = weight_type, directed=directed,
+                                          net_name = "this_igraph",
+                                          shiny = TRUE,
+                                          output = c("graph",
+                                                     "largest_bi_component",
+                                                     "largest_component",
+                                                     "node_measure_plot",
+                                                     "nodelist",
+                                                     "edgelist",
+                                                     "system_level_measures",
+                                                     "system_measure_plot"),
+                                          message = message)
 
         }
       }
@@ -557,43 +612,42 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Store netwrite outputs into respective lists
 
       # igraph object list
-      graphs_list[[i]] <- this_igraph
-      suppressWarnings(rm(this_igraph))
+      graphs_list[[i]] <- this_netwrite$this_igraph
+      # suppressWarnings(rm(this_igraph))
 
       # Largest bicomponent list
-      bicomponent_list[[i]] <- largest_bi_component
-      suppressWarnings(rm(largest_bi_component))
+      bicomponent_list[[i]] <- this_netwrite$largest_bi_component
+      # suppressWarnings(rm(largest_bi_component))
 
       # Largest component list
-      lcomponent_list[[i]] <- largest_component
-      suppressWarnings(rm(largest_component))
+      lcomponent_list[[i]] <- this_netwrite$largest_component
+      # suppressWarnings(rm(largest_component))
 
       # Node measure plot list
-      nplot_list[[i]] <- node_measure_plot
-      suppressWarnings(rm(node_measure_plot))
+      nplot_list[[i]] <- this_netwrite$node_measure_plot
+      # suppressWarnings(rm(node_measure_plot))
 
       # Node measures list
       ### To ensure successful merging downstream,
       ### convert `attr` to character before adding
       ### `node_measures_list`
-      node_measures[,2] <- as.character(node_measures[,2])
-      node_measures_list[[i]] <- node_measures
-      suppressWarnings(rm(node_measures))
+      this_netwrite$node_measures[,2] <- as.character(this_netwrite$node_measures[,2])
+      node_measures_list[[i]] <- this_netwrite$node_measures
+      # suppressWarnings(rm(node_measures))
 
       # List of final processes edgelists
-      f_edges_list[[i]] <- edgelist
-      suppressWarnings(rm(edgelist))
+      f_edges_list[[i]] <- this_netwrite$edgelist
+      # suppressWarnings(rm(edgelist))
 
       # System-level measures summaries list
-      s_measures_list[[i]] <- system_level_measures
-      suppressWarnings(rm(system_level_measures))
+      ### Rename the `measures` column to the edge type
+      colnames(this_netwrite$system_level_measures) <- c("measure", "description", names(edges_list)[[i]])
+      s_measures_list[[i]] <- this_netwrite$system_level_measures
+      # suppressWarnings(rm(system_level_measures))
 
       # System-level plot list
-      splot_list[[i]] <- system_measure_plot
-      suppressWarnings(rm(system_measure_plot))
-
-
-
+      splot_list[[i]] <- this_netwrite$system_measure_plot
+      # suppressWarnings(rm(system_measure_plot))
 
     } # End for Loop
 
@@ -633,33 +687,41 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # 4. Keep only those objects that the original `output` argument specified
 
     if ("graph" %in% final_output) {
-      assign(x = net_name, value = graph, .GlobalEnv)
-      assign(x = "network_list", value = graphs_list, .GlobalEnv)
-      suppressWarnings(rm(graph))
-    } else {
-      suppressWarnings(rm(graph, graphs_list))
-    }
+      netwrite_output[[`net_name`]] <- graph
+      # assign(x = net_name, value = graph, .GlobalEnv)
+      netwrite_output$igraph_list <- graphs_list
+      # assign(x = "network_list", value = graphs_list, .GlobalEnv)
+      # suppressWarnings(rm(graph))
+    } # else {
+    #   suppressWarnings(rm(graph, graphs_list))
+    # }
 
     if ("largest_bi_component" %in% final_output) {
-      assign(x = "largest_bi_component", value = largest_bi_component, .GlobalEnv)
-      assign(x = "bicomponent_list", value = bicomponent_list, .GlobalEnv)
-    } else {
-      suppressWarnings(rm(largest_bi_component, bicomponent_list))
-    }
+      # netwrite_output$largest_bi_component <- largest_bi_component
+      # assign(x = "largest_bi_component", value = largest_bi_component, .GlobalEnv)
+      netwrite_output$largest_bi_component <- bicomponent_list
+      # assign(x = "bicomponent_list", value = bicomponent_list, .GlobalEnv)
+    } # else {
+    #   suppressWarnings(rm(largest_bi_component, bicomponent_list))
+    # }
 
     if ("largest_component" %in% final_output) {
-      assign(x = "largest_component", value = largest_component, .GlobalEnv)
-      assign(x = "largest_component_list", value = lcomponent_list, .GlobalEnv)
-    } else {
-      suppressWarnings(rm(largest_component, lcomponent_list))
-    }
+      # netwrite_output$largest_component <- largest_component
+      # assign(x = "largest_component", value = largest_component, .GlobalEnv)
+      netwrite_output$largest_component <- lcomponent_list
+      # assign(x = "largest_component_list", value = lcomponent_list, .GlobalEnv)
+    } #else {
+    # suppressWarnings(rm(largest_component, lcomponent_list))
+    # }
 
     if ("node_measure_plot" %in% final_output) {
-      assign(x = "node_measure_plot", value = node_measure_plot, .GlobalEnv)
-      assign(x = "node_measure_plot_list", value = nplot_list, .GlobalEnv)
-    } else {
-      suppressWarnings(rm(node_measure_plot, nplot_list))
-    }
+      # netwrite_output$node_measure_plot <- node_measure_plot
+      # assign(x = "node_measure_plot", value = node_measure_plot, .GlobalEnv)
+      netwrite_output$node_measure_plot <- nplot_list
+      # assign(x = "node_measure_plot_list", value = nplot_list, .GlobalEnv)
+    } #else {
+    # suppressWarnings(rm(node_measure_plot, nplot_list))
+    # }
 
     # For `nodelist`, we just want a dataframe that has the node-level
     # measures for each relation type. To do this, we're going to want
@@ -679,7 +741,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                              new_column_names[3:length(new_column_names)])
     }
 
-    node_measures <- Reduce(dplyr::full_join, node_measures_list)
+    node_measures <- suppressMessages(Reduce(dplyr::full_join, node_measures_list))
 
     # If `nodelist` is a data frame, we'll want to merge it into `node_measures`
     if (("data.frame" %in% class(nodelist)) == TRUE) {
@@ -692,38 +754,50 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       node_measures <- dplyr::left_join(original_nodelist, node_measures, by = node_id)
       # Rearrange columns
-      node_measures <- dplyr::select(node_measures, id, dplyr::everything())
+      node_measures <- dplyr::select(node_measures, .data$id, dplyr::everything())
 
     }
 
     if ("nodelist" %in% final_output) {
-      assign(x = "node_measures", value = node_measures, .GlobalEnv)
-      assign(x = "node_measures_list", value = node_measures_list, .GlobalEnv)
-    } else {
-      suppressWarnings(rm(node_measures))
-      suppressWarnings(rm(node_measures_list))
-    }
+      netwrite_output$node_measures <- node_measures
+      # assign(x = "node_measures", value = node_measures, .GlobalEnv)
+      # netwrite_output$node_measures_list <- node_measures_list
+      # assign(x = "node_measures_list", value = node_measures_list, .GlobalEnv)
+    } # else {
+    #   suppressWarnings(rm(node_measures))
+    #   suppressWarnings(rm(node_measures_list))
+    # }
 
     if ("edgelist" %in% final_output) {
-      assign(x = "edgelist", value = edgelist, .GlobalEnv)
-      assign(x = "edgelist_list", value = f_edges_list, .GlobalEnv)
-    } else {
-      suppressWarnings(rm(edgelist, f_edges_list))
-    }
+      # netwrite_output$edgelist <- edgelist
+      # assign(x = "edgelist", value = edgelist, .GlobalEnv)
+      netwrite_output$edgelist <- f_edges_list
+      # assign(x = "edgelist_list", value = f_edges_list, .GlobalEnv)
+    } # else {
+    #   suppressWarnings(rm(edgelist, f_edges_list))
+    # }
+
+    # COME BACK TO THIS ONE AND SEE IF WE CAN COMBINE INTO A SINGLE DATAFRAME
 
     if ("system_level_measures" %in% final_output) {
-      assign(x = "system_level_measures", value = system_level_measures, .GlobalEnv)
-      assign(x = "system_level_measures_list", value = s_measures_list, .GlobalEnv)
-    } else {
-      suppressWarnings(rm(system_level_measures, s_measures_list))
-    }
+      # netwrite_output$system_level_measures <- system_level_measures
+      # assign(x = "system_level_measures", value = system_level_measures, .GlobalEnv)
+
+      s_measures_reduce <- suppressMessages(Reduce(dplyr::full_join, s_measures_list))
+      netwrite_output$system_level_measures <- s_measures_reduce
+      # assign(x = "system_level_measures_list", value = s_measures_list, .GlobalEnv)
+    } # else {
+    #   suppressWarnings(rm(system_level_measures, s_measures_list))
+    # }
 
     if ("system_measure_plot" %in% final_output) {
-      assign(x = "system_measure_plot", value = system_measure_plot, .GlobalEnv)
-      assign(x = "system_measure_plot_list", value = splot_list, .GlobalEnv)
-    } else {
-      suppressWarnings(rm(system_measure_plot, splot_list))
-    }
+      # netwrite_output$system_measure_plot <- system_measure_plot
+      # assign(x = "system_measure_plot", value = system_measure_plot, .GlobalEnv)
+      netwrite_output$system_measure_plot <- splot_list
+      # assign(x = "system_measure_plot_list", value = splot_list, .GlobalEnv)
+    } # else {
+    #   suppressWarnings(rm(system_measure_plot, splot_list))
+    # }
 
 
 
@@ -735,38 +809,43 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   # be taking care of this, it doesn't always succeed and this ensures that only the
   # desired outputs specified by the user remain in the Global Environment.
 
-  if (!("graph" %in% final_output)) {
-    suppressWarnings(rm(list = c("graph", "graphs_list"), envir = .GlobalEnv))
+  # if (!("graph" %in% final_output)) {
+  #   suppressWarnings(rm(list = c("graph", "graphs_list"), envir = .GlobalEnv))
+  # }
+  #
+  # if (!("largest_bi_component" %in% final_output)) {
+  #   suppressWarnings(rm(list = c("largest_bi_component", "bicomponent_list"), envir = .GlobalEnv))
+  # }
+  #
+  # if (!("largest_component" %in% final_output)) {
+  #   suppressWarnings(rm(list = c("largest_component", "lcomponent_list"), envir = .GlobalEnv))
+  # }
+  #
+  # if (!("node_measure_plot" %in% final_output)) {
+  #   suppressWarnings(rm(list = c("node_measure_plot", "nplot_list"), envir = .GlobalEnv))
+  # }
+  #
+  # if (!("nodelist" %in% final_output)) {
+  #   suppressWarnings(rm(list = c("node_measures", "node_measures_list"), envir = .GlobalEnv))
+  # }
+  #
+  # if (!("edgelist" %in% final_output)) {
+  #   suppressWarnings(rm(list = c("edgelist", "f_edges_list"), envir = .GlobalEnv))
+  # }
+  #
+  # if (!("system_level_measures" %in% final_output)) {
+  #   suppressWarnings(rm(list = c("system_level_measures", "s_measures_list"), envir = .GlobalEnv))
+  # }
+  #
+  # if (!("system_measure_plot" %in% final_output)) {
+  #   suppressWarnings(rm(list = c("system_measure_plot", "system_measure_plot_list"), envir = .GlobalEnv))
+  # }
+
+  if (message == FALSE) {
+    options(warn = warn_option)
   }
 
-  if (!("largest_bi_component" %in% final_output)) {
-    suppressWarnings(rm(list = c("largest_bi_component", "bicomponent_list"), envir = .GlobalEnv))
-  }
-
-  if (!("largest_component" %in% final_output)) {
-    suppressWarnings(rm(list = c("largest_component", "lcomponent_list"), envir = .GlobalEnv))
-  }
-
-  if (!("node_measure_plot" %in% final_output)) {
-    suppressWarnings(rm(list = c("node_measure_plot", "nplot_list"), envir = .GlobalEnv))
-  }
-
-  if (!("nodelist" %in% final_output)) {
-    suppressWarnings(rm(list = c("node_measures", "node_measures_list"), envir = .GlobalEnv))
-  }
-
-  if (!("edgelist" %in% final_output)) {
-    suppressWarnings(rm(list = c("edgelist", "f_edges_list"), envir = .GlobalEnv))
-  }
-
-  if (!("system_level_measures" %in% final_output)) {
-    suppressWarnings(rm(list = c("system_level_measures", "s_measures_list"), envir = .GlobalEnv))
-  }
-
-  if (!("system_measure_plot" %in% final_output)) {
-    suppressWarnings(rm(list = c("system_measure_plot", "system_measure_plot_list"), envir = .GlobalEnv))
-  }
-
+  return(netwrite_output)
 
 }
 
@@ -781,6 +860,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 # relation types. To handle multi-relational networks, we create another function
 # later on (`netwrite` proper), which applies `basic_netwrite` to all subgraphs.
 
+# GET BASIC
 
 basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                            adjacency_list=FALSE,
@@ -795,7 +875,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                            # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
                            weights=NULL, type=NULL,
                            remove_loops = FALSE,
-                           package='igraph', missing_code=99999,
+                           missing_code=99999,
                            weight_type='frequency', directed=FALSE,
                            net_name='network',
                            shiny = FALSE,
@@ -809,11 +889,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                       "system_measure_plot"),
                            message = TRUE) {
 
-  # Installing Necessary Packages
-  list.of.packages <- c('dplyr', 'igraph', 'network', 'ggplot2', 'cowplot', 'moments')
-  new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-  if(length(new.packages)) install.packages(new.packages)
-  rm(list.of.packages, new.packages)
+
+  # Need to create a list for storing output
+  basic_output <- list()
 
 
   #########################################
@@ -840,7 +918,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         adj_weight <- ifelse(weights[[1]] == TRUE, TRUE, NULL)
       }
 
-     # adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
+      # adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
 
       # Also need to adjust for type of weight
       # Make Weights Reflect Frequency Rather than Distance
@@ -886,8 +964,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # Adding Node-level measures
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
+
         nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                   message = message)
+                                   message = message, weights = weights)
+
 
         # If original `node_id` name is specified, rename column `attr` to match
         if (!is.null(node_id)) {
@@ -904,15 +984,15 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # Calculating system-level measures
       if ("system_level_measures" %in% output) {
-        largest_weak_component_igraph(g)
-        largest_bicomponent_igraph(g)
+        weak_component <- largest_weak_component_igraph(g)
+        bicomponent <- largest_bicomponent_igraph(g)
         ### Merge in largest bicomponent memberships
         if ("nodelist" %in% output | "node_measure_plot" %in% output) {
-          nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
+          nodes <- dplyr::left_join(nodes, bicomponent$largest_bicomponent_memberships, by = "id")
         }
-        degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+        degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
         reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
-        trans_rate_igraph(g)
+        transitivity_rate <- trans_rate_igraph(g)
         global_clustering_coefficient <- igraph::transitivity(g, type='global')
         average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
       }
@@ -924,7 +1004,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       } else {
         adj_weight <- ifelse(weights[[1]] == TRUE, TRUE, NULL)
       }
-     # adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
+      # adj_weight = ifelse((!is.null(weights) == TRUE & weights[[1]] == TRUE), TRUE, FALSE)
 
       # Also need to adjust for type of weight
       # Make Weights Reflect Frequency Rather than Distance
@@ -968,7 +1048,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Adding Node-Level Measures
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
         nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                   message = message)
+                                   message = message, weights = weights)
 
         # If original `node_id` name is specified, rename column `attr` to match
         if (!is.null(node_id)) {
@@ -985,15 +1065,15 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # Calculating System-Level Measures
       if ("system_level_measures" %in% output) {
-        largest_weak_component_igraph(g)
-        largest_bicomponent_igraph(g)
+        weak_component <- largest_weak_component_igraph(g)
+        bicomponent <- largest_bicomponent_igraph(g)
         ### Merge in largest bicomponent memberships
         if ("nodelist" %in% output | "node_measure_plot" %in% output) {
-          nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
+          nodes <- dplyr::left_join(nodes, bicomponent$largest_bicomponent_memberships, by = "id")
         }
-        degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+        degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
         reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
-        trans_rate_igraph(g)
+        transitivity_rate <- trans_rate_igraph(g)
         global_clustering_coefficient <- igraph::transitivity(g, type='global')
         average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
       }
@@ -1014,10 +1094,16 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
 
     if ("adjacency_matrix" %in% output) {
-      assign(x = 'adjacency_matrix', value = adjacency_matrix,.GlobalEnv)
+      basic_output$adjacency_matrix <- adjacency_matrix
+      # assign(x = 'adjacency_matrix', value = adjacency_matrix,.GlobalEnv)
     }
+
+
+
+
     if ("nodelist" %in% output) {
-      assign(x = 'node_measures', value = nodes,.GlobalEnv)
+      basic_output$node_measures <- nodes
+      # assign(x = 'node_measures', value = nodes,.GlobalEnv)
     }
 
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
@@ -1041,14 +1127,38 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # Assign to global environment
     if ("graph" %in% output) {
-      assign(x = net_name, value = g,.GlobalEnv)
+      basic_output[[`net_name`]] <- g
+      # assign(x = net_name, value = g,.GlobalEnv)
+    }
+
+    # Create an edgelist and store in output list
+    if ("edgelist" %in% output) {
+
+      new_edgelist <- as.data.frame(igraph::as_edgelist(g))
+      colnames(new_edgelist) <- c("i_id", "j_id")
+      new_edgelist2 <- as.data.frame(igraph::as_edgelist(g, names = FALSE))
+      colnames(new_edgelist2) <- c("i_elements", "j_elements")
+      new_edgelist$Obs_ID <- 1:nrow(new_edgelist)
+
+      if (is.null(igraph::E(g)$weight)) {
+        new_edgelist$weight <- 1
+      } else {
+        new_edgelist$weight <- igraph::E(g)$weight
+      }
+
+      new_edgelist <- cbind(new_edgelist, new_edgelist2)
+
+      new_edgelist <- new_edgelist[,c("Obs_ID", "i_elements", "i_id", "j_elements", "j_id", "weight")]
+
+      basic_output$edgelist <- new_edgelist
+
     }
 
 
     # ADJACENCY LIST
-  }else if (data_type == 'adjacency_list') {
+  } else if (data_type == 'adjacency_list') {
     # Is the adjacency list a list
-    if (class(adjacency_list) == 'list') {
+    if (methods::is(adjacency_list, 'list')) {
       g <- igraph::graph_from_adj_list(adjacency_list, mode="out")
 
       # If `remove_loops == TRUE`, remove self-loops
@@ -1093,7 +1203,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Adding Node-Level Measures
     if ("nodelist" %in% output | "node_measure_plot" %in% output) {
       nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                 message = message)
+                                 message = message, weights = weights)
 
       # If original `node_id` name is specified, rename column `attr` to match
       if (!is.null(node_id)) {
@@ -1109,15 +1219,15 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Calculating the Proportion of Two-Step Path that Are Also One-Step Paths
     # Calculating System-Level Measures
     if ("system_level_measures" %in% output) {
-      largest_weak_component_igraph(g)
-      largest_bicomponent_igraph(g)
+      weak_component <- largest_weak_component_igraph(g)
+      bicomponent <- largest_bicomponent_igraph(g)
       ### Merge in largest bicomponent memberships
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
-        nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
+        nodes <- dplyr::left_join(nodes, bicomponent$largest_bicomponent_memberships, by = "id")
       }
-      degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+      degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
-      trans_rate_igraph(g)
+      transitivity_rate <- trans_rate_igraph(g)
       global_clustering_coefficient <- igraph::transitivity(g, type='global')
       average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
     }
@@ -1151,8 +1261,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     colnames(edgelist)[[1]] <- c('Obs_ID')
 
     # Adding Nodes
-     if(is.null(nodelist[[1]]) == TRUE) {
-    #if(length(nodelist) == 1 & nodelist[[1]] == FALSE) {
+    if(is.null(nodelist[[1]]) == TRUE) {
+      #if(length(nodelist) == 1 & nodelist[[1]] == FALSE) {
       print("make nodes no nodelist")
       nodes <- as.data.frame(sort(unique(c(edgelist[,2], edgelist[,3]))))
       nodes <- cbind(seq(1,nrow(nodes),1), nodes)
@@ -1189,9 +1299,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # If `nodelist` is a data frame, extract vector of
       # node_ids
       if ("data.frame" %in% class(nodelist)) {
-            nodes <- nodelist[,node_id]
+        nodes <- nodelist[,node_id]
       } else {
-            nodes <- nodelist
+        nodes <- nodelist
       }
 
 
@@ -1290,7 +1400,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Adding Node-Level Measures
     if ("nodelist" %in% output | "node_measure_plot" %in% output) {
       nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                 message = message)
+                                 message = message, weights = weights)
 
       # If original `node_id` name is specified, rename column `attr` to match
       if (!is.null(node_id)) {
@@ -1307,22 +1417,22 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Calculating Multiplex Edge Correlation
     # Calculating System-Level Measures
     # print('system level measures')
-    if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
-      largest_weak_component_igraph(g)
-      largest_bicomponent_igraph(g)
+    if ("system_level_measures" %in% output | "system_measure_plot" %in% output | "largest_bi_component" %in% output | "largest_component" %in% output) {
+      weak_component <- largest_weak_component_igraph(g)
+      bicomponent <- largest_bicomponent_igraph(g)
       ### Merge in largest bicomponent memberships
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
-        nodes <- dplyr::left_join(nodes, largest_bicomponent_memberships, by = "id")
+        nodes <- dplyr::left_join(nodes, bicomponent$largest_bicomponent_memberships, by = "id")
       }
-      degree_assortativity <- igraph::assortativity.degree(g, directed=as.logical(directed))
+      degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
-      trans_rate_igraph(g)
+      transitivity_rate <- trans_rate_igraph(g)
       global_clustering_coefficient <- igraph::transitivity(g, type='global')
       average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
 
-      multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
-                                 weight_type = weight_type,
-                                 type = type)
+      multiplex <- multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
+                                              weight_type = weight_type,
+                                              type = type)
 
     }
     # Outputting Network Objects
@@ -1334,14 +1444,16 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       edgelist[,6] <- edgelist[,6]
     }
     if ("edgelist" %in% output) {
-      assign(x = 'edgelist', value = edgelist,.GlobalEnv)
+      basic_output$edgelist <- edgelist
+      # assign(x = 'edgelist', value = edgelist,.GlobalEnv)
     }
     if ("nodelist" %in% output) {
       # We need to force consistency across `ideanet's` various functions to make sure they
       # produce dataframes that can easily be merged into one another. For now, all `id` columns
       # will be designated as a numeric vector
       nodes$id <- as.numeric(nodes$id)
-      assign(x = 'node_measures', value = nodes,.GlobalEnv)
+      basic_output$node_measures <- nodes
+      # assign(x = 'node_measures', value = nodes,.GlobalEnv)
     }
 
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
@@ -1366,7 +1478,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # Assign to global environment
     if ("graph" %in% output) {
-      assign(x = net_name, value = g,.GlobalEnv)
+      basic_output[[`net_name`]] <- g
+      # assign(x = net_name, value = g,.GlobalEnv)
     }
   } # End edgelist condition
 
@@ -1442,8 +1555,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
     # Creating system-level data object
-    multiplex_edge_correlation <- ifelse((is.null(type) == TRUE), 'Singleplex Network', multiplex_edge_correlation)
-    multiplex_edge_correlation <- multiplex_edge_correlation[[1]]
+    multiplex <- ifelse((is.null(type) == TRUE), 'Singleplex Network', multiplex)
+    multiplex <- multiplex[[1]]
 
 
     # Basic Graph Info
@@ -1460,22 +1573,22 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     null_ties <- suppressWarnings(igraph::dyad_census(g)$null)
 
     # Triad census
-    triad_003 =  igraph::triad_census(g)[[1]]
-    triad_012 =  igraph::triad_census(g)[[2]]
-    triad_102 =  igraph::triad_census(g)[[3]]
-    triad_021D = igraph::triad_census(g)[[4]]
-    triad_021U = igraph::triad_census(g)[[5]]
-    triad_021C = igraph::triad_census(g)[[6]]
-    triad_111D = igraph::triad_census(g)[[7]]
-    triad_111U = igraph::triad_census(g)[[8]]
-    triad_030T = igraph::triad_census(g)[[9]]
-    triad_030C = igraph::triad_census(g)[[10]]
-    triad_201 =  igraph::triad_census(g)[[11]]
-    triad_120D = igraph::triad_census(g)[[12]]
-    triad_120U = igraph::triad_census(g)[[13]]
-    triad_120C = igraph::triad_census(g)[[14]]
-    triad_210 =  igraph::triad_census(g)[[15]]
-    triad_300 =  igraph::triad_census(g)[[16]]
+    triad_003 =  suppressWarnings(igraph::triad_census(g)[[1]])
+    triad_012 =  suppressWarnings(igraph::triad_census(g)[[2]])
+    triad_102 =  suppressWarnings(igraph::triad_census(g)[[3]])
+    triad_021D = suppressWarnings(igraph::triad_census(g)[[4]])
+    triad_021U = suppressWarnings(igraph::triad_census(g)[[5]])
+    triad_021C = suppressWarnings(igraph::triad_census(g)[[6]])
+    triad_111D = suppressWarnings(igraph::triad_census(g)[[7]])
+    triad_111U = suppressWarnings(igraph::triad_census(g)[[8]])
+    triad_030T = suppressWarnings(igraph::triad_census(g)[[9]])
+    triad_030C = suppressWarnings(igraph::triad_census(g)[[10]])
+    triad_201 =  suppressWarnings(igraph::triad_census(g)[[11]])
+    triad_120D = suppressWarnings(igraph::triad_census(g)[[12]])
+    triad_120U = suppressWarnings(igraph::triad_census(g)[[13]])
+    triad_120C = suppressWarnings(igraph::triad_census(g)[[14]])
+    triad_210 =  suppressWarnings(igraph::triad_census(g)[[15]])
+    triad_300 =  suppressWarnings(igraph::triad_census(g)[[16]])
 
     avg_geodesic <- igraph::average.path.length(g, directed = directed)
 
@@ -1513,77 +1626,193 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     if (directed == TRUE) {
 
       ### Betweenness
-      cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
-                                                           directed = FALSE,
-                                                           normalized = TRUE)$centralization
-      cent_bet_dir <- igraph::centralization.betweenness(g_no_iso,
-                                                           directed = TRUE,
-                                                           normalized = TRUE)$centralization
+      # cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
+      #                                                      directed = FALSE,
+      #                                                      normalized = TRUE)$centralization
+      # cent_bet_dir <- igraph::centralization.betweenness(g_no_iso,
+      #                                                      directed = TRUE,
+      #                                                      normalized = TRUE)$centralization
+
+      bet_centr_u <- betweenness_centralization(g = g_no_iso,
+                                                weights = igraph::E(g_no_iso)$weight,
+                                                directed = FALSE)
+
+
+      cent_bet_undir <- bet_centr_u$betweenness_centralization
+      cent_bet_undir_bin <- bet_centr_u$binarized_betweenness_centralization
+
+      bet_centr_d <- betweenness_centralization(g = g_no_iso,
+                                                weights = igraph::E(g_no_iso)$weight,
+                                                directed = TRUE)
+
+
+
+
+      cent_bet_dir <- bet_centr_d$betweenness_centralization
+      cent_bet_dir_bin <- bet_centr_d$binarized_betweenness_centralization
+
+      ##### Standard deviations for betweenness
+      sd_bet <- stats::sd(nodes$betweenness, na.rm = TRUE)
+      sd_bet_bin <- stats::sd(nodes$binarized_betweenness, na.rm = TRUE)
+      ##### Herfindahl Index for betweenness
+      herf_bet <- herfindahl(nodes$betweenness)
+      herf_bet_bin <- herfindahl(nodes$binarized_betweenness)
+
 
       ### Degree
-      cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
-                                                      loops = FALSE,
-                                                      normalized = TRUE)$centralization
-      cent_deg_out <- igraph::centralization.degree(g, mode = "out",
-                                                      loops = FALSE,
-                                                      normalized = TRUE)$centralization
-      cent_deg_in <- igraph::centralization.degree(g, mode = "in",
-                                                      loops = FALSE,
-                                                      normalized = TRUE)$centralization
+      # cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
+      #                                                 loops = FALSE,
+      #                                                 normalized = TRUE)$centralization
+      # cent_deg_out <- igraph::centralization.degree(g, mode = "out",
+      #                                                 loops = FALSE,
+      #                                                 normalized = TRUE)$centralization
+      # cent_deg_in <- igraph::centralization.degree(g, mode = "in",
+      #                                                 loops = FALSE,
+      #                                                 normalized = TRUE)$centralization
+
+      deg_centr <-  degree_centralization(g, directed = TRUE)
+
+      cent_deg_undir <- deg_centr$centralization_un
+      cent_deg_out <- deg_centr$centralization_out
+      cent_deg_in <- deg_centr$centralization_in
+
+      ##### Standard deviations for degree
+      sd_indegree <- stats::sd(nodes$in_degree, na.rm = TRUE)
+      sd_outdegree <- stats::sd(nodes$out_degree, na.rm = TRUE)
+      sd_total_degree <- stats::sd(nodes$total_degree, na.rm = TRUE)
+      ##### Herfindahl Index for Degree
+      herf_indegree <- herfindahl(nodes$in_degree)
+      herf_outdegree <- herfindahl(nodes$out_degree)
+      herf_total_degree <- herfindahl(nodes$total_degree)
+
 
       ### Closeness
-      cent_close_undir <- igraph::centralization.closeness(g_no_iso,
-                                                         mode = "all",
-                                                         normalized = TRUE)$centralization
-      cent_close_out <- igraph::centralization.closeness(g_no_iso,
-                                                       mode = "out",
-                                                       normalized = TRUE)$centralization
-      cent_close_in <- igraph::centralization.closeness(g_no_iso,
-                                                      mode = "in",
-                                                      normalized = TRUE)$centralization
+      # cent_close_undir <- igraph::centralization.closeness(g_no_iso,
+      #                                                    mode = "all",
+      #                                                    normalized = TRUE)$centralization
+      # cent_close_out <- igraph::centralization.closeness(g_no_iso,
+      #                                                  mode = "out",
+      #                                                  normalized = TRUE)$centralization
+      # cent_close_in <- igraph::centralization.closeness(g_no_iso,
+      #                                                 mode = "in",
+      #                                                 normalized = TRUE)$centralization
+
+      close_centr <- closeness_centralization(g, directed = TRUE)
+
+
+      cent_close_undir <- close_centr$centralization_un
+      cent_close_out <- close_centr$centralization_out
+      cent_close_in <- close_centr$centralization_in
+
+      ##### Standard deviations for closeness
+      sd_closeness_in <- stats::sd(nodes$closeness_in, na.rm = TRUE)
+      sd_closeness_out <- stats::sd(nodes$closeness_out, na.rm = TRUE)
+      sd_closeness_un <- stats::sd(nodes$closeness_undirected, na.rm = TRUE)
+      #####. Herfindahl Index for Closeness
+      herf_close_in <- herfindahl(nodes$closeness_in)
+      herf_close_out <- herfindahl(nodes$closeness_out)
+      herf_close_un <- herfindahl(nodes$closeness_undirected)
 
       ### Eigen
-      cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
-                                                        directed = FALSE,
-                                                        normalized = TRUE)$centralization
-      cent_eigen_dir <- igraph::centralization.evcent(g_no_iso,
-                                                      directed = TRUE,
-                                                      normalized = TRUE)$centralization
+      # cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
+      #                                                   directed = FALSE,
+      #                                                   normalized = TRUE)$centralization
+      # cent_eigen_dir <- igraph::centralization.evcent(g_no_iso,
+      #                                                 directed = TRUE,
+      #                                                 normalized = TRUE)$centralization
+      eigen_centr <- eigen_centralization(g, directed = TRUE)
+
+      cent_eigen_undir <- eigen_centr$undirected
+      cent_eigen_dir <- eigen_centr$directed
+
+      ##### Standard deviation for eigen
+      sd_eigen <- stats::sd(nodes$eigen_centrality, na.rm = TRUE)
+      ##### Herfindahl Index for Eigen
+      herf_eigen <- herfindahl(nodes$eigen_centrality)
 
     } else {
 
       ### Betweenness
-      cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
-                                                           directed = FALSE,
-                                                           normalized = TRUE)$centralization
+      # cent_bet_undir <- igraph::centralization.betweenness(g_no_iso,
+      #                                                      directed = FALSE,
+      #                                                      normalized = TRUE)$centralization
+      bet_centr_u <- betweenness_centralization(g = g_no_iso,
+                                                weights = igraph::E(g_no_iso)$weight,
+                                                directed = FALSE)
+
+      cent_bet_undir <- bet_centr_u$betweenness_centralization
+      cent_bet_undir_bin <- bet_centr_u$binarized_betweenness_centralization
+
+      # cent_bet_dir <- NA
+
       cent_bet_dir <- NA
+      cent_bet_dir_bin <- NA
+
+      ##### Standard deviations for betweenness
+      sd_bet <- stats::sd(nodes$betweenness, na.rm = TRUE)
+      sd_bet_bin <- stats::sd(nodes$binarized_betweenness, na.rm = TRUE)
+      ##### Herfindahl Index for betweenness
+      herf_bet <- herfindahl(nodes$betweenness)
+      herf_bet_bin <- herfindahl(nodes$binarized_betweenness)
+
 
       ### Degree
-      cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
-                                                      loops = FALSE,
-                                                      normalized = TRUE)$centralization
+
+      # cent_deg_undir <- igraph::centralization.degree(g, mode = "all",
+      #                                                 loops = FALSE,
+      #                                                 normalized = TRUE)$centralization
+
+      cent_deg_undir <- degree_centralization(g, directed = FALSE)
+
       cent_deg_out <- NA
       cent_deg_in <- NA
 
+      ##### Standard deviations for degree
+      sd_indegree <- NA
+      sd_outdegree <- NA
+      sd_total_degree <- stats::sd(nodes$total_degree, na.rm = TRUE)
+      ##### Herfindahl Index for Degree
+      herf_indegree <- NA
+      herf_outdegree <- NA
+      herf_total_degree <- herfindahl(nodes$total_degree)
+
       ### Closeness
-      cent_close_undir <- igraph::centralization.closeness(g_no_iso,
-                                                         mode = "all",
-                                                         normalized = TRUE)$centralization
+      # cent_close_undir <- igraph::centralization.closeness(g_no_iso,
+      #                                                    mode = "all",
+      #                                                    normalized = TRUE)$centralization
+      cent_close_undir <- closeness_centralization(g_no_iso,
+                                                   directed = FALSE)
       cent_close_out <- NA
       cent_close_in <- NA
 
+      ##### Standard Deviations for Closeness
+      sd_closeness_in <- NA
+      sd_closeness_out <- NA
+      sd_closeness_un <- stats::sd(nodes$closeness, na.rm = TRUE)
+      #####. Herfindahl Index for Closeness
+      herf_close_in <- NA
+      herf_close_out <- NA
+      herf_close_un <- herfindahl(nodes$closeness)
+
       ### Eigen
-      cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
-                                                        directed = FALSE,
-                                                        normalized = TRUE)$centralization
+      # cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
+      #                                                   directed = FALSE,
+      #                                                   normalized = TRUE)$centralization
+      eigen_centr <- eigen_centralization(g, directed = FALSE)
+      cent_eigen_undir <- eigen_centr$undirected
+
       cent_eigen_dir <- NA
+
+      ##### Standard deviation for eigen
+      sd_eigen <- stats::sd(nodes$eigen_centrality, na.rm = TRUE)
+      ##### Herfindahl Index for Eigen
+      herf_eigen <- herfindahl(nodes$eigen_centrality)
 
     }
 
 
     # K-core cohesion (ask Jim for best name for this measure)
     k_core_cohesion <- k_cohesion(graph = g)
-
 
 
     measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties',
@@ -1618,7 +1847,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         "Number of 210 Triads",
                         "Number of 300 Triads",
 
-                        'Degree Assortativity', 'Reciprocity Rate', 'Transitivity Rate',
+                        'Degree Assortativity (Total)', 'Degree Assortativity (Indegree)', 'Degree Assortativity (Outdegree)',
+                        'Reciprocity Rate', 'Transitivity Rate',
 
                         'Transitivity Correlation',
 
@@ -1630,10 +1860,20 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         'Pairwise Reachability (Weak, Undirected)', 'Pairwise Reachability (Strong, Undirected)',
                         'Pairwise Reachability (Weak, Directed)', 'Pairwise Reachability (Strong, Directed)',
 
-                        "Betweenness Centralization (Undirected)", "Betweenness Centralization (Directed)",
+                        "Betweenness Centralization (Undirected)", "Betweenness Centralization (Undirected, Binarized)",
+                        "Betweenness Centralization (Directed)", "Betweenness Centralization (Directed, Binarized)",
+                        "Standard Deviation, Betweenness", "Standard Deviation, Binarized Betweeness",
+                        "Herfindahl Index, Betweenness", "Herfindahl Index, Binarized Betweeness",
                         "Degree Centralization (Undirected)", "Degree Centralization (In)", "Degree Centralization (Out)",
+                        "Standard Deviation, Total Degree", "Standard Deviation, Indegree", "Standard Deviation, Outdegree",
+                        "Herfindahl Index, Total Degree", "Herfindahl Index, Indegree", "Herfindahl Index, Outdegree",
                         "Closeness Centralization (Undirected)", "Closeness Centralization (In)", "Closeness Centralization (Out)",
+                        "Standard Deviation, Closeness (Undirected)", "Standard Deviation, Closeness (Indegree)", "Standard Deviation, Closeness (Outdegree)",
+                        "Herfindahl Index, Closeness (Undirected)", "Herfindahl Index, Closeness (Indegree)", "Herfindahl Index, Closeness (Outdegree)",
                         "Eigenvector Centralization (Undirected)", "Eigenvector Centralization (Directed)",
+                        "Standard Deviation, Eigenvector Centrality",
+                        "Herfindahl Index, Eigenvector Centrality",
+
                         "K-Core Cohesion"
     )
 
@@ -1682,7 +1922,11 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "The number of 210 triads in the graph",
                               "The number of 300 triads in the graph",
 
-                              'Edgewise correlation of degree', 'The proportion of directed ties that are reciprocated',
+                              'Edgewise correlation of total degree',
+                              'Edgewise correlation of total indegree',
+                              'Edgewise correlation of total outdegree',
+
+                              'The proportion of directed ties that are reciprocated',
                               'The proportion of two-step paths that are also one-step paths',
 
                               "The observed correlation between a tie and the number of two-step paths connecting the two nodes in a tie",
@@ -1690,7 +1934,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
                               'The proportion of closed triangles to all triangles', 'The average shortest path length',
-                              'Multiplex networks edgwise correlation of relations',
+                              'Multiplex networks edgewise correlation of relations',
 
                               'The proportion of nodes that share a weak component (undirected)',
                               'The proportion of nodes that share a strong component (undirected)',
@@ -1699,9 +1943,25 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
                               # Betweeness
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Undirected shortest paths used when calculating betweenness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Undirected shortest paths used when calculating betweenness, edge weights are binarized)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Directed shortest paths used when calculating betweenness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (Directed shortest paths used when calculating betweenness, edge weights are binarized)",
+                              ##### SD Betweenness
+                              "Standard deviation of betweenness centrality scores",
+                              "Standard deviation of binarized betweenness centrality scores",
+                              ##### Herf Betweenness
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (edge weights are binarized)",
 
-                              #Degree
+                              # Degree
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Undirected edges used when calculating degree)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Incoming edges used when calculating degree)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Outgoing edges used when calculating degree)",
+                              ##### SD Degree
+                              "Standard deviation of total degree centrality scores",
+                              "Standard deviation of indegree centrality scores",
+                              "Standard deviation of outdegree centrality scores",
+                              ##### Herf Degree
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Undirected edges used when calculating degree)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Incoming edges used when calculating degree)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Outgoing edges used when calculating degree)",
@@ -1710,14 +1970,26 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Undirected edges used when calculating closeness)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Incoming edges used when calculating closeness)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Outgoing edges used when calculating closeness)",
+                              ##### SD Closeness
+                              "Standard deviation of closeness centrality scores (undirected)",
+                              "Standard deviation of closeness centrality scores (incoming edges used when calculating closeness)",
+                              "Standard deviation of closeness centrality scores (outgoing edges used when calculating closeness)",
+                              ##### Herf Closeness
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Undirected edges used when calculating closeness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Incoming edges used when calculating closeness)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Outgoing edges used when calculating closeness)",
 
                               # Eigenvector centrality
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Undirected edges used when calculating eigenvector centrality)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Directed edges paths used when calculating eigenvector centrality)",
+                              ##### SD Eigenvector centrality
+                              "Standard deviation of eigenvector centrality scores",
+                              ##### Herf Eigen
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores",
 
                               # K-core Cohesion
                               "The average across all pairs of the maximum k-core to which each pair is a joint member (Measures the average level of shared contacts)"
-                              )
+    )
 
     measures <- c(graph_type, weighted_graph, as.character(num_nodes), as.character(num_ties), as.character(num_types),
 
@@ -1727,7 +1999,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
                   as.character(num_clusters), as.character(largest_size), as.character(proportion_largest),
                   as.character(strong_num_clusters), as.character(strong_largest_size), as.character(strong_proportion_largest),
-                  as.character(bicomponent_summary$num_bicomponents), as.character(bicomponent_summary$size_bicomponent), as.character(bicomponent_summary$prop_bicomponent),
+                  as.character(bicomponent$bicomponent_summary$num_bicomponents), as.character(bicomponent$bicomponent_summary$size_bicomponent), as.character(bicomponent$bicomponent_summary$prop_bicomponent),
 
                   as.character(mutual), as.character(asym), as.character(null_ties),
 
@@ -1749,19 +2021,39 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(triad_300),
 
 
-                  as.character(degree_assortativity), as.character(reciprocity_rate),
+                  as.character(degree_assortativity$total),
+                  as.character(degree_assortativity$indegree),
+                  as.character(degree_assortativity$outdegree),
+
+
+                  as.character(reciprocity_rate),
                   as.character(transitivity_rate), as.character(trans_cor),
 
                   as.character(global_clustering_coefficient), average_path_length,
-                  as.character(multiplex_edge_correlation),
+                  as.character(multiplex),
                   as.character(pairwise_weak_un), as.character(pairwise_strong_un),
                   as.character(pairwise_weak_dir), as.character(pairwise_strong_dir),
 
-                  as.character(cent_bet_undir), as.character(cent_bet_dir),
+                  as.character(cent_bet_undir), as.character(cent_bet_undir_bin),
+                  as.character(cent_bet_dir), as.character(cent_bet_dir_bin),
+                  as.character(sd_bet), as.character(sd_bet_bin),
+                  as.character(herf_bet), as.character(herf_bet_bin),
                   as.character(cent_deg_undir), as.character(cent_deg_in), as.character(cent_deg_out),
+                  as.character(sd_total_degree), as.character(sd_indegree), as.character(sd_outdegree),
+                  as.character(herf_total_degree), as.character(herf_indegree), as.character(herf_outdegree),
                   as.character(cent_close_undir), as.character(cent_close_in), as.character(cent_close_out),
+                  as.character(sd_closeness_un), as.character(sd_closeness_in), as.character(sd_closeness_out),
+                  as.character(herf_close_un), as.character(herf_close_in), as.character(herf_close_out),
                   as.character(cent_eigen_undir), as.character(cent_eigen_dir),
+                  as.character(sd_eigen),
+                  as.character(herf_eigen),
                   as.character(k_core_cohesion))
+
+    # print(length(measures))
+    #
+    # assign("measure_labels", measure_labels, .GlobalEnv)
+    # assign("measure_descriptions", measure_descriptions, .GlobalEnv)
+    # assign("measures", measures, .GlobalEnv)
 
     system_level_measures <- cbind(as.data.frame(measure_labels), measure_descriptions, measures)
 
@@ -1781,6 +2073,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                                                                                    "Number of 210 Triads")), ]
     }
 
+
     # If nodelist is in output, create indicator of singular Adjmat
     if ("nodelist" %in% output & directed == TRUE) {
       singular_df <- data.frame(measure_labels = "Singular Matrix",
@@ -1793,10 +2086,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # Removing node-level and system-level data objects for clarity
     suppressWarnings(rm(measure_labels, measure_descriptions, num_clusters, proportion_largest, degree_assortativity,
-       reciprocity_rate, global_clustering_coefficient, average_path_length,
-       multiplex_edge_correlation, measures, singular, singular_df))
+                        reciprocity_rate, global_clustering_coefficient, average_path_length,
+                        measures, singular, singular_df))
 
-    suppressWarnings(rm(transitivity_rate, reachability, bicomponent_summary, largest_bicomponent_memberships, envir = .GlobalEnv))
+    # suppressWarnings(rm(bicomponent_summary, largest_bicomponent_memberships, envir = .GlobalEnv))
 
   }
 
@@ -1821,12 +2114,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                              1,1,1,1,1,1,9,9,9,
                              7,7,7,8,8,8,0,0,0),
                            ncol  = 9, byrow = TRUE)
-      layout(viz_matrix)
-      layout.show(10)
+      graphics::layout(viz_matrix)
+      graphics::layout.show(10)
 
       # Defining degree distribution coordinates
-      y_axis <- density(nodes$total_degree)$y
-      x_axis <- density(nodes$total_degree)$x
+      y_axis <- stats::density(nodes$total_degree)$y
+      x_axis <- stats::density(nodes$total_degree)$x
       coordinates <- cbind(as.data.frame(x_axis), y_axis)
       coordinates <- coordinates[(coordinates$x_axis >= 0), ]
       x_axis <- pretty(coordinates$x_axis)
@@ -1837,33 +2130,33 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       y_spacer <- y_spacer*0.5
 
       # Defining Base Degree Plot
-      par(mar = c(5,6,2,2),  family='HersheySerif')
+      graphics::par(mar = c(5,6,2,2),  family='HersheySerif')
       plot(0, type='n', xlab=' ', ylab=' ', xlim=c(min(x_axis), max(x_axis)),
            ylim=c(min(y_axis), max(y_axis)), cex.axis=1.3, family='HersheySerif',
            las=1, main=' ', bty='n')
-      grid(lwd = 2)
+      graphics::grid(lwd = 2)
 
       # Adding Margin Text
-      mtext(side = 1, text = 'Total Degree', col = "black", line = 3, cex = 1.5, family='HersheySerif')
-      mtext(side = 2, text = 'Density', col = "black", line = 4.5, cex = 1.5, family='HersheySerif')
+      graphics::mtext(side = 1, text = 'Total Degree', col = "black", line = 3, cex = 1.5, family='HersheySerif')
+      graphics::mtext(side = 2, text = 'Density', col = "black", line = 4.5, cex = 1.5, family='HersheySerif')
 
       # Plotting Degree
-      lines(coordinates$x_axis, coordinates$y_axis, col='brown', lwd=1.5)
+      graphics::lines(coordinates$x_axis, coordinates$y_axis, col='brown', lwd=1.5)
 
       # Adding Skew and Kurtosis
       skewness <- moments::skewness(nodes$total_degree)
       kurtosis <- moments::kurtosis(nodes$total_degree)
-      text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-y_spacer), paste('Skewness',round(skewness, digits=2)), cex=1.3)
-      text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-(y_spacer*2)), paste('Kurtosis',round(kurtosis, digits=2)), cex=1.3)
+      graphics::text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-y_spacer), paste('Skewness',round(skewness, digits=2)), cex=1.3)
+      graphics::text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-(y_spacer*2)), paste('Kurtosis',round(kurtosis, digits=2)), cex=1.3)
 
       # Adding Title
-      title(c("Total Degree Distribution"), family='serif', cex.main=2)
+      graphics::title(c("Total Degree Distribution"), family='serif', cex.main=2)
 
 
       # Populating Subplots
       system_plot_names <- c("Number of Weak Components",
                              "Proportion in the Largest Weak Component",
-                             "Degree Assortativity",
+                             "Degree Assortativity (Total)",
                              "Reciprocity Rate",
                              "Transitivity Rate",
                              "Global Clustering Coefficient",
@@ -1887,20 +2180,20 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         plot_measure <- ifelse(i < 8, round(plot_measure, digits=2), plot_measure)
         plot_measure <- ifelse(i == 8, trimws(gsub('Edge', '', plot_measure)), plot_measure)
 
-        par(mar=c(0,0,0,0), family='serif')
+        graphics::par(mar=c(0,0,0,0), family='serif')
         plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
              ylim=c(1,10), axes=FALSE, main='', bty='n')
 
-        text(x=5, y=9, system_plot_labels[[i]], family='serif', font=2, cex=1.3)
-        text(x=5, y=6.5, plot_measure, family='serif', cex=1.5)
+        graphics::text(x=5, y=9, system_plot_labels[[i]], family='serif', font=2, cex=1.3)
+        graphics::text(x=5, y=6.5, plot_measure, family='serif', cex=1.5)
         rm(plot_measure)
       }
 
       # Adding Plot Title
-      par(mar=c(0,0,0,0), family='serif')
+      graphics::par(mar=c(0,0,0,0), family='serif')
       plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
            ylim=c(1,10), axes=FALSE, main='', bty='n')
-      text(x=5.5, y=5, 'System-Level Measures', family='serif', font=2, cex=3)
+      graphics::text(x=5.5, y=5, 'System-Level Measures', family='serif', font=2, cex=3)
     }
 
     g <- cowplot::as_grob(system_plot)
@@ -1967,7 +2260,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                        'Eigenvector Cent.', 'Burt Measures', 'Reachability')
 
       # Font setting for legend elements
-      par(family='serif')
+      graphics::par(family='serif')
 
 
 
@@ -1975,8 +2268,18 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       legend_elements <- vector("list", length(plot_labels))
       legend_elements[[1]] <- c("degree", "indegree", "outdegree")
       legend_elements[[2]] <- c("degree", "indegree", "outdegree")
-      legend_elements[[3]] <- c()
-      legend_elements[[4]] <- c("binarized", "weighted")
+
+      if ("closeness_in" %in% names(nodes)) {
+        legend_elements[[3]] <- c("inbound", "outbound", "undirected")
+      } else {
+        legend_elements[[3]] <- c()
+      }
+
+      if ("binarized_betweenness" %in% names(nodes)) {
+        legend_elements[[4]] <- c("binarized", "weighted")
+      } else {
+        legend_elements[[4]] <- c()
+      }
 
       # Handling different amounts of bonacich measures
       if ("bonpow_in" %in% names(nodes)) {
@@ -2016,7 +2319,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                              7,7,7,8,8,8,9,9,9,
                              7,7,7,8,8,8,9,9,9),
                            ncol  = 9, byrow = TRUE)
-      layout(viz_matrix)
+      graphics::layout(viz_matrix)
       #layout.show(viz_matrix)
 
 
@@ -2054,7 +2357,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
           measure_ranges <- as.data.frame(cbind(legend_elements[[i]], measure_ranges))
           colnames(measure_ranges)[[1]] <- c("name")
-          measure_ranges <- measure_ranges[!duplicated(measure_ranges[[2]]), ]
+          #          measure_ranges <- measure_ranges[!duplicated(measure_ranges[[2]]), ]
+          measure_ranges <- measure_ranges[!duplicated(measure_ranges[[1]]), ]
           colors <- colors[1:nrow(measure_ranges)]
 
         }
@@ -2065,8 +2369,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         x_axis <- NULL
         for(j in seq_along(sub_measures)){
           plot_measure <- sub_measures[[j]]
-          y <- density(plot_measure)$y
-          x <- density(plot_measure)$x
+          y <- stats::density(plot_measure)$y
+          x <- stats::density(plot_measure)$x
 
           coordinates <- cbind(as.data.frame(x), y)
           coordinates <- coordinates[(coordinates[,1] >= min(plot_measure)), ]
@@ -2084,33 +2388,33 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         colors <- colors[1:length(measures)]
 
         # Defining Base Degree Plot
-        par(mar = c(5,6,2,2), family='HersheySerif')
+        graphics::par(mar = c(5,6,2,2), family='HersheySerif')
         plot(0, type='n', xlab=' ', ylab=' ', xlim=c(min(x_axis), max(x_axis)),
              ylim=c(min(y_axis), max(y_axis)), cex.axis=1.3, family='HersheySerif',
              las=1, main=' ', bty='n')
-        grid(lwd = 2)
+        graphics::grid(lwd = 2)
 
         # Adding Margin Text
-        mtext(side = 1, text = plot_labels[[i]], col = "black", line = 3, cex = 1.2, family='HersheySerif')
+        graphics::mtext(side = 1, text = plot_labels[[i]], col = "black", line = 3, cex = 1.2, family='HersheySerif')
 
         # Plotting Degree
         for(j in seq_along(sub_measures)){
           plot_measure <- sub_measures[[j]]
-          y_axis <- density(plot_measure)$y
-          x_axis <- density(plot_measure)$x
+          y_axis <- stats::density(plot_measure)$y
+          x_axis <- stats::density(plot_measure)$x
           coordinates <- cbind(as.data.frame(x_axis), y_axis)
           coordinates <- coordinates[(coordinates$x_axis >= min(plot_measure)), ]
           x_axis <- coordinates$x_axis
           y_axis <- coordinates$y_axis
-          lines(x_axis, y_axis, col=colors[[j]], lwd=1.5)
+          graphics::lines(x_axis, y_axis, col=colors[[j]], lwd=1.5)
 
         }
 
         if (length(legend_elements[[i]] > 0)) {
 
 
-          par(family='serif')
-          legend("topright", legend=measure_ranges[[1]], col=colors, lty=1, cex=.9, bty='n')
+          graphics::par(family='serif')
+          graphics::legend("topright", legend=measure_ranges[[1]], col=colors, lty=1, cex=.9, bty='n')
         }
 
 
@@ -2119,16 +2423,16 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # Adding Legend
       #  if(directed == TRUE){
-      par(mar=c(0,0,0,0), family='serif')
+      graphics::par(mar=c(0,0,0,0), family='serif')
       plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
            ylim=c(1,10), axes=FALSE, main='', bty='n')
 
       # segments(3, 8, 4, 8, col="blue")
       # segments(3, 5, 4, 5, col="forestgreen")
       #
-      text(x=6, y=7, 'Note: Overlapping lines may ', family='serif', cex=1.3)
-      text(x=6, y=6, 'merely indicate nearly', family='serif', cex=1.3)
-      text(x=6, y=5, 'duplicate values', family='serif', cex=1.3)
+      graphics::text(x=6, y=7, 'Note: Overlapping lines may ', family='serif', cex=1.3)
+      graphics::text(x=6, y=6, 'merely indicate nearly', family='serif', cex=1.3)
+      graphics::text(x=6, y=5, 'duplicate values', family='serif', cex=1.3)
       # }else{
       #   par(mar=c(0,0,0,0), family='serif')
       #   plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
@@ -2136,10 +2440,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # }
 
       # Adding Title
-      par(mar=c(0,0,0,0), family='serif')
+      graphics::par(mar=c(0,0,0,0), family='serif')
       plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
            ylim=c(1,10), axes=FALSE, main='', bty='n')
-      text(x=5.5, y=5, 'Node-Level Measures', family='serif', font=2, cex=3)
+      graphics::text(x=5.5, y=5, 'Node-Level Measures', family='serif', font=2, cex=3)
     }
 
     g <- cowplot::as_grob(node_measures_plot)
@@ -2151,23 +2455,33 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   # Assigning Report Elements to the Global Environment
   if ("system_measure_plot" %in% output) {
-    assign(x = 'system_measure_plot', value = p_1,.GlobalEnv)
+    basic_output$system_measure_plot <- p_1
+    # assign(x = 'system_measure_plot', value = p_1,.GlobalEnv)
   }
   if ("node_measure_plot" %in% output) {
-    assign(x = 'node_measure_plot', value = p_2,.GlobalEnv)
+    basic_output$node_measure_plot <- p_2
+    # assign(x = 'node_measure_plot', value = p_2,.GlobalEnv)
   }
   if ("system_level_measures" %in% output) {
-    assign(x = 'system_level_measures', value = system_level_measures, .GlobalEnv)
+    basic_output$system_level_measures <- system_level_measures
+    # assign(x = 'system_level_measures', value = system_level_measures, .GlobalEnv)
   }
 
   # Remove largest component/bicomponent if not specified
-  if (!("largest_component" %in% output)) {
-    suppressWarnings(rm(largest_component, largest_component_ids))
+  if ("largest_component" %in% output) {
+    basic_output$largest_component <- weak_component$largest_component
+    # suppressWarnings(rm(largest_component, largest_component_ids))
   }
 
-  if (!("largest_bi_component" %in% output)) {
-    suppressWarnings(rm(largest_bi_component, largest_bi_component_ids))
+  if ("largest_bi_component" %in% output) {
+    basic_output$largest_bi_component <- bicomponent$largest_bi_component
+    # suppressWarnings(rm(largest_bi_component, largest_bi_component_ids))
   }
+
+
+  return(basic_output)
+
+
 
 }
 

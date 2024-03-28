@@ -1,0 +1,327 @@
+---
+title: "Analyzing Sociocentric Data: The `netwrite` Function"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Analyzing Sociocentric Data: The `netwrite` Function}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The goal of the `ideanet` R package is to lower the barrier of entry to network analysis for students, entry-level scholars, and non-expert practitioners interested in relational measurement. Some researchers may have data and questions that are suitable to network analysis. And yet, getting comfortable with the tools available in R can prove to be an arduous and time consuming task. Moreover, network analysis in R can be far from straightforward: available tools in R are shared between several packages, each with their own strengths and weaknesses. This breadth of options can make it difficult to produce reliable results by making the correct function for a given measurement difficult to identify and, at worst, packages conflicting with each other and relying on different assumptions about the data. For many researchers, this can prove to be an effective deterrent when engaging in relational analysis.
+`ideanet` is a set of functions which leverages existing network analysis packages in R (`igraph`, `network`, `sna`) to provide high quality measurements seamlessly from the starting data. 
+
+This package, as part of the broader IDEANet project, is supported by the National Science Foundation as part of the Human Networks and Data Science - Infrastructure program (BCS-2024271 and BCS-2140024).
+
+## Sociocentric Data Processing and Analysis
+
+*Global*, or *sociocentric*, networks capture a full census of actors (typically referred to as *nodes* or *vertices*) and the relationships between them  (typically referred to as *ties* or *edges*) in a given context of interest (such as a classroom, hospital, city, etc.). We anticipate that most users of this package will be interested in working with sociocentric network data. Users applying `ideanet` to sociocentric data can use the `netwrite` function to generate an extensive set of measures and summaries of their networks, which may be stored in a variety of data structures.
+
+One of the most common ways of representing and storing network data is via an edgelist. An *edgelist* is a dataset in which each row represents an edge connecting one node, *i*, to another node, *j*, both of whom are represented by a unique ID number. If the network in question is a *directed* network, wherein ties have distinct senders and receivers, the first column in an edgelist represents the sender of a tie, while the second column represents the receiver of the tie. If the network is *undirected*, ties between nodes have no direction, and these columns merely represent the two nodes at the ends of a tie. In many cases, an edgelist storing ties will be accompanied by a *nodelist* containing information about various qualities and attributes of individual nodes in the network. Nodelists are often useful when accounting for *isolates*, or nodes that exist in the network without any ties to other nodes. Because each row in an edgelist represents a tie in the network, isolates lacking ties may end up being absent from an edgelist despite appearing in a nodelist.
+
+To familiarize ourselves with `netwrite` and other functions for sociocentric data, we'll work with a nodelist and an edgelist representing a simulated network of friendships in an American high school ("Faux Mesa High") borrowed from the \code{ergm} package. Friendship ties between nodes (students) are stored in the `fauxmesa_edges` data frame, while attributes of individual nodes are contained in `fauxmesa_nodes` (both of which are native to `ideanet`):
+
+```{r setup}
+library(ideanet)
+
+fauxmesa_edges <- fauxmesa_edges
+fauxmesa_nodes <- fauxmesa_nodes
+```
+
+Let's look over these two data frames:
+
+```{r glimpse_edges}
+dplyr::glimpse(fauxmesa_edges)
+```
+This edgelist represents 203 directed connections between 205 students. Looking at our nodelist, we see that we have information about each student's grade level, their race/ethnicity, and their sex.
+
+```{r glimpse_nodes}
+dplyr::glimpse(fauxmesa_nodes)
+```
+Using the `netwrite` function, we will generate an extensive set of measures and summaries for this network. `netwrite` asks users to specify several arguments pertaining to node-level input data, edge-level input data, and function outputs. In order to familiarize ourselves with this function, we list these arguments below, organized by category. 
+
+_Edge-Level Arguments_
+
+* `data_type`: Specifies the data format of the input data. This argument accepts three different values -- `"edgelist"`, `"adjacency_list"`, and `"adjacency_matrix"` -- each of which correspond to popular formats for storing relational data (we'll cover adjacency matrices in a later example in this vignette).
+* `i_elements`: A vector of "ego" ids. For directed networks, this argument specifies which nodes serve as the source of directed edges. 
+* `j_elements`: A vector of "alter" ids. For directed networks, this argument specifies which nodes serve as the target or destination of directed edges. 
+* `weights`: Vector of edge weights, typically used to signify the strength of edges between nodes. If not specified, `netwrite` will assume that all edges are unweighted and assign them an equal values of `1`. Note that `netwrite` requires that all edge weights be greater than zero.
+* `weight_type`: If `weights` is specified, this argument determines how `netwrite` should interpret edge weight values. Possible arguments are: `"frequency"` and `"distance"`.
+* `missing_code`: A single numeric value indicating a missing tie -- in cases where the edge information contains both missing and existing ties. Missing codes often appear in edgelists for which there is not a corresponding nodelist; here missing codes are used to include nodes that are network isolates.
+* `directed`: Specify if the edges should be interpreted as directed or undirected. Expects a `TRUE` or `FALSE` logical.
+* `type`: When working with multiple relation types, a numeric or character vector indicating the types of relationships represented in the edgelist. 
+
+_Node-Level Arguments_
+
+* `nodelist`: Depending on the amount of information available to the user, one can specify this argument as either a vector of unique node identifiers *or* a data frame containing a full nodelist.
+* `node_id`: If a data frame is given for the `nodelist` argument, this argument should be set to a single character value indicating the name of the column in the nodelist containing unique node identifiers.
+
+_Output Arguments_
+
+* `output`: `netwrite` produces a set of several outputs pertaining to different aspects of network analysis. While `netwrite` produces all possible outputs by default, select outputs may or may not be important to a particular use case, and users may want only a subset of these outputs in order to minimize clutter. The `output` argument takes a character vector specifying which outputs should be created.  Possible arguments are: `"graph"`, `"largest_bi_component"`, `"largest_component"`, `"node_measure_plot"`, `"nodelist"`, `"edgelist"`, `"system_level_measures"`, and `"system_measure_plot"`.
+* `net_name`: A character value indicating the name to which exported `igraph` objects should be given.
+* `message`: Silences messages and warnings. Expects `TRUE` or `FALSE` logical.
+* `shiny`: A logical value indicating whether `netwrite` is being used in conjunction with \code{\link{ideanetViz}}. `shiny` should also be set to `TRUE` when using `ideanet` in an R Markdown file that users expect to knit into a document.
+
+Now let's use `netwrite` to get a better understanding of this school's friendship network:
+
+```{r nw_fauxmesa}
+nw_fauxmesa <- netwrite(data_type = "edgelist",
+                        nodelist = fauxmesa_nodes,
+                        node_id = "id",
+                        i_elements = fauxmesa_edges$from,
+                        j_elements = fauxmesa_edges$to,
+                        directed = TRUE,
+                        net_name = "faux_mesa",
+                        shiny = TRUE)
+
+```
+Some networks have idiosyncrasies that may affect how `netwrite` calculates and interprets individual measures. When such idiosyncrasies apply to a particular network, `netwrite` provides warnings pertaining to specific measures. Users should take care to inspect these warnings to see if they apply to measures they intend to use in analysis. Here we see that certain centrality measures have been adjusted to account for the presence of singular matrices, isolated components, and isolated nodes. 
+
+Upon completion, `netwrite` stores its outputs in a single list object. However, one may find it more convenient to extract elements of this list to the R Global Environment. We take this approach by using the `list2env` function:
+
+```{r list2env}
+list2env(nw_fauxmesa, .GlobalEnv)
+```
+
+## Interpreting `netwrite` Output
+
+### System-Level Measures
+
+`netwrite` outputs facilitate a clear interpretation of the network's structure. To start, the output contains system-level measures that tell the researcher about the network's overall characteristics. One can also view a select set of these measures in a summary visualization stored in the `system_measure_plot` object:
+
+```{r system_measure_plot}
+system_measure_plot
+```
+
+A more comprehensive set of measures is available in traditional table form via the `system_level_measures` object:
+
+```{r system_level_measures, eval = FALSE}
+head(system_level_measures)
+```
+
+
+```{r system_level_measures_kable, echo = FALSE}
+knitr::kable(head(system_level_measures))
+```
+
+### `igraph` Object(s)
+
+`netwrite` also creates an `igraph` object that contains each node and edge-level measurement computed within the function. This `igraph` object allows for traditional network manipulation, such as plotting. The `igraph` object will bear the name users specify in `netwrite`'s `net_name` argument (here `faux_mesa`); otherwise it will be stored as an object named `network`. 
+
+```{r igraph_object}
+faux_mesa
+```
+Note that this `igraph` object has various measures embedded in it as node- and edge- attributes. These measures include both those calculated by `netwrite` and those contained in our original edgelist and nodelist. Having these measures already contained in the `igraph` object allows us to use them when customizing network visualizations. Here we plot our network with nodes colored by student grade level, which appeared in our original nodelist:
+
+```{r plot_faux_mesa}
+plot(faux_mesa,
+     vertex.label = NA,
+     vertex.size = 4,
+     edge.arrow.size = 0.2,
+     vertex.color = igraph::V(faux_mesa)$grade)
+```
+
+In addition to the full network, researchers may be interested in the shape of major sub-components. `netwrite` outputs two additional graph objects: the largest component in the network, and the largest bi-component of the network.
+
+```{r largest_component}
+plot(largest_component, vertex.label = NA, vertex.size = 2, edge.arrow.size = 0.2, 
+     main = "largest component")
+```
+
+```{r largest_bi_component}
+plot(largest_bi_component, vertex.label = NA, vertex.size = 2, edge.arrow.size = 0.2, 
+     main = "largest component")
+```
+
+In some cases, networks may have 2+ largest components of equal size. When this occurs, `netwrite` will store each of the largest components as a list so that users may access them both/all.
+
+### Edgelist
+
+`netwrite` also outputs an edgelist dataframe of the same length as the input edgelist. This edgelist object contains unique dyad-level ids, simplified ego and alter ids (`i_id` and `j_id`, respectively), and the original id values and weights as they initially appeared in `edges` (uniformly set to 1 if no weights are defined).
+
+```{r edgelist, eval = FALSE}
+head(edgelist)
+```
+
+```{r edgelist_kable, echo = FALSE}
+knitr::kable(head(edgelist))
+```
+
+One may notice that `i_id` and `j_id` are zero-indexed. This is done to maximize compatibility with the `igraph` package, which has been known to rely on zero-indexing in the past.
+
+### Node-Level Measures
+
+Finally, `netwrite` returns several popular node-level measures as a dataframe of values and a plot of distributions. These are accessed via the `node_measures` and `node_measure_plot` objects, respectively. Certain measurements are computed only under certain weight and edge direction conditions -- that is, the nodelist only contains measurements appropriate to the network features.
+
+```{r node_measures, eval = FALSE}
+head(node_measures)
+```
+
+```{r node_measures_kable, echo = FALSE}
+knitr::kable(head(node_measures))
+```
+
+On first glance, one sees that the `node_measures` dataframe contains simplified node identifiers matching those appearing in `edgelist`. One also sees that `node_measures` contains all original node-level attributes as they appeared in our original nodelist. 
+
+*Note: the dimensions of `node_measure_plot` are too large to fit in this vignette. We recommend users following this vignette inspect it using the R console.*
+
+```{r node_measure_plot, eval = FALSE}
+node_measure_plot
+```
+
+Using `netwrite`, it becomes trivial for scholars to compute complex structural measurement on existing relational data. The output of `netwrite` is designed to facilitate the discovery process by providing key visualization that helps support the diagnostic process.
+
+## Adjacency Matrices
+
+In addition to edgelists, `netwrite` supports the processing and analysis of network data stored as an adjacency matrix. An *adjacency matrix* is a square matrix in which each row and each column corresponds to an individual node in the network. The value of a given cell in this matrix, [*i*, *j*], indicates the existence of a tie between node *i* and node *j*. Here we provide a quick example of how to use `netwrite` on an adjacency matrix. The matrix below represents a network of 9 nodes, the ties between which form all possible triads and motifs that can appear in a directed network.
+
+```{r triad}
+triad
+```
+Now we pass this matrix into `netwrite`.
+
+```{r nw_triad, warning = FALSE}
+nw_triad <- netwrite(data_type = "adjacency_matrix",
+                     adjacency_matrix = triad,
+                     directed = TRUE,
+                     net_name = "triad_igraph")
+
+list2env(nw_triad, .GlobalEnv)
+```
+
+To show that we've successfully processed this matrix, let's plot the `igraph` object produced by `netwrite`:
+
+```{r}
+plot(triad_igraph,
+     edge.arrow.size = 0.2,
+     vertex.label = NA)
+```
+
+## Multirelational Networks
+
+In some networks, edges may represent one of several different types of relationships between nodes. These *multirelational* networks often demand more detailed processing and analysis— users may want to subset these networks by each edge type and calculate measures based on each subset. `netwrite` handles such processing and analysis in a streamlined manner while making minimal additional demands of users. The function only requires that a multilrelational network's edgelist is stored in a long format in which each dyad-relationship type combination is given its own row.
+
+To show how `netwrite` works with multirelational networks, we'll work with an edgelist of relationships between prominent families in Renaissance-era Florence. Here edges between nodes can represent marriages or business transactions between families:
+
+```{r florentine_head, eval = FALSE}
+head(florentine_edges)
+```
+
+```{r florentine_head_kable, echo = FALSE}
+knitr::kable(head(florentine_edges, n = 10))
+```
+
+To treat this network as multirelational, we only need to specify which column in this edgelist indicates the type of each edge in the network. We do this using the `type` argument:
+
+```{r nw_flor, warning = FALSE}
+nw_flor <- netwrite(nodelist = florentine_nodes,
+                    node_id = "id",
+                    i_elements = florentine_edges$source,
+                    j_elements = florentine_edges$target,
+                    type = florentine_edges$type,
+                    directed = FALSE,
+                    net_name = "florentine")
+
+list2env(nw_flor, .GlobalEnv)
+```
+
+When given a multi-relational network, `netwrite` will return the outputs described previously in slightly different ways. First, we can see that the `edgelist` object is now a list containing an edgelist subset by each type of tie. Additionally, this list contains a complete edgelist for the `summary_graph` containing all ties.
+
+```{r edgelist_business, eval = FALSE}
+head(edgelist$business)
+```
+
+```{r edgelist_business_kable, echo=FALSE}
+knitr::kable(head(edgelist$business))
+```
+
+```{r edgelist_summary, eval = FALSE}
+head(edgelist$summary_graph)
+```
+```{r edgelist_summary_kable, echo = FALSE}
+knitr::kable(head(edgelist$summary_graph))
+```
+
+`node_measures` remains a single data frame, but now includes each node-level metric calculated for each individual relation type as well as the overall graph. We see here that `netwrite` has calculated 3 different values for `total_degree`. However, `node_measures_plot` is now a list containing summary visualizations for each relation type as well as the overall `summary_graph`.
+
+```{r total_degree_type, echo = FALSE}
+knitr::kable(node_measures %>% 
+  dplyr::select(id, total_degree, marriage_total_degree, business_total_degree) %>%
+  head())
+```
+
+Similarly, `system_level_measures` remains a single data frame, while `system_measure_plot` has become a list containing multiple visualizations. Note that `system_level_measures` now contains additional column detailing measure values for each individual relation type.
+
+```{r system_measures_multi, eval = FALSE}
+head(system_level_measures)
+```
+
+```{r system_measures_multi_kable, echo=FALSE}
+knitr::kable(head(system_level_measures))
+```
+
+`netwrite` also produces both an `igraph` object of the overall network, as it does with networks with a single relation type, as well as a list of `igraph` objects for each subset of the network. Here we access the `igraph_list` object to compare business and marriage relationships between families side-by-side:
+
+```{r flor_igraph}
+par(mfrow = c(1, 2), mar = c(1, 1, 1, 1))
+# Create a consistent layout for both plots
+flor_layout <- igraph::layout.fruchterman.reingold(igraph_list$marriage)
+plot(igraph_list$marriage, vertex.label = NA, vertex.size = 4, edge.arrow.size = 0.2, 
+     vertex.color = "gray", main = "Marriage Network", layout = flor_layout)
+plot(igraph_list$business, vertex.label = NA, vertex.size = 4, edge.arrow.size = 0.2, 
+     vertex.color = "red", main = "Business Network", layout = flor_layout)
+```
+
+## Community Detection
+
+When analyzing a network, users are often interested in whether nodes cluster together to form distinct subgroups or communities. Many methods exist for identifying discernible communities in a network, and one might want to know how different methods perform the same task. `ideanet`'s `communities` function leverages several community detection algorithms found in the `igraph` package, as well as a couple others, to find and compare inferred communities across these methods. Using this function is as simple: one only needs to pass an `igraph` object produced by `netwrite` into the function. Let's quickly apply several community detection methods to the Florentine families network we just processed.
+
+```{r}
+flor_communities <- communities(florentine)
+```
+
+The `communities` function returns a list of three data frames, and will automatically generate a set of visualizations showing each node's community membership as determined by each community detection method. Within the list produced, the `summaries` data frame details the number of communities detected by each method, as well as the modularity score associated with each method. This offers one way of comparing community detection methods— higher modularity scores generally indicate more effective partitioning of the network.
+
+```{r comm_summaries, eval = FALSE}
+flor_communities$summaries
+```
+
+
+```{r comm_summaries_kable, echo = FALSE}
+knitr::kable(flor_communities$summaries)
+```
+
+A second data frame in the list, `score_comparison`, allows for further comparison of community detection methods. `score_comparison` contains a matrix of values indicating the level of similiarty between two methods in how they assigned nodes to communities. This matrix tells us, for example, that the Fast-Greedy and Leading Eigenvector methods were identical in their community assignment:
+
+```{r score_comparison, eval = FALSE}
+flor_communities$score_comparison
+```
+
+```{r score_comparison_kable, echo = FALSE}
+knitr::kable(flor_communities$score_comparison)
+```
+
+`memberships`, the final data frame in the list, shows each node's community membership according to each of the methods used. 
+
+```{r memberships, eval = FALSE}
+flor_communities$memberships
+```
+
+```{r memberships_kable, echo = FALSE}
+knitr::kable(head(flor_communities$memberships))
+```
+
+`memberships` is designed to be easily merged with the `node_measures` data frame produced by `netwrite`, should users be inclined to combine the two.
+
+```{r membership_merge, eval = FALSE}
+node_info <- node_measures %>%
+  dplyr::left_join(flor_communities$memberships, by = "id")
+```
+

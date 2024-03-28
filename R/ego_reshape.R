@@ -14,9 +14,11 @@
 #' @param missing_code A numeric value indicating "missing" values in the alter-alter edgelist.
 #' @param output_name A character value indicating the name or prefix that should be given to output objects.
 #'
-#' @return \code{ego_reshape} returns three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}.
+#' @return A list containing three data frames: an ego list, an ego-alter edgelist, and an alter-alter edgelist. These dataframes are optimized for use with \code{\link{ego_netwrite}}.
 #'
 #' @export
+#'
+#' @importFrom rlang .data
 
 
 ego_reshape <- function(data,
@@ -31,29 +33,32 @@ ego_reshape <- function(data,
                         missing_code = 99999,
                         output_name = "ego_long") {
 
+  # Create output list
+  output_list <- list()
+
   ##### TEXT CONVERSION ##########################################################
   # Taking strings entered as arguments and converting them to their numeric index
-  if (class(ego_id) == "character") {
+  if (methods::is(ego_id, "character")) {
     ego_id <- which(names(data) %in% ego_id)
   }
 
-  if (class(ego_vars) == "character") {
+  if (methods::is(ego_vars, "character")) {
     ego_vars <- which(names(data) %in% ego_vars)
   }
 
-  if (class(alters) == "character") {
+  if (methods::is(alters, "character")) {
     alters <- which(names(data) %in% alters)
   }
 
-  if (class(alter_vars) == "character") {
+  if (methods::is(alter_vars, "character")) {
     alter_vars <- which(names(data) %in% alter_vars)
   }
 
-  if (class(alter_alter) == "character") {
+  if (methods::is(alter_alter, "character")) {
     alter_alter <- which(names(data) %in% alter_alter)
   }
 
-  if (class(aa_vars) == "character") {
+  if (methods::is(aa_vars, "character")) {
     aa_vars <- which(names(data) %in% aa_vars)
   }
 
@@ -134,31 +139,31 @@ ego_reshape <- function(data,
 
   ##### EGO LIST #################################################################
   # Extract ego-level variables and set aside
-  ego_df <- ego_wide[,c(ego_id, ego_vars)]
+  ego_df <- data[,c(ego_id, ego_vars)]
   # Rename ego_id column here to make things easier later
   colnames(ego_df)[[1]] <- "ego_id"
 
 
   ##### ALTER LIST ###############################################################
   # Extract ego-alter edge variables
-  alter_df <- ego_wide[,c(ego_id, alters)]
+  alter_df <- data[,c(ego_id, alters)]
   # Rename columns here to make things easier
   colnames(alter_df) <- paste("alter", 0:(ncol(alter_df)-1), sep = "_")
   colnames(alter_df)[[1]] <- "ego_id"
 
   alter_df <- alter_df %>%
-    tidyr::pivot_longer(cols = -ego_id,
+    tidyr::pivot_longer(cols = -.data$ego_id,
                         names_to = "var",
                         values_to = "alter") %>%
-    dplyr::group_by(ego_id) %>%
+    dplyr::group_by(.data$ego_id) %>%
     dplyr::mutate(alter_id = dplyr::row_number()) %>%
     dplyr::ungroup() %>%
-    dplyr::filter(alter != 99999) %>%
-    dplyr::select(ego_id, alter_id, alter)
+    dplyr::filter(.data$alter != 99999) %>%
+    dplyr::select(.data$ego_id, .data$alter_id, .data$alter)
 
   # Now we're dealing with the alter-level variables
   # Extract alter-level variables and keep `ego_id` for merging purposes
-  alter_vars_df <- ego_wide[,c(ego_id, alter_vars)]
+  alter_vars_df <- data[,c(ego_id, alter_vars)]
   colnames(alter_vars_df)[[1]] <- "ego_id"
   # Index for extracting individual variables
   alter_vars_index <- c(seq(2, ncol(alter_vars_df), max_alters), ncol(alter_vars_df)+1)
@@ -171,13 +176,13 @@ ego_reshape <- function(data,
     this_name <- colnames(alter_vars_df)[[alter_vars_index[[i]]]]
 
     this_alter_var <- alter_vars_df[, c(ego_id, extracted_cols)] %>%
-      tidyr::pivot_longer(cols = -ego_id,
+      tidyr::pivot_longer(cols = -.data$ego_id,
                           names_to = "var",
                           values_to = this_name) %>%
-      dplyr::group_by(ego_id) %>%
+      dplyr::group_by(.data$ego_id) %>%
       dplyr::mutate(alter_id = dplyr::row_number()) %>%
       dplyr::ungroup() %>%
-      dplyr::select(-var)
+      dplyr::select(-.data$var)
     # Merge into `alter_df`
     alter_df <- alter_df %>%
       dplyr::left_join(this_alter_var, by = c("ego_id", "alter_id"))
@@ -205,22 +210,22 @@ ego_reshape <- function(data,
       }
     }
 
-    aa_tie_df <- ego_wide[,c(ego_id, alter_alter)]
+    aa_tie_df <- data[,c(ego_id, alter_alter)]
     colnames(aa_tie_df) <- c("ego_id", cell_labels)
     aa_tie_df <- aa_tie_df %>%
-      tidyr::pivot_longer(cols = -ego_id,
+      tidyr::pivot_longer(cols = -.data$ego_id,
                           names_to = "dyad",
                           values_to = "val") %>%
-      dplyr::mutate(alter1 = as.numeric(stringr::str_replace(dyad, "_\\d*$", "")),
-                    alter2 = as.numeric(stringr::str_replace(dyad, "^\\d*_", ""))) %>%
-      dplyr::filter(val != 0) %>%
-      dplyr::select(ego_id, alter1, alter2)
+      dplyr::mutate(alter1 = as.numeric(stringr::str_replace(.data$dyad, "_\\d*$", "")),
+                    alter2 = as.numeric(stringr::str_replace(.data$dyad, "^\\d*_", ""))) %>%
+      dplyr::filter(.data$val != 0) %>%
+      dplyr::select(.data$ego_id, .data$alter1, .data$alter2)
 
 
     # Now we're dealing with the alter-level variables
     # Extract alter-level variables and keep `ego_id` for merging purposes
     if (!is.null(aa_vars)) {
-      aa_vars_df <- ego_wide[,c(ego_id, aa_vars)]
+      aa_vars_df <- data[,c(ego_id, aa_vars)]
       colnames(aa_vars_df)[[1]] <- "ego_id"
       # Index for extracting individual variables
       aa_vars_index <- c(seq(2, ncol(aa_vars_df), aa_target), ncol(aa_vars_df)+1)
@@ -236,12 +241,12 @@ ego_reshape <- function(data,
         colnames(this_aa_var) <- c("ego_id", cell_labels)
 
         this_aa_var <- this_aa_var %>%
-          tidyr::pivot_longer(cols = -ego_id,
+          tidyr::pivot_longer(cols = -.data$ego_id,
                               names_to = "dyad",
                               values_to = this_name) %>%
-          dplyr::mutate(alter1 = as.numeric(stringr::str_replace(dyad, "_\\d*$", "")),
-                        alter2 = as.numeric(stringr::str_replace(dyad, "^\\d*_", ""))) %>%
-          dplyr::select(-dyad)
+          dplyr::mutate(alter1 = as.numeric(stringr::str_replace(.data$dyad, "_\\d*$", "")),
+                        alter2 = as.numeric(stringr::str_replace(.data$dyad, "^\\d*_", ""))) %>%
+          dplyr::select(-.data$dyad)
         # Merge into `alter_df`
         aa_tie_df <- aa_tie_df %>%
           dplyr::left_join(this_aa_var, by = c("ego_id", "alter1", "alter2"))
@@ -251,11 +256,14 @@ ego_reshape <- function(data,
 
   ##### SAVING OUTPUT ############################################################
 
-  assign(paste(name, "egos", sep = "_"), ego_df, .GlobalEnv)
-  assign(paste(name, "alters", sep = "_"), alter_df, .GlobalEnv)
+  output_list$egos <- ego_df
+  # assign(paste(output_name, "egos", sep = "_"), ego_df, .GlobalEnv)
+  output_list$alters <- alter_df
+  # assign(paste(output_name, "alters", sep = "_"), alter_df, .GlobalEnv)
 
   if (!is.null(alter_alter)) {
-    assign(paste(output_name, "alter_edgelist", sep = "_"), aa_tie_df, .GlobalEnv)
+    output_list$alter_edgelist <- aa_tie_df
+    # assign(paste(output_name, "alter_edgelist", sep = "_"), aa_tie_df, .GlobalEnv)
   }
 
 }

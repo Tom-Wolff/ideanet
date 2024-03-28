@@ -16,7 +16,6 @@ netwrite(
   weights = NULL,
   type = NULL,
   remove_loops = FALSE,
-  package = "igraph",
   missing_code = 99999,
   weight_type = "frequency",
   directed = FALSE,
@@ -44,13 +43,11 @@ netwrite(
 
 \item{fix_nodelist}{If \code{data_type} is set to \code{"edgelist"} and user inputs a vector or data frame into \code{nodelist}, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, \code{fix_nodelist} is set to \code{FALSE} to identify potential inconsistencies between the nodelist and edgelist to the user.}
 
-\item{weights}{A numeric vector indicating the weight of ties in the edgelist.}
+\item{weights}{A numeric vector indicating the weight of ties in the edgelist. \code{netwrite} requires that all edge weights be positive values.}
 
 \item{type}{A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.}
 
 \item{remove_loops}{A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.}
-
-\item{package}{(Deprecated) A character value indicating what format network objects should be produced by \code{netwrite}. Available options are \code{igraph} and \code{network}.}
 
 \item{missing_code}{A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.}
 
@@ -67,7 +64,7 @@ netwrite(
 \item{message}{A logical value indicating whether warning messages should be displayed in the R console during processing.}
 }
 \value{
-\code{netwrite} returns a variety of outputs and assigns them to the R global environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
+\code{netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
 
 If \code{output} contains \code{graph}, \code{netwrite} will return an igraph object of the network represented in the original data.
 If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing igraph objects for each unique relation type as well as the overall network. These output objects are named according to the value specified in the \code{net_name} argument.
@@ -91,12 +88,15 @@ The \code{netwrite} function reads in relational data of several formats and pro
 }
 \examples{
 # Use netwrite on an edgelist
-netwrite(nodelist = fauxmesa_nodes,
-        node_id = "id",
-        i_elements = fauxmesa_edges$from,
-        j_elements = fauxmesa_edges$to,
-        directed = TRUE,
-        net_name = "faux_mesa")
+nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
+                      node_id = "id",
+                      i_elements = fauxmesa_edges$from,
+                      j_elements = fauxmesa_edges$to,
+                      directed = TRUE,
+                      net_name = "faux_mesa")
+
+# For easier access of output objects, call `list2env` on output
+list2env(nw_fauxmesa, .GlobalEnv)
 
 ### Inspect updated edgelist
 head(edgelist)
@@ -105,7 +105,7 @@ head(edgelist)
 head(node_measures)
 
 ### Inspect system-level summary
-system_level_measures
+head(system_level_measures)
 
 ### Plot sociogram of network
 plot(faux_mesa)
@@ -119,24 +119,25 @@ system_measure_plot
 
 
 # Run netwrite on an adjacency matrix
-fauxmesa_adjmat <- as.matrix(igraph::as_adjacency_matrix(faux_mesa))
 
-netwrite(data_type = "adjacency_matrix",
-        adjacency_matrix = fauxmesa_adjmat,
-        directed = TRUE,
-        net_name = "faux_mesa")
+nw_triad <- netwrite(data_type = "adjacency_matrix",
+                     adjacency_matrix = triad,
+                     directed = TRUE,
+                     net_name = "triad_igraph")
 
 
 # Run netwrite on a multirelational network
-netwrite(i_elements = florentine$node,
-        j_elements = florentine$target,
-        type = florentine$layer,
-        directed = TRUE,
-        net_name = "florentine")
+flor <- netwrite(nodelist = florentine_nodes,
+                 node_id = "id",
+                 i_elements = florentine_edges$source,
+                 j_elements = florentine_edges$target,
+                 type = florentine_edges$type,
+                 directed = FALSE,
+                 net_name = "florentine")
 
-# View system level summary for aggregate network
-system_level_measures_list$summary_graph
+# View system level summary
+flor$system_level_measures
 
-# View system level summary for network of `type 1` relations
-system_level_measures_list$`1`
+# View system level summary for network of marriage relations
+flor$system_measure_plot$marriage
 }

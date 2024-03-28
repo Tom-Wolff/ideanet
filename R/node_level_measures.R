@@ -2,7 +2,7 @@
 #    N O D E - L E V E L   M E A S U R E S    #
 ###############################################
 
-node_level_igraph <- function(nodes, g, directed, message) {
+node_level_igraph <- function(nodes, g, directed, message, weights) {
 
   # Degree Per Jim's specification
   custom_degree <- total_degree(g, directed = directed)
@@ -18,7 +18,10 @@ node_level_igraph <- function(nodes, g, directed, message) {
     out_degree <- custom_degree$total_degree_out
     weighted_indegree <- igraph::strength(g, mode='in', loops=FALSE)
     weighted_outdegree <- igraph::strength(g, mode='out', loops=FALSE)
-    closeness <- closeness_igraph(g)
+    # Closeness has three elements now
+    closeness_in <- closeness_igraph(g, directed = TRUE)$closeness_in
+    closeness_out <- closeness_igraph(g, directed = TRUE)$closeness_out
+    closeness_undirected <- closeness_igraph(g, directed = TRUE)$closeness_un
     betweenness_scores <- betweenness(g, weights, directed)
     # bonpow <- igraph::bonpow(g, loops=FALSE, exponent = 0.75)
     bonpow <- bonacich_igraph(g, directed=as.logical(directed),
@@ -53,18 +56,19 @@ node_level_igraph <- function(nodes, g, directed, message) {
 
       nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree, weighted_degree, in_degree, out_degree,
                                    weighted_indegree, weighted_outdegree,
-                                   closeness, betweenness_scores,
+                                   closeness_in, closeness_out, closeness_undirected,
+                                   betweenness_scores,
                                    bonpow_in, bonpow_out, bonpow_sym,
                                    bonpow_in_negative, bonpow_out_negative, bonpow_sym_negative,
                                    eigen_cen, constraint, effective_size, reachability))
 
-      assign(x = "bon_cent_in", bon_cent_in)
-      assign(x = "bon_cent_out", bon_cent_out)
-      assign(x = "bon_cent_sym", bon_cent_sym)
+      # assign(x = "bon_cent_in", bon_cent_in)
+      # assign(x = "bon_cent_out", bon_cent_out)
+      # assign(x = "bon_cent_sym", bon_cent_sym)
 
-      assign(x = "bon_cent_in_negative", bon_cent_in_negative)
-      assign(x = "bon_cent_out_negative", bon_cent_out_negative)
-      assign(x = "bon_cent_sym_negative", bon_cent_sym_negative)
+      # assign(x = "bon_cent_in_negative", bon_cent_in_negative)
+      # assign(x = "bon_cent_out_negative", bon_cent_out_negative)
+      # assign(x = "bon_cent_sym_negative", bon_cent_sym_negative)
 
 
     } else {
@@ -76,18 +80,19 @@ node_level_igraph <- function(nodes, g, directed, message) {
 
       nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree, weighted_degree, in_degree, out_degree,
                                    weighted_indegree, weighted_outdegree,
-                                   closeness, betweenness_scores, bonpow, bonpow_negative,
+                                   closeness_in, closeness_out, closeness_undirected,
+                                   betweenness_scores, bonpow, bonpow_negative,
                                    eigen_cen, constraint, effective_size, reachability))
 
-      assign(x = "bon_cent", bon_cent)
-      assign(x = "bon_cent_neg", bon_cent_neg)
+      # assign(x = "bon_cent", bon_cent)
+      # assign(x = "bon_cent_neg", bon_cent_neg)
 
     }
 
 
   }else{
 
-    closeness <- closeness_igraph(g)
+    closeness <- closeness_igraph(g, directed = FALSE)
     betweenness_scores <- betweenness(g, weights, directed)
     # bonpow <- igraph::bonpow(g, loops=FALSE, exponent = 0.75)
     bonpow <- bonacich_igraph(g, directed=as.logical(directed),
@@ -113,8 +118,8 @@ node_level_igraph <- function(nodes, g, directed, message) {
                                  eigen_cen, constraint, effective_size,
                                  reachability))
 
-    assign(x = "bon_cent", bon_cent)
-    assign(x = "bon_cent_neg", bon_cent_neg)
+    # assign(x = "bon_cent", bon_cent)
+    # assign(x = "bon_cent_neg", bon_cent_neg)
 
   }
 
@@ -154,7 +159,7 @@ total_degree <- function(g,
 
   # Filter out self-loops
   full_el <- full_el %>%
-    dplyr::filter(ego != alter)
+    dplyr::filter(.data$ego != .data$alter)
 
   # Handling Directed Networks
   if (directed == TRUE) {
@@ -162,7 +167,7 @@ total_degree <- function(g,
     # Group by `ego` and `mode` to get number of nodes ego is tied to for both
     # in and outbound ties
     directed_degree <- full_el %>%
-      dplyr::group_by(ego, mode) %>%
+      dplyr::group_by(.data$ego, .data$mode) %>%
       dplyr::summarize(total_degree = dplyr::n()) %>%
       tidyr::pivot_wider(names_from = "mode",
                          names_prefix = "total_degree_",
@@ -173,27 +178,27 @@ total_degree <- function(g,
     # For total degree for both in and outbound ties, we just group by `ego` so as
     # not to double-count alters who both send ties to ego and receive ties from ego
     undirected_degree <- full_el %>%
-      dplyr::select(-mode) %>%
+      dplyr::select(-.data$mode) %>%
       unique() %>%
-      dplyr::group_by(ego) %>%
+      dplyr::group_by(.data$ego) %>%
       dplyr::summarize(total_degree_all = dplyr::n()) %>%
       dplyr::ungroup()
 
     # Merge `directed_degree` and `undirected_degree` together
     tot_degree <- dplyr::full_join(directed_degree, undirected_degree, by = "ego") %>%
-      dplyr::rename(id = ego)
+      dplyr::rename(id = .data$ego)
 
   } else {
 
     tot_degree <- full_el %>%
-      dplyr::select(-mode) %>%
+      dplyr::select(-.data$mode) %>%
       unique() %>%
-      dplyr::group_by(ego) %>%
+      dplyr::group_by(.data$ego) %>%
       dplyr::summarize(total_degree_all = dplyr::n()) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(total_degree_in = NA,
                     total_degree_out = NA) %>%
-      dplyr::rename(id = ego)
+      dplyr::rename(id = .data$ego)
 
   }
 
@@ -227,10 +232,25 @@ total_degree <- function(g,
 # We need indegree and outdegree closeness. At the moment we have it based on total degree.
 
 # Create an alternate closeness function
-closeness_igraph <- function(g){
+closeness_igraph <- function(g, directed){
   geo <- 1/igraph::distances(g, mode='out')
   diag(geo) <- 0 # Define self-ties as 0
-  apply(geo, 1, sum) # Return sum(1/geodist) for each vertex
+
+  if (directed == TRUE) {
+
+    # Need to create an undirected version of the network and do the same process above
+    g_un <- igraph::as.undirected(g)
+    geo2 <- 1/igraph::distances(g_un, mode = "out")
+    diag(geo2) <- 0
+
+    closeness_list <- list(closeness_out = rowSums(geo),
+                           closeness_in = colSums(geo),
+                           closeness_un = rowSums(geo2))
+    return(closeness_list)
+  } else {
+    closeness <- rowSums(geo)
+    return(closeness)
+  }
 }
 
 
@@ -359,7 +379,9 @@ reachable_igraph <- function(g, directed){
   }
 
   # Writing to global environment
-  assign(x = 'reachability', value = proportion_reachable,.GlobalEnv)
+  # assign(x = 'reachability', value = proportion_reachable,.GlobalEnv)
+  return(proportion_reachable)
+
 }
 
 
@@ -378,6 +400,18 @@ burt_ch <- function(g) {
   # }
 
   adj <- as.matrix(igraph::get.adjacency(g))
+
+  # See if this is a weighted matrix
+  weighted <- max(adj, na.rm = TRUE) > 1
+
+  # Symmetrize the matrix
+  adj <- adj + t(adj)
+
+  # If not weighted, binarize the symmetrized matrix
+  if (weighted == FALSE) {
+    adj <- adj >= 1
+  }
+
 
   # Calculate ego's degree
   degree <- rowSums(adj)
@@ -506,7 +540,7 @@ bonacich_igraph <- function(g, directed, bpct = .75,
   if (0 %in% igraph::degree(g, mode = "all")) {
     # If isolates are present, indicate that isolates are going to be removed
     if (message == TRUE) {
-      message("(Bonacich power centrality) Isolates detected in network. Isolates will be removed from network when calculating power centrality measure, and will be assigned NA values in final output.")
+      warning("(Bonacich power centrality) Isolates detected in network. Isolates will be removed from network when calculating power centrality measure, and will be assigned NA values in final output.")
     }
     # Remove isolates
     g <- igraph::delete.vertices(g, v = igraph::degree(g, mode = "all", loops = F) == 0)
@@ -526,7 +560,7 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
     if (singular_check < nrow(nodelist)) {
       if (message == TRUE){
-        message("(Bonacich power centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
+        warning("(Bonacich power centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
       }
       directed <- FALSE
       g <- igraph::as.undirected(g)
@@ -635,7 +669,7 @@ eigen_igraph <- function(g, directed,
   if (0 %in% igraph::degree(g, mode = "all")) {
     # If isolates are present, indicate that isolates are going to be removed
     if (message == TRUE){
-      message("(Eigenvector centrality) Isolates detected in network. Isolates will be removed from network when calculating eigenvector centrality measure, and will be assigned NA values in final output.\n")
+      warning("(Eigenvector centrality) Isolates detected in network. Isolates will be removed from network when calculating eigenvector centrality measure, and will be assigned NA values in final output.\n")
     }
     # Remove isolates
     g <- igraph::delete.vertices(g, v = igraph::degree(g, mode = "all", loops = F) == 0)
@@ -661,7 +695,7 @@ eigen_igraph <- function(g, directed,
 
     if (singular_check < nrow(nodelist)) {
       if (message == TRUE){
-        message("(Eigenvector centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
+        warning("(Eigenvector centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
       }
       directed <- FALSE
       g <- igraph::as.undirected(g)
@@ -672,7 +706,7 @@ eigen_igraph <- function(g, directed,
   if (length(unique_components) > 1) {
     # Outputting message to the user
     if (message == TRUE){
-      message("(Eigenvector centrality) Network consists of 2+ unconnected components. Eigenvector centrality scores will be calculated for nodes based on their position within their respective components.\n")
+      warning("(Eigenvector centrality) Network consists of 2+ unconnected components. Eigenvector centrality scores will be calculated for nodes based on their position within their respective components.\n")
     }
     # Initialize data frame for storing eigen centrality measures
     eigen_scores <- data.frame()

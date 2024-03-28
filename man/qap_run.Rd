@@ -13,12 +13,12 @@ qap_run(net, dependent = NULL, variables, directed = F, family = "linear")
 
 \item{variables}{A vector of strings naming the independent variables of interest.}
 
-\item{directed}{A logical statement identifying if the network should be treated as directed. Defaults to False.}
+\item{directed}{A logical statement identifying if the network should be treated as directed. Defaults to \code{FALSE}.}
 
-\item{family}{A string identifying the functional form. Options are "linear" and "binomial". Defauts to "linear".}
+\item{family}{A string identifying the functional form. Options are \code{"linear"} and \code{"binomial"}. Defauts to \code{"linear"}.}
 }
 \value{
-`qap_run` returns a list of elements \code{model_results} that include:
+`qap_run` returns a list of elements that include:
 
 - \code{covs_df}, a data frame containing term labels, estimates, standard errors and p-values
 
@@ -28,14 +28,22 @@ qap_run(net, dependent = NULL, variables, directed = F, family = "linear")
 The \code{qap_run} function is a wrapper around \code{sna}'s Quadratic Assignment Procedure models \code{\link[sna:netlm]{sna::netlm}} and \code{\link[sna:netlogit]{sna::netlogit}}. It expects a networks objects containing dependent and independent variables of interest (e.g, the output from \code{\link{qap_setup}}).
 }
 \examples{
-data("florentine", package = "ideanet")
 
- ideanet::netwrite(i_elements = florentine$node,
-                   j_elements = florentine$target,
-                   directed = FALSE,
-                   net_name = "florentine_graph")
+flor <- netwrite(nodelist = florentine_nodes,
+                 node_id = "id",
+                 i_elements = florentine_edges$source,
+                 j_elements = florentine_edges$target,
+                 type = florentine_edges$type,
+                 directed = FALSE,
+                 net_name = "florentine_graph")
 
-ideanet::qap_setup(florentine_graph, variables = c("total_degree"), methods = c("difference"))
+flor_setup <- qap_setup(flor$florentine_graph,
+                        variables = c("total_degree"),
+                        methods = c("difference"))
 
-ideanet::qap_run(qap_results[[1]], variables = c("diff_total_degree"))
+flor_qap <- qap_run(flor_setup$graph,
+                    variables = c("diff_total_degree"))
+
+# Inspect results
+flor_qap$covs_df
 }

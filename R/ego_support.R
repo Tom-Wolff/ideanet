@@ -10,9 +10,9 @@ alter_centrality <- function(x, directed) {
   ego_isolate <- !("igraph" %in% class(x$igraph))
   ### 2. Does ego have ties but no ties exist between alters?
   if (ego_isolate == FALSE) {
-      alters_noties <- length(igraph::E(x$igraph)) == 0
+    alters_noties <- length(igraph::E(x$igraph)) == 0
   } else {
-      alters_noties <- FALSE
+    alters_noties <- FALSE
   }
 
   # If ego is an isolate (no nominated ties)
@@ -48,16 +48,18 @@ alter_centrality <- function(x, directed) {
       out$id <- NA
     }
 
-  # Handling if ego is not an isolate but alters have no ties to one another.
-  # May need to revisit how we decide on measure values here.
+    # Handling if ego is not an isolate but alters have no ties to one another.
+    # May need to revisit how we decide on measure values here.
   } else if (alters_noties == TRUE) {
 
     if (directed == FALSE) {
 
-      total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      # total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      # total_degree <- total_degree(x$igraph, directed = FALSE)$total_degree_all
+      total_degree <- rep(0, length(igraph::V(x$igraph)))
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph)
+      closeness <- closeness_igraph(x$igraph, directed = FALSE)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
       # Remove the final value here, as that's ego's score
@@ -84,12 +86,17 @@ alter_centrality <- function(x, directed) {
 
     } else {
 
-      indegree <- igraph::degree(x$igraph, mode = "in", loops = FALSE)
-      outdegree <- igraph::degree(x$igraph, mode = "out", loops = FALSE)
-      total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      # custom_degree <- total_degree(x$igraph, directed = TRUE)
+
+      indegree <- rep(0, length(igraph::V(x$igraph)))
+      outdegree <- rep(0, length(igraph::V(x$igraph)))
+      total_degree <- rep(0, length(igraph::V(x$igraph)))
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph)
+      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE)
+      closeness_in <- closeness_scores$closeness_in
+      closeness_out <- closeness_scores$closeness_out
+      closeness_un <- closeness_scores$closeness_un
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
       # Remove the final value here, as that's ego's score
@@ -108,22 +115,24 @@ alter_centrality <- function(x, directed) {
       alter_ids <- as.numeric(igraph::V(x$igraph)$name)
 
       # Compile into data frame
-      out <- cbind(indegree, outdegree, total_degree, closeness, betweenness_scores,
+      out <- cbind(indegree, outdegree, total_degree,
+                   closeness_in, closeness_out, closeness_un,
+                   betweenness_scores,
                    bonpow, bonpow_negative, eigen_cen, constraint, effective_size,
                    reachability)
       out$ego_id <- ego_ids
       out$id <- alter_ids
     }
 
-  # Handling if ego is not an isolate and at least one tie exists between two alters
+    # Handling if ego is not an isolate and at least one tie exists between two alters
   } else {
 
     if (directed == FALSE) {
 
-      total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
+      total_degree <- total_degree(x$igraph, directed = FALSE)$total_degree_all
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph)
+      closeness <- closeness_igraph(x$igraph, directed = FALSE)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
       # Remove the final value here, as that's ego's score
@@ -159,7 +168,10 @@ alter_centrality <- function(x, directed) {
       total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph)
+      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE)
+      closeness_in <- closeness_scores$closeness_in
+      closeness_out <- closeness_scores$closeness_out
+      closeness_un <- closeness_scores$closeness_un
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
       # Remove the final value here, as that's ego's score
@@ -182,7 +194,9 @@ alter_centrality <- function(x, directed) {
       alter_ids <- as.numeric(igraph::V(x$igraph)$name)
 
       # Compile into data frame
-      out <- cbind(indegree, outdegree, total_degree, closeness, betweenness_scores,
+      out <- cbind(indegree, outdegree, total_degree,
+                   closeness_in, closeness_out, closeness_un,
+                   betweenness_scores,
                    bonpow, bonpow_negative, eigen_cen, constraint, effective_size,
                    reachability)
       out$ego_id <- ego_ids
@@ -379,6 +393,7 @@ igraph_apply <- function(x, directed) {
 
 multiplex_ego <- function(edgelist, directed, type, weight_type = "frequency") {
 
+
   # Creating edgelist to manipulate internally
   edges <- as.data.frame(edgelist[,])
 
@@ -414,7 +429,7 @@ multiplex_ego <- function(edgelist, directed, type, weight_type = "frequency") {
     }
 
     # Calculating the Correlation for Unique Combination of Types
-    pairs <- t(combn(paste0(types,'_','weight'), 2))
+    pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
     pair_cors <- c()
     for(i in 1:nrow(pairs)) {
       column_set <- pairs[i, ]
@@ -430,9 +445,9 @@ multiplex_ego <- function(edgelist, directed, type, weight_type = "frequency") {
                               sep = "_")
 
     rm(pairs, types, subnets, ties)
-  # End Directed Ties Condition
+    # End Directed Ties Condition
 
-  # Start Undirected Ties Condition
+    # Start Undirected Ties Condition
   }else{
     # Creating a separate edgelist (Symmetric Edges) to Perform Operations
     s_edges <- edges[,c('i_id', 'j_id', 'type', 'weight')]
@@ -501,7 +516,7 @@ multiplex_ego <- function(edgelist, directed, type, weight_type = "frequency") {
     }
 
     # Calculating the Correlation for Unique Combination of Types
-    pairs <- t(combn(paste0(types,'_','weight'), 2))
+    pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
     pair_cors <- c()
     for(i in 1:nrow(pairs)) {
       column_set <- pairs[i, ]

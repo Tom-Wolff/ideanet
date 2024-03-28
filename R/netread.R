@@ -16,8 +16,10 @@
 #' @param net_name A character value indicating the name of the network being read from the file(s). This name will be used as a prefix for both outputs created by \code{netread}.
 #' @param missing_code A numeric value indicating "missing" values in the data being read. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
 #'
-#' @return The \code{netread} function creates an edgelist and a nodelist in the R Global Environment, both of which are formatted to be compatible with the \code{\link{netwrite}} function. These objects are names \code{[net_name]_edgelist} and \code{[net_name]_nodelist}, respectively.
+#' @return A list containing an edgelist and a nodelist, both of which are formatted to be compatible with the \code{\link{netwrite}} function.
 #' @export
+#'
+#' @importFrom rlang .data
 
 
 netread <- function(path = NULL,
@@ -61,11 +63,11 @@ netread <- function(path = NULL,
                   net_name = net_name,
                   missing_code = missing_code)
 
-  } else if (is.null(path) & filetype == "igraph" | class(object) == "igraph") {
+  } else if (is.null(path) & filetype == "igraph" | methods::is(object, "igraph")) {
 
     netread_igraph(object = object, net_name = net_name)
 
-  } else if (is.null(path) & filetype %in% c("network", "sna" | class(object) == "network")) {
+  } else if (is.null(path) & filetype %in% c("network", "sna") | methods::is(object, "network")) {
 
     netread_sna(object = object, net_name = net_name)
 
@@ -99,19 +101,22 @@ netread_csv <- function(path,
                         net_name = "network",
                         missing_code = 99999) {
 
+  # Create output list
+  output_list <- list()
 
   # Read in CSV file
   main_data <- utils::read.csv(file = path,
-                        header = col_names)
+                               header = col_names)
 
 
   # Read in nodelist if applicable
   if (!is.null(nodelist)) {
 
     nodes <- utils::read.csv(file = nodelist,
-                      header = col_names)
+                             header = col_names)
 
-    assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+    output_list$nodelist <- nodes
+    # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
 
   }
 
@@ -156,14 +161,17 @@ netread_csv <- function(path,
     if (is.null(nodelist)) {
 
       nodes <- data.frame(id = unique(c(main_data$i_elements, main_data$j_elements)))
-      assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+      output_list$nodelist <- nodes
+      # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
 
     }
 
 
     # Assign to global environment
-    assign(x = paste(net_name, "edgelist", sep = "_"), value = main_data, envir = .GlobalEnv)
+    output_list$edgelist <- main_data
+    # assign(x = paste(net_name, "edgelist", sep = "_"), value = main_data, envir = .GlobalEnv)
 
+    return(output_list)
 
     ######### ADJMAT
 
@@ -199,6 +207,18 @@ netread_csv <- function(path,
       full_el$j_elements <- paste(full_el$j_elements, "2", sep = "_")
     }
 
+    # If the column names are numbers, `read.csv` will automatically put "X" characters
+    # in front of the column names to make them syntactically valid. This causes problems for us,
+    # so we need to detect when this occurs and remove the "X"s from `j_elements`
+
+    if ((sum(stringr::str_detect(this_el$j_elements, "^X")) == length(this_el$j_elements)) &
+        (sum(stringr::str_detect(this_el$i_elements, "^X")) != length(this_el$i_elements))) {
+      this_el$j_elements <- stringr::str_replace_all(this_el$j_elements, "^X", "")
+      full_el$j_elements <- stringr::str_replace_all(full_el$j_elements, "^X", "")
+    }
+
+
+
 
     # Convert to numerics where available
     for (i in 1:ncol(this_el)) {
@@ -216,13 +236,16 @@ netread_csv <- function(path,
     if (is.null(nodelist)) {
 
       nodes <- data.frame(id = unique(c(full_el$i_elements, full_el$j_elements)))
-      assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+      output_list$nodelist <- nodes
+      # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
 
     }
 
     # Assign edgelist to global environment
-    assign(x = paste(net_name, "edgelist", sep = "_"), value = this_el, envir = .GlobalEnv)
+    output_list$edgelist <- this_el
+    # assign(x = paste(net_name, "edgelist", sep = "_"), value = this_el, envir = .GlobalEnv)
 
+    return(output_list)
 
     ######## ADJLIST
 
@@ -269,13 +292,16 @@ netread_csv <- function(path,
     if (is.null(nodelist)) {
 
       nodes <- data.frame(id = unique(c(this_el$i_elements, this_el$j_elements)))
-      assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+      output_list$nodelist <- nodes
+      # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
 
     }
 
     # Assign edgelist to global environment
-    assign(x = paste(net_name, "edgelist", sep = "_"), value = this_el, envir = .GlobalEnv)
+    output_list$edgelist <- this_el
+    # assign(x = paste(net_name, "edgelist", sep = "_"), value = this_el, envir = .GlobalEnv)
 
+    return(output_list)
 
   } else {
 
@@ -297,6 +323,9 @@ netread_excel <- function(path,
                           j_elements = NULL,
                           net_name = "network",
                           missing_code = 99999) {
+
+  # Create output list
+  output_list <- list()
 
   # Is this an `xls` or `xlsx` file
   if (stringr::str_detect(path, "xlsx$")) {
@@ -322,7 +351,8 @@ netread_excel <- function(path,
                                 col_names = col_names)
     }
 
-    assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+    output_list$nodelist <- nodes
+    # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
 
   }
 
@@ -367,14 +397,17 @@ netread_excel <- function(path,
     if (is.null(nodelist)) {
 
       nodes <- data.frame(id = unique(c(main_data$i_elements, main_data$j_elements)))
-      assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+      output_list$nodelist <- nodes
+      # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
 
     }
 
 
     # Assign to global environment
-    assign(x = paste(net_name, "edgelist", sep = "_"), value = main_data, envir = .GlobalEnv)
+    output_list$edgelist <- main_data
+    # assign(x = paste(net_name, "edgelist", sep = "_"), value = main_data, envir = .GlobalEnv)
 
+    return(output_list)
 
     ######### ADJMAT
 
@@ -427,13 +460,16 @@ netread_excel <- function(path,
     if (is.null(nodelist)) {
 
       nodes <- data.frame(id = unique(c(full_el$i_elements, full_el$j_elements)))
-      assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+      output_list$nodelist <- nodes
+      # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
 
     }
 
     # Assign edgelist to global environment
-    assign(x = paste(net_name, "edgelist", sep = "_"), value = this_el, envir = .GlobalEnv)
+    output_list$edgelist <- this_el
+    # assign(x = paste(net_name, "edgelist", sep = "_"), value = this_el, envir = .GlobalEnv)
 
+    return(output_list)
 
     ######## ADJLIST
 
@@ -480,13 +516,16 @@ netread_excel <- function(path,
     if (is.null(nodelist)) {
 
       nodes <- data.frame(id = unique(c(this_el$i_elements, this_el$j_elements)))
-      assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+      output_list$nodelist <- nodes
+      # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
 
     }
 
     # Assign edgelist to global environment
-    assign(x = paste(net_name, "edgelist", sep = "_"), value = this_el, envir = .GlobalEnv)
+    output_list$edgelist <- this_el
+    # assign(x = paste(net_name, "edgelist", sep = "_"), value = this_el, envir = .GlobalEnv)
 
+    return(output_list)
 
   } else {
 
@@ -501,13 +540,20 @@ netread_excel <- function(path,
 netread_igraph <- function(object,
                            net_name = "network") {
 
+  # Create output list
+  output_list <- list()
+
   igraph_extract <- igraph::as_data_frame(object, what = "both")
-  edges <- igraph_extract$edges %>% rename(i_elements = from,
-                                           j_elements = to)
+  edges <- igraph_extract$edges %>% dplyr::rename(i_elements = .data$from,
+                                                  j_elements = .data$to)
   nodes <- igraph_extract$vertices
 
-  assign(x = paste(net_name, "edgelist", sep = "_"), value = edges, envir = .GlobalEnv)
-  assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+  output_list$edgelist <- edges
+  # assign(x = paste(net_name, "edgelist", sep = "_"), value = edges, envir = .GlobalEnv)
+  output_list$nodelist <- nodes
+  # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+
+  return(output_list)
 
 }
 
@@ -515,13 +561,20 @@ netread_igraph <- function(object,
 netread_sna <- function(object,
                         net_name = "network") {
 
+  # Create output list
+  output_list <- list()
+
   edges <- network::as.data.frame.network(object, unit = "edges") %>%
-    rename(i_elements = .tail,
-           j_elements = .head)
+    dplyr::rename(i_elements = .data$.tail,
+                  j_elements = .data$.head)
   nodes <- network::as.data.frame.network(object, unit = "vertices")
 
-  assign(x = paste(net_name, "edgelist", sep = "_"), value = edges, envir = .GlobalEnv)
-  assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+  output_list$edgelist <- edges
+  # assign(x = paste(net_name, "edgelist", sep = "_"), value = edges, envir = .GlobalEnv)
+  output_list$nodelist <- nodes
+  # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes, envir = .GlobalEnv)
+
+  return(output_list)
 
 }
 
@@ -529,6 +582,10 @@ netread_sna <- function(object,
 
 # Reading in Network
 netread_pajek <- function(path, net_name = "network") {
+
+  # Create output list
+  output_list <- list()
+
   # Pulling-In Network File
   net <- readLines(path)
 
@@ -742,7 +799,8 @@ netread_pajek <- function(path, net_name = "network") {
   nodes <- type_setter(nodes)
 
   # Outputting Vertices
-  vertices <-  assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes,.GlobalEnv)
+  output_list$nodelist <- nodes
+  # vertices <-  assign(x = paste(net_name, "nodelist", sep = "_"), value = nodes,.GlobalEnv)
 
   # Collapsing Edges List & Writing-Out Edges File
   edges <- do.call("rbind", edges_list)
@@ -769,383 +827,392 @@ netread_pajek <- function(path, net_name = "network") {
   edges <- type_setter(edges)
 
   # Outputting Edges
-  ties <-  assign(x = paste(net_name, "edgelist", sep = "_"), value = edges,.GlobalEnv)
+  output_list$edgelist <- edges
+  # ties <-  assign(x = paste(net_name, "edgelist", sep = "_"), value = edges,.GlobalEnv)
+
+  return(output_list)
 }
 
 
 # UCINet (Non-Binary)
 netread_ucinet <- function(path, net_name = "network") {
 
-
-### Edgelist1
-x <- read.table(file = path, sep = "\t")
-x$lower <- stringr::str_to_lower(x[,1])
-# Remove any quotation marks and similar characters
-x$lower <- stringr::str_replace_all(x$lower, "\"", " ")
-x$lower <- stringr::str_replace_all(x$lower, "\'", " ")
-x$V1 <- stringr::str_replace_all(x$V1, "\"", " ")
-x$V1 <- stringr::str_replace_all(x$V1, "\'", " ")
-x$break_point <- stringr::str_detect(x$lower, ":") | stringr::str_detect(x$lower, "\\bdl\\b")
-
-break_points <- c(which(x$break_point == T), (nrow(x)+1))
-
-uci_list <- list()
-uci_list_names <- character()
-
-for (i in 1:(length(break_points)-1)) {
-  this_df <- x[break_points[[i]]:(break_points[[i+1]]-1), ]
-
-  if (stringr::str_detect(this_df$lower[[1]], "\\bdl\\b")) {
-
-    uci_list[[i]] <- this_df
-    uci_list_names <- c(uci_list_names, "metadata")
-
-  } else {
-
-    uci_list[[i]] <- this_df[2:nrow(this_df), ]
-    this_name <- this_df[1,]$lower
-    this_name <- stringr::str_replace(this_name, ":", "")
-    uci_list_names <- c(uci_list_names, this_name)
-
-  }
-
-}
-
-# Correct spelling of `lables`, if applicable
-uci_list_names <- stringr::str_replace_all(uci_list_names, "lable", "label")
-# Rename "column" to "col" if applicable
-uci_list_names <- stringr::str_replace_all(uci_list_names, "column", "col")
-names(uci_list) <- uci_list_names
-
-# Parsing metadata
-### Number of nodes
-uci_list$metadata$num_nodes <- stringr::str_detect(uci_list$metadata$lower, "n\\s*=\\s*[0-9]+")
-##### If `n` value exists, parse
-if (sum(uci_list$metadata$num_nodes) > 0) {
-###### Get row with n value
-node_row <- uci_list$metadata[uci_list$metadata$num_nodes == T,]
-###### Extract the `n = [number]` expression
-num_nodes <- unlist(stringr::str_extract_all(node_row$lower, "n\\s*=\\s*[0-9]+"))
-###### Extract the number in this expression and make numeric
-num_nodes <- as.numeric(stringr::str_extract(num_nodes, "[0-9]+"))
-}
-
-#### Number of matrices contained in data
-uci_list$metadata$num_mat <- (stringr::str_detect(uci_list$metadata$lower, "nmat\\s*=\\s*[0-9]+")) | (stringr::str_detect(uci_list$metadata$lower, "nmat\\s*=\\s*[0-9]+")) | (stringr::str_detect(uci_list$metadata$lower, "nm\\s*=\\s*[0-9]+"))
-###### If an `nmat` or `nm` value exists, parse
-if (sum(uci_list$metadata$num_mat) > 0) {
-###### Get row with nmat value
-mat_row <- uci_list$metadata[uci_list$metadata$num_mat == T, ]
-###### Extract the `nmat = [number]` expression
-num_mat <- unlist(stringr::str_extract_all(mat_row$lower, c("nmat\\s*=\\s*[0-9]+", "nm\\s*=\\s*[0-9]+")))
-###### Extract the number in this expression and make numeric
-num_mat <- as.numeric(stringr::str_extract(num_mat, "[0-9]+"))
-}
-
-###### Number of rows
-uci_list$metadata$num_rows <- stringr::str_detect(uci_list$metadata$lower, "nr\\s*=\\s*[0-9]+")
-###### If `nr` value exists, parse
-if (sum(uci_list$metadata$num_rows) > 0) {
-###### Get row with `nr` value
-nr_row <- uci_list$metadata[uci_list$metadata$num_rows == T, ]
-###### Extract the `nr = [number]` expression
-num_rows <- unlist(stringr::str_extract_all(nr_row$lower, "nr\\s*=\\s*[0-9]+"))
-###### Extract thhee number in this expression and make numeric
-num_rows <- as.numeric(stringr::str_extract(num_rows, "[0-9]+"))
-}
+  # Create output list
+  output_list <- list()
 
 
-###### Number of rows
-uci_list$metadata$num_cols <- stringr::str_detect(uci_list$metadata$lower, "nc\\s*=\\s*[0-9]+")
-###### If `nr` value exists, parse
-if (sum(uci_list$metadata$num_cols) > 0) {
-  ###### Get row with `nr` value
-  nc_row <- uci_list$metadata[uci_list$metadata$num_cols == T, ]
-  ###### Extract the `nr = [number]` expression
-  num_cols <- unlist(stringr::str_extract_all(nc_row$lower, "nc\\s*=\\s*[0-9]+"))
-  ###### Extract thhee number in this expression and make numeric
-  num_cols <- as.numeric(stringr::str_extract(num_cols, "[0-9]+"))
-}
+  ### Edgelist1
+  x <- utils::read.table(file = path, sep = "\t")
+  x$lower <- stringr::str_to_lower(x[,1])
+  # Remove any quotation marks and similar characters
+  x$lower <- stringr::str_replace_all(x$lower, "\"", " ")
+  x$lower <- stringr::str_replace_all(x$lower, "\'", " ")
+  x$V1 <- stringr::str_replace_all(x$V1, "\"", " ")
+  x$V1 <- stringr::str_replace_all(x$V1, "\'", " ")
+  x$break_point <- stringr::str_detect(x$lower, ":") | stringr::str_detect(x$lower, "\\bdl\\b")
 
-###### Data format
-uci_list$metadata$format <- stringr::str_detect(uci_list$metadata$lower, "format")
-format_row <- uci_list$metadata[uci_list$metadata$format == T, ]
-format_val <- format_row$lower[stringr::str_detect(format_row$lower, "format")]
-format <- c("edgelist1", "edgelist2", "fullmatrix", "nodelist1", "nodelist2")[str_detect(format_val, c("edgelist1", "edgelist2", "fullmatrix", "nodelist1", "nodelist2"))]
+  break_points <- c(which(x$break_point == T), (nrow(x)+1))
 
+  uci_list <- list()
+  uci_list_names <- character()
 
-####### Compile metadata into new list and update `metadata` in `uci_list`
-metadata <- list(format = format)
+  for (i in 1:(length(break_points)-1)) {
+    this_df <- x[break_points[[i]]:(break_points[[i+1]]-1), ]
 
-if (sum(uci_list$metadata$num_nodes) > 0) {
-  metadata$num_nodes <- num_nodes
-}
+    if (stringr::str_detect(this_df$lower[[1]], "\\bdl\\b")) {
 
-if (sum(uci_list$metadata$num_mat) > 0) {
-  metadata$num_mat <- num_mat
-}
+      uci_list[[i]] <- this_df
+      uci_list_names <- c(uci_list_names, "metadata")
 
-if (sum(uci_list$metadata$num_rows) > 0) {
-  metadata$num_rows <- num_rows
-}
-
-if (sum(uci_list$metadata$num_cols) > 0) {
-  metadata$num_cols <- num_cols
-}
-
-uci_list$metadata <- metadata
-
-
-# Properly extracting row, column, and matrix labels
-for (i in 1:length(uci_list)) {
-
-  if ((stringr::str_detect(names(uci_list)[[i]], "label") | stringr::str_detect(names(uci_list)[[i]], "lable")) == TRUE) {
-
-    these_labels <- uci_list[[i]]$V1
-    uci_list[[i]] <- these_labels
-
-  }
-}
-
-# Converting data element into netwrite-compatible edgelists
-
-if (uci_list$metadata$format == "edgelist1" | uci_list$metadata$format == "edgelist2") {
-
-  uci_list$data$V1 <- stringr::str_trim(uci_list$data$V1)
-  data_df <- do.call(rbind.data.frame, strsplit(uci_list$data$V1, " +"))
-
-  if (ncol(data_df) == 2) {
-    colnames(data_df) <- c("i_elements", "j_elements")
-  } else {
-    colnames(data_df) <- c("i_elements", "j_elements", paste("val", (3:ncol(data_df) - 2), sep = ""))
-  }
-
-
-# In the event that some columns in the edgelist are numeric values,
-  # be sure to convert into a numeric format
-  data_df <- as.data.frame(lapply(data_df, function(col) {
-    if (can.be.numeric(col)) {
-      as.numeric(col)
     } else {
-      col
+
+      uci_list[[i]] <- this_df[2:nrow(this_df), ]
+      this_name <- this_df[1,]$lower
+      this_name <- stringr::str_replace(this_name, ":", "")
+      uci_list_names <- c(uci_list_names, this_name)
+
     }
-  }))
-
-# If more than one matrix exists in the data file, be sure to
-# label edgelist rows to indicate which matrix it belongs to
-
-if ("num_mat" %in% names(uci_list$metadata)) {
-
-  # Make placeholder values for storing matrix identifiers
-  data_df$mat <- NA
-  # If this data file has matrix labels, add another column to store these labels
-  if ("matrix labels" %in% names(uci_list)) {
-    data_df$mat_label <- NA
-  }
-  # Make row number indicator
-  data_df$row_number <- 1:nrow(data_df)
-
-  # Need to identify index points for assigning matrix labels
-  index_points <- c(0, which(data_df$i_elements == "!"), nrow(data_df)+1)
-
-  for (i in 1:(length(index_points)-1)) {
-
-    data_df$mat <- ifelse((data_df$row_number > index_points[[i]] & data_df$row_number < index_points[[i+1]]),
-                          i,
-                          data_df$mat)
-
-   # Assign matrix label if available
-   if ("matrix labels" %in% names(uci_list)) {
-     data_df$mat_label <- ifelse((data_df$row_number > index_points[[i]] & data_df$row_number < index_points[[i+1]]),
-                           uci_list$`matrix labels`[[i]],
-                           data_df$mat_label)
-
-   }
-
 
   }
 
-  # Remove row number column, no longer needed
-  data_df$row_number <- NULL
+  # Correct spelling of `lables`, if applicable
+  uci_list_names <- stringr::str_replace_all(uci_list_names, "lable", "label")
+  # Rename "column" to "col" if applicable
+  uci_list_names <- stringr::str_replace_all(uci_list_names, "column", "col")
+  names(uci_list) <- uci_list_names
 
-  # Remove rows indicating cutoff points
-  data_df <- data_df[which(data_df$i_elements != "!"),]
-
-}
-
- # Assign reformatted edgelist into `data` element of `uci_list`
-  uci_list$data <- data_df
-
-
-  # If dataset contains labels, add columns to indicate
-  if ("labels" %in% names(uci_list)) {
-    i_labels <- data.frame(i_elements = 1:max(data_df$i_elements),
-                           i_label = stringr::str_squish(uci_list$`labels`))
-    j_labels <- data.frame(j_elements = 1:max(data_df$j_elements),
-                           j_label = stringr::str_squish(uci_list$`labels`))
-
-    data_df <- dplyr::left_join(data_df, i_labels, by = "i_elements")
-    data_df <- dplyr::left_join(data_df, j_labels, by = "j_elements")
-
+  # Parsing metadata
+  ### Number of nodes
+  uci_list$metadata$num_nodes <- stringr::str_detect(uci_list$metadata$lower, "n\\s*=\\s*[0-9]+")
+  ##### If `n` value exists, parse
+  if (sum(uci_list$metadata$num_nodes) > 0) {
+    ###### Get row with n value
+    node_row <- uci_list$metadata[uci_list$metadata$num_nodes == T,]
+    ###### Extract the `n = [number]` expression
+    num_nodes <- unlist(stringr::str_extract_all(node_row$lower, "n\\s*=\\s*[0-9]+"))
+    ###### Extract the number in this expression and make numeric
+    num_nodes <- as.numeric(stringr::str_extract(num_nodes, "[0-9]+"))
   }
 
-  # If row labels exist, add to edgelist
-  if ("row labels" %in% names(uci_list)) {
-    i_labels <- data.frame(i_elements = 1:max(data_df$i_elements),
-                           i_label = stringr::str_squish(uci_list$`row labels`))
-
-    data_df <- dplyr::left_join(data_df, i_labels, by = "i_elements")
-
+  #### Number of matrices contained in data
+  uci_list$metadata$num_mat <- (stringr::str_detect(uci_list$metadata$lower, "nmat\\s*=\\s*[0-9]+")) | (stringr::str_detect(uci_list$metadata$lower, "nmat\\s*=\\s*[0-9]+")) | (stringr::str_detect(uci_list$metadata$lower, "nm\\s*=\\s*[0-9]+"))
+  ###### If an `nmat` or `nm` value exists, parse
+  if (sum(uci_list$metadata$num_mat) > 0) {
+    ###### Get row with nmat value
+    mat_row <- uci_list$metadata[uci_list$metadata$num_mat == T, ]
+    ###### Extract the `nmat = [number]` expression
+    num_mat <- unlist(stringr::str_extract_all(mat_row$lower, c("nmat\\s*=\\s*[0-9]+", "nm\\s*=\\s*[0-9]+")))
+    ###### Extract the number in this expression and make numeric
+    num_mat <- as.numeric(stringr::str_extract(num_mat, "[0-9]+"))
   }
 
-  # If col labels exist, add to edgelist
-  if ("col labels" %in% names(uci_list)) {
-    j_labels <- data.frame(j_elements = 1:max(data_df$j_elements),
-                           j_label = stringr::str_squish(uci_list$`col labels`))
-
-    data_df <- dplyr::left_join(data_df, j_labels, by = "j_elements")
-
-  }
-
-
-# The `edgelist2` format is designed to handle rectangular matrices and
-# two-mode networks. Because of this, items in `i_elements` and `j_elements`
-# should be distinct from one another
-
-  if (uci_list$metadata$format == "edgelist2") {
-
-    data_df$i_elements <- paste(data_df$i_elements, "1", sep = "_")
-    data_df$j_elements <- paste(data_df$j_elements, "2", sep = "_")
-
+  ###### Number of rows
+  uci_list$metadata$num_rows <- stringr::str_detect(uci_list$metadata$lower, "nr\\s*=\\s*[0-9]+")
+  ###### If `nr` value exists, parse
+  if (sum(uci_list$metadata$num_rows) > 0) {
+    ###### Get row with `nr` value
+    nr_row <- uci_list$metadata[uci_list$metadata$num_rows == T, ]
+    ###### Extract the `nr = [number]` expression
+    num_rows <- unlist(stringr::str_extract_all(nr_row$lower, "nr\\s*=\\s*[0-9]+"))
+    ###### Extract thhee number in this expression and make numeric
+    num_rows <- as.numeric(stringr::str_extract(num_rows, "[0-9]+"))
   }
 
 
-assign(x = paste(net_name, "edgelist", sep = "_"), value = data_df, envir = .GlobalEnv)
+  ###### Number of rows
+  uci_list$metadata$num_cols <- stringr::str_detect(uci_list$metadata$lower, "nc\\s*=\\s*[0-9]+")
+  ###### If `nr` value exists, parse
+  if (sum(uci_list$metadata$num_cols) > 0) {
+    ###### Get row with `nr` value
+    nc_row <- uci_list$metadata[uci_list$metadata$num_cols == T, ]
+    ###### Extract the `nr = [number]` expression
+    num_cols <- unlist(stringr::str_extract_all(nc_row$lower, "nc\\s*=\\s*[0-9]+"))
+    ###### Extract thhee number in this expression and make numeric
+    num_cols <- as.numeric(stringr::str_extract(num_cols, "[0-9]+"))
+  }
 
-#################### FULLMATRIX
-
-} else if (uci_list$metadata$format == "fullmatrix") {
-
-  # Remove any leading white space
-  uci_list$data$V1 <- stringr::str_trim(uci_list$data$V1)
-
-  data_df <- do.call(rbind.data.frame, strsplit(uci_list$data$V1, " +"))
+  ###### Data format
+  uci_list$metadata$format <- stringr::str_detect(uci_list$metadata$lower, "format")
+  format_row <- uci_list$metadata[uci_list$metadata$format == T, ]
+  format_val <- format_row$lower[stringr::str_detect(format_row$lower, "format")]
+  format <- c("edgelist1", "edgelist2", "fullmatrix", "nodelist1", "nodelist2")[stringr::str_detect(format_val, c("edgelist1", "edgelist2", "fullmatrix", "nodelist1", "nodelist2"))]
 
 
-  # If level labels are embedded in the data section, it creates some extra and unnecessary rows.
-  # Let's go ahead and take those rows out before proceeing
-  if (nrow(data_df) %% uci_list$metadata$num_nodes != 0) {
+  ####### Compile metadata into new list and update `metadata` in `uci_list`
+  metadata <- list(format = format)
 
-  data_df <- as.data.frame(t(data_df))
-  #data_df <- data_df[2:nrow(data_df), ]
+  if (sum(uci_list$metadata$num_nodes) > 0) {
+    metadata$num_nodes <- num_nodes
+  }
 
-  data_df <- as.data.frame(lapply(data_df, function(col) {
-    if (can.be.numeric(col)) {
-      as.numeric(col)
+  if (sum(uci_list$metadata$num_mat) > 0) {
+    metadata$num_mat <- num_mat
+  }
+
+  if (sum(uci_list$metadata$num_rows) > 0) {
+    metadata$num_rows <- num_rows
+  }
+
+  if (sum(uci_list$metadata$num_cols) > 0) {
+    metadata$num_cols <- num_cols
+  }
+
+  uci_list$metadata <- metadata
+
+
+  # Properly extracting row, column, and matrix labels
+  for (i in 1:length(uci_list)) {
+
+    if ((stringr::str_detect(names(uci_list)[[i]], "label") | stringr::str_detect(names(uci_list)[[i]], "lable")) == TRUE) {
+
+      these_labels <- uci_list[[i]]$V1
+      uci_list[[i]] <- these_labels
+
+    }
+  }
+
+  # Converting data element into netwrite-compatible edgelists
+
+  if (uci_list$metadata$format == "edgelist1" | uci_list$metadata$format == "edgelist2") {
+
+    uci_list$data$V1 <- stringr::str_trim(uci_list$data$V1)
+    data_df <- do.call(rbind.data.frame, strsplit(uci_list$data$V1, " +"))
+
+    if (ncol(data_df) == 2) {
+      colnames(data_df) <- c("i_elements", "j_elements")
     } else {
-      col
+      colnames(data_df) <- c("i_elements", "j_elements", paste("val", (3:ncol(data_df) - 2), sep = ""))
     }
-  }))
 
-  # Remove any non-numeric columns
-  data_df <- data_df[, unlist(lapply(data_df, is.numeric))]
 
-  data_df <- as.data.frame(t(data_df))
+    # In the event that some columns in the edgelist are numeric values,
+    # be sure to convert into a numeric format
+    data_df <- as.data.frame(lapply(data_df, function(col) {
+      if (can.be.numeric(col)) {
+        as.numeric(col)
+      } else {
+        col
+      }
+    }))
 
-  }
+    # If more than one matrix exists in the data file, be sure to
+    # label edgelist rows to indicate which matrix it belongs to
 
-  # In the event that some columns in the edgelist are numeric values,
-  # be sure to convert into a numeric format
-  data_df <- as.data.frame(lapply(data_df, function(col) {
-    if (can.be.numeric(col)) {
-      as.numeric(col)
+    if ("num_mat" %in% names(uci_list$metadata)) {
+
+      # Make placeholder values for storing matrix identifiers
+      data_df$mat <- NA
+      # If this data file has matrix labels, add another column to store these labels
+      if ("matrix labels" %in% names(uci_list)) {
+        data_df$mat_label <- NA
+      }
+      # Make row number indicator
+      data_df$row_number <- 1:nrow(data_df)
+
+      # Need to identify index points for assigning matrix labels
+      index_points <- c(0, which(data_df$i_elements == "!"), nrow(data_df)+1)
+
+      for (i in 1:(length(index_points)-1)) {
+
+        data_df$mat <- ifelse((data_df$row_number > index_points[[i]] & data_df$row_number < index_points[[i+1]]),
+                              i,
+                              data_df$mat)
+
+        # Assign matrix label if available
+        if ("matrix labels" %in% names(uci_list)) {
+          data_df$mat_label <- ifelse((data_df$row_number > index_points[[i]] & data_df$row_number < index_points[[i+1]]),
+                                      uci_list$`matrix labels`[[i]],
+                                      data_df$mat_label)
+
+        }
+
+
+      }
+
+      # Remove row number column, no longer needed
+      data_df$row_number <- NULL
+
+      # Remove rows indicating cutoff points
+      data_df <- data_df[which(data_df$i_elements != "!"),]
+
+    }
+
+    # Assign reformatted edgelist into `data` element of `uci_list`
+    uci_list$data <- data_df
+
+
+    # If dataset contains labels, add columns to indicate
+    if ("labels" %in% names(uci_list)) {
+      i_labels <- data.frame(i_elements = 1:max(data_df$i_elements),
+                             i_label = stringr::str_squish(uci_list$`labels`))
+      j_labels <- data.frame(j_elements = 1:max(data_df$j_elements),
+                             j_label = stringr::str_squish(uci_list$`labels`))
+
+      data_df <- dplyr::left_join(data_df, i_labels, by = "i_elements")
+      data_df <- dplyr::left_join(data_df, j_labels, by = "j_elements")
+
+    }
+
+    # If row labels exist, add to edgelist
+    if ("row labels" %in% names(uci_list)) {
+      i_labels <- data.frame(i_elements = 1:max(data_df$i_elements),
+                             i_label = stringr::str_squish(uci_list$`row labels`))
+
+      data_df <- dplyr::left_join(data_df, i_labels, by = "i_elements")
+
+    }
+
+    # If col labels exist, add to edgelist
+    if ("col labels" %in% names(uci_list)) {
+      j_labels <- data.frame(j_elements = 1:max(data_df$j_elements),
+                             j_label = stringr::str_squish(uci_list$`col labels`))
+
+      data_df <- dplyr::left_join(data_df, j_labels, by = "j_elements")
+
+    }
+
+
+    # The `edgelist2` format is designed to handle rectangular matrices and
+    # two-mode networks. Because of this, items in `i_elements` and `j_elements`
+    # should be distinct from one another
+
+    if (uci_list$metadata$format == "edgelist2") {
+
+      data_df$i_elements <- paste(data_df$i_elements, "1", sep = "_")
+      data_df$j_elements <- paste(data_df$j_elements, "2", sep = "_")
+
+    }
+
+    output_list$edgelist <- data_df
+    # assign(x = paste(net_name, "edgelist", sep = "_"), value = data_df, envir = .GlobalEnv)
+
+    return(output_list)
+
+    #################### FULLMATRIX
+
+  } else if (uci_list$metadata$format == "fullmatrix") {
+
+    # Remove any leading white space
+    uci_list$data$V1 <- stringr::str_trim(uci_list$data$V1)
+
+    data_df <- do.call(rbind.data.frame, strsplit(uci_list$data$V1, " +"))
+
+
+    # If level labels are embedded in the data section, it creates some extra and unnecessary rows.
+    # Let's go ahead and take those rows out before proceeing
+    if (nrow(data_df) %% uci_list$metadata$num_nodes != 0) {
+
+      data_df <- as.data.frame(t(data_df))
+      #data_df <- data_df[2:nrow(data_df), ]
+
+      data_df <- as.data.frame(lapply(data_df, function(col) {
+        if (can.be.numeric(col)) {
+          as.numeric(col)
+        } else {
+          col
+        }
+      }))
+
+      # Remove any non-numeric columns
+      data_df <- data_df[, unlist(lapply(data_df, is.numeric))]
+
+      data_df <- as.data.frame(t(data_df))
+
+    }
+
+    # In the event that some columns in the edgelist are numeric values,
+    # be sure to convert into a numeric format
+    data_df <- as.data.frame(lapply(data_df, function(col) {
+      if (can.be.numeric(col)) {
+        as.numeric(col)
+      } else {
+        col
+      }
+    }))
+
+    # Remove any non-numeric columns
+    data_df <- data_df[, unlist(lapply(data_df, is.numeric))]
+
+    # Initial relabeling of rows and columns
+    rownames(data_df) <- as.character(1:nrow(data_df))
+    colnames(data_df) <- as.character(1:ncol(data_df))
+
+    # If there are column labels, append these:
+    if ("col labels" %in% names(uci_list)) {
+      colnames(data_df) <- uci_list$`col labels`[1:uci_list$metadata$num_nodes]
+    }
+
+    # Handling if multiple matrices are contained in data file
+    if ("num_mat" %in% names(uci_list$metadata)) {
+
+      if (uci_list$metadata$num_mat > 1) {
+
+        data_df$mat <- rep(1:uci_list$metadata$num_mat, each = uci_list$metadata$num_nodes)
+
+        # If level labels are included, will also need to append these
+        if ("level labels" %in% names(uci_list)) {
+          data_df$lvl_label <- rep(uci_list$`level labels`[1:uci_list$metadata$num_mat], each = uci_list$metadata$num_nodes)
+        }
+
+        # If level labels are included, will also need to append these
+        if ("matrix labels" %in% names(uci_list)) {
+          data_df$mat_label <- rep(uci_list$`matrix labels`[1:uci_list$metadata$num_mat], each = uci_list$metadata$num_nodes)
+        }
+
+        # If row labels are included, will also need to append these:
+        if ("row labels" %in% names(uci_list)) {
+          data_df$i_elements <- rep(uci_list$`row labels`[1:uci_list$metadata$num_nodes], uci_list$metadata$num_mat)
+        } else {
+          data_df$i_elements <- rep(1:uci_list$metadata$num_nodes, uci_list$metadata$num_mat)
+        }
+
+      } else {
+
+        # If row labels are included, will also need to append these (single matrix):
+        if ("row labels" %in% names(uci_list)) {
+          data_df$i_elements <- rep(uci_list$`row labels`[1:uci_list$metadata$num_nodes])
+        } else {
+          data_df$i_elements <- rownames(data_df)
+        }
+
+      }
+
     } else {
-      col
+
+      # If row labels are included, will also need to append these (single matrix):
+      if ("row labels" %in% names(uci_list)) {
+        data_df$i_elements <- rep(uci_list$`row labels`[1:uci_list$metadata$num_nodes])
+      } else {
+        data_df$i_elements <- rownames(data_df)
+      }
+
+
     }
-  }))
 
-  # Remove any non-numeric columns
-  data_df <- data_df[, unlist(lapply(data_df, is.numeric))]
+    data_df <- tidyr::pivot_longer(data_df, 1:uci_list$metadata$num_nodes, names_to = "j_elements", values_to = "weight")
 
-  # Initial relabeling of rows and columns
-  rownames(data_df) <- as.character(1:nrow(data_df))
-  colnames(data_df) <- as.character(1:ncol(data_df))
+    # Remove non-edges (where weight is equal to zero)
+    data_df <- data_df[data_df$weight != 0, ]
 
-  # If there are column labels, append these:
-  if ("col labels" %in% names(uci_list)) {
-    colnames(data_df) <- uci_list$`col labels`[1:uci_list$metadata$num_nodes]
-  }
+    output_list$edgelist <- data_df
+    # assign(x = paste(net_name, "edgelist", sep = "_"), value = data_df, envir = .GlobalEnv)
 
-# Handling if multiple matrices are contained in data file
-if ("num_mat" %in% names(uci_list$metadata)) {
+    return(output_list)
 
-  if (uci_list$metadata$num_mat > 1) {
+  } else if (uci_list$metadata$format == "nodelist1" | uci_list$metadata$format == "nodelist2") {
 
-  data_df$mat <- rep(1:uci_list$metadata$num_mat, each = uci_list$metadata$num_nodes)
+    data_df <- do.call(rbind.data.frame, strsplit(uci_list$data$V1, "\\n"))
 
-  # If level labels are included, will also need to append these
-  if ("level labels" %in% names(uci_list)) {
-    data_df$lvl_label <- rep(uci_list$`level labels`[1:uci_list$metadata$num_mat], each = uci_list$metadata$num_nodes)
-  }
+    data_list <- strsplit(data_df[,1], " +")
 
-  # If level labels are included, will also need to append these
-  if ("matrix labels" %in% names(uci_list)) {
-    data_df$mat_label <- rep(uci_list$`matrix labels`[1:uci_list$metadata$num_mat], each = uci_list$metadata$num_nodes)
-  }
+    this_edgelist <- data.frame(i_elements = character(),
+                                j_elements = character())
+    nodelist <- character()
 
-  # If row labels are included, will also need to append these:
-  if ("row labels" %in% names(uci_list)) {
-    data_df$i_elements <- rep(uci_list$`row labels`[1:uci_list$metadata$num_nodes], uci_list$metadata$num_mat)
-  } else {
-    data_df$i_elements <- rep(1:uci_list$metadata$num_nodes, uci_list$metadata$num_mat)
-  }
+    for (i in 1:length(data_list)) {
 
-} else {
-
-  # If row labels are included, will also need to append these (single matrix):
-  if ("row labels" %in% names(uci_list)) {
-    data_df$i_elements <- rep(uci_list$`row labels`[1:uci_list$metadata$num_nodes])
-  } else {
-    data_df$i_elements <- rownames(data_df)
-  }
-
-}
-
-} else {
-
-  # If row labels are included, will also need to append these (single matrix):
-  if ("row labels" %in% names(uci_list)) {
-    data_df$i_elements <- rep(uci_list$`row labels`[1:uci_list$metadata$num_nodes])
-  } else {
-    data_df$i_elements <- rownames(data_df)
-  }
-
-
-}
-
-  data_df <- tidyr::pivot_longer(data_df, 1:uci_list$metadata$num_nodes, names_to = "j_elements", values_to = "weight")
-
-  # Remove non-edges (where weight is equal to zero)
-  data_df <- data_df[data_df$weight != 0, ]
-
-
-  assign(x = paste(net_name, "edgelist", sep = "_"), value = data_df, envir = .GlobalEnv)
-
-
-} else if (uci_list$metadata$format == "nodelist1" | uci_list$metadata$format == "nodelist2") {
-
-  data_df <- do.call(rbind.data.frame, strsplit(uci_list$data$V1, "\\n"))
-
-  data_list <- strsplit(data_df[,1], " +")
-
-  this_edgelist <- data.frame(i_elements = character(),
-                              j_elements = character())
-  nodelist <- character()
-
-  for (i in 1:length(data_list)) {
-
-    this_item <- data_list[[i]]
-    this_item <- this_item[this_item != ""]
+      this_item <- data_list[[i]]
+      this_item <- this_item[this_item != ""]
 
       nodelist <- c(nodelist, this_item[1])
 
@@ -1158,72 +1225,76 @@ if ("num_mat" %in% names(uci_list$metadata)) {
 
 
       }
-  }
-
-  # Remove any `!` values from nodelist
-  nodelist <- nodelist[nodelist != "!"]
-
-  # Convert to numeric values if applicable
-  if (can.be.numeric(nodelist)) {
-    nodelist <- as.numeric(nodelist)
-  }
-
-  data_df <- as.data.frame(lapply(this_edgelist, function(col) {
-    if (can.be.numeric(col)) {
-      as.numeric(col)
-    } else {
-      col
     }
-  }))
+
+    # Remove any `!` values from nodelist
+    nodelist <- nodelist[nodelist != "!"]
+
+    # Convert to numeric values if applicable
+    if (can.be.numeric(nodelist)) {
+      nodelist <- as.numeric(nodelist)
+    }
+
+    data_df <- as.data.frame(lapply(this_edgelist, function(col) {
+      if (can.be.numeric(col)) {
+        as.numeric(col)
+      } else {
+        col
+      }
+    }))
 
 
-# If dataset contains labels, add columns to indicate
-  if ("labels" %in% names(uci_list)) {
-    i_labels <- data.frame(i_elements = 1:max(data_df$i_elements),
-                           i_label = stringr::str_squish(uci_list$`labels`))
-    j_labels <- data.frame(j_elements = 1:max(data_df$j_elements),
-                           j_label = stringr::str_squish(uci_list$`labels`))
+    # If dataset contains labels, add columns to indicate
+    if ("labels" %in% names(uci_list)) {
+      i_labels <- data.frame(i_elements = 1:max(data_df$i_elements),
+                             i_label = stringr::str_squish(uci_list$`labels`))
+      j_labels <- data.frame(j_elements = 1:max(data_df$j_elements),
+                             j_label = stringr::str_squish(uci_list$`labels`))
 
-    data_df <- dplyr::left_join(data_df, i_labels, by = "i_elements")
-    data_df <- dplyr::left_join(data_df, j_labels, by = "j_elements")
+      data_df <- dplyr::left_join(data_df, i_labels, by = "i_elements")
+      data_df <- dplyr::left_join(data_df, j_labels, by = "j_elements")
 
+    }
+
+    # If row labels exist, add to edgelist
+    if ("row labels" %in% names(uci_list)) {
+      i_labels <- data.frame(i_elements = 1:max(data_df$i_elements),
+                             i_label = stringr::str_squish(uci_list$`row labels`))
+
+      data_df <- dplyr::left_join(data_df, i_labels, by = "i_elements")
+
+    }
+
+    # If col labels exist, add to edgelist
+    if ("col labels" %in% names(uci_list)) {
+      j_labels <- data.frame(j_elements = 1:max(data_df$j_elements),
+                             j_label = stringr::str_squish(uci_list$`col labels`))
+
+      data_df <- dplyr::left_join(data_df, j_labels, by = "j_elements")
+
+    }
+
+    # If format is `nodelist2`, it's presumably a two-mode network and should
+    # be handled that way
+
+    if (uci_list$metadata$format == "nodelist2") {
+
+      data_df$i_elements <- paste(data_df$i_elements, "1", sep = "_")
+      data_df$j_elements <- paste(data_df$j_elements, "2", sep = "_")
+
+    }
+
+    output_list$edgelist <- data_df
+    # assign(x = paste(net_name, "edgelist", sep = "_"), value = data_df, envir = .GlobalEnv)
+    output_list$nodelist <- nodelist
+    # assign(x = paste(net_name, "nodelist", sep = "_"), value = nodelist, envir = .GlobalEnv)
+
+    return(output_list)
+
+  } else {
+
+    base::message("Error: Unable to identify UCINet dl format")
   }
-
-# If row labels exist, add to edgelist
-  if ("row labels" %in% names(uci_list)) {
-    i_labels <- data.frame(i_elements = 1:max(data_df$i_elements),
-                           i_label = stringr::str_squish(uci_list$`row labels`))
-
-    data_df <- dplyr::left_join(data_df, i_labels, by = "i_elements")
-
-  }
-
-  # If col labels exist, add to edgelist
-  if ("col labels" %in% names(uci_list)) {
-    j_labels <- data.frame(j_elements = 1:max(data_df$j_elements),
-                           j_label = stringr::str_squish(uci_list$`col labels`))
-
-    data_df <- dplyr::left_join(data_df, j_labels, by = "j_elements")
-
-  }
-
-# If format is `nodelist2`, it's presumably a two-mode network and should
-# be handled that way
-
-  if (uci_list$metadata$format == "nodelist2") {
-
-    data_df$i_elements <- paste(data_df$i_elements, "1", sep = "_")
-    data_df$j_elements <- paste(data_df$j_elements, "2", sep = "_")
-
-  }
-
-  assign(x = paste(net_name, "edgelist", sep = "_"), value = data_df, envir = .GlobalEnv)
-  assign(x = paste(net_name, "nodelist", sep = "_"), value = nodelist, envir = .GlobalEnv)
-
-} else {
-
-  base::message("Error: Unable to identify UCINet dl format")
-}
 
 }
 
@@ -1261,20 +1332,4 @@ trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 #                net_name = "random1_type2")
 # netread_ucinet(file = "./netread_test/base_dl/random1_type4.dl",
 #                net_name = "random1_type4")
-
-
-
-
-
-
-
-
-####################################
-
-
-# Gephi
-
-
-
-
 

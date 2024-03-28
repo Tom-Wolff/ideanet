@@ -48,7 +48,7 @@ netread(
 \item{j_elements}{If \code{format} is set to \code{edgelist}, a character value indicating the name of the column containing the receiver of ties in the edgelist. If not specified, \code{netread} assumes the second column of the data represents tie receivers}
 }
 \value{
-The \code{netread} function creates an edgelist and a nodelist in the R Global Environment, both of which are formatted to be compatible with the \code{\link{netwrite}} function. These objects are names \code{[net_name]_edgelist} and \code{[net_name]_nodelist}, respectively.
+A list containing an edgelist and a nodelist, both of which are formatted to be compatible with the \code{\link{netwrite}} function.
 }
 \description{
 The \code{netread} function reads in various files storing relational data converts them into edgelists that ensure their compatibility with other \code{ideanet} functions.

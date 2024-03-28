@@ -31,7 +31,7 @@ ui <- shiny::fluidPage(
           shiny::sidebarPanel(
             shiny::uiOutput('select_file_type_edges'),
             shiny::uiOutput('edge_format'),
-            shiny::checkboxInput("edge_names", tags$b("Does the file have an first id column"), FALSE),
+            shiny::checkboxInput("edge_names", tags$b("Does the file have a first ID column"), FALSE),
             shiny::checkboxInput("edge_header", tags$b("Does the file have a header?"), TRUE),
             tags$p(shiny::span("Large datasets may take a few seconds to render.", style = "color:red")),
             tags$p(shiny::HTML("<b>Continue</b> on to process the data before visualizing it.")),
@@ -90,7 +90,7 @@ ui <- shiny::fluidPage(
             ),
             tags$p(shiny::span("Questions with an asterisk are required.", style = "color:red")),
             tags$p(shiny::HTML("<b>Process</b> the edge data by assigning the columns to their function.")),
-            tags$p(shiny::HTML("If the graph is undirected, the order of sender and alter id columns doesn't matter.")),
+            tags$p(shiny::HTML("If the graph is undirected, the order of sender and alter ID columns doesn't matter.")),
           ),
           shiny::mainPanel(
             style = "overflow-x: auto;",
@@ -204,50 +204,96 @@ ui <- shiny::fluidPage(
       )
     ),
     ### Analysis tab ----
+    # shiny::tabPanel(
+    #   "Advanced Analysis Modules",
+    #   shiny::uiOutput('analysis_chooser'),
+    #   shiny::sidebarLayout(
+    #     shiny::sidebarPanel(
+    #       shiny::tabsetPanel(
+    #         id = "analytic_panels",
+    #         type = "hidden",
+    #         shiny::tabPanelBody(
+    #           "QAP",
+    #           tags$p(shiny::HTML("<u>QAP Setup Options</u>")),
+    #           tags$p(shiny::span("You must choose analysis type and variable as paired selections.", style = "color:red")),
+    #           shiny::uiOutput('method_chooser'),
+    #           shiny::uiOutput('var_cols'),
+    #           tags$p(shiny::span("Method selections:", style = "color:black")),
+    #           shiny::verbatimTextOutput("method_list"),
+    #           tags$p(shiny::span("Variable selections:", style = "color:black")),
+    #           shiny::verbatimTextOutput("var_list"),
+    #           shiny::uiOutput('run_QAP_setup'),
+    #           tags$p(shiny::HTML("<u>QAP Run Options</u>")),
+    #           shiny::uiOutput('qap_run_dependent'),
+    #           shiny::uiOutput('qap_run_choices'),
+    #           shiny::uiOutput('run_QAP_model')
+    #         ),
+    #         shiny::tabPanelBody(
+    #           "Role Detection",
+    #           shiny::uiOutput('select_role_type'),
+    #           shiny::uiOutput('select_role_viz'),
+    #           shiny::uiOutput('role_det_min'),
+    #           shiny::uiOutput('role_det_max'),
+    #           shiny::uiOutput('min_cluster_size'),
+    #           shinycssloaders::withSpinner(
+    #             shiny::uiOutput('run_role_detect')
+    #           )
+    #         ))),
+    #     shiny::mainPanel(
+    #       shiny::conditionalPanel(
+    #         condition = "input.analysis_chooser == 'Role Detection'",
+    #         tags$h3(shiny::HTML("<b>Visualize Role Detection Output</b>")),
+    #         shinycssloaders::withSpinner(
+    #           shiny::plotOutput('role_viz')
+    #         )
+    #       )
+    #     )
+    #   ))
     shiny::tabPanel(
       "Advanced Analysis Modules",
-      shiny::uiOutput('analysis_chooser'),
-      shiny::sidebarLayout(
-        shiny::sidebarPanel(
-          shiny::tabsetPanel(
-            id = "analytic_panels",
-            type = "hidden",
-            shiny::tabPanelBody(
-              "QAP",
-              tags$p(shiny::HTML("<u>QAP Setup Options</u>")),
-              tags$p(shiny::span("You must choose analysis type and variable as paired selections.", style = "color:red")),
-              shiny::uiOutput('method_chooser'),
-              shiny::uiOutput('var_cols'),
-              tags$p(shiny::span("Method selections:", style = "color:black")),
-              shiny::verbatimTextOutput("method_list"),
-              tags$p(shiny::span("Variable selections:", style = "color:black")),
-              shiny::verbatimTextOutput("var_list"),
-              shiny::uiOutput('run_QAP_setup'),
-              tags$p(shiny::HTML("<u>QAP Run Options</u>")),
-              shiny::uiOutput('qap_run_dependent'),
-              shiny::uiOutput('qap_run_choices'),
-              shiny::uiOutput('run_QAP_model')
-            ),
-            shiny::tabPanelBody(
-              "Role Detection",
-              shiny::uiOutput('select_role_type'),
-              shiny::uiOutput('select_role_viz'),
-              shiny::uiOutput('role_det_min'),
-              shiny::uiOutput('role_det_max'),
-              shiny::uiOutput('min_cluster_size'),
-              shinycssloaders::withSpinner(
-                shiny::uiOutput('run_role_detect')
-              )
-            ))),
-        shiny::mainPanel(
-          shiny::conditionalPanel(
-            condition = "input.analysis_chooser == 'Role Detection'",
-            tags$h3(shiny::HTML("<b>Visualize Role Detection Output</b>")),
-            shinycssloaders::withSpinner(
-              shiny::plotOutput('role_viz')
-            )
+      shiny::tabsetPanel(
+        type = "tabs",
+        shiny::tabPanel(
+          "QAP",
+          shiny::sidebarPanel(
+            tags$p(HTML("<u>QAP Setup Options</u>")),
+            tags$p(span("You must choose analysis type and variable as paired selections.", style = "color:red")),
+            shiny::uiOutput('method_chooser'),
+            shiny::uiOutput('var_cols'),
+            tags$p(span("Method selections:", style = "color:black")),
+            shiny::verbatimTextOutput("method_list"),
+            tags$p(span("Variable selections:", style = "color:black")),
+            shiny::verbatimTextOutput("var_list"),
+            shiny::uiOutput('run_QAP_setup'),
+            tags$p(HTML("<u>QAP Run Options</u>")),
+            shiny::uiOutput('qap_run_dependent'),
+            shiny::uiOutput('qap_run_choices'),
+            shiny::uiOutput('run_QAP_model')
+          ),
+          shiny::mainPanel(
+            style = "overflow-x: auto;",
+            DT::DTOutput('qap_table')
           )
-        )
+        ),
+        shiny::tabPanel(
+          "Role Detection",
+          shiny::sidebarPanel(
+            shiny::uiOutput('select_role_type'),
+            shiny::uiOutput('select_role_viz'),
+            shiny::uiOutput('role_det_min'),
+            shiny::uiOutput('role_det_max'),
+            shiny::uiOutput('min_cluster_size'),
+            shinycssloaders::withSpinner(
+              shiny::uiOutput('run_role_detect')
+            )
+          ),
+          shiny::mainPanel(
+            style = "overflow-x: auto;",
+            tags$h3(HTML("<b>Visualize Role Detection Output</b>")),
+            shinycssloaders::withSpinner(
+              plotOutput('role_viz')
+            )
+          ))
       ))
   )
 )
@@ -289,7 +335,7 @@ server <- function(input, output, session) {
   })
 
   output$edge_format <- shiny::renderUI({
-    shiny::selectInput('edge_format', label = "Choose edge format", choices = c('edgelist','adjacency_matrix','adjacency_list'))
+    shiny::selectInput('edge_format', label = "Choose edge format", choices = c('Edgelist', 'Adjacency Matrix'))
   })
 
 
@@ -297,17 +343,30 @@ server <- function(input, output, session) {
 
     shiny::req(input$raw_edges)
 
-    # Reading CSV
-    if (input$select_file_type_edges == "csv") {
-      # network edgelist
-      read.csv(input$raw_edges$datapath, header = input$edge_header)
-      # Reading Excel
-    } else {
-      if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
-        readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header)
+    # If "Edgelist" is selected
+    if (input$edge_format == "Edgelist") {
+      # Reading CSV
+      if (input$select_file_type_edges == "csv") {
+        # network edgelist
+        read.csv(input$raw_edges$datapath, header = input$edge_header)
+        # Reading Excel
       } else {
-        readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header)
+        if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
+          readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header)
+        } else {
+          readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header)
+        }
       }
+      # If "Adjacency Matrix" is selected
+    } else {
+
+
+      as.data.frame(netread(path = input$raw_edges$datapath,
+                            filetype = input$select_file_type_edges,
+                            col_names = input$edge_header,
+                            row_names = input$edge_names,
+                            format = "adjacency_matrix")$edgelist)
+
     }
     # if (input$nodes_exist & !is.null(input$raw_nodes) & !is.null(input$raw_edges)) {
     # netread(
@@ -422,7 +481,7 @@ server <- function(input, output, session) {
 
   output$node_ids <- shiny::renderUI({
 
-    shiny::selectInput(inputId = "node_id_col", label = "Column with node ids*", choices = append("Empty",colnames(node_data())), selected = "id", multiple = FALSE)
+    shiny::selectInput(inputId = "node_id_col", label = "Column with node ids*", choices = append("Empty",colnames(node_data())), selected = 'N/A', multiple = FALSE)
 
   })
   output$node_labels <- shiny::renderUI({
@@ -441,12 +500,44 @@ server <- function(input, output, session) {
 
   })
 
+
+
+nodes_used <- shiny::reactive({
+    print('here nodes used')
+    if(!is.null(node_data())) {
+      temp <- FALSE
+      temp
+    }
+    else {
+      NULL
+    }
+  })
+
+  nodes_done <- shiny::reactiveVal(TRUE)
+
+  observeEvent(input$raw_nodes, {
+    print('oberve event nodes')
+    nodes_done(NULL)
+  })
+
+  observeEvent(input$node_id_col, {
+    print('oberve event nodes')
+    if(input$node_id_col != 'Empty') {
+      nodes_done(TRUE)
+    }
+    else{
+      nodes_done(NULL)
+    }
+  })
+
+
+
   #Edge Processing Options
   output$edge_in <- shiny::renderUI({
-    shiny::selectInput(inputId = "edge_in_col", label = "Column with sender id*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
+    shiny::selectInput(inputId = "edge_in_col", label = "Column with sender IDs*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
   })
   output$edge_out <- shiny::renderUI({
-    shiny::selectInput(inputId = "edge_out_col", label = "Column with the alter id*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
+    shiny::selectInput(inputId = "edge_out_col", label = "Column with the alter IDs*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
   })
   output$edge_weight <- shiny::renderUI({
     shiny::selectInput(inputId = "edge_weight_col", label = "Column with edge weights", choices = append("Empty",colnames(edge_data())), selected = NULL, multiple = FALSE)
@@ -459,6 +550,22 @@ server <- function(input, output, session) {
   output$relational_column <- shiny::renderUI({
     shiny::selectInput('relational_column', label = "Column with relation type", choices = append("Empty",colnames(edge_data())), selected = 'Empty', multiple = FALSE)
   })
+
+
+  edges_done <- shiny::reactiveVal(0)
+
+  observeEvent(input$edge_in_col, {
+    print('observe event edges')
+    temp <- edges_done()+1
+    edges_done(temp)
+  })
+
+  observeEvent(input$edge_out_col, {
+    temp <- edges_done()+1
+    edges_done(temp)
+  })
+
+
 
   ### Network Generation ----
 
@@ -485,45 +592,48 @@ server <- function(input, output, session) {
     if (!is.null(input$raw_nodes) & shiny::isTruthy(input$node_id_col))  {
       if (input$node_id_col != "Empty") {
         print('started netwrite 1')
-        netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                 adjacency_list=FALSE, nodelist=node_data(),
-                 node_id=input$node_id_col,
-                 i_elements=edge_data()[,input$edge_in_col],
-                 j_elements=edge_data()[,input$edge_out_col],
-                 weights=initial_edge(),
-                 type=type_ret, package='igraph',
-                 missing_code=99999, weight_type='frequency',
-                 directed=input$direction_toggle,
-                 net_name='init_net',
-                 shiny=TRUE)
+        list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
+                          adjacency_list=FALSE, nodelist=node_data(),
+                          node_id=input$node_id_col,
+                          i_elements=edge_data()[,input$edge_in_col],
+                          j_elements=edge_data()[,input$edge_out_col],
+                          weights=initial_edge(),
+                          type=type_ret,
+                          missing_code=99999, weight_type='frequency',
+                          directed=input$direction_toggle,
+                          net_name='init_net',
+                          shiny=TRUE),
+                 .GlobalEnv)
         print('processed netwrite')
         init_net
 
       } else {
         print('started netwrite 2')
-        netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                 adjacency_list=FALSE,
-                 i_elements=edge_data()[,input$edge_in_col],
-                 j_elements=edge_data()[,input$edge_out_col],
-                 weights=initial_edge(),
-                 type=type_ret, package='igraph',
-                 missing_code=99999, weight_type='frequency',
-                 directed=input$direction_toggle,
-                 net_name='init_net',shiny=TRUE)
+        list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
+                          adjacency_list=FALSE,
+                          i_elements=edge_data()[,input$edge_in_col],
+                          j_elements=edge_data()[,input$edge_out_col],
+                          weights=initial_edge(),
+                          type=type_ret,
+                          missing_code=99999, weight_type='frequency',
+                          directed=input$direction_toggle,
+                          net_name='init_net',shiny=TRUE),
+                 .GlobalEnv)
         print('processed netwrite')
         init_net
       }
     } else {
       print('started netwrite 3')
-      netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-               adjacency_list=FALSE,
-               i_elements=edge_data()[,input$edge_in_col],
-               j_elements=edge_data()[,input$edge_out_col],
-               weights=initial_edge(),
-               type=type_ret, package='igraph',
-               missing_code=99999, weight_type='frequency',
-               directed=input$direction_toggle,
-               net_name='init_net',shiny=TRUE)
+      list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
+                        adjacency_list=FALSE,
+                        i_elements=edge_data()[,input$edge_in_col],
+                        j_elements=edge_data()[,input$edge_out_col],
+                        weights=initial_edge(),
+                        type=type_ret,
+                        missing_code=99999, weight_type='frequency',
+                        directed=input$direction_toggle,
+                        net_name='init_net',shiny=TRUE),
+               .GlobalEnv)
       print('processed netwrite')
       init_net
     }
@@ -563,13 +673,14 @@ server <- function(input, output, session) {
 
     nodes <- nodelist2()
     print('started community detection')
-    communities(net, shiny  = TRUE)
+    list2env(communities(net, shiny  = TRUE),
+             .GlobalEnv)
     print('finished community detection')
-    comm_members_net <- comm_members_net %>%
+    memberships <- memberships %>%
       dplyr::mutate_all(~replace(., is.na(.), 0))
     #comm_members_net$id <- as.character(comm_members_net$id)
     nodes <- nodes %>%
-      dplyr::left_join(comm_members_net, by = "id")
+      dplyr::left_join(memberships, by = "id")
     if (ran_toggle_role_detect$x==1) {
       nodes <- nodes %>%
         dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id")
@@ -894,9 +1005,9 @@ server <- function(input, output, session) {
 
   #### Pick Network layout ----
 
-  layout_choices <- c("layout_as_star", "layout_as_tree", "layout_in_circle",
-                      "layout_nicely", "layout_on_grid", "layout_on_sphere", "layout_randomly", "layout_with_dh", "layout_with_fr",
-                      "layout_with_gem", "layout_with_graphopt", "layout_with_kk", "layout_with_lgl", "layout_with_mds"
+  layout_choices <- c("Star" = "layout_as_star", "Tree" = "layout_as_tree", "Circle" = "layout_in_circle",
+                      "Nicely" = "layout_nicely", "Grid" = "layout_on_grid", "Sphere" = "layout_on_sphere", "Random" = "layout_randomly", "Davidson-Harel" = "layout_with_dh", "Fruchterman-Reingold" = "layout_with_fr",
+                      "GEM" = "layout_with_gem", "Graphopt" = "layout_with_graphopt", "Kamada-Kawai" = "layout_with_kk", "Large Graph Layout (LGL)" = "layout_with_lgl", "Multidimensional Scaling (MDS)" = "layout_with_mds"
   )
 
   #set the layout of the network
@@ -1060,8 +1171,12 @@ server <- function(input, output, session) {
     shiny::renderUI({
       shiny::validate(
         shiny::need(input$raw_edges, 'Upload Edge Data!'),
-        shiny::need(input$edge_in_col != "Empty" | input$edge_out_col != "Empty", 'Make sure you have selected an edge in and out column!'),
-        shiny::need(try(!is.null(net0())), 'Error computing network statistics. Check edge in and out columns to make sure you have uploaded the right data.')
+        # shiny::need(input$edge_in_col != "Empty" | input$edge_out_col != "Empty", 'Make sure you have selected an edge in and out column!'),
+        # shiny::need(try(!is.null(net0())), 'Error computing network statistics. Check edge in and out columns to make sure you have uploaded the right data.')
+        shiny::need(input$edge_in_col != "Empty", 'Make sure you have selected an edge in column!'),
+        shiny::need(input$edge_out_col != "Empty", 'Make sure you have selected an edge out column!'),
+        shiny::need(nodes_done(), 'Make sure you have selected a node id column!'),
+        shiny::need(try(!is.null(net0())), 'Error computing network statistics. Check edge in and out columns to make sure you have uploaded the right data.'),
       )
       visNetwork::visNetworkOutput('network', height = input$plot_scalar, width = input$plot_scalar) %>% shinycssloaders::withSpinner(type = 5)
     })
@@ -1089,9 +1204,12 @@ server <- function(input, output, session) {
     shiny::validate (
       shiny::need(input$raw_edges, 'Upload Edge Data!'),
       shiny::need(input$edge_in_col != "Empty", 'Select edge in column!'),
-      shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'))
+      shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
+      shiny::need(nodes_done(), 'Select node id column!')
+      # shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
+      )
     if (input$multi_relational_toggle == TRUE) {
-      shiny::selectInput('system_level_chooser', 'Choose which relation you want to visualize', choices = names(system_measure_plot_list), selected = NULL)
+      shiny::selectInput('system_level_chooser', 'Choose which relation you want to visualize', choices = names(system_measure_plot), selected = NULL)
     }
   })
 
@@ -1099,9 +1217,12 @@ server <- function(input, output, session) {
     shiny::validate (
       shiny::need(input$raw_edges, 'Upload Edge Data!'),
       shiny::need(input$edge_in_col != "Empty", 'Select edge in column!'),
-      shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'))
+      # shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
+      shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
+      shiny::need(nodes_done(), 'Select node id column!')
+      )
     if (input$multi_relational_toggle == TRUE) {
-      shiny::selectInput('node_level_chooser', 'Choose which relation you want to visualize', choices = names(node_measure_plot_list), selected = NULL)
+      shiny::selectInput('node_level_chooser', 'Choose which relation you want to visualize', choices = names(node_measure_plot), selected = NULL)
     }
   })
 
@@ -1110,15 +1231,17 @@ server <- function(input, output, session) {
       shiny::validate(
         shiny::need(input$raw_edges, 'Upload Edge Data!'),
         shiny::need(input$edge_in_col != "Empty", 'Select edge in column!'),
-        shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
+        # shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
+        shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
+        shiny::need(nodes_done(), 'Select node id column!')
       )
 
       # Multirelational
       if(input$multi_relational_toggle == TRUE) {
         if (input$measure_chooser == "System") {
-          plot(system_measure_plot_list[[match(input$system_level_chooser,names(system_measure_plot_list))]])
+          plot(system_measure_plot[[match(input$system_level_chooser,names(system_measure_plot))]])
         } else {
-          plot(node_measure_plot_list[[match(input$node_level_chooser,names(node_measure_plot_list))]])
+          plot(node_measure_plot[[match(input$node_level_chooser,names(node_measure_plot))]])
         }
         # Single Relation
       } else {
@@ -1132,27 +1255,26 @@ server <- function(input, output, session) {
     })
 
   ### Visualize nodemeasures ----
-  custom_theme <- function() {
-    ggplot2::theme_minimal() +
-      ggplot2::theme(
-        text = ggplot2::element_text(family = "Helvetica", color = "#333333"),
-        plot.title = ggplot2::element_text(face = "bold", size = 14, hjust = 0.5),
-        plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5),
-        plot.caption = ggplot2::element_text(size = 8, hjust = 0.5),
-        axis.title = ggplot2::element_text(size = 10),
-        axis.text = ggplot2::element_text(size = 8),
-        legend.title = ggplot2::element_text(size = 10),
-        legend.text = ggplot2::element_text(size = 8)
-      )
-  }
+  # custom_theme <- function() {
+  #   ggplot2::theme_light() +
+  #     ggplot2::theme(
+  #       text = ggplot2::element_text(family = "Helvetica", color = "#333333"),
+  #       plot.title = ggplot2::element_text(face = "bold", size = 14, hjust = 0.5),
+  #       plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5),
+  #       plot.caption = ggplot2::element_text(size = 8, hjust = 0.5),
+  #       axis.title = ggplot2::element_text(size = 10),
+  #       axis.text = ggplot2::element_text(size = 8),
+  #       legend.title = ggplot2::element_text(size = 10),
+  #       legend.text = ggplot2::element_text(size = 8)
+  #     )
+  # }
+
+  ggplot2::theme_set(ggplot2::theme_light(base_size = 18))
 
   output$show_vars <- shiny::renderUI({
     shiny::checkboxGroupInput("show_vars", "Columns in node variables to show:",
                               names(node_measures), selected = names(node_measures)[1:5])
   })
-
-
-
 
 
   graph_wanted_val <- shiny::reactive({input$graph_wanted})
@@ -1168,21 +1290,20 @@ server <- function(input, output, session) {
   })
 
   output$data_table_vis_var <-
-
     shiny::renderUI({
       shiny::req(input$graph_wanted)
-      shiny::selectInput('data_table_vis_var',label = 'select vis var',choices = nodelist3() %>% colnames(), selected = NULL)
+      shiny::selectInput('data_table_vis_var',label = 'Select variable to plot', choices = nodelist3() %>% colnames(), selected = NULL)
     })
 
   output$data_table_vis_var2 <-
-
     shiny::renderUI({
       shiny::req(input$graph_wanted)
       shiny::req(input$var_wanted)
-      shiny::selectInput('data_table_vis_var2',label = 'select second vis var',choices = nodelist3() %>% colnames(), selected = NULL)
+      shiny::selectInput('data_table_vis_var2',label = 'Select second variable to plot',choices = nodelist3() %>% colnames(), selected = NULL)
     })
 
   chosen_node_graph <- shiny::reactiveVal()
+
   shiny::observeEvent(input$data_table_vis_type, {
     chosen_graph <-
       if(input$data_table_vis_type == 'boxplot') {
@@ -1194,19 +1315,31 @@ server <- function(input, output, session) {
     else if(input$data_table_vis_type == 'density plot'){
       chosen_node_graph('density plot')
     }
-  })
-  shiny::observeEvent(input$data_table_vis_var2, {
-    chosen_graph <-
+    else if(input$data_table_vis_type == 'scatterplot'){
       chosen_node_graph('scatterplot')
+    }
   })
-
-
 
   output$data_table_vis_type <-
     shiny::renderUI({
       shiny::req(input$graph_wanted)
-      shiny::selectInput('data_table_vis_type', label = 'select vis type', choices = c('histogram', 'density plot', 'boxplot'), selected = NULL)
+      shiny::selectInput('data_table_vis_type', label = 'Select visualisation', choices = c("Histogram" = 'histogram',
+                                                                                            "Density Plot" = 'density plot',
+                                                                                            "Boxplot" = 'boxplot'), selected = NULL)
     })
+
+  # Removed automatic scatterplotting and made it available if two variables are selected.
+  shiny::observeEvent(input$data_table_vis_var2, {
+    output$data_table_vis_type <-
+      shiny::renderUI({
+        shiny::req(input$graph_wanted)
+        shiny::selectInput('data_table_vis_type', label = 'Select visualisation', choices = c("Histogram" = 'histogram',
+                                                                                              "Density Plot" = 'density plot',
+                                                                                              "Boxplot" = 'boxplot',
+                                                                                              "Scatter Plot" = 'scatterplot'), selected = NULL)
+      })
+  })
+
 
   output$statistics_table <- DT::renderDataTable({#print("Reached data table")
     nodelist3()[, input$show_vars, drop = FALSE]})
@@ -1224,16 +1357,36 @@ server <- function(input, output, session) {
     shiny::renderPlot({
       shiny::req(input$graph_wanted)
       if(chosen_node_graph() == 'boxplot') {
-        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) + ggplot2::geom_boxplot(color="#0073C2FF", fill="#0073C2FF", alpha=0.2) + ggplot2::labs(title = paste ("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var) + custom_theme()
+        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) +
+          ggplot2::geom_boxplot(color="#0073C2FF", fill="#0073C2FF", alpha=0.2) +
+          ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var)
       }
       else if(chosen_node_graph() == 'histogram') {
-        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) + ggplot2::geom_histogram(fill = "#0073C2FF", color = "#FFFFFF") + ggplot2::labs(title = paste ("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var) + custom_theme() + ggplot2::scale_x_continuous(labels = scales::comma)
+        if (length(unique(nodelist3()[,input$data_table_vis_var])) < 11) {
+          dat <- data.frame(table(nodelist3()[,input$data_table_vis_var]))
+          ggplot2::ggplot(dat, ggplot2::aes(x = Var1, y = Freq)) +
+            ggplot2::geom_col(fill = "#0073C2FF", color = "#FFFFFF") +
+            ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var, y = "N")
+        } else {
+          dat <- hist(nodelist3()[,input$data_table_vis_var], plot = F)
+          dat <- data.frame(x = dat$mids, y = dat$counts)
+          ggplot2::ggplot(dat, ggplot2::aes(x = x, y = y)) +
+            ggplot2::geom_col(fill = "#0073C2FF", color = "#FFFFFF") +
+            ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var, y = "N")
+        }
       }
       else if(chosen_node_graph() == 'density plot') {
-        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) + ggplot2::geom_density(alpha = 0.7, fill = "#0073C2FF") + ggplot2::labs(title = paste ("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var) + custom_theme() + ggplot2::scale_x_continuous(labels = scales::comma)
+        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var])) +
+          ggplot2::geom_density(alpha = 0.7, fill = "#0073C2FF") +
+          ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var) +
+          ggplot2::scale_x_continuous(labels = scales::comma)
       }
       else if(chosen_node_graph() == 'scatterplot') {
-        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var], y = nodelist3()[,input$data_table_vis_var2])) + ggplot2::geom_point(color="#0073C2FF") + ggplot2::labs(title = paste(input$data_table_vis_var, "vs", input$data_table_vis_var2)) + custom_theme() + ggplot2::scale_x_continuous(labels = scales::comma)
+        ggplot2::ggplot(data = nodelist3(), ggplot2::aes(x = nodelist3()[,input$data_table_vis_var], y = nodelist3()[,input$data_table_vis_var2])) +
+          ggplot2::geom_point(color="#0073C2FF") +
+          ggplot2::geom_line(stat = "smooth", method = "lm", alpha = 0.5, formula = y ~ x) +
+          ggplot2::labs(title = paste(input$data_table_vis_var, "vs", input$data_table_vis_var2), x = input$data_table_vis_var, y = input$data_table_vis_var2) +
+          ggplot2::scale_x_continuous(labels = scales::comma)
       }
     })
 
@@ -1250,8 +1403,21 @@ server <- function(input, output, session) {
 
   #CHOOSE METHODS
   output$method_chooser <- shiny::renderUI({
-    shiny::selectInput(input="method_chooser", label = "Choose your method", choices = c("None","multi_category","reduced_category","both","difference"), selected="None",multiple=FALSE)
+    shiny::selectInput(input="method_chooser", label = "Choose your method", choices = c("None",
+                                                                                         "Multi-Category" = "multi_category",
+                                                                                         "Reduced Category" = "reduced_category",
+                                                                                         "Both Multi- and Reduced Category" = "both",
+                                                                                         "Difference" = "difference"), selected="None",multiple=FALSE)
   })
+
+  # output$method_chooser <- shiny::renderUI({
+  #   shiny::selectInput(input="method_chooser", label = "Choose your method", choices = c("None",
+  #                                                                                        "multi_category",
+  #                                                                                        "reduced_category",
+  #                                                                                        "both",
+  #                                                                                        "difference"), selected="None",multiple=FALSE)
+  # })
+
 
   chosen_methods <- shiny::reactiveVal(c())
 
@@ -1336,7 +1502,7 @@ server <- function(input, output, session) {
     #   net <- igraph::set_vertex_attr(net,chosen_var()[i],value=nodelist3() %>% dplyr::pull(parse_expr(chosen_var()[i])))
     # }
     print("IS THIS WHERE QAP BREAKS?")
-    qap_setup(net,chosen_var(),chosen_methods())
+    list2env(qap_setup(net,chosen_var(),chosen_methods()), .GlobalEnv)
     ran_toggle_qap$x <- 1
   })
 
@@ -1346,7 +1512,7 @@ server <- function(input, output, session) {
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
-    shiny::selectInput(inputId = "qap_run_choices", label = "QAP Variable Run Choices", choices = append("None",setdiff(qap_results[[3]] %>% names(),c("to","from","weight"))), selected = "None", multiple = TRUE)
+    shiny::selectInput(inputId = "qap_run_choices", label = "QAP Variable Run Choices", choices = append("None",setdiff(edges %>% names(),c("to","from","weight"))), selected = "None", multiple = TRUE)
   })
 
   output$qap_run_dependent <- shiny::renderUI({
@@ -1354,7 +1520,7 @@ server <- function(input, output, session) {
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
-    shiny::selectInput(inputId = "qap_run_dependent", label = "QAP Run Dependent Variable", choices = append("None",setdiff(qap_results[[3]] %>% names(),c("to","from","weight"))), selected = "None", multiple = FALSE)
+    shiny::selectInput(inputId = "qap_run_dependent", label = "QAP Run Dependent Variable", choices = append("Tie Exists",setdiff(edges %>% names(),c("to","from","weight"))), selected = "None", multiple = FALSE)
   })
 
 
@@ -1367,23 +1533,91 @@ server <- function(input, output, session) {
                         style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
   })
 
+  qap_df <- shiny::reactive(
+    data.frame(message = "Awaiting QAP Run")
+  )
 
-  shiny::observeEvent(input$run_QAP_model, {
+
+  # shiny::observeEvent(input$run_QAP_model, {
+  #   shiny::validate(
+  #     shiny::need(qap_results, message = "Need to Run QAP Setup"),
+  #   )
+  #   print("AT QAP RUN STEP")
+  #   print(input$qap_run_choices)
+  #   print(input$qap_run_dependent)
+  #   if (input$qap_run_dependent == "Tie Exists") {
+  #     dep_var <- NULL
+  #   } else {
+  #     dep_var <- input$qap_run_dependent
+  #   }
+  #   qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
+  #           dependent = dep_var, directed = T)
+  #   print(model_results[[1]])
+  #   model_results[[1]]
+  # })
+
+  qap_df <- shiny::eventReactive(input$run_QAP_model, {
     shiny::validate(
-      shiny::need(qap_results, message = "Need to Run QAP Setup"),
+      shiny::need(graph, message = "Need to Run QAP Setup"),
     )
     print("AT QAP RUN STEP")
     print(input$qap_run_choices)
     print(input$qap_run_dependent)
-    if (input$qap_run_dependent == "None") {
+    if (input$qap_run_dependent == "Tie Exists") {
       dep_var <- NULL
     } else {
       dep_var <- input$qap_run_dependent
     }
-    qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
-            dependent = dep_var, directed = T)
-    print(model_results[[1]])
+    print(input$qap_run_choices)
+    list2env(qap_run(net = graph, variables = input$qap_run_choices,
+                     dependent = dep_var, directed = T),
+             .GlobalEnv)
+    covs_df$estimate <- round(covs_df$estimate, digits = 3)
+    covs_df
   })
+
+
+  # shiny::observeEvent(input$run_QAP_model, {
+  #   shiny::validate(
+  #     shiny::need(qap_results, message = "Need to Run QAP Setup"),
+  #   )
+  #   print("AT QAP RUN STEP")
+  #   print(input$qap_run_choices)
+  #   print(input$qap_run_dependent)
+  #   if (input$qap_run_dependent == "None") {
+  #     dep_var <- NULL
+  #   } else {
+  #     dep_var <- input$qap_run_dependent
+  #   }
+  #   qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
+  #           dependent = dep_var, directed = T)
+  #   qap_df <- model_results[[1]]
+  #   print(model_results[[1]])
+  # })
+
+  #replace table
+  output$qap_table <- DT::renderDataTable({
+    qap_df()
+  })
+
+  # #second attempt if that doesnt work
+  # output$qap_table <- DT::renderDataTable({
+  #   DT::datatable(qap_df())
+  # })
+
+  # #third attempt
+  # output$qap_table <- DT::renderDataTable({
+  #   DT::datatable(model_results[[1]])
+  # })
+
+  # output$qap_model_results <- shiny::reactive({
+  #   model_results[[1]]
+  # })
+  #
+  # output$qap_table <- DT::renderDataTable({
+  #  #  model_results[[1]]
+  #   input$qap_model_results()
+  # })
 
 
 
@@ -1409,30 +1643,31 @@ server <- function(input, output, session) {
     })
 
   output$select_role_type <- shiny::renderUI({
-    shiny::selectInput('select_role_type', label = "Choose Role Detection Method", choices = c('concor','cluster'))
+    shiny::selectInput('select_role_type', label = "Choose Role Detection Method", choices = c("CONCOR" = 'concor',
+                                                                                               "Hierarchical Clustering" = 'cluster'))
   })
 
   role_detect_choices <- shiny::reactive({
     choices_yah <- c()
     if (input$select_role_type == 'cluster') {
-      choices_yah <- c('cluster_modularity',
-                       'cluster_dendrogram',
-                       'cluster_relations_heatmaps_chisq',
-                       'cluster_relations_heatmaps_density_centered',
-                       'cluster_relations_heatmaps_density_std',
-                       'cluster_relations_heatmaps_density',
-                       'cluster_relations_sociogram',
-                       'cluster_summaries_cent',
-                       'cluster_summaries_triad')
+      choices_yah <- c("Modularity" = 'cluster_modularity',
+                       "Dendrogram" = 'cluster_dendrogram',
+                       "Heatmap (Chi-Squared)" = 'cluster_relations_heatmaps_chisq',
+                       "Heatmap (Density, Centered)" ='cluster_relations_heatmaps_density_centered',
+                       "Heatmap (Density, Standardized)" = 'cluster_relations_heatmaps_density_std',
+                       "Heatmap (Density)" = 'cluster_relations_heatmaps_density',
+                       "Cluster Relations Sociogram" = 'cluster_relations_sociogram',
+                       "Cluster Summaries (Centrality)" = 'cluster_summaries_cent',
+                       "Cluster Summaries (Motifs)" = 'cluster_summaries_triad')
     }
     else if (input$select_role_type == 'concor') {
-      choices_yah <- c('concor_block_tree',
-                       'concor_modularity',
-                       'concor_relations_heatmaps_chisq',
-                       'concor_relations_heatmaps_density',
-                       'concor_relations_heatmaps_density_std',
-                       'concor_relations_heatmaps_density_centered',
-                       'concor_relations_sociogram')
+      choices_yah <- c("Block Tree" = 'concor_block_tree',
+                       "Modularity" = 'concor_modularity',
+                       "Heatmap (Chi-Squared)" = 'concor_relations_heatmaps_chisq',
+                       "Heatmap (Density)" = 'concor_relations_heatmaps_density',
+                       "Heatmap (Density, Standardized)" = 'concor_relations_heatmaps_density_std',
+                       "Heatmap (Density, Centered)" = 'concor_relations_heatmaps_density_centered',
+                       "Cluster Relations Sociogram" = 'concor_relations_sociogram')
     }
     choices_yah
   })
@@ -1508,14 +1743,15 @@ server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$run_role_detect, {
-    role_analysis(init_net,
-                  nodes = node_measures,
-                  directed = input$direction_toggle,
-                  method = input$select_role_type,
-                  min_partitions = input$role_det_min,
-                  max_partitions = input$role_det_max,
-                  min_partition_size = as.integer(input$min_cluster_size),
-                  viz = TRUE)
+    list2env(role_analysis(init_net,
+                           nodes = node_measures,
+                           directed = input$direction_toggle,
+                           method = input$select_role_type,
+                           min_partitions = input$role_det_min,
+                           max_partitions = input$role_det_max,
+                           min_partition_size = as.integer(input$min_cluster_size),
+                           viz = TRUE),
+             .GlobalEnv)
     ran_toggle_role_detect$x <- 1
   })
 

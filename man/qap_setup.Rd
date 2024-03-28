@@ -18,9 +18,9 @@ qap_setup(net, variables, methods, directed = F, additional_vars = NULL)
 \item{additional_vars}{A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an \code{id} or \code{label} variables which matches network exactly.}
 }
 \value{
-\code{qap_setup} returns a list \code{qap_results} of elements that include:
+\code{qap_setup} returns a list of elements that include:
 
-- \code{qap_graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
+- \code{graph}, an updated \code{igraph} object containing the newly constructed dyadic variables and additional individual-level variables.
 
 - \code{nodes}, a nodelist reflecting additional variables if included.
 
@@ -30,12 +30,17 @@ qap_setup(net, variables, methods, directed = F, additional_vars = NULL)
 The \code{qap_setup} function transform an individual level attributes into dyadic comparisons following a set of methods. Output can be used to compute QAP measurements using sister functions in \code{ideanet}.
 }
 \examples{
-data("florentine", package = "ideanet")
 
- ideanet::netwrite(i_elements = florentine$node,
-                   j_elements = florentine$target,
-                   directed = FALSE,
-                   net_name = "florentine_graph")
 
-ideanet::qap_setup(florentine_graph, variables = c("total_degree"), methods = c("difference"))
+flor <- netwrite(nodelist = florentine_nodes,
+                 node_id = "id",
+                 i_elements = florentine_edges$source,
+                 j_elements = florentine_edges$target,
+                 type = florentine_edges$type,
+                 directed = FALSE,
+                 net_name = "florentine_graph")
+
+flor_setup <- qap_setup(flor$florentine_graph,
+                        variables = c("total_degree"),
+                        methods = c("difference"))
 }

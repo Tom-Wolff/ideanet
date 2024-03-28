@@ -13,6 +13,8 @@
 #'
 #' @export
 #'
+#' @importFrom rlang .data
+#'
 #' @examples
 #'
 #' data(package = "egor", "egos32")
@@ -39,11 +41,11 @@ ei_index <- function(ego_id,
   ei_df <- var_df %>%
     dplyr::group_by(ego_id) %>%
     dplyr::summarize(length = dplyr::n(),
-                     num_sim = sum(as.character(alter_val) == as.character(ego_val), na.rm = T),
-                     prop_sim = num_sim/length,
-                     num_diff = sum(as.character(alter_val) != as.character(ego_val), na.rm = T),
-                     prop_diff = num_diff/length,
-                     ei_index = (prop_diff - prop_sim)/length) %>%
+                     num_sim = sum(as.character(.data$alter_val) == as.character(.data$ego_val), na.rm = T),
+                     prop_sim = .data$num_sim/length,
+                     num_diff = sum(as.character(.data$alter_val) != as.character(.data$ego_val), na.rm = T),
+                     prop_diff = .data$num_diff/length,
+                     ei_index = (.data$prop_diff - .data$prop_sim)/length) %>%
     dplyr::ungroup() %>%
     dplyr:: select(ego_id, ei_index)
 

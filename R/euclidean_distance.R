@@ -13,6 +13,8 @@
 #'
 #' @export
 #'
+#' @importFrom rlang .data
+#'
 #' @examples
 #'
 #' data(package = "egor", "egos32")
@@ -36,15 +38,15 @@ euclidean_distance <- function(ego_id,
   var_df <- dplyr::left_join(alter_df, ego_df, by = "ego_id")
 
   euc_df <- var_df %>%
-  # Setup for eucidean distance
-  dplyr::mutate(diff = (alter_val - ego_val)^2) %>%
-  # Summarize
-  dplyr::group_by(ego_id) %>%
-  dplyr::summarize(length = dplyr::n(),
-                   euc_num = sqrt(sum(diff, na.rm = T))) %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(euclidean_distance = euc_num/length) %>%
-  dplyr::select(-euc_num, -length)
+    # Setup for eucidean distance
+    dplyr::mutate(diff = (.data$alter_val - .data$ego_val)^2) %>%
+    # Summarize
+    dplyr::group_by(ego_id) %>%
+    dplyr::summarize(length = dplyr::n(),
+                     euc_num = sqrt(sum(diff, na.rm = T))) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(euclidean_distance = .data$euc_num/length) %>%
+    dplyr::select(-.data$euc_num, -length)
 
   if (!is.null(prefix)) {
     colnames(euc_df) <- paste(prefix, colnames(euc_df), sep = "_")

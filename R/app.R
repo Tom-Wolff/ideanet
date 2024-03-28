@@ -7,11 +7,15 @@
 #' @export
 
 ideanetViz <- function() {
+
+  rlang::check_installed("shinythemes")
+  rlang::check_installed("DT")
+
   name = "ideanetViz"
   appDir <- system.file(paste0("apps/", name), package = "ideanet")
   if (appDir == "") stop("The shiny app ", name, " does not exist")
   shiny::runApp(appDir#,
                 #display.mode = 'showcase',
                 #...
-                )
+  )
 }

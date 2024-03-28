@@ -10,7 +10,6 @@ ego_netwrite(
   alters = NULL,
   alter_id = NULL,
   alter_ego = NULL,
-  alter_type = NULL,
   alter_types = NULL,
   max_alters = Inf,
   alter_alter = NULL,
@@ -21,7 +20,6 @@ ego_netwrite(
   aa_type = NULL,
   missing_code = 99999,
   na.rm = FALSE,
-  output_name = "egonet",
   egor = FALSE,
   egor_design = NULL
 )
@@ -36,8 +34,6 @@ ego_netwrite(
 \item{alter_id}{A vector of identifiers indicating which alter is associated with a given row in \code{alters}, or a single character value indicating the name of the column in \code{alters} containing alter identifiers.}
 
 \item{alter_ego}{A vector of identifiers indicating which ego is associated with a given alter, or a single character value indicating the name of the column in \code{alters} containing ego identifiers.}
-
-\item{alter_type}{(DEPRECATED) A numeric or character vector indicating the types of relationships existing between ego and a given alter, or a single character value indicating the name of the column in \code{alters} containing relationship type. If \code{alter_type} is specified, \code{ego_netwrite} will treat the data as a set of multi-relational networks and produce additional outputs reflecting the different types of ties occurring in each ego network.}
 
 \item{alter_types}{A character vector indicating the columns in \code{alters} that indicate whether a given alter has certain types of relations with ego. These columns should all contain binary measures indicating whether alter has a particular type of relation with ego.}
 
@@ -59,15 +55,83 @@ ego_netwrite(
 
 \item{na.rm}{A logical value indicating whether \code{NA} values should be excluded when calculating continuous measures.}
 
-\item{output_name}{A character value indicating the name or prefix that should be given to output objects.}
-
 \item{egor}{A logical value indicating whether output should include an \code{egor} object, which is often useful for visualizaton and for simulation larger networks from egocentric data.}
 
 \item{egor_design}{If creating an \code{egor} object, a list of arguments to \code{\link[srvyr:as_survey_design]{srvyr::as_survey_design}} specifying the sampling design for egos. This argument corresponds to \code{ego_design} in \code{\link[egor:egor]{egor::egor}}.}
 }
 \value{
-\code{ego_netwrite} returns several data frames, one containing measures of ego attributes, another containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite}  returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.
+\code{ego_netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Outputs include a data frame containing measures of ego attributes, another data frame containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite} returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.
 }
 \description{
 The \code{ego_netwrite} function reads in data pertaining to ego networks and processes them into a set of standardized outputs, including measures commonly calculated for ego networks.
+}
+\examples{
+
+# Simple Processing, Ignoring Ego-Alter or Alter-Alter Relation Types
+ngq_nw <- ego_netwrite(egos = ngq_egos,
+                       ego_id = ngq_egos$ego_id,
+
+                       alters = ngq_alters,
+                       alter_id = ngq_alters$alter_id,
+                       alter_ego = ngq_alters$ego_id,
+
+                       max_alters = 10,
+                       alter_alter = ngq_aa,
+                       aa_ego = ngq_aa$ego_id,
+                       i_elements = ngq_aa$alter1,
+                       j_elements = ngq_aa$alter2,
+                       directed = FALSE,
+
+                       egor = TRUE)
+
+list2env(ngq_nw, .GlobalEnv)
+
+# View summaries of individual ego networks
+head(summaries)
+
+# View summary of overall dataset
+head(overall_summary)
+
+# View sociogram of second ego network
+plot(igraph_objects[[2]]$igraph_ego)
+
+
+#  Processing with Different Ego-Alter Relation Types
+ngq_altertype <- ego_netwrite(egos = ngq_egos,
+                              ego_id = ngq_egos$ego_id,
+
+                              alters = ngq_alters,
+                              alter_id = ngq_alters$alter_id,
+                              alter_ego = ngq_alters$ego_id,
+                              alter_types = c("family", "friend", "other_rel"),
+                              max_alters = 10,
+
+                              alter_alter = ngq_aa,
+                              aa_ego = ngq_aa$ego_id,
+                              i_elements = ngq_aa$alter1,
+                              j_elements = ngq_aa$alter2,
+
+                              directed = FALSE)
+
+list2env(ngq_altertype, .GlobalEnv)
+
+
+#  Processing with Different Alter-Alter Relation Types
+ngq_aatype <- ego_netwrite(egos = ngq_egos,
+                           ego_id = ngq_egos$ego_id,
+
+                           alters = ngq_alters,
+                           alter_id = ngq_alters$alter_id,
+                           alter_ego = ngq_alters$ego_id,
+                           max_alters = 10,
+                           alter_alter = ngq_aa,
+
+                           aa_ego = ngq_aa$ego_id,
+                           i_elements = ngq_aa$alter1,
+                           j_elements = ngq_aa$alter2,
+                           aa_type = ngq_aa$type,
+
+                           directed = FALSE)
+
+list2env(ngq_aatype, .GlobalEnv)
 }
