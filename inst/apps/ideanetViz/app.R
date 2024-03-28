@@ -422,7 +422,7 @@ server <- function(input, output, session) {
 
   output$node_ids <- shiny::renderUI({
 
-    shiny::selectInput(inputId = "node_id_col", label = "Column with node ids*", choices = append("Empty",colnames(node_data())), selected = "id", multiple = FALSE)
+    shiny::selectInput(inputId = "node_id_col", label = "Column with node ids*", choices = append("Empty",colnames(node_data())), selected = 'N/A', multiple = FALSE)
 
   })
   output$node_labels <- shiny::renderUI({
@@ -441,6 +441,35 @@ server <- function(input, output, session) {
 
   })
 
+  nodes_used <- shiny::reactive({
+    print('here nodes used')
+    if(!is.null(node_data())) {
+      temp <- FALSE
+      temp
+    }
+    else {
+      NULL
+    }
+  })
+
+  nodes_done <- shiny::reactiveVal(TRUE)
+
+  observeEvent(input$raw_nodes, {
+    print('oberve event nodes')
+    nodes_done(NULL)
+  })
+
+  observeEvent(input$node_id_col, {
+    print('oberve event nodes')
+    if(input$node_id_col != 'Empty') {
+      nodes_done(TRUE)
+    }
+    else{
+      nodes_done(NULL)
+    }
+  })
+
+
   #Edge Processing Options
   output$edge_in <- shiny::renderUI({
     shiny::selectInput(inputId = "edge_in_col", label = "Column with sender id*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
@@ -458,6 +487,19 @@ server <- function(input, output, session) {
 
   output$relational_column <- shiny::renderUI({
     shiny::selectInput('relational_column', label = "Column with relation type", choices = append("Empty",colnames(edge_data())), selected = 'Empty', multiple = FALSE)
+  })
+
+  edges_done <- shiny::reactiveVal(0)
+
+  observeEvent(input$edge_in_col, {
+    print('observe event edges')
+    temp <- edges_done()+1
+    edges_done(temp)
+  })
+
+  observeEvent(input$edge_out_col, {
+    temp <- edges_done()+1
+    edges_done(temp)
   })
 
   ### Network Generation ----
@@ -1060,8 +1102,10 @@ server <- function(input, output, session) {
     shiny::renderUI({
       shiny::validate(
         shiny::need(input$raw_edges, 'Upload Edge Data!'),
-        shiny::need(input$edge_in_col != "Empty" | input$edge_out_col != "Empty", 'Make sure you have selected an edge in and out column!'),
-        shiny::need(try(!is.null(net0())), 'Error computing network statistics. Check edge in and out columns to make sure you have uploaded the right data.')
+        shiny::need(input$edge_in_col != "Empty", 'Make sure you have selected an edge in column!'),
+        shiny::need(input$edge_out_col != "Empty", 'Make sure you have selected an edge out column!'),
+        shiny::need(nodes_done(), 'Make sure you have selected a node id column!'),
+        shiny::need(try(!is.null(net0())), 'Error computing network statistics. Check edge in and out columns to make sure you have uploaded the right data.'),
       )
       visNetwork::visNetworkOutput('network', height = input$plot_scalar, width = input$plot_scalar) %>% shinycssloaders::withSpinner(type = 5)
     })
@@ -1089,7 +1133,9 @@ server <- function(input, output, session) {
     shiny::validate (
       shiny::need(input$raw_edges, 'Upload Edge Data!'),
       shiny::need(input$edge_in_col != "Empty", 'Select edge in column!'),
-      shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'))
+      shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
+      shiny::need(nodes_done(), 'Select node id column!')
+      )
     if (input$multi_relational_toggle == TRUE) {
       shiny::selectInput('system_level_chooser', 'Choose which relation you want to visualize', choices = names(system_measure_plot_list), selected = NULL)
     }
@@ -1099,7 +1145,9 @@ server <- function(input, output, session) {
     shiny::validate (
       shiny::need(input$raw_edges, 'Upload Edge Data!'),
       shiny::need(input$edge_in_col != "Empty", 'Select edge in column!'),
-      shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'))
+      shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
+      shiny::need(nodes_done(), 'Select node id column!')
+    )
     if (input$multi_relational_toggle == TRUE) {
       shiny::selectInput('node_level_chooser', 'Choose which relation you want to visualize', choices = names(node_measure_plot_list), selected = NULL)
     }
@@ -1110,7 +1158,8 @@ server <- function(input, output, session) {
       shiny::validate(
         shiny::need(input$raw_edges, 'Upload Edge Data!'),
         shiny::need(input$edge_in_col != "Empty", 'Select edge in column!'),
-        shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
+        shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
+        shiny::need(nodes_done(), 'Select node id column!')
       )
 
       # Multirelational
