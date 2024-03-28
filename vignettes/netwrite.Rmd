@@ -51,7 +51,7 @@ _Edge-Level Arguments_
 * `data_type`: Specifies the data format of the input data. This argument accepts three different values -- `"edgelist"`, `"adjacency_list"`, and `"adjacency_matrix"` -- each of which correspond to popular formats for storing relational data (we'll cover adjacency matrices in a later example in this vignette).
 * `i_elements`: A vector of "ego" ids. For directed networks, this argument specifies which nodes serve as the source of directed edges. 
 * `j_elements`: A vector of "alter" ids. For directed networks, this argument specifies which nodes serve as the target or destination of directed edges. 
-* `weights`: Vector of edge weights, typically used to signify the strength of edges between nodes. If not specified, `netwrite` will assume that all edges are unweighted and assign them an equal values of `1`.
+* `weights`: Vector of edge weights, typically used to signify the strength of edges between nodes. If not specified, `netwrite` will assume that all edges are unweighted and assign them an equal values of `1`. Note that `netwrite` requires that all edge weights be greater than zero.
 * `weight_type`: If `weights` is specified, this argument determines how `netwrite` should interpret edge weight values. Possible arguments are: `"frequency"` and `"distance"`.
 * `missing_code`: A single numeric value indicating a missing tie -- in cases where the edge information contains both missing and existing ties. Missing codes often appear in edgelists for which there is not a corresponding nodelist; here missing codes are used to include nodes that are network isolates.
 * `directed`: Specify if the edges should be interpreted as directed or undirected. Expects a `TRUE` or `FALSE` logical.
