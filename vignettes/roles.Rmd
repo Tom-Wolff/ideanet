@@ -91,7 +91,7 @@ flor_cluster <- role_analysis(method = "cluster",
                               fast_triad = TRUE)
 ```
 
-Note that we've set `fast_triad` to be `TRUE` here to expedite counting the number of triad positions, or *motifs*, that each node occupies in the network. This is acceptable for the current network given its small size; however, as stated earlier, setting `fast_triad` to `TRUE` may lead to memory issues with one's computer given too large a network. Should this occur, we recommend setting `fast_triad` to `FALSE` and trying again.
+Note that we've set `fast_triad` to be `TRUE` here to expedite counting the number of triad positions, or *motifs*, that each node occupies in the network. This is acceptable for the current network given its small size; however, as stated earlier, setting `fast_triad` to `TRUE` may lead to memory issues with your computer given too large a network. Should this occur, we recommend setting `fast_triad` to `FALSE` and trying again.
 
 `role_analysis` is similar to `netwrite` in that it simultaneously creates several outputs stored in a single list object. As with `netwrite`, users may find it more convenient to extract outputs from this list and move them to the R Global Environment using the `list2env` function:
 
@@ -119,7 +119,7 @@ Cluster assignments at this identified optimal level are stored in the `max_mod`
 
 ### Cluster Dendrogram
 
-To determine the number of clusters produced at the optimal level of partitioning, one can simply identify the maximum value contained in `max_mod`. However, `role_analysis` generates two diagnostic visualizations that provide a faster way of interpreting clustering output. The `cluster_dendrogram` visualization illustrates the cluster membership of nodes at each level of partitioning while also indicating membership of nodes at the optimal partitioning level:
+To determine the number of clusters produced at the optimal level of partitioning, you can simply identify the maximum value contained in `max_mod`. However, `role_analysis` generates two diagnostic visualizations that provide a faster way of interpreting clustering output. The `cluster_dendrogram` visualization illustrates the cluster membership of nodes at each level of partitioning while also indicating membership of nodes at the optimal partitioning level:
 
 ```{r dendrogram}
 cluster_dendrogram
@@ -243,11 +243,6 @@ plot(florentine,
      vertex.color = as.factor(igraph::V(florentine)$concor),
      vertex.label = NA)
 ```
-
-```{r}
-
-```
-
 
 ### Block Tree
 
