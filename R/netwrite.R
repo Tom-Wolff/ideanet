@@ -14,7 +14,7 @@
 #' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
 #' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
-#' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"} and \code{"distance"}.
+#' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"}, indicating that higher values represent stronger ties, and \code{"distance"}, indicating that higher values represent weaker ties.
 #' @param directed A logical value indicating whether edges should be treated as a directed or undirected when constructing the network.
 #' @param net_name A character value indicating the name to which network/igraph objects should be given.
 #' @param shiny A logical value indicating whether \code{netwrite} is being used in conjunction with IDEANet's Shiny-based visualization app. \code{shiny} should also be set to \code{TRUE} when using \code{ideanet} in an R Markdown file that users expect to knit into a document.
