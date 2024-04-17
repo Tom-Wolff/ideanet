@@ -100,7 +100,7 @@ list2env(nw_fauxmesa, .GlobalEnv)
 
 `netwrite` outputs multiple measures aimed at characterizing the network's global structure. One can view a select set of these measures in a summary visualization stored in the `system_measure_plot` object:
 
-```{r system_measure_plot, out.width="100%"}
+```{r system_measure_plot, fig.height = 6, fig.width=10}
 system_measure_plot
 ```
 
