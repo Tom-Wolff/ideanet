@@ -100,7 +100,7 @@ list2env(nw_fauxmesa, .GlobalEnv)
 
 `netwrite` outputs multiple measures aimed at characterizing the network's global structure. One can view a select set of these measures in a summary visualization stored in the `system_measure_plot` object:
 
-```{r system_measure_plot, fig.height = 6, fig.width=10}
+```{r system_measure_plot, fig.height = 4, fig.width=7}
 system_measure_plot
 ```
 
@@ -124,7 +124,7 @@ faux_mesa
 
 Note that this `igraph` object has various measures embedded in it as node- and edge- attributes. Having these measures already contained in the `igraph` object ensures that node attributes are properly linked to the network object, which allows us to use them when customizing network visualizations. Here we plot our network with nodes colored by student grade level, which appeared in our original nodelist:
 
-```{r plot_faux_mesa}
+```{r plot_faux_mesa, fig.height = 4, fig.width = 4}
 plot(faux_mesa,
      vertex.label = NA,
      vertex.size = 4,
@@ -134,12 +134,12 @@ plot(faux_mesa,
 
 In addition to the full network, researchers may be interested in the shape of major sub-components. `netwrite` outputs two additional graph objects: the largest component in the network, and the largest bi-component of the network.
 
-```{r largest_component}
+```{r largest_component, fig.height = 4, fig.width = 4}
 plot(largest_component, vertex.label = NA, vertex.size = 2, edge.arrow.size = 0.2, 
      main = "Largest Component")
 ```
 
-```{r largest_bi_component}
+```{r largest_bi_component, fig.height = 4, fig.width = 4}
 plot(largest_bi_component, vertex.label = NA, vertex.size = 2, edge.arrow.size = 0.2, 
      main = "Largest Bicomponent")
 ```
@@ -174,9 +174,7 @@ knitr::kable(head(node_measures))
 
 On first glance, one sees that the `node_measures` dataframe contains simplified node identifiers matching those appearing in `edgelist`. One also sees that `node_measures` contains all original node-level attributes as they appeared in our original nodelist. Depending on how it was initially named, a nodelist's original column of node identifiers may be renamed to `original_id`.
 
-*Note: the dimensions of `node_measure_plot` are too large to fit in this vignette. We recommend users following this vignette inspect it using the R console.*
-
-```{r node_measure_plot, eval = FALSE}
+```{r node_measure_plot, fig.height = 6, fig.width = 7}
 node_measure_plot
 ```
 
@@ -275,7 +273,7 @@ knitr::kable(head(system_level_measures))
 
 `netwrite` also produces both an `igraph` object of the overall network, as it does with networks with a single relation type, as well as a list of `igraph` objects for each subset of the network. Here we access the `igraph_list` object to compare business and marriage relationships between families side-by-side:
 
-```{r flor_igraph}
+```{r flor_igraph, fig.height = 4, fig.width = 7}
 par(mfrow = c(1, 2), mar = c(1, 1, 1, 1))
 # Create a consistent layout for both plots
 flor_layout <- igraph::layout.fruchterman.reingold(igraph_list$marriage)
@@ -289,7 +287,7 @@ plot(igraph_list$business, vertex.label = NA, vertex.size = 4, edge.arrow.size =
 
 When analyzing a network, users are often interested in whether nodes cluster together to form distinct subgroups or communities. Many methods exist for identifying discernible communities in a network, and one might want to know how different methods perform the same task. `ideanet`'s `communities` function leverages several community detection algorithms found in the `igraph` package, as well as a couple of others, to find and compare inferred communities across these methods. Using this function is simple: you only needs to pass an `igraph` object produced by `netwrite` into the function. Let's quickly apply several community detection methods to the Florentine families network we just processed.
 
-```{r}
+```{r, fig.height = 6, fig.width = 7}
 flor_communities <- communities(florentine)
 ```
 
