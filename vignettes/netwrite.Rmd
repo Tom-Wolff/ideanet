@@ -116,7 +116,7 @@ knitr::kable(head(system_level_measures))
 
 ### `igraph` Object(s)
 
-`igraph` is one of the stnadard network analysis packages in R. `netwrite` creates an `igraph` object that contains all of the original data from the input nodelist and edgelist, plus edge-level and node-level metrics computed on the network by `netwrite`. This `igraph` object allows for traditional network manipulation, such as plotting. The `igraph` object will bear the name users specify in `netwrite`'s `net_name` argument (here `faux_mesa`); otherwise it will be stored as an object named `network`.
+`igraph` is one of the standard network analysis packages in R. `netwrite` creates an `igraph` object that contains all of the original data from the input nodelist and edgelist, plus edge-level and node-level metrics computed on the network by `netwrite`. This `igraph` object allows for traditional network manipulation, such as plotting. The `igraph` object will bear the name users specify in `netwrite`'s `net_name` argument (here `faux_mesa`); otherwise it will be stored as an object named `network`.
 
 ```{r igraph_object}
 faux_mesa
