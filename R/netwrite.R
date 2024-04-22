@@ -993,7 +993,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
         reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
         transitivity_rate <- trans_rate_igraph(g)
-        global_clustering_coefficient <- igraph::transitivity(g, type='global')
+        transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
+        global_clustering_coefficient <- gcc(g)
         average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
       }
       # UNDIRECTED
@@ -1074,7 +1075,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
         reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
         transitivity_rate <- trans_rate_igraph(g)
-        global_clustering_coefficient <- igraph::transitivity(g, type='global')
+        transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
+        global_clustering_coefficient <- gcc(g)
         average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
       }
 
@@ -1228,7 +1230,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
       transitivity_rate <- trans_rate_igraph(g)
-      global_clustering_coefficient <- igraph::transitivity(g, type='global')
+      transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
+      global_clustering_coefficient <- gcc(g)
       average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
     }
     # EDGELIST
@@ -1427,7 +1430,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
       transitivity_rate <- trans_rate_igraph(g)
-      global_clustering_coefficient <- igraph::transitivity(g, type='global')
+      transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
+      global_clustering_coefficient <- gcc(g)
       average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
 
       multiplex <- multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
@@ -1848,7 +1852,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         "Number of 300 Triads",
 
                         'Degree Assortativity (Total)', 'Degree Assortativity (Indegree)', 'Degree Assortativity (Outdegree)',
-                        'Reciprocity Rate', 'Transitivity Rate',
+                        'Reciprocity Rate', 'Transitivity Rate', 'Transitivity Rate (Binarized)',
 
                         'Transitivity Correlation',
 
@@ -1928,6 +1932,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
                               'The proportion of directed ties that are reciprocated',
                               'The proportion of two-step paths that are also one-step paths',
+                              'The proportion of two-step paths that are also one-step paths (two-paths between nodes are only counted once)',
 
                               "The observed correlation between a tie and the number of two-step paths connecting the two nodes in a tie",
 
@@ -2027,7 +2032,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
                   as.character(reciprocity_rate),
-                  as.character(transitivity_rate), as.character(trans_cor),
+                  as.character(transitivity_rate),
+                  as.character(transitivity_rate_b),
+                  as.character(trans_cor),
 
                   as.character(global_clustering_coefficient), average_path_length,
                   as.character(multiplex),

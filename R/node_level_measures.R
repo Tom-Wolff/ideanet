@@ -33,7 +33,7 @@ node_level_igraph <- function(nodes, g, directed, message, weights) {
     eigen_cen <- eigen_igraph(g, directed = as.logical(directed),
                               message = message)
     constraint <- burt_ch(g) #, weights = weights)
-    effective_size <- ens(g)
+    effective_size <- ef2(g)
     reachability <- reachable_igraph(g, directed = as.logical(directed))
 
     if (ncol(bonpow) == 6) {
@@ -104,7 +104,7 @@ node_level_igraph <- function(nodes, g, directed, message, weights) {
     eigen_cen <- eigen_igraph(g, directed = as.logical(directed),
                               message = message)
     constraint <- burt_ch(g) #, weights = weights)
-    effective_size <- ens(g)
+    effective_size <- ef2(g)
     reachability <- reachable_igraph(g, directed = as.logical(directed))
 
     bon_cent <- bonpow[[2]]
@@ -236,6 +236,10 @@ closeness_igraph <- function(g, directed){
   geo <- 1/igraph::distances(g, mode='out')
   diag(geo) <- 0 # Define self-ties as 0
 
+  # Jim wants scores normalized (divided by n-1), so let's collect that
+  denom <- nrow(geo) - 1
+
+
   if (directed == TRUE) {
 
     # Need to create an undirected version of the network and do the same process above
@@ -243,12 +247,12 @@ closeness_igraph <- function(g, directed){
     geo2 <- 1/igraph::distances(g_un, mode = "out")
     diag(geo2) <- 0
 
-    closeness_list <- list(closeness_out = rowSums(geo),
-                           closeness_in = colSums(geo),
-                           closeness_un = rowSums(geo2))
+    closeness_list <- list(closeness_out = rowSums(geo)/denom,
+                           closeness_in = colSums(geo)/denom,
+                           closeness_un = rowSums(geo2)/denom)
     return(closeness_list)
   } else {
-    closeness <- rowSums(geo)
+    closeness <- rowSums(geo)/denom
     return(closeness)
   }
 }
@@ -459,26 +463,27 @@ burt_ch <- function(g) {
 #    B U R T ' S   E F F E C T I V E   S I Z E    #
 ###################################################
 
-# The following function for calculating Burt's effective size
-# is taken from the `influenceR` package
+# Using the Borgatti simplification formula here
+ef2 <- function(g) {
 
-# https://github.com/cran/influenceR/blob/master/R/graph_metrics.R
+  # Convert igraph object to adjmat
+  mat <- as.matrix(igraph::as_adjacency_matrix(igraph::as.undirected(g)))
 
-ens <- function(g) {
-  if (!igraph::is_igraph(g)) {
-    stop("Not a graph object")
+  deg <- rowSums(mat)
+  redun <- rep(0, nrow(mat))
+  mat <- mat - diag(diag(mat))
+  for (i in 1:nrow(mat)) {
+    if (deg[i] > 0) {
+      egoi <- which(mat[i, ] > 0)
+      d <- length(egoi)
+      submat <- mat[egoi, egoi]
+      t <- sum(submat)
+      redun[i] <- t / d
+    }
   }
-  A <- igraph::get.adjacency(g)   # This will be sparse, which is great.
-  S <- Matrix::crossprod(A)       # S[i,j] = # of shared neighbors between i,j
-  Q <- A * S              # Q[i,j] = # of shared neighbors if i and j are neighbors, 0 else
-  qsum <- Matrix::rowSums(Q)
-  deg <- Matrix::rowSums(A)
-  ens <- deg - (qsum / deg)
-  ens[is.nan(ens)] <- 0 # If a vertex has no neighbors, make its ENS 0
-  names(ens) <- igraph::V(g)$name
-  ens
+  efsize <- deg - redun
+  return(efsize)
 }
-
 
 
 #########################

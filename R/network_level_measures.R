@@ -433,7 +433,7 @@ herfindahl <- function(x) {
 #    T R A N S I T I V I T Y   R A T E    #
 ###########################################
 
-trans_rate_igraph <- function(g) {
+trans_rate_igraph <- function(g, binarize = FALSE) {
   # Specifying matrix power operator
   pow = function(x, n) {
     if (n == 0) {
@@ -454,6 +454,11 @@ trans_rate_igraph <- function(g) {
 
   # ij cell = number of two paths from i to j
   i2 <- pow(inmat, 2)
+
+  # Binarize two-paths if that's what we want
+  if (binarize == TRUE) {
+    i2[i2 > 1] <- 1
+  }
 
   # Elementwise multiply by adjacency, will = 1 if two path is transitive
   t3 <- sum(i2*inmat)
@@ -544,7 +549,7 @@ degree_assortativity <- function(g, directed) {
     in_alter <- in_ego
     colnames(in_alter) <- c("alter", "alter_indegree")
 
-    in_el <- sym_el %>%
+    in_el <- el1 %>%
       dplyr::left_join(in_ego, by = "ego") %>%
       dplyr::left_join(in_alter, by = "alter")
 
@@ -556,7 +561,7 @@ degree_assortativity <- function(g, directed) {
     out_alter <- out_ego
     colnames(out_alter) <- c("alter", "alter_outdegree")
 
-    out_el <- sym_el %>%
+    out_el <- el1 %>%
       dplyr::left_join(out_ego, by = "ego") %>%
       dplyr::left_join(out_alter, by = "alter")
 
