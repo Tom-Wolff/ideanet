@@ -18,7 +18,6 @@ MRQAP tests associations across the dyads of a network. Questions generally ask 
 
 Preparing to use `ideanet`'s MRQAP module is  easy: all we need is the `igraph` object produced using `netwrite`, as this object contains the various node-level attributes contained in a user's original nodelist as well as the node-level measurements produced by `netwrite`.
 
-
 ```{r nw_fauxmesa, warning = FALSE}
 library(ideanet)
 
@@ -85,17 +84,17 @@ knitr::kable(head(faux_qap_setup$edges))
 
 We now have several new variables. Variables appended with `_ego` and `_alter` represent the original values for each edge's ego and alter, respectively, as determined in our original nodelist. Our `same_sex` and `both_race` variables are binary indicators of whether ego and alter have the same value for a particular attribute. By contrast, `diff_grade` is a continuous measure showing how many grade levels ego and alter are apart from each other. Note that values in `diff_grade` may be positive or negative depending on whether or not the node designated as ego in the edgelist is in a higher grade level than the node designated as alter. Signed differences of this sort can be useful when working with directed networks — you can imagine younger students being more likely to nominate older students as friends than vice versa. Given that ties in our network are undirected, however, the order in which egos and alters appear in our edgelist have no real meaning, and whether values in `diff_grade` are positive or negative is largely a matter of chance. Consequently, we're better off using the absolute value of ego and alter's grade level in our analysis, as this measure is agnostic to the order in which nodes are presented in our edgelist. `qap_setup` provides us with this absolute value automatically — here it is stored in `abs_diff_grade`.
 
-With our variables of interest in hand, we turn to the MRQAP analysis itself. `ideanet`'s `qap_run` function seamlessly integrates output from `netwrite` and `qap_setup` using the following arguments Arguments for `qap_run` include:
+With our variables of interest in hand, we turn to the MRQAP analysis itself. `ideanet`'s `qap_run` function seamlessly integrates output from `netwrite` and `qap_setup`. However, in its current iteration **users must select variables produced by `qap_setup`**. Arguments for `qap_run` include:
 
-* `net`: An `igraph` object containing the variables of interest. Ideally, this `igraph` object should be one produced by `qap_setup`.
-* `dependent`: A single categorical or continuous variable name to use as a dependent variable. If the dependent is set to `NULL` (default), the function will predict the existence of a non-weighted tie.
-* `variables`: A vector of variable names to use as independent variables.
+* `net`: An `igraph` object containing the variables of interest. This `igraph` object should be one produced by `qap_setup`.
+* `dependent`: A single categorical or continuous variable name to use as a dependent variable. This variable *must* be produced by `qap_setup`. If the dependent is set to `NULL` (default), the function will predict the existence of a non-weighted tie.
+* `variables`: A vector of variable names to use as independent variables. These variables *must* be produced by `qap_setup`.
 * `directed`: Specify if the edges should be interpreted as directed or undirected. Expects `TRUE` or `FALSE` logical.
-* `reps`: Select the number of permutations. Relevant to null-hypothesis testing only. Default is set to `1000.`
+* `reps`: Select the number of permutations. Relevant to null-hypothesis testing only. Default is set to `500`.
 * `family`: The functional form the model should follow. Currently available are `"linear"` and `"binomial"`. 
-  * **NOTE:** Binomial MRQAP is very sensitive to model specification; for exploratory purposes, it is recommended to stick to a linear functional form.
+  * **NOTE:** Binomial MRQAP can take a while to simulate; for exploratory purposes, it is recommended to stick to a linear functional form.
   
-Let's use `qap_run` using the default 1,000 permutations. While we can significantly decrease the number of permutations to allow for lower computation times, this may make confidence intervals in our results less interpretable. As far as variables go in this example, we'll include `same_sex`, `both_race_White`, and `abs_diff_grade`. 
+Let's use `qap_run` using the default 500 permutations. While we can significantly decrease the number of permutations to allow for lower computation times, this may make confidence intervals in our results less interpretable. As far as variables go in this example, we'll include `same_sex`, `both_race_White`, and `abs_diff_grade`. 
 
 ```{r qap_run}
 faux_qap <- qap_run(net = faux_qap_setup$graph,
@@ -123,5 +122,7 @@ faux_qap$mods_df
 knitr::kable(faux_qap$mods_df)
 ```
 
-Assuming a p-value of .05 or less indicates statistical significance, our results here tell us that students are much more likely to nominate students of the same sex as friends, holding all else constant. Additionally, nodes are more likely to share a tie if they both identify as White compared to nodes with other combinations of race/ethnicity. Perhaps surprisingly, our results here also indicate that larger differences in grade level predict an increased likelihood of friendship nomination. This last finding, while counterintuitive, may reflect the relatively simple model specification used for this example than an underlying truth. Nonetheless, the above example shows that setting up and using MRQAP in `ideanet` is fast and easy, allowing users to quickly explore a variety of model specifications with their own data.
+Assuming a p-value of .1 or less indicates some statistical significance, our results here tell us that students are more likely to nominate students of the same sex as friends, holding all else constant. It is recommended that researchers apply the same model with different amounts of draws to confirm the confidence intervals associated with each variable.
+
+The above example shows that setting up and using MRQAP in `ideanet` is fast and easy, allowing users to quickly explore a variety of model specifications with their own data.
 

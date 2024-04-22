@@ -1512,7 +1512,7 @@ nodes_used <- shiny::reactive({
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
-    shiny::selectInput(inputId = "qap_run_choices", label = "QAP Variable Run Choices", choices = append("None",setdiff(edges %>% names(),c("to","from","weight"))), selected = "None", multiple = TRUE)
+    shiny::selectInput(inputId = "qap_run_choices", label = "Choose independent variable(s) (prefix: `same`, `both`, `diff` or `absdiff`)", choices = append("None",setdiff(edges %>% names(),c("to","from","weight"))), selected = "None", multiple = TRUE)
   })
 
   output$qap_run_dependent <- shiny::renderUI({
@@ -1520,7 +1520,7 @@ nodes_used <- shiny::reactive({
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
-    shiny::selectInput(inputId = "qap_run_dependent", label = "QAP Run Dependent Variable", choices = append("Tie Exists",setdiff(edges %>% names(),c("to","from","weight"))), selected = "None", multiple = FALSE)
+    shiny::selectInput(inputId = "qap_run_dependent", label = "Choose dependent variable (prefix: `same`, `both`, `diff` or `absdiff`)", choices = append("Tie Exists",setdiff(edges %>% names(),c("to","from","weight"))), selected = "None", multiple = FALSE)
   })
 
 
