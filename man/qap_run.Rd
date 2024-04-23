@@ -4,18 +4,27 @@
 \alias{qap_run}
 \title{Quadratic Assignment Procedure (\code{qap_run}).}
 \usage{
-qap_run(net, dependent = NULL, variables, directed = F, family = "linear")
+qap_run(
+  net,
+  dependent = NULL,
+  variables,
+  directed = F,
+  family = "linear",
+  reps = 500
+)
 }
 \arguments{
 \item{net}{An \code{igraph} or \code{network} object.}
 
-\item{dependent}{A string naming the dependent variable of interest.}
+\item{dependent}{A string naming the dependent variable of interest. By default, the probability of a tie. Can also be the output of \code{\link{qap_setup}} using prefixes "same_", "diff_" or "abs_diff_".}
 
-\item{variables}{A vector of strings naming the independent variables of interest.}
+\item{variables}{A vector of strings naming the independent variables of interest. Must be the output of \code{\link{qap_setup}} using prefixes "same_", "diff_" and "abs_diff_", or suffixes "_ego" and "_alter".}
 
 \item{directed}{A logical statement identifying if the network should be treated as directed. Defaults to \code{FALSE}.}
 
 \item{family}{A string identifying the functional form. Options are \code{"linear"} and \code{"binomial"}. Defauts to \code{"linear"}.}
+
+\item{reps}{A numeric value indicating the number of draws. Defaults to 500.}
 }
 \value{
 `qap_run` returns a list of elements that include:
@@ -25,7 +34,7 @@ qap_run(net, dependent = NULL, variables, directed = F, family = "linear")
 - \code{mods_df}, a data frame containing model-level information including the number of observations, AIC and BIC statistics.
 }
 \description{
-The \code{qap_run} function is a wrapper around \code{sna}'s Quadratic Assignment Procedure models \code{\link[sna:netlm]{sna::netlm}} and \code{\link[sna:netlogit]{sna::netlogit}}. It expects a networks objects containing dependent and independent variables of interest (e.g, the output from \code{\link{qap_setup}}).
+The \code{qap_run} function is a wrapper around \code{sna}'s Quadratic Assignment Procedure models \code{\link[sna:netlm]{sna::netlm}} and \code{\link[sna:netlogit]{sna::netlogit}}. It expects a networks objects containing dependent and independent variables of interest. It is required to use the output from \code{\link{qap_setup}}.
 }
 \examples{
 

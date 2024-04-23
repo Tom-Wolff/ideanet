@@ -14,10 +14,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-MRQAP is an extension of the Mantel test which uses node permutation in order to get around issues of non-independence that make traditional regression analysis difficult when using (sociocentric) network data. This model can help us answer questions such as _what shared characteristics predict friendship nominations among adolescents in an American high school?_ To illustrate how to run MRQAP using `ideanet`, we'll use the Faux Mesa High dataset native to the package.
+MRQAP tests associations across the dyads of a network. Questions generally ask whether one relation is associated with another relation in multi-relational networks (e.g. *do marriage ties correlate with business ties?*), or whether similarity on dyadic features predict tie formation (e.g. *are same-race pairs more likely to be friends?* or generally *what shared characteristics predict friendship nominations among adolescents in an American high school?*). MRQAP is an extension of the Mantel test which uses node permutation to accommodate issues of non-independence that bias traditional regression analysis estimates using (sociocentric) network data. To illustrate how to use MRQAP with `ideanet`, we'll use the Faux Mesa High dataset native to the package.
 
-Preparing to use `ideanet`'s MRQAP module is quite easy: all we need is an `igraph` object produced using `netwrite`, as this object contains the various node-level attributes contained in a user's original nodelist as well as the node-level measurements produced by `netwrite`. Let's go ahead and generate this `igraph` object for the Faux Mesa High network:
-
+Preparing to use `ideanet`'s MRQAP module is  easy: all we need is the `igraph` object produced using `netwrite`, as this object contains the various node-level attributes contained in a user's original nodelist as well as the node-level measurements produced by `netwrite`.
 
 ```{r nw_fauxmesa, warning = FALSE}
 library(ideanet)
@@ -32,20 +31,20 @@ nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
 list2env(nw_fauxmesa, .GlobalEnv)
 ```
 
-When we look at our original nodelist passed to `netwrite` (`fauxmesa_nodes`), we see that we have information about each student's grade level, their race/ethnicity, and their sex. This information exists at the *individual level* in that it pertains to individual students. However, when using MRQAP in analysis, we are generally interested in how *dyadic* measures predict outcomes. In other words, we're interested in whether similarities or differences between nodes lead to outcomes, both of which are understood  at the level of ego-alter relationships. While some users may have dyadic measures stored in their edgelist ahead of time, more often than not these measures are something the user has to generate themselves The `qap_setup` function in `ideanet` allows users to quickly take node-level attributes and generate dyad-level comparisons with only a few arguments. 
+When we look at the original nodelist passed to `netwrite` (`fauxmesa_nodes`), we see that we have information about each student's grade level, their race/ethnicity, and their sex. This information exists at the *individual level* in that it pertains to individual students. However, when using MRQAP in analysis, we are generally interested in how *dyadic* measures predict outcomes. In other words, we're interested in whether similarities or differences between nodes lead to outcomes, both of which are understood  at the level of ego-alter relationships. While some users may have dyadic measures stored in their edgelist ahead of time, typically these measures are something one has to generate. The `qap_setup` function in `ideanet` allows users to quickly take node-level attributes and generate dyad-level comparisons with only a few arguments. 
 
-Let's quickly go over these arguments before trying it out ourselves:
+These argument are:
 
-* `net`: An `igraph` object, preferably one generated using `netwrite`. `qap_setup` also supports pre-generated `network` object should they be available to users.
+* `net`: An `igraph` object, preferably one generated using `netwrite`. `qap_setup` also supports pre-generated `network` object should they be available to users, but users must ensure that such objects are properly sorted to match node-level features.
 * `variables`: A character vector of variable names that are available in the `igraph`/`network` object. These should match the names of node/vertex attributes in the object passed to `net`.
 * `methods`: A character vector specifying the methods that should be applied to each item listed in `variables`. Values in `methods` must be specified in correct order such that the first item in `methods` applies to the first item in `variables`, the second item in `methods` the second item in `variables`, and so on. Each item in `methods` must be one of the following: 
   * `"multi_category"`: Applies to categorical variables only. Creates as many variables as there are unique values; each variable signals if both ego and alter have the given value.
   * `"reduced_category"`: Applies to categorical variables only. Creates a single variable that signals if alter and ego have the same value.
   * `"both"`: Applies to categorical variables only. Computes both the `"multi_category"` and `"reduced_category"` methods.
-  * `"difference"`: Computes the difference in input value between ego and alter. This method will produce two measures for each variable to which it is applied: the difference between ego and alter's respective values and the absolute value of this difference.
+  * `"difference"`: Computes the difference in input value between ego and alter. This method will produce two measures for each variable to which it is applied: the difference between ego and alter's respective values and the absolute value of this difference. This is generally used to estimate dyadic difference effects, such as whether differences in popularity correlate with being friends.
 * `directed`: Specify if edges in the network should be interpreted as directed or undirected. Expects `TRUE` or `FALSE` logical.
 
-In our example of the Faux Mesa High network, let's imagine we're interested in knowing whether adolescents who are of the same sex are more or less likely to nominate each other as friends. We'll also be interested in seeing whether friendship nominations are more or less likely depending on ego and alter's respective race/ethnicity. Moreover, we'll determine whether the likelihood of friendship nomination changes with differences in students' grade levels.
+For the Faux Mesa High network, let's imagine one wants to know whether same sex, race, or grade levels affect the likelihood that adolescents nominate each other as friends.
 
 For similarity in sex, we'll want to apply the `reduced_category` method to the `sex` variable. For combinations of the `race`, we'll apply the `multi_category` method. And for `grade`, which we'll treat as a continuous variable, we'll use the `difference` method.
 
@@ -74,28 +73,28 @@ faux_qap_setup <- qap_setup(net = faux_mesa,
                             directed = FALSE)
 ```
 
-`qap_setup` produces a list object containing a nodelist, and edgelist containing newly-calculated dyadic measures, and an `igraph` object that also includes these dyadic measures. Let's quickly inspect our new edgelist to see the kinds of variables we've just created:
+`qap_setup` produces a list object containing a nodelist, an edgelist containing newly-calculated dyadic measures, and an `igraph` object with these dyadic measures. Let's quickly inspect our new edgelist to see the kinds of variables we've just created:
 
 ```{r qap_edgelist, eval = FALSE}
-faux_qap_setup$edges
+head(faux_qap_setup$edges)
 ```
-```{r qap_edgelist_kable, eval = FALSE}
-knitr::kable(faux_qap_setup$edges)
+```{r qap_edgelist_kable, echo = FALSE}
+knitr::kable(head(faux_qap_setup$edges))
 ```
 
 We now have several new variables. Variables appended with `_ego` and `_alter` represent the original values for each edge's ego and alter, respectively, as determined in our original nodelist. Our `same_sex` and `both_race` variables are binary indicators of whether ego and alter have the same value for a particular attribute. By contrast, `diff_grade` is a continuous measure showing how many grade levels ego and alter are apart from each other. Note that values in `diff_grade` may be positive or negative depending on whether or not the node designated as ego in the edgelist is in a higher grade level than the node designated as alter. Signed differences of this sort can be useful when working with directed networks — you can imagine younger students being more likely to nominate older students as friends than vice versa. Given that ties in our network are undirected, however, the order in which egos and alters appear in our edgelist have no real meaning, and whether values in `diff_grade` are positive or negative is largely a matter of chance. Consequently, we're better off using the absolute value of ego and alter's grade level in our analysis, as this measure is agnostic to the order in which nodes are presented in our edgelist. `qap_setup` provides us with this absolute value automatically — here it is stored in `abs_diff_grade`.
 
-With our variables of interest in hand, we turn to the MRQAP analysis itself. `ideanet`'s `qap_run` function seamlessly integrates output from `netwrite` and `qap_setup` using the following arguments Arguments for `qap_run` include:
+With our variables of interest in hand, we turn to the MRQAP analysis itself. `ideanet`'s `qap_run` function seamlessly integrates output from `netwrite` and `qap_setup`. However, in its current iteration **users must select variables produced by `qap_setup`**. Arguments for `qap_run` include:
 
-* `net`: An `igraph` object containing the variables of interest. Ideally, this `igraph` object should be one produced by `qap_setup`.
-* `dependent`: A single categorical or continuous variable name to use as a dependent variable. If the dependent is set to `NULL` (default), the function will predict the existence of a non-weighted tie.
-* `variables`: A vector of variable names to use as independent variables.
+* `net`: An `igraph` object containing the variables of interest. This `igraph` object should be one produced by `qap_setup`.
+* `dependent`: A single categorical or continuous variable name to use as a dependent variable. This variable *must* be produced by `qap_setup`. If the dependent is set to `NULL` (default), the function will predict the existence of a non-weighted tie.
+* `variables`: A vector of variable names to use as independent variables. These variables *must* be produced by `qap_setup`.
 * `directed`: Specify if the edges should be interpreted as directed or undirected. Expects `TRUE` or `FALSE` logical.
-* `reps`: Select the number of permutations. Relevant to null-hypothesis testing only. Default is set to `1000.`
+* `reps`: Select the number of permutations. Relevant to null-hypothesis testing only. Default is set to `500`.
 * `family`: The functional form the model should follow. Currently available are `"linear"` and `"binomial"`. 
-  * **NOTE:** Binomial MRQAP is very sensitive to model specification; for exploratory purposes, it is recommended to stick to a linear functional form.
+  * **NOTE:** Binomial MRQAP can take a while to simulate; for exploratory purposes, it is recommended to stick to a linear functional form.
   
-Let's use `qap_run` using the default 1,000 permutations. While we can significantly decrease the number of permutations to allow for lower computation times, this may make confidence intervals in our results less interpretable. As far as variables go in this example, we'll include `same_sex`, `both_race_White`, and `abs_diff_grade`. 
+Let's use `qap_run` using the default 500 permutations. While we can significantly decrease the number of permutations to allow for lower computation times, this may make confidence intervals in our results less interpretable. As far as variables go in this example, we'll include `same_sex`, `both_race_White`, and `abs_diff_grade`. 
 
 ```{r qap_run}
 faux_qap <- qap_run(net = faux_qap_setup$graph,
@@ -123,5 +122,7 @@ faux_qap$mods_df
 knitr::kable(faux_qap$mods_df)
 ```
 
-Assuming a p-value of .05 or less indicates statistical significance, our results here tell us that students are much more likely to nominate students of the same sex as friends, holding all else constant. Additionally, nodes are more likely to share a tie if they both identify as White compared to nodes with other combinations of race/ethnicity. Perhaps surprisingly, our results here also indicate that larger differences in grade level predict an increased likelihood of friendship nomination. This last finding, while counterintuitive, may reflect the relatively simple model specification used for this example than an underlying truth. Nonetheless, the above example shows that setting up and using MRQAP in `ideanet` is fast and easy, allowing users to quickly explore a variety of model specifications with their own data.
+Assuming a p-value of .1 or less indicates some statistical significance, our results here tell us that students are more likely to nominate students of the same sex as friends, holding all else constant. It is recommended that researchers apply the same model with different amounts of draws to confirm the confidence intervals associated with each variable.
+
+The above example shows that setting up and using MRQAP in `ideanet` is fast and easy, allowing users to quickly explore a variety of model specifications with their own data.
 

@@ -14,7 +14,7 @@
 #' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
 #' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
-#' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"} and \code{"distance"}.
+#' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"}, indicating that higher values represent stronger ties, and \code{"distance"}, indicating that higher values represent weaker ties.
 #' @param directed A logical value indicating whether edges should be treated as a directed or undirected when constructing the network.
 #' @param net_name A character value indicating the name to which network/igraph objects should be given.
 #' @param shiny A logical value indicating whether \code{netwrite} is being used in conjunction with IDEANet's Shiny-based visualization app. \code{shiny} should also be set to \code{TRUE} when using \code{ideanet} in an R Markdown file that users expect to knit into a document.
@@ -993,7 +993,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
         reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
         transitivity_rate <- trans_rate_igraph(g)
-        global_clustering_coefficient <- igraph::transitivity(g, type='global')
+        transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
+        global_clustering_coefficient <- gcc(g)
         average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
       }
       # UNDIRECTED
@@ -1074,7 +1075,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
         reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
         transitivity_rate <- trans_rate_igraph(g)
-        global_clustering_coefficient <- igraph::transitivity(g, type='global')
+        transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
+        global_clustering_coefficient <- gcc(g)
         average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
       }
 
@@ -1228,7 +1230,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
       transitivity_rate <- trans_rate_igraph(g)
-      global_clustering_coefficient <- igraph::transitivity(g, type='global')
+      transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
+      global_clustering_coefficient <- gcc(g)
       average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
     }
     # EDGELIST
@@ -1427,7 +1430,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
       transitivity_rate <- trans_rate_igraph(g)
-      global_clustering_coefficient <- igraph::transitivity(g, type='global')
+      transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
+      global_clustering_coefficient <- gcc(g)
       average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
 
       multiplex <- multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
@@ -1848,7 +1852,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         "Number of 300 Triads",
 
                         'Degree Assortativity (Total)', 'Degree Assortativity (Indegree)', 'Degree Assortativity (Outdegree)',
-                        'Reciprocity Rate', 'Transitivity Rate',
+                        'Reciprocity Rate', 'Transitivity Rate', 'Transitivity Rate (Binarized)',
 
                         'Transitivity Correlation',
 
@@ -1928,6 +1932,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
                               'The proportion of directed ties that are reciprocated',
                               'The proportion of two-step paths that are also one-step paths',
+                              'The proportion of two-step paths that are also one-step paths (two-paths between nodes are only counted once)',
 
                               "The observed correlation between a tie and the number of two-step paths connecting the two nodes in a tie",
 
@@ -2027,7 +2032,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
                   as.character(reciprocity_rate),
-                  as.character(transitivity_rate), as.character(trans_cor),
+                  as.character(transitivity_rate),
+                  as.character(transitivity_rate_b),
+                  as.character(trans_cor),
 
                   as.character(global_clustering_coefficient), average_path_length,
                   as.character(multiplex),
