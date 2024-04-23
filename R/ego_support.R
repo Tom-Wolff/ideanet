@@ -66,7 +66,8 @@ alter_centrality <- function(x, directed) {
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
       eigen_cen <- rep(NA, length(total_degree))
       constraint <- burt_ch(x$igraph)
-      effective_size <- ens(x$igraph)
+      # effective_size <- ef2(x$igraph)
+      effective_size <- rep(0, length(igraph::V(x$igraph)))
       reachability <- reachable_igraph(x$igraph, directed = FALSE)
 
 
@@ -103,7 +104,7 @@ alter_centrality <- function(x, directed) {
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
       eigen_cen <- rep(NA, length(total_degree))
       constraint <- burt_ch(x$igraph)
-      effective_size <- ens(x$igraph)
+      effective_size <- ef2(x$igraph)
       reachability <- reachable_igraph(x$igraph, directed = TRUE)
 
 
@@ -142,7 +143,7 @@ alter_centrality <- function(x, directed) {
       colnames(bonpow_negative) <- c("bonacich_negative", "bon_centralization_negative")
       eigen_cen <- eigen_igraph(x$igraph, directed = FALSE, message = TRUE)
       constraint <- burt_ch(x$igraph)
-      effective_size <- ens(x$igraph)
+      effective_size <- ef2(x$igraph)
       reachability <- reachable_igraph(x$igraph, directed = FALSE)
 
       bon_cent <- bonpow[[2]]
@@ -181,7 +182,7 @@ alter_centrality <- function(x, directed) {
       colnames(bonpow_negative) <- c("bonacich_negative", "bon_centralization_negative")
       eigen_cen <- eigen_igraph(x$igraph, directed = TRUE, message = TRUE)
       constraint <- burt_ch(x$igraph)
-      effective_size <- ens(x$igraph)
+      effective_size <- ef2(x$igraph)
       reachability <- reachable_igraph(x$igraph, directed = TRUE)
 
       bon_cent <- bonpow[[2]]

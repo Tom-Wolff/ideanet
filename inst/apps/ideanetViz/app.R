@@ -673,7 +673,7 @@ nodes_used <- shiny::reactive({
 
     nodes <- nodelist2()
     print('started community detection')
-    list2env(communities(net, shiny  = TRUE),
+    list2env(comm_detect(net, shiny  = TRUE),
              .GlobalEnv)
     print('finished community detection')
     memberships <- memberships %>%

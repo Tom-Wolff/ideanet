@@ -285,13 +285,13 @@ plot(igraph_list$business, vertex.label = NA, vertex.size = 4, edge.arrow.size =
 
 ## Community Detection
 
-When analyzing a network, users are often interested in whether nodes cluster together to form distinct subgroups or communities. Many methods exist for identifying discernible communities in a network, and one might want to know how different methods perform the same task. `ideanet`'s `communities` function leverages several community detection algorithms found in the `igraph` package, as well as a couple of others, to find and compare inferred communities across these methods. Using this function is simple: you only needs to pass an `igraph` object produced by `netwrite` into the function. Let's quickly apply several community detection methods to the Florentine families network we just processed.
+When analyzing a network, users are often interested in whether nodes cluster together to form distinct subgroups or communities. Many methods exist for identifying discernible communities in a network, and one might want to know how different methods perform the same task. `ideanet`'s `comm_detect` function leverages several community detection algorithms found in the `igraph` package, as well as a couple of others, to find and compare inferred communities across these methods. Using this function is simple: you only needs to pass an `igraph` object produced by `netwrite` into the function. Let's quickly apply several community detection methods to the Florentine families network we just processed.
 
 ```{r, fig.height = 6, fig.width = 7}
-flor_communities <- communities(florentine)
+flor_communities <- comm_detect(florentine)
 ```
 
-The `communities` function returns a list of three data frames, and will automatically generate a set of visualizations showing each node's community membership as determined by each community detection method. Within the list produced, the `summaries` data frame details the number of communities detected by each method, as well as the modularity score associated with each method. This offers one way of comparing community detection methods— higher modularity scores (within a single network) generally indicate more effective partitioning of the network.
+The `comm_detect` function returns a list of three data frames, and will automatically generate a set of visualizations showing each node's community membership as determined by each community detection method. Within the list produced, the `summaries` data frame details the number of communities detected by each method, as well as the modularity score associated with each method. This offers one way of comparing community detection methods— higher modularity scores (within a single network) generally indicate more effective partitioning of the network.
 
 ```{r comm_summaries, eval = FALSE}
 flor_communities$summaries
