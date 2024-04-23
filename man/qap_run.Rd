@@ -18,7 +18,7 @@ qap_run(
 
 \item{dependent}{A string naming the dependent variable of interest. By default, the probability of a tie. Can also be the output of \code{\link{qap_setup}} using prefixes "same_", "diff_" or "abs_diff_".}
 
-\item{variables}{A vector of strings naming the independent variables of interest. Must be the output of \code{\link{qap_setup}} using prefixes "same_", "diff_" or "abs_diff_".}
+\item{variables}{A vector of strings naming the independent variables of interest. Must be the output of \code{\link{qap_setup}} using prefixes "same_", "diff_" and "abs_diff_", or suffixes "_ego" and "_alter".}
 
 \item{directed}{A logical statement identifying if the network should be treated as directed. Defaults to \code{FALSE}.}
 
