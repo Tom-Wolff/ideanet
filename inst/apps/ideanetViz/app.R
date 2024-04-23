@@ -1570,7 +1570,7 @@ nodes_used <- shiny::reactive({
     }
     print(input$qap_run_choices)
     list2env(qap_run(net = graph, variables = input$qap_run_choices,
-                     dependent = dep_var, directed = T),
+                     dependent = dep_var, directed = input$direction_toggle),
              .GlobalEnv)
     covs_df$estimate <- round(covs_df$estimate, digits = 3)
     covs_df
