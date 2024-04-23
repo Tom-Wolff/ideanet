@@ -467,7 +467,7 @@ burt_ch <- function(g) {
 ef2 <- function(g) {
 
   # Convert igraph object to adjmat
-  mat <- as.matrix(igraph::as_adjacency_matrix(igraph::as.undirected(g)))
+  mat <- Matrix::as.matrix(igraph::as_adjacency_matrix(igraph::as.undirected(g)))
 
   deg <- rowSums(mat)
   redun <- rep(0, nrow(mat))
