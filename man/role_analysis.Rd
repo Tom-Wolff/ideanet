@@ -14,7 +14,7 @@ role_analysis(
   min_partition_size = NA,
   backbone = 0.9,
   viz = FALSE,
-  fast_triad = TRUE,
+  fast_triad = NULL,
   retain_variables = FALSE,
   cluster_summaries = FALSE,
   dendro_names = FALSE,
