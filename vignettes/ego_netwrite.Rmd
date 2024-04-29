@@ -249,7 +249,7 @@ igraph_objects[[6]]$igraph
 ```
 We see here that this network contains 10 nodes and 43 edges. These values reflect the 10 alters nominated by ego and the 43 edges ego reported existing between them. Also note that the alter- and edge-level attributes found in our original alter list and alter-alter edgelist are already embedded in this igraph object. The inclusion of these attributes may help users customize visualizations more easily. To show this in practice, let's visualize ego 6's `igraph` ego object which each alter's respective node colored by their sex:
 
-```{r}
+```{r, fig.height = 4, fig.width = 4}
 ego6 <- igraph_objects[[6]]$igraph_ego
 
 plot(ego6,
@@ -393,7 +393,7 @@ plot(ego7_other,
      main = "Other Relationships")
 ```
 
-```{r aa_igraph_plots_kable, echo = FALSE}
+```{r aa_igraph_plots_kable, echo = FALSE, fig.height = 4, fig.width = 4}
 ego7 <- igraph_objects[[7]]$igraph_ego
 ego7_friends <- igraph_objects[[7]]$igraph_ego_friends
 ego7_family <- igraph_objects[[7]]$igraph_ego_related

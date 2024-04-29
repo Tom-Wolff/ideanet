@@ -120,7 +120,7 @@ role_analysis <- function(graph, # igraph object generated from netwrite
                           viz = FALSE, # Produce summary visualizations
 
                           # Arguments Specific to Clustering Method
-                          fast_triad = TRUE, # Whether to use dplyr method for triad position counting
+                          fast_triad = NULL, # Whether to use dplyr method for triad position counting
                           retain_variables = FALSE, # Export a dataframe of variables used in clustering
                           cluster_summaries = FALSE, # Export a dataframe containing mean values of clustering variables within each cluster
                           dendro_names = FALSE, # If TRUE, `cluster_dendogram` lists nodel labels rathher than ID numbers
@@ -186,7 +186,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
                            # Or list of node information
                            directed = NA, # whether or not network is directed
                            method = "cluster", # method of role inference/assignment (more options later)
-                           fast_triad = TRUE, # Whether to use dplyr method for triad position counting
+                           fast_triad = NULL, # Whether to use dplyr method for triad position counting
                            min_partitions = NA, # minimum number of clusters to test
                            max_partitions = NA, # maximum number of clusters to test
                            min_partition_size = NA, # minimum number of nodes required for a cluster to exist
@@ -203,6 +203,18 @@ cluster_method <- function(graph, # igraph object generated from netwrite
                            plot_all = FALSE, # Summary plot has all variables,
                            dendro_names = FALSE
 ) {
+
+  # If not manually specified by user, limit application of dplyr-based triad counting to networks
+  # with 500 nodes or fewer
+
+  if (is.null(fast_triad)) {
+    # Get number of nodes
+    if (nrow(nodes) > 500) {
+      fast_triad <- FALSE
+    } else {
+      fast_triad <- TRUE
+    }
+  }
 
 
   # Create output list
