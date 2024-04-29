@@ -266,6 +266,8 @@ ego_reshape <- function(data,
     # assign(paste(output_name, "alter_edgelist", sep = "_"), aa_tie_df, .GlobalEnv)
   }
 
+  return(output_list)
+
 }
 #
 # # Directed Ties, No Self-Loops
