@@ -476,6 +476,33 @@ ego_netwrite <- function(egos,
                                                                         igraph::gorder(this_igraph_ego))))
           igraph::V(this_igraph_ego)$name[[igraph::gorder(this_igraph_ego)]] <- "ego"
 
+          ##### If these igraph objects have edge attributes named `from` or `to`,
+          ##### it creates issues when plotting with `ggraph`. We'll want to rename
+          ##### these attributes to avoid problems for some users:
+          this_igraph_names <- igraph::edge_attr_names(this_igraph)
+          this_igraph_ego_names <- igraph::edge_attr_names(this_igraph_ego)
+
+          if ("from" %in% this_igraph_names) {
+            igraph::E(this_igraph)$original_from <- igraph::E(this_igraph)$from
+            this_igraph <- igraph::delete_edge_attr(this_igraph, "from")
+          }
+
+          if ("to" %in% this_igraph_names) {
+            igraph::E(this_igraph)$original_to <- igraph::E(this_igraph)$to
+            this_igraph <- igraph::delete_edge_attr(this_igraph, "to")
+          }
+
+
+          if ("from" %in% this_igraph_ego_names) {
+            igraph::E(this_igraph_ego)$original_from <- igraph::E(this_igraph_ego)$from
+            this_igraph_ego <- igraph::delete_edge_attr(this_igraph_ego, "from")
+          }
+
+          if ("to" %in% this_igraph_ego_names) {
+            igraph::E(this_igraph_ego)$original_to <- igraph::E(this_igraph_ego)$to
+            this_igraph_ego <- igraph::delete_edge_attr(this_igraph_ego, "to")
+          }
+
           # Store in list of igraph objects
           igraph_list[[i]] <- list(ego = this_ego,
                                    ego_info = this_ego_info,
@@ -549,6 +576,33 @@ ego_netwrite <- function(egos,
         this_igraph_ego <- igraph::add_edges(this_igraph_ego, c(rbind(seq(igraph::gorder(this_igraph_ego) - 1),
                                                                       igraph::gorder(this_igraph_ego))))
         igraph::V(this_igraph_ego)$name[[igraph::gorder(this_igraph_ego)]] <- "ego"
+
+        ##### If these igraph objects have edge attributes named `from` or `to`,
+        ##### it creates issues when plotting with `ggraph`. We'll want to rename
+        ##### these attributes to avoid problems for some users:
+        this_igraph_names <- igraph::edge_attr_names(this_igraph)
+        this_igraph_ego_names <- igraph::edge_attr_names(this_igraph_ego)
+
+        if ("from" %in% this_igraph_names) {
+          igraph::E(this_igraph)$original_from <- igraph::E(this_igraph)$from
+          this_igraph <- igraph::delete_edge_attr(this_igraph, "from")
+        }
+
+        if ("to" %in% this_igraph_names) {
+          igraph::E(this_igraph)$original_to <- igraph::E(this_igraph)$to
+          this_igraph <- igraph::delete_edge_attr(this_igraph, "to")
+        }
+
+
+        if ("from" %in% this_igraph_ego_names) {
+          igraph::E(this_igraph_ego)$original_from <- igraph::E(this_igraph_ego)$from
+          this_igraph_ego <- igraph::delete_edge_attr(this_igraph_ego, "from")
+        }
+
+        if ("to" %in% this_igraph_ego_names) {
+          igraph::E(this_igraph_ego)$original_to <- igraph::E(this_igraph_ego)$to
+          this_igraph_ego <- igraph::delete_edge_attr(this_igraph_ego, "to")
+        }
 
         # Store in list of igraph objects
         igraph_list[[i]] <- list(ego = this_ego,
