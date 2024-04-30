@@ -15,10 +15,32 @@
 #'
 #' @examples
 #'
-#' data(package = "egor", "egos32")
-#' data(package = "egor", "alters32")
+#'# Run `ego_netwrite`
+#'ngq_nw <- ego_netwrite(egos = ngq_egos,
+#'                       ego_id = ngq_egos$ego_id,
 #'
-#' h_index(ego_id = alters32$.EGOID, measure = alters32$country)
+#'                       alters = ngq_alters,
+#'                       alter_id = ngq_alters$alter_id,
+#'                       alter_ego = ngq_alters$ego_id,
+#'
+#'                       max_alters = 10,
+#'                       alter_alter = ngq_aa,
+#'                       aa_ego = ngq_aa$ego_id,
+#'                       i_elements = ngq_aa$alter1,
+#'                       j_elements = ngq_aa$alter2,
+#'                       directed = FALSE,
+#'
+#'                       egor = TRUE)
+#'
+#'# Split items into Global Environment
+#'list2env(ngq_nw, .GlobalEnv)
+#'
+#'# Get H-index for sex
+#'race_hindex <- h_index(ego_id = alters$ego_id,
+#'                       measure = alters$race,
+#'                       prefix = "race")
+#'
+#'race_hindex
 
 
 # User-facing function
