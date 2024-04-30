@@ -139,7 +139,7 @@ ego_reshape <- function(data,
 
   ##### EGO LIST #################################################################
   # Extract ego-level variables and set aside
-  ego_df <- data[,c(ego_id, ego_vars)]
+  ego_df <- as.data.frame(data[,c(ego_id, ego_vars)])
   # Rename ego_id column here to make things easier later
   colnames(ego_df)[[1]] <- "ego_id"
 
@@ -175,7 +175,7 @@ ego_reshape <- function(data,
     # What should we call this variable?
     this_name <- colnames(alter_vars_df)[[alter_vars_index[[i]]]]
 
-    this_alter_var <- alter_vars_df[, c(ego_id, extracted_cols)] %>%
+    this_alter_var <- alter_vars_df[, c(1, extracted_cols)] %>%
       tidyr::pivot_longer(cols = -.data$ego_id,
                           names_to = "var",
                           values_to = this_name) %>%
