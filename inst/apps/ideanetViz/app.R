@@ -3,7 +3,7 @@
 ## Setup libraries and seed ----
 
 #check if seed file exists,and if it does not, create
-rlang::check_installed("visNetwork")
+
 
 
 ## Create Fluid Page ----
@@ -1083,6 +1083,8 @@ nodes_used <- shiny::reactive({
       net.visn$nodes$label <- igraph::V(net)$label
 
       print(net.visn$nodes$label)
+
+      print("1087")
 
       if (input$interactive_switch) {
         if (input$edge_weight_method == "Uniform") {
