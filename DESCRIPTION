@@ -44,6 +44,7 @@ Suggests:
     gridGraphics,
     shinycssloaders,
     shinythemes,
+    shinyWidgets,
     knitr,
     rmarkdown,
     visNetwork
