@@ -129,7 +129,7 @@ cluster_dendrogram
 
 While `cluster_dendrogram` shows where nodes fall at each level of partitioning, `cluster_modularity` shows how the modularity score of the similarity matrix changes at each level of partitioning:
 
-```{r cluster_modularity}
+```{r cluster_modularity, fig.height = 6, fig.width = 7}
 cluster_modularity
 ```
 
@@ -166,19 +166,19 @@ cluster_summaries_cent$summary_graph
 
 Those familiar with positions and motifs in networks know that as many as 36 types of positions can exist in a network, which can be unwieldy to inspect alongside other measures. Consequently, differences in triad positions are visualized separately in `cluster_summaries_triad`:
 
-```{r triad_marriage, warning = FALSE}
+```{r triad_marriage, warning = FALSE, fig.height = 6, fig.width = 7}
 cluster_summaries_triad$marriage
 ```
-```{r triad_business, warning = FALSE}
+```{r triad_business, warning = FALSE, fig.height = 6, fig.width = 7}
 cluster_summaries_triad$business
 ```
-```{r triad_summary, warning = FALSE}
+```{r triad_summary, warning = FALSE, fig.height = 6, fig.width = 7}
 cluster_summaries_triad$summary_graph
 ```
 
 Overall, the node in cluster 6 tends to have the highest values on most measures used to identify roles in the network. Those familiar with the substantive setting of this network will not be surprised to learn that this node represents the Medici family, which was known for its power and influence in Renaissance Florence. Additionally, nodes in cluster 2 tend to appear in more clustered parts of this network due to their business ties. If one is curious to see where the Medici and families in other role positions appear relative to one another in the network, one can quickly take the information contained in `cluster_assignments` and assign it as a node-level attribute in an `igraph` object for visualization:
 
-```{r igraph_viz}
+```{r igraph_viz, fig.height = 6, fig.width = 7}
 igraph::V(florentine)$role <- cluster_assignments$best_fit
 plot(florentine, 
      vertex.color = as.factor(igraph::V(florentine)$role),
@@ -189,7 +189,7 @@ plot(florentine,
 
 A final point of consideration in positional analysis involves knowing whether nodes in a particular role tend to form ties among themselves or with nodes in other roles. When using hierarchical clustering, `role_analysis` generates a series of heatmaps, contained in a list, to visualize the frequency of tie formation within and between clusters. Each heatmap measures connections across clusters using different measures, and the names of these measures are used to extract their corresponding plot from the list:
 
-```{r}
+```{r, fig.height = 6, fig.width = 7}
 cluster_relations_heatmaps$chisq # Chi-squared
 cluster_relations_heatmaps$density # Density
 cluster_relations_heatmaps$density_std # Density (Standardized)
@@ -231,13 +231,13 @@ knitr::kable(concor_assignments %>%
 
 As with the hierarchical clustering method, the optimal level of partitioning for CONCOR is determined according to the maximization of modularity in a similarity matrix. One can inspect how modularity changes at different levels of partitioning using the `concor_modularity` visualization:
 
-```{r concor_modularity}
+```{r concor_modularity, fig.height = 6, fig.width = 7}
 concor_modularity
 ```
 
 Visualizing CONCOR assignments in a conventional network visualization entails a similar process to that used for hierarchical clustering.
 
-```{r concor_sociogram}
+```{r concor_sociogram, fig.height = 6, fig.width = 7}
 igraph::V(florentine)$concor <- concor_assignments$best_fit
 plot(florentine, 
      vertex.color = as.factor(igraph::V(florentine)$concor),
@@ -248,7 +248,7 @@ plot(florentine,
 
 In lieu of a dendrogram, users can see how smaller partitions branch off of larger parents with the `concor_block_tree` visualization. Like `cluster_dendrogram`, this visualization allows users to quickly gauge the relative size of blocks inferred by CONCOR:
 
-```{r concor_tree}
+```{r concor_tree, fig.height = 6, fig.width = 7}
 concor_block_tree
 ```
 
@@ -256,7 +256,7 @@ concor_block_tree
 
 Finally, users can also assess the level of connection across CONCOR blocks using the `concor_relations_heatmaps` object:
 
-```{r concor_heatmaps}
+```{r concor_heatmaps, fig.height = 6, fig.width = 7}
 concor_relations_heatmaps$chisq
 concor_relations_heatmaps$density
 concor_relations_heatmaps$density_std
@@ -265,7 +265,7 @@ concor_relations_heatmaps$density_centered
 
 On the whole, using CONCOR tells us that nodes in the Florentine network fall into one of only two blocks (plus a third block for our isolate), and that nodes within these roles tend to interact among themselves rather than with nodes in the other block. These simpler results are less informative than those produced by the hierarchical clustering method. But this is not to say that CONCOR is an inferior approach to positional analysis. Interpreting results from positional analysis often entails more subjectivity than other network analysis methods. Although two partitions may maximize modularity, users may find that a higher level of partitioning produces blocks with important substantive differences. Were we to accept four blocks as a more appropriate fit than two, we see our inferred blocks start to resemble the groups we inferred using hierarchical clustering. Moreover, this resemblance also comes with only a small drop in modularity:
 
-```{r concor_sociogram2}
+```{r concor_sociogram2, fig.height = 6, fig.width = 7}
 igraph::V(florentine)$concor2 <- concor_assignments$block_2
 plot(florentine, 
      vertex.color = as.factor(igraph::V(florentine)$concor2),
