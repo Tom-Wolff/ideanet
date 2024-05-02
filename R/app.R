@@ -8,11 +8,12 @@
 
 ideanetViz <- function() {
 
-  rlang::check_installed("shinythemes")
-  rlang::check_installed("DT")
-  rlang::check_installed("shinycssloaders")
-  rlang::check_installed("shinyWidgets")
-  rlang::check_installed("visNetwork")
+  rlang::check_installed(c("gridGraphics",
+                           "shinythemes",
+                           "DT",
+                           "shinycssloaders",
+                           "shinyWidgets",
+                           "visNetwork"))
 
   name = "ideanetViz"
   appDir <- system.file(paste0("apps/", name), package = "ideanet")

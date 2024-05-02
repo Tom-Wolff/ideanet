@@ -1084,7 +1084,6 @@ nodes_used <- shiny::reactive({
 
       print(net.visn$nodes$label)
 
-      print("1087")
 
       if (input$interactive_switch) {
         if (input$edge_weight_method == "Uniform") {
