@@ -3,7 +3,7 @@
 ## Setup libraries and seed ----
 
 #check if seed file exists,and if it does not, create
-
+rlang::check_installed("visNetwork")
 
 
 ## Create Fluid Page ----

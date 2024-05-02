@@ -10,6 +10,8 @@ ideanetViz <- function() {
 
   rlang::check_installed("shinythemes")
   rlang::check_installed("DT")
+  rlang::check_installed("shinycssloaders")
+  rlang::check_installed("visNetwork")
 
   name = "ideanetViz"
   appDir <- system.file(paste0("apps/", name), package = "ideanet")

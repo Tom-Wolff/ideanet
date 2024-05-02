@@ -23,6 +23,7 @@ A normalized value of the h-index for measuring the diversity of an ego's networ
 }
 \examples{
 
+# Run `ego_netwrite`
 ngq_nw <- ego_netwrite(egos = ngq_egos,
                       ego_id = ngq_egos$ego_id,
 
