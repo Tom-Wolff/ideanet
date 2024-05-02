@@ -29,7 +29,7 @@ While sociocentric datasets typically store a single, large network, egocentric 
 2. An *alter list* in which each row corresponds to a specific alter in an ego network. The first column in the alter list indicates the ego for which a given alter is associated, values for which should match the unique ID numbers contained in the ego list. The second column indicates the given alter; within each ego network, alters are also given a unique ID number. Subsequent columns contain qualities and attributes of alters and/or attributes of the ego's relationship to alter.
 3. (If available) An *alter-alter edgelist* in which each row represents an edge connecting one alter, *i*, to another alter *j*. If multiple types of relationships exist between *i* and *j*, each *i-j-type* combination is given its own row. The first column in this edgelist represents the ego whose network a tie appears in and values for which should match the unique ID numbers contained in the ego list. The next two columns represent the alters connected by a given tie and values for which should be unique ID numbers contained in the alter list. Any other columns contain attributes of the relationship between the two alters.
 
-In some cases, users may have all the information contained in the above three items stored in a single, wide dataset. When this is the case, users may be able to use `ideanet`'s, `ego_reshape` function to split their data into these items. We recommend that users with such a dataset consult this functions documentation:
+In some cases, users may have all the information contained in the above three items stored in a single, wide dataset. When this is the case, users may be able to use `ideanet`'s, `ego_reshape` function to split their data into these items. We recommend that users with such a dataset consult this function's documentation:
 
 ```{r ego_reshape, eval = FALSE}
 ?ego_reshape
@@ -64,7 +64,7 @@ Just as described, the first column in the alter list is the ID number of the eg
 ```{r ngq_aa}
 dplyr::glimpse(ngq_aa)
 ```
-The first column in the alter-alter edgelist is the ID number of the corresponding ego, with the following two columns indicating the two alters connected by an edge within the ego's network. The edgelist also contains a `type` variable indicating the type of relationship that exists between each pair of alters (`"friends"`, "`"related"`, `"other_rel"`), and an additional variable indicating how frequently alters talk to one another. 
+The first column in the alter-alter edgelist is the ID number of the corresponding ego, with the following two columns indicating the two alters connected by an edge within the ego's network. The edgelist also contains a `type` variable indicating the type of relationship that exists between each pair of alters (`"friends"`, `"related"`, `"other_rel"`), and an additional variable indicating how frequently alters talk to one another. 
 
 It is worth remembering, as stated earlier, that alter-alter edgelists should be formatted to have unique rows for each unique edge-type combination. Let's take a look at how this appears in one of our ego networks:
 
