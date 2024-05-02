@@ -11,6 +11,7 @@ ideanetViz <- function() {
   rlang::check_installed("shinythemes")
   rlang::check_installed("DT")
   rlang::check_installed("shinycssloaders")
+  rlang::check_installed("shinyWidgets")
   rlang::check_installed("visNetwork")
 
   name = "ideanetViz"
