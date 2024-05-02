@@ -42,11 +42,11 @@ Suggests:
     devtools,
     ergm,
     gridGraphics,
-    shinycssloaders,
     shinythemes,
     shinyWidgets,
     knitr,
     rmarkdown,
+    shinycssloaders,
     visNetwork
 RoxygenNote: 7.2.3
 Depends: 
