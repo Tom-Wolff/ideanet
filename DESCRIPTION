@@ -16,7 +16,6 @@ Imports:
     cowplot,
     data.table,
     dplyr,
-    egor,
     forcats,
     ggplot2,
     grDevices,
@@ -41,6 +40,7 @@ Imports:
 Suggests:
     DT,
     devtools,
+    egor,
     ergm,
     shinythemes,
     shinyWidgets,

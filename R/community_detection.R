@@ -42,14 +42,12 @@
 #JWM: 3.28.2022. Changed export datasets to have input graph name as <dataset>_<graphname>.
 # TW: 5.25.2022. Updated for compatibility with graphs consisting of 2+ unconnected conmponents
 # TW: 9.08.2022. Updated to better handle 2+ unconnected components and isolates with leaging eigen and spinglass
+#PJM: 5.03.2024. Streamlined opening conversions and fixed modularity function calls to use weights
 
 comm_detect <- function(g, modres=1, shiny = FALSE) {
 
   # Create a list for storing output
   output_list <- list()
-
-  # Remove self-loops
-  # g <- igraph::simplify(g, remove.multiple = FALSE, remove.loops = TRUE)
 
   # Maybe add an option to plot communities.
   # Create a similarity matrix. How similar outputs to each other
@@ -62,37 +60,33 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
 
   }
 
-  # Add warning that network will be converted to undirected
-  if (igraph::is.directed(g)) {
-    message("WARNING: The `communities` function currently supports undirected graphs only. Directed networks will be symmetrized before running community detection algorithms.")
-  }
-
-
-  # Probably need to update weights so that they're frequency and not distances
-
   # Many of `igraph`'s off-the-shelf functions require undirected networks.
   # To get going with these, we'll make an undirected version of input graph `g`
+  # Add warning that network will be converted to undirected
+  if (igraph::is_directed(g)) {
+    message("WARNING: The `comm_detect` function currently supports undirected graphs only. Directed networks will be collapsed to undirected before running community detection algorithms.")
+  }
 
-  # Get adjacency matrix
-  g_mat <- as.matrix(igraph::as_adjacency_matrix(g, attr = "weight"))
-  # Symmetrize matrix by adding transpose to matrix
-  g_sym <- g_mat + t(g_mat)
+  g_undir <- igraph::as.undirected(g, mode = "collapse")
+
+  # Simplify network to convert multiedges to weighted edges and remove self-loops
+  # https://stackoverflow.com/questions/12998456/r-igraph-convert-parallel-edges-to-weight-attribute
+  g_undir <- igraph::simplify(g_undir, edge.attr.comb=list(weight="sum"))
+
+  # Get adjacency matrix, which is already symmetric, for some calculations
+  g_sym <- as.matrix(igraph::as_adjacency_matrix(g_undir, attr = "weight"))
 
   # Get weighted density for CPM
-  n <- nrow(g_sym)
-  w_dens <- sum(g_sym)/(n*(n-1))
-
-  # Remove redundant edges
-  g_sym2 <- g_sym
-  g_sym2[lower.tri(g_sym, diag = F)] <- 0
-
-  # Make igraph object from symmetrized matrix
-  g_undir <- igraph::graph_from_adjacency_matrix(g_sym2, mode = "undirected", weighted = T)
+  n <- igraph::vcount(g_undir)
+  w_dens <- sum(igraph::E(g_undir)$weight)*2/(n*(n-1))
 
   # Get reciprocal of edge weight for algorithms that treat edge weights as distances
   igraph::E(g_undir)$r_weight <- 1/igraph::E(g_undir)$weight
 
   # Betweenness does edges as distances. Need reciprocal
+  if (var(igraph::E(g_undir)$weight) > 0) {
+    message("WARNING: Calling cluster_edge_betweenness with reciprocal weights, which may affect selected membership vector incorrectly.")
+  }
   edge_betweenness <- igraph::cluster_edge_betweenness(g_undir,
                                                        weights = igraph::E(g_undir)$r_weight,
                                                        directed = FALSE,
@@ -108,16 +102,16 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
                                        objective_function = "modularity",
                                        resolution_parameter=modres,
                                        weights = igraph::E(g_undir)$weight,
-                                       n_iterations = 300) # Only undirected graphs # Leiden is better version of louvain
+                                       n_iterations = 5) # Only undirected graphs # Leiden is better version of louvain
 
   leiden_cpm <- igraph::cluster_leiden(g_undir,
                                        objective_function = "CPM",
                                        resolution_parameter = w_dens,
                                        weights = igraph::E(g_undir)$weight,
-                                       n_iterations = 300)
+                                       n_iterations = 5)
 
   # louvain <- igraph::cluster_louvain(g_undir) # Will take directed but gives error
-  # optimal <- igraph::cluster_optimal(g) # Works find with directed, but ignores directions
+  # optimal <- igraph::cluster_optimal(g) # Works fine with directed, but ignores directions
 
   walktrap <- igraph::cluster_walktrap(g_undir,
                                        weights = igraph::E(g_undir)$weight) # Works with directed
@@ -137,7 +131,7 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
     # Isolate components
     for (i in 1:num_components$no) {
 
-      this_component <- igraph::delete.vertices(g_undir, v = (igraph::V(g_undir)$component != i))
+      this_component <- igraph::delete_vertices(g_undir, v = (igraph::V(g_undir)$component != i))
 
       if (length(igraph::V(this_component)) <= 5) {
 
@@ -295,10 +289,14 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   # Merge network-level stuff into node-level dataframe
   # For missing modularity scores, we'll have to calculate it ourselves
 
+  # Note that the maximum modularity identified by cluster_edge_betweenness for weighted networks,
+  # which we have computed here with reciprocal weights, is not the same as the modularity for
+  # those memberships with the original weights, so we recalculate it here.
   edge_betweenness_stats <- data.frame(method = "edge_betweenness",
                                        num_communities = max(edge_betweenness$membership),
                                        #modularity = edge_betweenness$modularity)
-                                       modularity = max(edge_betweenness$modularity))
+                                       #modularity = max(edge_betweenness$modularity))
+                                       modularity = igraph::modularity(g_undir, edge_betweenness$membership, weights = igraph::E(g_undir)$weight))
 
   fast_greedy_stats <- data.frame(method = "fast_greedy",
                                   num_communities = max(fast_greedy$membership),
@@ -324,17 +322,18 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
 
     leading_eigen_stats <- data.frame(method = "leading_eigen",
                                       num_communities = max(memberships$leading_eigen_membership, na.rm = T),
-                                      modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$leading_eigen))
+                                      modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$leading_eigen, weights = igraph::E(g_undir)$weight))
 
   }
 
 
   leiden_mod_stats <- data.frame(method = "leiden_mod",
                                  num_communities = max(leiden_mod$membership),
-                                 modularity = igraph::modularity(g_undir, membership = leiden_mod$membership))
+                                 modularity = igraph::modularity(g_undir, membership = leiden_mod$membership, weights = igraph::E(g_undir)$weight))
+
   leiden_cpm_stats <- data.frame(method = "leiden_cpm",
                                  num_communities = max(leiden_cpm$membership),
-                                 modularity = igraph::modularity(g_undir, membership = leiden_cpm$membership))
+                                 modularity = igraph::modularity(g_undir, membership = leiden_cpm$membership, weights = igraph::E(g_undir)$weight))
 
   # louvain_stats <- data.frame(method = "louvain",
   #                                      num_communities = max(louvain$membership),
@@ -354,7 +353,7 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
 
     spinglass_stats <- data.frame(method = "spinglass",
                                   num_communities = max(memberships$spinglass_membership, na.rm = T),
-                                  modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$spinglass))
+                                  modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$spinglass, weights = igraph::E(g_undir)$weight))
 
 
   }
@@ -368,15 +367,15 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   igraph::V(g)$cf1 <- memberships$cp_cluster
   igraph::V(g)$lc <- memberships$lc
 
-  igraph::modularity(g_undir, membership = (igraph::V(g)$cf1 + 1))
-  igraph::modularity(g_undir, membership = (igraph::V(g)$lc + 1))
+  igraph::modularity(g_undir, membership = (igraph::V(g)$cf1 + 1), weights = igraph::E(g_undir)$weight)
+  igraph::modularity(g_undir, membership = (igraph::V(g)$lc + 1), weights = igraph::E(g_undir)$weight)
 
   cf1_stats <- data.frame(method = "cp",
                           num_communities = length(unique(memberships$cp_cluster)),
-                          modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster + 1)))
+                          modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster + 1), weights = igraph::E(g_undir)$weight))
   lc_stats <- data.frame(method = "lc",
                          num_communities = length(unique(memberships$cp_cluster)),
-                         modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster + 1)))
+                         modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster + 1), weights = igraph::E(g_undir)$weight))
 
   community_summaries <- rbind(edge_betweenness_stats,
                                fast_greedy_stats,
@@ -414,7 +413,7 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   memberships$sbm_membership <- sbm
 
   sbm_stats <- data.frame(method = "sbm", num_communities = max(sbm),
-                          modularity = igraph::modularity(g_undir, membership = sbm))
+                          modularity = igraph::modularity(g_undir, membership = sbm, weights = igraph::E(g_undir)$weight))
   community_summaries <- rbind(community_summaries, sbm_stats)
   rownames(community_summaries) <- NULL
 
@@ -697,4 +696,3 @@ multigroup_assign <- function(gmat, clust){
   cp_maxcomm <- tibble::tibble(cluster = cp_maxcomm) %>% dplyr::mutate(id = as.numeric(rownames(gmat)))
   return(cp_maxcomm)
 }
-
