@@ -159,8 +159,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     options(warn = -1)
   }
 
-  # This function needs the `gridGraphics` package even though it's never called explicitly
-  rlang::check_installed("gridGraphics")
 
   # Since we can't seem to create an environment that will go outside the function, we'll have to
   # create a list to store all output

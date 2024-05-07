@@ -16,10 +16,10 @@ Imports:
     cowplot,
     data.table,
     dplyr,
-    egor,
     forcats,
     ggplot2,
     grDevices,
+    gridGraphics,
     igraph,
     intergraph,
     linkcomm,
@@ -40,13 +40,13 @@ Imports:
 Suggests:
     DT,
     devtools,
+    egor,
     ergm,
-    gridGraphics,
-    shinycssloaders,
     shinythemes,
     shinyWidgets,
     knitr,
     rmarkdown,
+    shinycssloaders,
     visNetwork
 RoxygenNote: 7.2.3
 Depends: 
