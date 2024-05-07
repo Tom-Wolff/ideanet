@@ -275,6 +275,11 @@ ego_netwrite <- function(egos,
   }
   alters$alter_id <- alter_id
 
+  if ("id" %in% colnames(alters)) {
+    colnames(alters) <- stringr::str_replace_all(colnames(alters), "^id$", "original_id")
+  }
+  alters$id <- NULL
+
   # Columns named `weight` can lead to downstream issues with igraph. If such a column exists in `alters`,
   # we'll need to preemptively rename it here
   if ("weight" %in% colnames(alters)) {
@@ -405,6 +410,7 @@ ego_netwrite <- function(egos,
     alter_alter_output <- "to_populate"
 
     for (i in 1:length(ego_ids)) {
+
 
       # a. Within each node ID, get the unique values for alter IDs in the alter DF
       #    and in the alter-alter edgelist. Then zero-index.
@@ -1338,6 +1344,8 @@ ego_netwrite <- function(egos,
 
 
   if (egor == TRUE) {
+
+    rlang::check_installed("egor")
 
     # 1. Rename columns to reflect egor formatting. `egor` is flexible with column
     # names in theory, but in practice using other names can result in bugs when

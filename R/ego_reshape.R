@@ -114,7 +114,7 @@ ego_reshape <- function(data,
       if (directed == TRUE) {
         aa_target <- max_alters*(max_alters-1)
       } else if (directed == FALSE) {
-        aa_target <- max_alters*(max_alters-1)
+        aa_target <- (max_alters*(max_alters-1))/2
       } else {
         aa_target <- aa_target
       }
@@ -199,14 +199,17 @@ ego_reshape <- function(data,
                           ncol = max_alters,
                           byrow = TRUE)
 
+    cell_label_vec <- as.vector(t(cell_labels))
+
     if (directed == FALSE) {
-      cell_labels <- sort(cell_labels[upper.tri(cell_labels, diag = loops)])
+      cell_labels <- cell_label_vec[cell_label_vec %in% cell_labels[upper.tri(cell_labels, diag = loops)]]
     } else {
       if (loops == TRUE) {
-        cell_labels <- sort(as.vector(cell_labels))
+        cell_labels <- cell_label_vec
       } else {
         diag(cell_labels) <- NA
-        cell_labels <- sort(as.vector(cell_labels))
+        cell_labels <- as.vector(t(cell_labels))
+        cell_labels <- cell_labels[!is.na(cell_labels)]
       }
     }
 

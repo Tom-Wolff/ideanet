@@ -74,7 +74,9 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   g_undir <- igraph::simplify(g_undir, edge.attr.comb=list(weight="sum"))
 
   # Get adjacency matrix, which is already symmetric, for some calculations
-  g_sym <- as.matrix(igraph::as_adjacency_matrix(g_undir, attr = "weight"))
+  g_sym_i <- igraph::as_adjacency_matrix(g_undir, attr = "weight")
+  # Convert to matrix object
+  g_sym <- as.matrix(g_sym_i)
 
   # Get weighted density for CPM
   n <- igraph::vcount(g_undir)
