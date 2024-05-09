@@ -86,7 +86,7 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   igraph::E(g_undir)$r_weight <- 1/igraph::E(g_undir)$weight
 
   # Betweenness does edges as distances. Need reciprocal
-  if (var(igraph::E(g_undir)$weight) > 0) {
+  if (stats::var(igraph::E(g_undir)$weight) > 0) {
     message("WARNING: Calling cluster_edge_betweenness with reciprocal weights, which may affect selected membership vector incorrectly.")
   }
   edge_betweenness <- igraph::cluster_edge_betweenness(g_undir,
