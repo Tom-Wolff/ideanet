@@ -543,7 +543,7 @@ install.packages("egor")
 
 Once installed, users can specify `egor = TRUE` in `ego_netwrite` to create an `egor` object based on the ego list, alter list and alter-alter edgelist fed into the function. This object is given the simple name `egor`:
 
-```{r egor}
+```{r egor, eval = FALSE}
 egor
 ```
 
