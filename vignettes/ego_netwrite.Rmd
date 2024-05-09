@@ -21,7 +21,34 @@ This package, as part of the broader IDEANet project, is supported by the Nation
 
 ## Egocentric Data Processing and Analysis
 
-*Local*, or *egocentric*, networks describe the relationships that exist between a focal actor (called "ego") and their contacts (referred to as "alters"). Depending on how these networks are collected, they may also describe relationships that exist between each of the focal ego's alters. Moreover, most egocentric network data contain information describing characteristics of ego and their alters at the individual level. Researchers often collect egocentric data when efforts to capture sociocentric networks is impossible or highly impractical, such as in studies of hard-to-reach populations. 
+*Local*, or *egocentric*, networks describe the relationships that exist between a focal actor (called "ego") and their contacts (referred to as "alters"). Depending on how these networks are collected, they may also describe relationships that exist between each of the focal ego's alters. The figures below illustrate how ego networks appear when 1. only ties between an ego and its alters are recorded, and 2. when ties between alters are available:
+
+
+```{r example_egos, echo = FALSE, fig.height = 6, fig.width = 7}
+no_aa <- data.frame(ego = rep(1, 5),
+                    alter = 2:6)
+no_aa_graph <- igraph::graph_from_data_frame(no_aa, directed = FALSE)
+
+plot(no_aa_graph,
+     vertex.label = ifelse(igraph::V(no_aa_graph)$name == "1", "Ego", "Alter"),
+     vertex.color = ifelse(igraph::V(no_aa_graph)$name == "1", "#FFCC00", "#99CCFF"),
+     vertex.label.dist = 3,
+     main = "Basic Ego Network"
+     )
+
+with_aa <- data.frame(ego = c(rep(1, 5), 2, 2, 4, 5),
+                    alter = c(2:6, 3, 5, 2, 3))
+with_aa_graph <- igraph::graph_from_data_frame(with_aa, directed = FALSE)
+
+plot(with_aa_graph,
+     vertex.label = ifelse(igraph::V(with_aa_graph)$name == "1", "Ego", "Alter"),
+          vertex.color = ifelse(igraph::V(no_aa_graph)$name == "1", "#FFCC00", "#99CCFF"),
+     vertex.label.dist = 3,
+     main = "Ego Network with Alter-Alter Ties"
+     )
+```
+
+Most egocentric data also contain information describing characteristics of ego and their alters at the individual level. Researchers often collect egocentric data when efforts to capture sociocentric networks is impossible or highly impractical, such as in studies of hard-to-reach populations. 
 
 While sociocentric datasets typically store a single, large network, egocentric data usually contain several smaller networks (hereafter *ego networks*) that may or may not exist in isolation of one another. Users applying `ideanet` to egocentric data can use the `ego_netwrite` function to generate an extensive set of measures and summaries for each ego network in their data. Although egocentric data can be stored in a variety of ways, `ego_netwrite` requires a specific format that we believe makes the representation of egos, alters, and the ties between them more intuitive. This format divides egocentric data into three items:
 
@@ -34,6 +61,16 @@ In some cases, users may have all the information contained in the above three i
 ```{r ego_reshape, eval = FALSE}
 ?ego_reshape
 ```
+
+### Current Support and Limitations
+
+As of initial release, `ego_netwrite` supports the processing of ego networks with *directed* ties (in which each tie has a distinct sender and receiver) and *undirected* ties (in which ties merely represent a connection between actors). The function also supports *multirelational* networks in which edges may represent one of several different types of relationships between actors. 
+
+However, **`ego_netwrite` does not currently support the processing of edge/tie *weights*,** which signify the strength of connections between actors. The function assumes that all ties in a dataset are of equal strength when calculating measures. At present, we recommend that users employ other tools for calculating measures based on weighted edges.
+
+Additionally, some egocentric datasets contain networks in which nodes in one ego network may also appear in another. In these cases, it is possible to aggregate individual ego networks with shared nodes into broader, more sociocentric structures. Theoretically, one could use the alter list and alter-alter edgelist created by `ego_netwrite` to construct a larger network. However, **`ego_netwrite`** itself **assumes that each ego network in a dataset exists independent of all others**. We advise users interested in constructing larger structures from individual ego networks to use other tools (or write their own code) in order to do so.
+
+### Using `ego_netwrite`
 
 To familiarize ourselves with `ego_netwrite` and other functions for ego networks, we'll work with an example ego list, alter list, and alter-alter edgelist native to the `ideanet` package. These data are a simplified subset of ego networks collected in an online study using the "Important Matters" name generator question (NGQ). This question is frequently used to capture people's close personal ties:
 
@@ -498,7 +535,13 @@ knitr::kable(head(egos))
 
 ## Exporting to `egor`
 
-Users who specify `egor = TRUE` in `ego_netwrite` will create an `egor` object based on the ego list, alter list and alter-alter edgelist fed into the function. `egor` objects are especially convenient for fitting exponential random graph models (ERGMs) using egocentric data, which can allow researchers to simulate and estimate global network structures for settings where sociocentric data capture is not possible.
+Some users may want convert their egocentric data into an `egor` object. `egor` objects are especially convenient for fitting exponential random graph models (ERGMs) using egocentric data, which allow researchers to simulate and estimate global network structures for settings where sociocentric data capture is not possible. `ego_netwrite` supports the option to create `egor` objects alongside other function outputs. However, because it is not a core dependency of `ideanet`, users must ensure that they have already installed the `egor` package before using this feature:
+
+```{r egor_install, eval = FALSE}
+install.packages("egor")
+```
+
+Once installed, users can specify `egor = TRUE` in `ego_netwrite` to create an `egor` object based on the ego list, alter list and alter-alter edgelist fed into the function. This object is given the simple name `egor`:
 
 ```{r egor}
 egor
@@ -508,11 +551,19 @@ egor
 
 `ideanet` includes a function specifically designed to read and process data generated by [Network Canvas](https://networkcanvas.com/), an increasingly popular tool for egocentric data capture. Although `ideanet` does not contain examples of data generated by Network Canvas, we provide a quick guide to using this function here for any interested users.
 
-When exporting data from a Network Canvas protocol, users are given the object to store the data as either a GraphML file or as a series of CSV files contained in a single directory. The `nc_read` function is designed specifically for the latter option, and is quite easy to use provided all files remain in a single directory. `nc_read` takes three arguments:
+When exporting data from a Network Canvas protocol, users are given the object to store the data as either a GraphML file or as a series of CSV files contained in a single directory. The `nc_read` function is designed specifically for the latter option, and is quite easy to use provided all files remain in a single directory. The screenshot below provides an example of what this directory should look like. All CSV files exported by the same Network Canvas protocol, regardless of the specific data contained in each file, should be placed within the directory at the same level. `nc_read` will automatically organize the data contained in each CSV file according to the naming conventions Network Canvas gives to each file.
+
+
+
+![ ](nc_directory.png){width=90%}
+
+
+
+
+`nc_read` takes two arguments:
 
 * `path`: A character value indicating the directory in which Network Canvas CSVs are located.
 * `cat.to.factor`: A logical code indicating whether categorical variables, originally stored as a series of `TRUE`/`FALSE` columns, should be converted into a single factor column.
-* `output_list`: A logical value indicating whether output should be stored as three separate objects in the Global Environment or as a single list object in the Global Environment.
 
 Below is an example of how the function is used in practice:
 
@@ -520,6 +571,9 @@ Below is an example of how the function is used in practice:
 nc_data <- nc_read(path = "~/Desktop/network_canvas_directory/",
                    cat.to.factor = TRUE,
                    output_list = FALSE)
+
+# Split items in `nc_data` list into Global Environment
+list2env(nc_data, .Global Environment)
 ```
 
-`nc_read` will read in all CSV files located in the specified directory and process them. Whether stored as separate objects in the Global Environment or as items in a list, the output of this function is formatted for full compatibility with `ego_netwrite`.
+`nc_read` will read in all CSV files located in the specified directory, process them, and return a list containing a formatted ego list (named `egos`), alter list (named `alters`), and alter-alter edgelist (if applicable, this will be named `alter_edgelist`) These dataframes are formatted for full compatibility with `ego_netwrite`.
