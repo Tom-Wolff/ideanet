@@ -125,21 +125,3 @@ knitr::kable(faux_qap$mods_df)
 Assuming a p-value of .1 or less indicates some statistical significance, our results here tell us that students are more likely to nominate students of the same sex as friends, holding all else constant. It is recommended that researchers apply the same model with different amounts of draws to confirm the confidence intervals associated with each variable.
 
 The above example shows that setting up and using MRQAP in `ideanet` is fast and easy, allowing users to quickly explore a variety of model specifications with their own data.
-
-```{r}
-library(dplyr)
-
-res <- ideanet::nc_read("/Users/gabe/Downloads/networkCanvasExport-1713720198105-2 2")
-res <- res$egos[c("ego.name", "email")]
-res$email <- tolower(res$email)
-emails <- readxl::read_excel("/Users/gabe/Documents/Projects/Egonets_survey/advertising/emails.xlsx")
-
-emails <- emails %>% 
-  mutate(Email = tolower(Email)) %>% 
-  mutate(Completed = case_when(Email %in% res$email ~ 1, T ~ NA_real_))
-
-res %>% mutate(found = case_when(email %in% emails$Email ~ 1, T ~ 0)) %>% filter(found == 0)
-
-write.csv(emails, "emails_comp.csv")
-```
-
