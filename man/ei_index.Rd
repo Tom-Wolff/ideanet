@@ -34,9 +34,28 @@ Linear transformation of the proportion homophilous measure (Krackhardt and Ster
 }
 \examples{
 
-data(package = "egor", "egos32")
-data(package = "egor", "alters32")
+# Run `ego_netwrite`
+ngq_nw <- ego_netwrite(egos = ngq_egos,
+                      ego_id = ngq_egos$ego_id,
 
-ei_index(ego_id = egos32$.EGOID, ego_measure = egos32$country,
-alter_ego = alters32$.EGOID, alter_measure = alters32$country)
+                      alters = ngq_alters,
+                      alter_id = ngq_alters$alter_id,
+                      alter_ego = ngq_alters$ego_id,
+
+                      max_alters = 10,
+                      alter_alter = ngq_aa,
+                      aa_ego = ngq_aa$ego_id,
+                      i_elements = ngq_aa$alter1,
+                      j_elements = ngq_aa$alter2,
+                      directed = FALSE)
+
+# Split items into Global Environment
+list2env(ngq_nw, .GlobalEnv)
+
+# Calculate E-I Index for Race
+race_ei <- ei_index(ego_id = egos$ego_id, ego_measure = egos$race,
+                   alter_ego = alters$ego_id, alter_measure = alters$race,
+                   prefix = "race")
+
+race_ei
 }

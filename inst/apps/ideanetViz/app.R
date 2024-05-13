@@ -721,7 +721,9 @@ nodes_used <- shiny::reactive({
 
   #### Set Node Size ----
   output$node_size_method <- shiny::renderUI({
-    shiny::selectInput(inputId = "node_size_method", label = "Node size method", choices = c("Uniform", "Node Data", "Degree", "Eigen Centrality", "Betweenness Centrality"), selected = "Uniform", multiple = FALSE)
+    shiny::selectInput(inputId = "node_size_method", label = "Node size method", choices = c("Uniform",
+                                                                                             # "Node Data",
+                                                                                             "Degree", "Eigen Centrality", "Betweenness Centrality"), selected = "Uniform", multiple = FALSE)
   })
 
   output$node_size_scalar <- shiny::renderUI({
