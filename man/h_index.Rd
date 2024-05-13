@@ -41,7 +41,7 @@ ngq_nw <- ego_netwrite(egos = ngq_egos,
 # Split items into Global Environment
 list2env(ngq_nw, .GlobalEnv)
 
-# Get H-index for sex
+# Get H-index for race
 race_hindex <- h_index(ego_id = alters$ego_id,
                       measure = alters$race,
                       prefix = "race")
