@@ -41,9 +41,7 @@
 #'                        aa_ego = ngq_aa$ego_id,
 #'                        i_elements = ngq_aa$alter1,
 #'                        j_elements = ngq_aa$alter2,
-#'                        directed = FALSE,
-#'
-#'                        egor = TRUE)
+#'                        directed = FALSE)
 #'
 #' list2env(ngq_nw, .GlobalEnv)
 #'
