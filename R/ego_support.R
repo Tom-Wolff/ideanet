@@ -230,7 +230,7 @@ fragmentation_index <- function(x) {
   # Make diagonal NA
   diag(t) <- NA
   # Take the mean
-  out <- mean(t, na.rm = TRUE)
+  out <- 1 - mean(t, na.rm = TRUE)
 
   # t <- intergraph::asNetwork(x)
   # t <- sna::reachability(t)

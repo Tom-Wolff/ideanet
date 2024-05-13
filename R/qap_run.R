@@ -46,8 +46,7 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
     if (igraph::any_multiple(net) == T) {net <- igraph::simplify(net, edge.attr.comb = "sum")}
     edges <- igraph::as_data_frame(net, what = "edges")
     nodes <- igraph::as_data_frame(net, what = "vertices")
-    net <- network::network(x = edges, directed = directed,
-                            vertex.attr = nodes)
+    net <- network::network(x = edges, directed = directed)
   }
 
   # If there is an ego/alter call, create as many unique adjacency matrices as there are values.
@@ -125,7 +124,7 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
       stop(paste0(independent, " is not an output of qap_setup() with prefix `same`,`diff`, `abs_diff` or `both`"))
     }
 
-    if (sum(abs(iv)) == 0) {# check if variables is empty
+    if (sum(abs(iv), na.rm = T) == 0) {# check if variables is empty
       warning(paste0("The variable ", independent, " is empty. It is excluded from the model."))
       rem[[i]] <- independent
     } else {ivs[[independent]] <- iv}
