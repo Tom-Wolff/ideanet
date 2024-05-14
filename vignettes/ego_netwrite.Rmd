@@ -164,9 +164,7 @@ ngq_nw <- ego_netwrite(egos = ngq_egos,
                        aa_ego = ngq_aa$ego_id,
                        i_elements = ngq_aa$alter1,
                        j_elements = ngq_aa$alter2,
-                       directed = FALSE,
-
-                       egor = TRUE)
+                       directed = FALSE)
 ```
 
 Upon completion, `ego_netwrite` stores its outputs in a single list object. However, one may find it more convenient to extract elements of this list to the R Global Environment. We take this approach by using the `list2env` function:
