@@ -153,14 +153,14 @@ knitr::kable(cluster_summaries)
 
 While recognized here, these differences are also visualized in the `cluster_summaries_cent` object. Because the network examined here is multirelational, `cluster_summaries_cent` plots these differences for each unique relationship type in the network, as well as for the overall network:
 
-```{r cent_marriage, warning = FALSE}
+```{r cent_marriage, warning = FALSE, fig.height = 6, fig.width = 7}
 cluster_summaries_cent$marriage
 ```
-```{r cent_business, warning = FALSE}
+```{r cent_business, warning = FALSE, fig.height = 6, fig.width = 7}
 cluster_summaries_cent$business
 ```
 
-```{r cent_summary, warning = FALSE}
+```{r cent_summary, warning = FALSE, fig.height = 6, fig.width = 7}
 cluster_summaries_cent$summary_graph
 ```
 
