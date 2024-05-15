@@ -1,4 +1,4 @@
-#' E-I Index (\code{ei_index})
+#' Krackhardt and Stern’s E-I Index (\code{ei_index})
 #'
 #' @description Linear transformation of the proportion homophilous measure (Krackhardt and Stern 1988; Perry et al. 2018)
 #'

@@ -11,7 +11,7 @@ ego_reshape(
   alters,
   alter_vars,
   alter_alter,
-  aa_vars,
+  aa_vars = NULL,
   directed = NULL,
   loops = NULL,
   missing_code = 99999,

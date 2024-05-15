@@ -1,4 +1,4 @@
-#' Index of Qualitative Variation (\code{iqv})
+#' Agresti's Index of Qualitative Variation (\code{iqv})
 #'
 #' @description A normalized value of the h-index for measuring the diversity of an ego's network for categorical attributes (Perry et al. 2018)
 #'

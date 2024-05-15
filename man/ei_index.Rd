@@ -2,7 +2,7 @@
 % Please edit documentation in R/ei_index.R
 \name{ei_index}
 \alias{ei_index}
-\title{E-I Index (\code{ei_index})}
+\title{Krackhardt and Stern’s E-I Index (\code{ei_index})}
 \usage{
 ei_index(
   ego_id,

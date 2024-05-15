@@ -2,7 +2,7 @@
 % Please edit documentation in R/iqv.R
 \name{iqv}
 \alias{iqv}
-\title{Index of Qualitative Variation (\code{iqv})}
+\title{Agresti's Index of Qualitative Variation (\code{iqv})}
 \usage{
 iqv(ego_id, measure, prefix = NULL, suffix = NULL)
 }
