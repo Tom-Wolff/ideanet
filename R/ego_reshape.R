@@ -158,7 +158,7 @@ ego_reshape <- function(data,
     dplyr::group_by(.data$ego_id) %>%
     dplyr::mutate(alter_id = dplyr::row_number()) %>%
     dplyr::ungroup() %>%
-    dplyr::filter(.data$alter != 99999) %>%
+    dplyr::filter(.data$alter != missing_code) %>%
     dplyr::select(.data$ego_id, .data$alter_id, .data$alter)
 
   # Now we're dealing with the alter-level variables
