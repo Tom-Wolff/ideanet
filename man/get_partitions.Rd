@@ -13,7 +13,7 @@ get_partitions(
 )
 }
 \arguments{
-\item{network}{The network, as igraph object, to be clustered into communities.}
+\item{network}{The network, as igraph object, to be clustered into communities. Only undirected networks are currently supported. If the object has a 'weight' edge attribute, then that attribute will be used.}
 
 \item{gamma_range}{The range of the resolution parameter gamma (default from 0 to 2).}
 

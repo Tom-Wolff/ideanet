@@ -34,7 +34,7 @@ CHAMP <- function( network,
 # In the original CHAMP paper and python implementation, we use QHull to do the heavy lifting. But since we're only dealing with a 1D parameter space here (for single-layer networks; multilayer networks will be dealt with elsewhere), we can instead brute-force the identification of the upper envelope of the Q(gamma) lines. (See the paper for figures of this.) Importantly, our simple algorithm here searching for the next line crossing could fail in the (rare?) circumstance where three different partitions intersect on the upper envelope of Q(gamma) at the same point.
   
   # Check input network is undirected
-  if igraph::is_directed(network) {stop("Input is directed. Only undirected networks are currently supported.")}
+  if (igraph::is_directed(network)) {stop("Input is directed. Only undirected networks are currently supported.")}
     
   mod_matrix <- data.frame(row.names = 1:length(partitions$partitions),
                            base = 1:length(partitions$partitions), 

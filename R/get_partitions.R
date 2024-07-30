@@ -32,7 +32,7 @@ get_partitions <- function( network,
                             seed=NULL ) {
 
   # Check input network is undirected
-  if igraph::is_directed(network) {stop("Input is directed. Only undirected networks are currently supported.")}
+  if (igraph::is_directed(network)) {stop("Input is directed. Only undirected networks are currently supported.")}
     
   # If seed defined, use it to set the random seed for reproducibility
   if (!is.null(seed)) {set.seed(seed)}
