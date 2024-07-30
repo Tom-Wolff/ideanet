@@ -194,7 +194,7 @@ CHAMP <- function( network,
                        limits = c(0,partitions$gamma_max),
                        expand = c(0,0)) +
     ggthemes::theme_few() +
-    ggplot2::theme(axis.text = element_text(size = 8))
+    ggplot2::theme(axis.text = ggplot2::element_text(size = 8))
   print(ggfig)
   
   partition_summary <- data.frame(matrix(ncol = 9, nrow = length(segments[,1])))
