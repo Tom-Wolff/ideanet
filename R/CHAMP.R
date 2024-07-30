@@ -213,7 +213,7 @@ CHAMP <- function( network,
   
   partition_summary <- partition_summary[order(-partition_summary$gamma_range),]
   
-  print(paste(count(partition_summary),
+  print(paste(length(partition_summary),
               "partitions in the CHAMP set (i.e., on the upper envelope of Q v. gamma)"))
   #print(partition_summary)
   return(partition_summary)
