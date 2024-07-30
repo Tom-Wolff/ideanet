@@ -2,7 +2,7 @@
 #'
 #' @description The \code{get_partitions} function is a wrapper to gather a collection of community detection partitions using igraph's \code{cluster_leiden} for maximizing modularity at various resolution parameter values, gathering different partitions for subsequent input to the \code{CHAMP} code for post-processing partitions to identify domains of modularity optimization.
 #'
-#' @param network The network, as igraph object, to be clustered into communities.
+#' @param network The network, as igraph object, to be clustered into communities. Only undirected networks are currently supported. If the object has a 'weight' edge attribute, then that attribute will be used.
 #' @param gamma_range The range of the resolution parameter gamma (default from 0 to 2).
 #' @param n_runs The number of \code{cluster_leiden} runs to be attempted (default = 100).
 #' @param n_iterations Parameter to be passed to cluster_leiden (default = 2).
@@ -23,13 +23,17 @@
 ###################################
 
 #PJM: 7.15.2024. Gathered bits of code from Rachel Matthew, Ryan Rebne, Syndey Rosenbaum and Ava Scharfstein into add_champ branch
+#PJM: 7.30.2024. Adding check for undirected network.
 
 get_partitions <- function( network, 
                             gamma_range=c(0,2), 
                             n_runs=100, 
                             n_iterations=2, #parameter for cluster_leiden
-                            seed=NULL) {
-  
+                            seed=NULL ) {
+
+  # Check input network is undirected
+  if igraph::is_directed(network) {stop("Input is directed. Only undirected networks are currently supported.")}
+    
   # If seed defined, use it to set the random seed for reproducibility
   if (!is.null(seed)) {set.seed(seed)}
   
