@@ -221,7 +221,8 @@ CHAMP <- function( network,
   #print(ggfig)
   partition_summary$ggfig <- ggfig
   
-  return(partition_summary)
+  p <- partition_summary
+  return(p)
 }
 
 ###################################
