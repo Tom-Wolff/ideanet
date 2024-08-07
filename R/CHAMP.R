@@ -26,6 +26,7 @@
 #################
 
 #PJM: 7.30.2024. Gathered bits of code from Rachel Matthew, Ryan Rebne, Syndey Rosenbaum and Ava Scharfstein into add_champ branch
+#PJM: 8.7.2024. Debugging error about not finding function "count"
 
 CHAMP <- function( network, 
                    partitions,
@@ -211,10 +212,10 @@ CHAMP <- function( network,
     partition_summary[x,"num_clusters"] <- partitions$partitions[segments$partitions][[x]]$nb_clusters
   }
   
-  partition_summary <- partition_summary[order(-partition_summary$gamma_range),]
+  #partition_summary <- partition_summary[order(-partition_summary$gamma_range),]
   
-  print(paste(length(partition_summary),
-              "partitions in the CHAMP set (i.e., on the upper envelope of Q v. gamma)"))
+  #print(paste(length(partition_summary),
+  #            "partitions in the CHAMP set (i.e., on the upper envelope of Q v. gamma)"))
   #print(partition_summary)
   return(partition_summary)
 
