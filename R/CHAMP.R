@@ -198,6 +198,8 @@ CHAMP <- function( network,
     ggplot2::theme(axis.text = ggplot2::element_text(size = 8))
   print(ggfig)
   
+  print("Debug out")
+  
   partition_summary <- data.frame(matrix(ncol = 9, nrow = length(segments[,1])))
   print("here")
   colnames(partition_summary) <- c("segment_length", "starting_gamma", "ending_gamma", 
