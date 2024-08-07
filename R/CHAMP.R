@@ -146,58 +146,6 @@ CHAMP <- function( network,
   title <- plottitle
   if (is.null(plottitle)) {title <- " "}
   
-  ggfig <- ggplot2::ggplot()
-  ggfig <- ggfig + 
-    ggplot2::geom_line(data = all,
-                       mapping = ggplot2::aes(x = x, 
-                                     y = value, 
-                                     group = partition_num), 
-                       show.legend = F,
-                       color = all$partition_num,
-                       alpha = .3,
-                       na.rm = T) +
-    ggplot2::geom_segment(data = segments, 
-                          mapping = ggplot2::aes(x=x1, 
-                                        y=y1, 
-                                        xend = x2, 
-                                        yend = y2),
-                          color = "#63666A",
-                          linewidth = 1.5,
-                          na.rm = T) +
-    ggplot2::geom_text(data = segments,
-                       ggplot2::aes(x = (x1+x2)/2, 
-                  y = (y1+y2)/2, 
-                  label = partitions),
-              color = segments$partitions,
-              vjust = -.5) +
-    ggplot2::geom_segment(data = best,
-                 mapping = ggplot2::aes(x = best_gammas,
-                               xend = best_gammas,
-                               y = best_modularities,
-                               yend = -Inf),
-                 linetype = "dashed",
-                 color = "black",
-                 na.rm = T) +
-    ggplot2::geom_point(data = best,
-               mapping = ggplot2::aes(x = best_gammas, 
-                             y = best_modularities),
-               color = "black",
-               na.rm = T) +
-    ggplot2::labs(x = expression(paste("Resolution Parameter (", gamma,")")),
-         y = "Modularity",
-         title = title)+
-    ggplot2::scale_y_continuous(breaks = seq(0,max(segments$y1),length = 10), 
-                       labels = round(seq(0,max(segments$y1),length = 10)),
-                       expand = c(0,0),
-                       limits = c(0,max(segments$y1))) +
-    ggplot2::scale_x_continuous(breaks = c(segments$x1,2), 
-                       labels = c(round(segments$x1,2),2),
-                       limits = c(0,partitions$gamma_max),
-                       expand = c(0,0)) +
-    ggthemes::theme_few() +
-    ggplot2::theme(axis.text = ggplot2::element_text(size = 8))
-  print(ggfig)
-  
   print("Debug out")
   
   partition_summary <- data.frame(matrix(ncol = 9, nrow = length(segments[,1])))
@@ -222,6 +170,58 @@ CHAMP <- function( network,
               "partitions in the CHAMP set (i.e., on the upper envelope of Q v. gamma)"))
   
   #print(partition_summary)
+  
+  ggfig <- ggplot2::ggplot()
+  ggfig <- ggfig + 
+    ggplot2::geom_line(data = all,
+                       mapping = ggplot2::aes(x = x, 
+                                              y = value, 
+                                              group = partition_num), 
+                       show.legend = F,
+                       color = all$partition_num,
+                       alpha = .3,
+                       na.rm = T) +
+    ggplot2::geom_segment(data = segments, 
+                          mapping = ggplot2::aes(x=x1, 
+                                                 y=y1, 
+                                                 xend = x2, 
+                                                 yend = y2),
+                          color = "#63666A",
+                          linewidth = 1.5,
+                          na.rm = T) +
+    ggplot2::geom_text(data = segments,
+                       ggplot2::aes(x = (x1+x2)/2, 
+                                    y = (y1+y2)/2, 
+                                    label = partitions),
+                       color = segments$partitions,
+                       vjust = -.5) +
+    ggplot2::geom_segment(data = best,
+                          mapping = ggplot2::aes(x = best_gammas,
+                                                 xend = best_gammas,
+                                                 y = best_modularities,
+                                                 yend = -Inf),
+                          linetype = "dashed",
+                          color = "black",
+                          na.rm = T) +
+    ggplot2::geom_point(data = best,
+                        mapping = ggplot2::aes(x = best_gammas, 
+                                               y = best_modularities),
+                        color = "black",
+                        na.rm = T) +
+    ggplot2::labs(x = expression(paste("Resolution Parameter (", gamma,")")),
+                  y = "Modularity",
+                  title = title)+
+    ggplot2::scale_y_continuous(breaks = seq(0,max(segments$y1),length = 10), 
+                                labels = round(seq(0,max(segments$y1),length = 10)),
+                                expand = c(0,0),
+                                limits = c(0,max(segments$y1))) +
+    ggplot2::scale_x_continuous(breaks = c(segments$x1,2), 
+                                labels = c(round(segments$x1,2),2),
+                                limits = c(0,partitions$gamma_max),
+                                expand = c(0,0)) +
+    ggthemes::theme_few() +
+    ggplot2::theme(axis.text = ggplot2::element_text(size = 8))
+  print(ggfig)
   
   return(partition_summary)
 
