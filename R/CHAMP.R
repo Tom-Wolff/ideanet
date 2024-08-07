@@ -204,6 +204,7 @@ CHAMP <- function( network,
                                    "next_gamma", "next_partition_num", "next_num_clusters")
   
   for (x in 1:nrow(partition_summary)) {
+    print(x)
     partition_summary[x,"segment_length"] <- sqrt((segments[x, "x1"]-segments[x, "x2"])**2+(segments[x, "y1"]-segments[x, "y2"])**2)
     partition_summary[x,"starting_gamma"] <- segments[x,"x1"]
     partition_summary[x,"ending_gamma"] <- segments[x,"x2"]
@@ -216,7 +217,9 @@ CHAMP <- function( network,
   
   print(paste(nrow(partition_summary),
               "partitions in the CHAMP set (i.e., on the upper envelope of Q v. gamma)"))
+  
   #print(partition_summary)
+  
   return(partition_summary)
 
 }
