@@ -223,8 +223,8 @@ CHAMP <- function( network,
     ggplot2::theme(axis.text = ggplot2::element_text(size = 8))
   print(ggfig)
   
-  return(partition_summary)
-
+  #return(partition_summary)
+  partition_summary
 }
 
 ###################################
