@@ -199,10 +199,11 @@ CHAMP <- function( network,
   print(ggfig)
   
   partition_summary <- data.frame(matrix(ncol = 9, nrow = length(segments[,1])))
+  print("here")
   colnames(partition_summary) <- c("segment_length", "starting_gamma", "ending_gamma", 
                                    "gamma_range", "partition_num", "num_clusters", 
                                    "next_gamma", "next_partition_num", "next_num_clusters")
-  
+  print("here next")
   for (x in 1:nrow(partition_summary)) {
     print(x)
     partition_summary[x,"segment_length"] <- sqrt((segments[x, "x1"]-segments[x, "x2"])**2+(segments[x, "y1"]-segments[x, "y2"])**2)
