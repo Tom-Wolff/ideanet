@@ -33,5 +33,5 @@ library(igraphdata)
 data(karate)
 partitions <- get_partitions(karate, n_runs = 2500)
 partitions <- CHAMP(karate,partitions,plottitle="Weighted Karate Club")
-partitions <- get_CHAMP_map(karate,partitions)
+partitions <- get_CHAMP_map(karate,partitions,plotlabel="Weighted Karate Club")
 }

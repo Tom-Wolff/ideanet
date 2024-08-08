@@ -214,7 +214,7 @@ CHAMP <- function( network,
     partition_summary$ending_gamma[x] <- segments[x,"x2"]
     partition_summary$gamma_range[x] <- abs(segments[x,"x1"]-segments[x,"x2"])
     partition_summary$partition_num[x] <- segments[x,"partitions"]
-    partition_summary$num_communities[x] <- partitions$partitions[segments$partitions][[x]]$nb_communities
+    partition_summary$num_communities[x] <- partitions$partitions[segments$partitions][[x]]$nb_clusters
   }
   
   #partition_summary <- partition_summary[order(-partition_summary$gamma_range),]
