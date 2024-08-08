@@ -1,6 +1,6 @@
 #' Find the Convex Hull of Admissible Modularity Partitions (\code{CHAMP})
 #'
-#' @description The Convex Hull of Admissible Modularity Partitions (\code{CHAMP}) post-processes an input set of partitions (for example, as collected by \code{get_partitions}, or as formatted similarly from some other source of selected partitions) to identify the partitions that are somewhere optimal in the resolution parameter and the associated domains of (generalized) modularity optimization. That is, given the input set of partitions of nodes in a network into communities, \code{CHAMP} identifies which input partition is optimal at each value of the resolution parameter, gamma. Importantly, \code{CHAMP} is deterministic and polynomial in time given a specified input set of partitions; that is, all of the computational complexity and pseudo-stochastic heuristic nature of community detection is in identifying a good input set.
+#' @description The Convex Hull of Admissible Modularity Partitions (\code{CHAMP}) method post-processes an input set of partitions as collected by \code{get_partitions} (or as formatted similarly from some other source of selected partitions) to identify the partitions that are somewhere optimal in the resolution parameter and the associated domains of (generalized) modularity optimization. That is, given the input set of partitions of nodes in a network into communities, \code{CHAMP} identifies which input partition is optimal at each value of the resolution parameter, gamma. Importantly, \code{CHAMP} is deterministic and polynomial in time given a specified input set of partitions; that is, all of the computational complexity and pseudo-stochastic heuristic nature of community detection is in identifying a good input set in \cite{get_partitions}.
 #'
 #' The \code{CHAMP} method was developed and studied in Weir, William H., Scott Emmons, Ryan Gibson, Dane Taylor, and Peter J. Mucha. “Post-Processing Partitions to Identify Domains of Modularity Optimization.” Algorithms 10, no. 3 (August 19, 2017): 93. \url{https://doi.org/10.3390/a10030093}.
 #' 
@@ -26,7 +26,7 @@
 #################
 
 #PJM: 7.30.2024. Gathered bits of code from Rachel Matthew, Ryan Rebne, Syndey Rosenbaum and Ava Scharfstein into add_champ branch
-#PJM: 8.7.2024. Fixed error about not finding function "count" and changed output to instead add summary and plot to the input partitions variable
+#PJM: 8.8.2024. Fixed error about not finding function "count" and changed output to instead add summary and plot to the input partitions variable
 
 CHAMP <- function( network, 
                    partitions,
@@ -188,7 +188,7 @@ CHAMP <- function( network,
                         color = "black",
                         na.rm = T) +
     ggplot2::labs(x = expression(paste("Resolution Parameter (", gamma,")")),
-                  y = "Modularity",
+                  y = expression(paste("Modularity Q(", gamma,")")),
                   title = title)+
     ggplot2::scale_y_continuous(breaks = seq(0,max(segments$y1),length = 10), 
                                 labels = round(seq(0,max(segments$y1),length = 10)),
@@ -204,8 +204,8 @@ CHAMP <- function( network,
   
   partition_summary <- data.frame(matrix(ncol = 9, nrow = length(segments[,1])))
   colnames(partition_summary) <- c("segment_length", "starting_gamma", "ending_gamma", 
-                                   "gamma_range", "partition_num", "num_clusters", 
-                                   "next_gamma", "next_partition_num", "next_num_clusters")
+                                   "gamma_range", "partition_num", "num_communities", 
+                                   "next_gamma", "next_partition_num", "next_num_communities")
   
   for (x in 1:nrow(partition_summary)) {
     
@@ -214,7 +214,7 @@ CHAMP <- function( network,
     partition_summary$ending_gamma[x] <- segments[x,"x2"]
     partition_summary$gamma_range[x] <- abs(segments[x,"x1"]-segments[x,"x2"])
     partition_summary$partition_num[x] <- segments[x,"partitions"]
-    partition_summary$num_clusters[x] <- partitions$partitions[segments$partitions][[x]]$nb_clusters
+    partition_summary$num_communities[x] <- partitions$partitions[segments$partitions][[x]]$nb_communities
   }
   
   #partition_summary <- partition_summary[order(-partition_summary$gamma_range),]
@@ -251,5 +251,3 @@ find_max_for_CHAMP <- function(mod_matrix, gammas) {
   
   return (list("edges"=points_of_change, "partitions"=corresponding_partitions))
 }
-
-###################################
