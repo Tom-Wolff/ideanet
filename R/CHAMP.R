@@ -146,28 +146,6 @@ CHAMP <- function( network,
   title <- plottitle
   if (is.null(plottitle)) {title <- " "}
   
-  partition_summary <- data.frame(matrix(ncol = 9, nrow = length(segments[,1])))
-  colnames(partition_summary) <- c("segment_length", "starting_gamma", "ending_gamma", 
-                                   "gamma_range", "partition_num", "num_clusters", 
-                                   "next_gamma", "next_partition_num", "next_num_clusters")
-  
-  for (x in 1:nrow(partition_summary)) {
-    print(x)
-    partition_summary[x,"segment_length"] <- sqrt((segments[x, "x1"]-segments[x, "x2"])**2+(segments[x, "y1"]-segments[x, "y2"])**2)
-    partition_summary[x,"starting_gamma"] <- segments[x,"x1"]
-    partition_summary[x,"ending_gamma"] <- segments[x,"x2"]
-    partition_summary[x,"gamma_range"] <- abs(segments[x,"x1"]-segments[x,"x2"])
-    partition_summary[x,"partition_num"] <- segments[x,"partitions"]
-    partition_summary[x,"num_clusters"] <- partitions$partitions[segments$partitions][[x]]$nb_clusters
-  }
-  
-  #partition_summary <- partition_summary[order(-partition_summary$gamma_range),]
-  
-  print(paste(nrow(partition_summary),
-              "partitions in the CHAMP set (i.e., on the upper envelope of Q v. gamma)"))
-  
-  #print(partition_summary)
-  
   ggfig <- ggplot2::ggplot()
   ggfig <- ggfig + 
     ggplot2::geom_line(data = all,
@@ -218,11 +196,33 @@ CHAMP <- function( network,
                                 expand = c(0,0)) +
     ggthemes::theme_few() +
     ggplot2::theme(axis.text = ggplot2::element_text(size = 8))
-  #print(ggfig)
+  print(ggfig)
+  
+  partition_summary <- data.frame(matrix(ncol = 9, nrow = length(segments[,1])))
+  colnames(partition_summary) <- c("segment_length", "starting_gamma", "ending_gamma", 
+                                   "gamma_range", "partition_num", "num_clusters", 
+                                   "next_gamma", "next_partition_num", "next_num_clusters")
+  
+#  for (x in 1:nrow(partition_summary)) {
+#    print(x)
+#    partition_summary[x,"segment_length"] <- sqrt((segments[x, "x1"]-segments[x, "x2"])**2+(segments[x, "y1"]-segments[x, "y2"])**2)
+#    partition_summary[x,"starting_gamma"] <- segments[x,"x1"]
+#    partition_summary[x,"ending_gamma"] <- segments[x,"x2"]
+#    partition_summary[x,"gamma_range"] <- abs(segments[x,"x1"]-segments[x,"x2"])
+#    partition_summary[x,"partition_num"] <- segments[x,"partitions"]
+#    partition_summary[x,"num_clusters"] <- partitions$partitions[segments$partitions][[x]]$nb_clusters
+#  }
+  
+  #partition_summary <- partition_summary[order(-partition_summary$gamma_range),]
+  
+  print(paste(nrow(partition_summary),
+              "partitions in the CHAMP set (i.e., on the upper envelope of Q v. gamma)"))
+  
+  #print(partition_summary)
+
   partition_summary$ggfig <- ggfig
   
-  p <- partition_summary
-  return(p)
+  return(partition_summary)
 }
 
 ###################################
