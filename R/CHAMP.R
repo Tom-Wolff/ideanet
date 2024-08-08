@@ -203,15 +203,15 @@ CHAMP <- function( network,
                                    "gamma_range", "partition_num", "num_clusters", 
                                    "next_gamma", "next_partition_num", "next_num_clusters")
   
-#  for (x in 1:nrow(partition_summary)) {
-#    print(x)
-#    partition_summary[x,"segment_length"] <- sqrt((segments[x, "x1"]-segments[x, "x2"])**2+(segments[x, "y1"]-segments[x, "y2"])**2)
-#    partition_summary[x,"starting_gamma"] <- segments[x,"x1"]
-#    partition_summary[x,"ending_gamma"] <- segments[x,"x2"]
-#    partition_summary[x,"gamma_range"] <- abs(segments[x,"x1"]-segments[x,"x2"])
-#    partition_summary[x,"partition_num"] <- segments[x,"partitions"]
-#    partition_summary[x,"num_clusters"] <- partitions$partitions[segments$partitions][[x]]$nb_clusters
-#  }
+  for (x in 1:nrow(partition_summary)) {
+    
+    partition_summary$segment_length[x] <- sqrt((segments[x, "x1"]-segments[x, "x2"])**2+(segments[x, "y1"]-segments[x, "y2"])**2)
+    partition_summary$starting_gamma[x] <- segments[x,"x1"]
+    partition_summary$ending_gamma[x] <- segments[x,"x2"]
+    partition_summary$gamma_range[x] <- abs(segments[x,"x1"]-segments[x,"x2"])
+    partition_summary$partition_num[x] <- segments[x,"partitions"]
+    partition_summary$num_clusters[x] <- partitions$partitions[segments$partitions][[x]]$nb_clusters
+  }
   
   #partition_summary <- partition_summary[order(-partition_summary$gamma_range),]
   
