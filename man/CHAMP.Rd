@@ -14,7 +14,7 @@ CHAMP(network, partitions, plottitle = NULL)
 \item{plottitle}{Optional title for generated plot of (generalized) modularity versus resolution parameter.}
 }
 \value{
-\code{CHAMP} returns the input list of partitions with a \code{$CHAMPsummary} about which partitions are somewhere optimal (in the sense of modularity Q with a resolution parameter gamma) and their domains of optimality, along with the generated code{$CHAMPfigure} plot of the upper envelope of Q(gamma).
+\code{CHAMP} returns the input list of partitions with a \code{$CHAMPsummary} about which partitions are somewhere optimal (in the sense of modularity Q with a resolution parameter gamma) and their domains of optimality, along with the generated \code{$CHAMPfigure} plot of the upper envelope of Q(gamma).
 }
 \description{
 The Convex Hull of Admissible Modularity Partitions (\code{CHAMP}) post-processes an input set of partitions (for example, as collected by \code{get_partitions}, or as formatted similarly from some other source of selected partitions) to identify the partitions that are somewhere optimal in the resolution parameter and the associated domains of (generalized) modularity optimization. That is, given the input set of partitions of nodes in a network into communities, \code{CHAMP} identifies which input partition is optimal at each value of the resolution parameter, gamma. Importantly, \code{CHAMP} is deterministic and polynomial in time given a specified input set of partitions; that is, all of the computational complexity and pseudo-stochastic heuristic nature of community detection is in identifying a good input set.
