@@ -27,6 +27,7 @@
 
 #PJM: 7.30.2024. Gathered bits of code from Rachel Matthew, Ryan Rebne, Syndey Rosenbaum and Ava Scharfstein into add_champ branch
 #PJM: 8.8.2024. Fixed error about not finding function "count" and changed output to instead add summary and plot to the input partitions variable
+#PJM: 8.19.2024. Fixed unusual situation where nb_clusters does not appear to be the correct number of communities
 
 CHAMP <- function( network, 
                    partitions,
@@ -203,9 +204,10 @@ CHAMP <- function( network,
   print(ggfig)
   
   partition_summary <- data.frame(matrix(ncol = 9, nrow = length(segments[,1])))
-  colnames(partition_summary) <- c("segment_length", "starting_gamma", "ending_gamma", 
-                                   "gamma_range", "partition_num", "num_communities", 
-                                   "next_gamma", "next_partition_num", "next_num_communities")
+  colnames(partition_summary) <- c("starting_gamma", "ending_gamma", 
+                                   "partition_num", "num_communities", 
+                                   "next_gamma", "next_partition_num", "next_num_communities",
+                                   "segment_length", "gamma_range")
   
   for (x in 1:nrow(partition_summary)) {
     
@@ -214,7 +216,11 @@ CHAMP <- function( network,
     partition_summary$ending_gamma[x] <- segments[x,"x2"]
     partition_summary$gamma_range[x] <- abs(segments[x,"x1"]-segments[x,"x2"])
     partition_summary$partition_num[x] <- segments[x,"partitions"]
-    partition_summary$num_communities[x] <- partitions$partitions[segments$partitions][[x]]$nb_clusters
+    #partition_summary$num_communities[x] <- partitions$partitions[segments$partitions][[x]]$nb_clusters
+    #partition_summary$num_communities[x] <- partitions$partitions[[segments[x,"partitions"]]]$nb_clusters
+    #When creating the vignette, found a weighted karate instance with nb_clusters=4 but only 3 communities.
+    partition_summary$num_communities[x] <- max(igraph::membership(
+      partitions$partitions[[segments[x,"partitions"]]]))
   }
   
   #partition_summary <- partition_summary[order(-partition_summary$gamma_range),]

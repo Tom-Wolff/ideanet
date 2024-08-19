@@ -1,0 +1,126 @@
+---
+title: "Selecting Community Detection Resolution Parameters with CHAMP Maps"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Selecting Resolution Parameters in Community Detection with CHAMP Maps}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The functions for community detection in `ideanet` include a collection of tools using iterative maps on the so-called CHAMP set to highlight particular partitions of nodes into communities at different resolution parameters according to their domains of optimality and their potential self-consistency with a specific block model. This pipeline includes three core functions for finding and processing communities in undirected networks, described in this vignette: 
+
+1. `get_partitions` collects a set of community detection partitions from multiple calls to the `igraph::cluster_leiden` method to optimize modularity, $Q$, at various values of the resolution parameter, $\gamma$; 
+
+2. `CHAMP` post-processes the output of `get_partitions` to identify the subset of partitions that are somewhere optimal in the space of $\gamma$ values; and
+
+3. `get_CHAMP_map` computes the iterative map defined by Newman (2016) through the identified equivalence between modularity optimization and inference on the degree-corrected planted partition stochastic block model.
+
+Keep in mind that, at the end of the day, this pipeline is just one framework for performing unsupervised clustering on network data — combining optimization of modularity with a resolution parameter, the Leiden algorithm, CHAMP, and the equivalence with inference on the degree-corrected planted partition model — to try to identify appropriate parameters. In many settings, the communities with large domains of optimality identified by `CHAMP` and the partitions that are fixed points found by `get_CHAMP_map` will have better overall properties than some other community labels. However, like unsupervised clustering of any other data, there can be multiple good ways to cluster data and there is no single answer that is best in all settings (see, for example, Peel et al., 2017).
+
+These functions, as part of the broader IDEANet project, are supported by the National Science Foundation as part of the Human Networks and Data Science — Infrastructure program (BCS-2024271 and BCS-2140024).
+
+## Example 1: Zachary's Karate Club (unweighted)
+
+We quickly demonstrate the 3 main steps with the karate club, available in `igraphdata`, converted to an unweighted graph.
+```{r}
+data(karate,package="igraphdata")
+karate <- igraph::delete_edge_attr(karate,"weight")
+plot(karate, main="Zachary's Karate Club")
+```
+
+### Step 1: Collect Partitions
+
+The whole idea of CHAMP is that it post-processes community structure partitions that you've already taken the time to compute. It is not a community finding algorithm itself; rather, it enforces the modularity (with resolution parameter) objective function back onto the (possibly very many) partitions that you have already computed. So to use this we first need to have a set of partitions, which we will obtain here with the `get_partitions` function. Under the hood, it runs `cluster_leiden` from `igraph` at various $\gamma$ resolution parameter values, filters out the duplicate partitions, and then formats the results appropriately in the `partitions` list for what comes next. Because Leiden is a pseudo-stochastic heuristic, we set the random seed first to ensure reproducible results.
+```{r}
+set.seed(3478)
+# get_partitions <- function( network, 
+#                             gamma_range=c(0,2), 
+#                             n_runs=100, 
+#                             n_iterations=2, #parameter for cluster_leiden
+#                             seed=NULL ) {
+partitions <- get_partitions(karate, n_runs = 2500)
+```
+
+### Step 2: CHAMP
+
+Next, we run the `CHAMP` algorithm on the resulting partitions, and plot results to visualize the the domains of optimality in the resolution parameter space for each somewhere-optimal partition. Note that `CHAMP` updates the `partitions` list with a `CHAMPsummary` and `CHAMPfigure`.
+```{r}
+# CHAMP <- function( network, 
+#                    partitions,
+#                    plottitle=NULL ){
+partitions <- CHAMP(karate,partitions,plottitle="Zachary's Karate Club (unweighted)")
+print(partitions$CHAMPsummary)
+```
+Note, in particular, that the `partitions$CHAMPsummary$partition_num` column and the associated numerical annotations on the figure correspond to the list of partitions in `partitions$partitions`. For example, the partition that straddles the default $\gamma=1$ resolution parameter here, which also happens to have a large `gamma_range` and `segment_length` (the length of the corresponding line segment on the upper envelope of Q v. $\gamma$ in the figure) is the 4-community partition with `partition_num` 6 here.
+```{r}
+partitions$partitions[[6]]
+igraph::membership(partitions$partitions[[6]])
+igraph::plot.igraph(karate,mark.groups = partitions$partitions[[6]])
+```
+The value of running `CHAMP` is that it selects out only the partitions that are optimal at some $\gamma$ and, in so doing, allows the user to see which partitions are optimal over wider ranges of this resolution parameter. In particular, we expect that there might be multiple partitions of interest, and that `CHAMP` will help the user focus down on a smaller number of possible candidate partitions.
+
+### Step 3: Compute the SBM-equivalence iterative map on the CHAMP set
+
+In many applications, there may still be many somewhere-optimal partitions in the CHAMP set with comparable gamma range and/or segment length, and the user may be looking for a way to further focus their attention onto a smaller number of partitions. The `get_CHAMP_map` function uses the equivalence of modularity optimization with inference on a degree-corrected planted partition model, as discovered by Newman (2016), to define the corresponding iterative map restricted to the partitions in the CHAMP set, as defined by Gibson & Mucha (2022). In this map, each partition in the set points to a partition. A fixed point of the map, that is, a partition that points to itself, is thus self consistent in the sense of this equivalence, and becomes a natural partition for further focus. 
+```{r}
+# get_CHAMP_map <- function( network, 
+#                            partitions,
+#                            plotlabel=NULL ){
+partitions <- get_CHAMP_map(karate,partitions,plotlabel="Zachary's Karate Club (unweighted)")
+print(partitions$CHAMPsummary)
+```
+The above figure visualizes each partition in the CHAMP set as a line segment covering its domain of optimality in $\gamma$ (on the horizontal axis) and indicating the number of communities in the partition (on the vertical axis). The arrows in the figure visualize the iterative map on the CHAMP set that is tabulated in the now updated `partitions$CHAMPsummary`. The 2-community partition maps to the 3-community partition (labeled partition_num 4 in the `partitions$CHAMPsummary` table) that maps to one of the 4-community partitions (partition_num 6) that maps to itself (it is a fixed point). Similarly, the 6- and 7-community partitions all map to the 5-community partition (partition_num 15), which maps to the 4-community partition fixed point (partition_num 6). 
+
+As the only fixed point of the map on the CHAMP set, partition_num 6 is of special interest to us here. The fact that it happens to be the same as the optimal partition at the default resolution parameter $\gamma=1$ is a special feature of this simple example network — in other examples, the fixed points of the CHAMP map occur at other resolution parameter values.
+
+Again, there may be other good partitions in different senses that are not highlighted by these procedures, but we expect there are many cases where this framework — gathering partitions, running `CHAMP`, and picking out the fixed point of the iterative map on the CHAMP set — easily and efficiently highlights partitions of interest.
+
+# Example 2: Zachary's Karate Club, with weights
+
+We repeat the three steps of this framework for the weighted version of the karate club, to emphasize that weights matter and to highlight a feature of the framework.
+```{r}
+data(karate,package="igraphdata")
+plot(karate, main="Zachary's Karate Club (weighted)")
+set.seed(3478)
+partitions <- get_partitions(karate, n_runs = 2500)
+partitions <- CHAMP(karate,partitions,plottitle="Zachary's Karate Club (weighted)")
+print(partitions$CHAMPsummary)
+partitions <- get_CHAMP_map(karate,partitions,plotlabel="Zachary's Karate Club (weighted)")
+print(partitions$CHAMPsummary)
+```
+We note two important differences between this example on the weighted karate club versus the first example on its unweighted version. 
+
+First, note the warning message that the theory underlying `get_CHAMP_map` is for unweighted networks. `CHAMP` is fully valid for both weighted and unweighted networks, but the theory defining the iterative map was developed for unweighted networks. While the resulting formulae that define the iterative map have a very natural generalization to weighted networks, this generalization has not been well studied, neither theoretically nor in practice. Nevertheless, we expect that it may still be useful in many situations for highlighting different partitions. In particular, just as the original definition of modularity for unweighted networks has a natural generalization to weighted edges through thinking about discretized multiedges, the iterative map might possibly have a reasonable multiedge interpretation. At a minimum, the dimensionless formulae for the "in" and "out" propensities and for the estimated $\gamma$ value defining all have natural generalizations computed in terms of edge weights with strength in place of degree and total edge weights in place of edge counts. Yet again it should be stressed that this has not to our knowledge been well studied.
+
+Second, note that in this example we now have two fixed points in the map; that is, there are two different partitions (partition_num 3 and 4) that are self-consistent in the generalized formulae of the modularity-SBM equivalence.
+```{r}
+igraph::plot.igraph(karate,mark.groups = partitions$partitions[[3]])
+igraph::plot.igraph(karate,mark.groups = partitions$partitions[[4]])
+table(igraph::membership(partitions$partitions[[3]]),igraph::membership(partitions$partitions[[4]]))
+```
+As seen in the plots and the table comparing memberships, the 3-community partition here is the 4-community partition with two of the communities merged into one.
+
+## College Football
+
+## References
+
+review articles, Newman, Pamfil et al., Weir et al., Gibson & Mucha
+Football data
+Other capabilities in `comm_detect`
+
+Weir, William H., Scott Emmons, Ryan Gibson, Dane Taylor, and Peter J. Mucha. 2017. "Post-Processing Partitions to Identify Domains of Modularity Optimization." Algorithms 10 (3): 93. https://doi.org/10.3390/a10030093.
+
+Python implementation: Weir, William. 2017--2018. https://github.com/wweir827/CHAMP.
+
+Gibson, Ryan A., and Peter J. Mucha. 2022. "Finite-State Parameter Space Maps for Pruning Partitions in Modularity-Based Community Detection." Scientific Reports 12 (1): 15928. https://doi.org/10.1038/s41598-022-20142-6.
+
+Python implementation: Gibson, Ryan. 2020--2023. https://github.com/ragibson/ModularityPruning.
+
+Peel, Leto, Daniel B. Larremore, and Aaron Clauset. 2017. "The Ground Truth about Metadata and Community Detection in Networks." Science Advances 3 (5): e1602548. https://doi.org/10.1126/sciadv.1602548.
