@@ -93,7 +93,7 @@ As the only fixed point of the map on the CHAMP set, partition_num 6 is of speci
 
 Again, there may be other good partitions in different senses that are not highlighted by these procedures, but we expect there are many cases where this framework — gathering partitions, running `CHAMP`, and picking out the fixed point of the iterative map on the CHAMP set — easily and efficiently highlights partitions of interest.
 
-# Example 2: Zachary's Karate Club, with weights
+## Example 2: Zachary's Karate Club, with weights
 
 We repeat the three steps of this framework for the weighted version of the karate club, to emphasize that weights matter and to highlight the warning message for the third step (`get_CHAMP_map`) of the framework.
 ```{r}
