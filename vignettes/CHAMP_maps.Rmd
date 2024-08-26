@@ -14,6 +14,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r setup}
+library(ideanet)
+```
+
 The functions for community detection in `ideanet` include a collection of tools using iterative maps on the so-called CHAMP set to highlight particular partitions of nodes into communities at different resolution parameters according to their domains of optimality and their potential self-consistency with a specific block model. This pipeline includes three core functions for finding and processing communities in undirected networks, described in this vignette: 
 
 1. `get_partitions` collects a set of community detection partitions from multiple calls to the `igraph::cluster_leiden` method to optimize modularity, $Q$, at various values of the resolution parameter, $\gamma$; 
@@ -66,6 +70,7 @@ partitions$partitions[[6]]
 igraph::membership(partitions$partitions[[6]])
 igraph::plot.igraph(karate,mark.groups = partitions$partitions[[6]])
 ```
+
 The value of running `CHAMP` is that it selects out only the partitions that are optimal at some $\gamma$ and, in so doing, allows the user to see which partitions are optimal over wider ranges of this resolution parameter. In particular, we expect that there might be multiple partitions of interest, and that `CHAMP` will help the user focus down on a smaller number of possible candidate partitions.
 
 ### Step 3: Compute the SBM-equivalence iterative map on the CHAMP set
@@ -130,7 +135,9 @@ partitions <- get_CHAMP_map(football,partitions,plotlabel="Div-IA College Footba
 print(partitions$CHAMPsummary)
 ```
 
-Now we see that everything in the figure flows towards the 12-community partition from both below and above, and we emphasize that the range of $\gamma$ for which this is the optimal partition does not straddle the default $\gamma=1$ value. 
+Now we see that everything in the figure above flows towards the 12-community partition from both below and above, and we emphasize that the range of $\gamma$ for which this is the optimal partition does not straddle the default $\gamma=1$ value. Note also that this 12-community partition fixed point is not the same fixed point partition we found above with the restricted default `gamma_range`; it is only because we extended the range of $\gamma$ considered that we found this partition in the first place, even though its domain of optimality starts at $\gamma$ as small as 1.454. It is important in developing your CHAMP and iterative map results that you consider $\gamma$ values sufficently above and below the fixed points that you find.
+
+Finally, we ask ourselves, what are these communities?
 ```{r}
 colrs <- RColorBrewer::brewer.pal(10,"BrBG")
 igraph::V(football)$color <- colrs[igraph::V(football)$value+1]
