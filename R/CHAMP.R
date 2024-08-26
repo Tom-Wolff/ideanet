@@ -28,6 +28,7 @@
 #PJM: 7.30.2024. Gathered bits of code from Rachel Matthew, Ryan Rebne, Syndey Rosenbaum and Ava Scharfstein into add_champ branch
 #PJM: 8.8.2024. Fixed error about not finding function "count" and changed output to instead add summary and plot to the input partitions variable
 #PJM: 8.19.2024. Fixed unusual situation where nb_clusters does not appear to be the correct number of communities
+#PJM: 8.19.2024. Fixed vertical axis tick labels.
 
 CHAMP <- function( network, 
                    partitions,
@@ -191,10 +192,7 @@ CHAMP <- function( network,
     ggplot2::labs(x = expression(paste("Resolution Parameter (", gamma,")")),
                   y = expression(paste("Modularity Q(", gamma,")")),
                   title = title)+
-    ggplot2::scale_y_continuous(breaks = seq(0,max(segments$y1),length = 10), 
-                                labels = round(seq(0,max(segments$y1),length = 10)),
-                                expand = c(0,0),
-                                limits = c(0,max(segments$y1))) +
+    ggplot2::scale_y_continuous(limits = c(0,max(segments$y1))) +
     ggplot2::scale_x_continuous(breaks = c(segments$x1,2), 
                                 labels = c(round(segments$x1,2),2),
                                 limits = c(0,partitions$gamma_max),

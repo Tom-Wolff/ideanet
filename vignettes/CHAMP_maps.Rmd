@@ -10,7 +10,9 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.height = 3,
+  fig.width = 5
 )
 ```
 
@@ -38,6 +40,7 @@ We quickly demonstrate the 3 main steps with the karate club, available in `igra
 ```{r}
 data(karate,package="igraphdata")
 karate <- igraph::delete_edge_attr(karate,"weight")
+par(mar=c(0,0,0.8,0))
 plot(karate, main="Zachary's Karate Club")
 ```
 
@@ -68,6 +71,7 @@ Note, in particular, that the `partitions$CHAMPsummary$partition_num` column and
 ```{r}
 partitions$partitions[[6]]
 igraph::membership(partitions$partitions[[6]])
+par(mar=c(0,0,0,0))
 igraph::plot.igraph(karate,mark.groups = partitions$partitions[[6]])
 ```
 
@@ -94,6 +98,7 @@ Again, there may be other good partitions in different senses that are not highl
 We repeat the three steps of this framework for the weighted version of the karate club, to emphasize that weights matter and to highlight the warning message for the third step (`get_CHAMP_map`) of the framework.
 ```{r}
 data(karate,package="igraphdata")
+par(mar=c(0,0,0.8,0))
 plot(karate, main="Zachary's Karate Club (weighted)")
 set.seed(3478)
 partitions <- get_partitions(karate, n_runs = 2500)
@@ -107,7 +112,9 @@ First, note the warning message that the theory underlying `get_CHAMP_map` is fo
 
 Second, note that in this example we now have two fixed points in the map; that is, there are two different partitions (partition_num 3 and 5) that are self-consistent in the generalized formulae of the modularity-SBM equivalence.
 ```{r}
+par(mar=c(0,0,0,0))
 igraph::plot.igraph(karate,mark.groups = partitions$partitions[[3]])
+par(mar=c(0,0,0,0))
 igraph::plot.igraph(karate,mark.groups = partitions$partitions[[5]])
 table(igraph::membership(partitions$partitions[[3]]),igraph::membership(partitions$partitions[[5]]))
 ```
@@ -118,6 +125,7 @@ As seen in the plots and the table comparing memberships, the 3-community partit
 Another favorite example for demonstrating the need for a resolution parameter is the network of the (then-so-called) Division IA college football games from the Fall 2000 season. This example was introduced by Girvan and Newman (2002). The GML file for this example can be downloaded (along with a bunch of other cool examples) from Mark Newman’s “Network data” web page at http://www-personal.umich.edu/~mejn/netdata/.
 ```{r}
 football <- igraph::read_graph("football.gml",format="gml")
+par(mar=c(0,0,0.8,0))
 plot(football, main="Div-IA College Football, Fall 2000")
 set.seed(115)
 partitions <- get_partitions(football, n_runs = 1000)
@@ -141,6 +149,7 @@ Finally, we ask ourselves, what are these communities?
 ```{r}
 colrs <- RColorBrewer::brewer.pal(10,"BrBG")
 igraph::V(football)$color <- colrs[igraph::V(football)$value+1]
+par(mar=c(0,0,0,0))
 igraph::plot.igraph(football,mark.groups = partitions$partitions[[28]],
                     vertex.label=NA, vertex.size=5)
 table(igraph::V(football)$value,
@@ -150,11 +159,18 @@ Though it isn't completely clear from the figure, the above table indicates that
 
 ## References
 
-* Girvan, M., and M. E. J. Newman. “Community Structure in Social and Biological Networks.” Proceedings of the National Academy of Sciences of the United States of America 99, no. 12 (June 11, 2002): 7821–26. https://doi.org/10.1073/pnas.122653799.
-* Gibson, Ryan A., and Peter J. Mucha. 2022. "Finite-State Parameter Space Maps for Pruning Partitions in Modularity-Based Community Detection." Scientific Reports 12 (1): 15928. https://doi.org/10.1038/s41598-022-20142-6.
-** Python implementation: Gibson, Ryan. 2020--2023. https://github.com/ragibson/ModularityPruning.
-* Newman, M. E. J. “Equivalence between Modularity Optimization and Maximum Likelihood Methods for Community Detection.” Physical Review E 94, no. 5 (November 22, 2016): 052315. https://doi.org/10.1103/PhysRevE.94.052315.
-* Pamfil, A. Roxana., Sam D. Howison, Renaud. Lambiotte, and Mason A. Porter. “Relating Modularity Maximization and Stochastic Block Models in Multilayer Networks.” SIAM Journal on Mathematics of Data Science, January 1, 2019, 667–98. https://doi.org/10.1137/18M1231304.
-* Peel, Leto, Daniel B. Larremore, and Aaron Clauset. 2017. "The Ground Truth about Metadata and Community Detection in Networks." Science Advances 3 (5): e1602548. https://doi.org/10.1126/sciadv.1602548.
-* Weir, William H., Scott Emmons, Ryan Gibson, Dane Taylor, and Peter J. Mucha. 2017. "Post-Processing Partitions to Identify Domains of Modularity Optimization." Algorithms 10 (3): 93. https://doi.org/10.3390/a10030093.
-** Python implementation: Weir, William. 2017--2018. https://github.com/wweir827/CHAMP.
+Girvan, M., and M. E. J. Newman. “Community Structure in Social and Biological Networks.” Proceedings of the National Academy of Sciences of the United States of America 99, no. 12 (June 11, 2002): 7821–26. https://doi.org/10.1073/pnas.122653799.
+
+Gibson, Ryan A., and Peter J. Mucha. 2022. "Finite-State Parameter Space Maps for Pruning Partitions in Modularity-Based Community Detection." Scientific Reports 12 (1): 15928. https://doi.org/10.1038/s41598-022-20142-6.
+
+* Python implementation: Gibson, Ryan. 2020--2024. https://github.com/ragibson/ModularityPruning.
+
+Newman, M. E. J. “Equivalence between Modularity Optimization and Maximum Likelihood Methods for Community Detection.” Physical Review E 94, no. 5 (November 22, 2016): 052315. https://doi.org/10.1103/PhysRevE.94.052315.
+
+Pamfil, A. Roxana., Sam D. Howison, Renaud. Lambiotte, and Mason A. Porter. “Relating Modularity Maximization and Stochastic Block Models in Multilayer Networks.” SIAM Journal on Mathematics of Data Science, January 1, 2019, 667–98. https://doi.org/10.1137/18M1231304.
+
+Peel, Leto, Daniel B. Larremore, and Aaron Clauset. 2017. "The Ground Truth about Metadata and Community Detection in Networks." Science Advances 3 (5): e1602548. https://doi.org/10.1126/sciadv.1602548.
+
+Weir, William H., Scott Emmons, Ryan Gibson, Dane Taylor, and Peter J. Mucha. 2017. "Post-Processing Partitions to Identify Domains of Modularity Optimization." Algorithms 10 (3): 93. https://doi.org/10.3390/a10030093.
+
+* Python implementation: Weir, William. 2017--2018. https://github.com/wweir827/CHAMP.
