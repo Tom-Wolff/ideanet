@@ -6,7 +6,7 @@
 \usage{
 get_partitions(
   network,
-  gamma_range = c(0, 2),
+  gamma_range = c(0, 3),
   n_runs = 100,
   n_iterations = 2,
   seed = NULL
@@ -15,7 +15,7 @@ get_partitions(
 \arguments{
 \item{network}{The network, as igraph object, to be clustered into communities. Only undirected networks are currently supported. If the object has a 'weight' edge attribute, then that attribute will be used.}
 
-\item{gamma_range}{The range of the resolution parameter gamma (default from 0 to 2).}
+\item{gamma_range}{The range of the resolution parameter gamma (default from 0 to 4).}
 
 \item{n_runs}{The number of \code{cluster_leiden} runs to be attempted (default = 100).}
 
