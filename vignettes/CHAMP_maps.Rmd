@@ -120,7 +120,7 @@ table(igraph::membership(partitions$partitions[[3]]),igraph::membership(partitio
 ```
 As seen in the plots and the table comparing memberships, the 3-community partition here is the 4-community partition with two of the communities merged into one.
 
-## Example: NCAA College Football Network
+## Example 3: NCAA College Football Network
 
 Another favorite example for demonstrating the need for a resolution parameter is the network of the (then-so-called) Division IA college football games from the Fall 2000 season. This example was introduced by Girvan and Newman (2002). The GML file for this example can be downloaded (along with a bunch of other cool examples) from Mark Newman’s “Network data” web page at http://www-personal.umich.edu/~mejn/netdata/.
 ```{r}
