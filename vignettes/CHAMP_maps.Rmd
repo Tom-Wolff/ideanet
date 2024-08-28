@@ -59,7 +59,7 @@ partitions <- get_partitions(karate, n_runs = 2500)
 
 ### Step 2: CHAMP
 
-Next, we run the `CHAMP` algorithm on the resulting partitions, and plot results to visualize the the domains of optimality in the resolution parameter space for each somewhere-optimal partition. Note that `CHAMP` updates the `partitions` list with a `CHAMPsummary` and `CHAMPfigure`.
+Next, we run the `CHAMP` algorithm on the resulting partitions, and plot results to visualize the domains of optimality in the resolution parameter space for each somewhere-optimal partition. Note that `CHAMP` updates the `partitions` list with a `CHAMPsummary` and `CHAMPfigure`.
 ```{r}
 # CHAMP <- function( network, 
 #                    partitions,
