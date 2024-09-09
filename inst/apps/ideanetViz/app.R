@@ -56,12 +56,12 @@ ui <- shiny::fluidPage(
               shiny::tabPanel(
                 "Edge Data",
                 style = "overflow-x: auto;",
-                shiny::dataTableOutput('edge_raw_upload')
+                DT::DTOutput('edge_raw_upload')
               ),
               shiny::tabPanel(
                 "Node Data",
                 style = "overflow-x: auto;",
-                shiny::dataTableOutput('node_raw_upload')
+                DT::DTOutput('node_raw_upload')
               )
             )
           )
@@ -94,7 +94,7 @@ ui <- shiny::fluidPage(
           ),
           shiny::mainPanel(
             style = "overflow-x: auto;",
-            shiny::dataTableOutput('edge_processed')
+            DT::DTOutput('edge_processed')
           )
         ))
     ),
@@ -112,6 +112,13 @@ ui <- shiny::fluidPage(
           shiny::uiOutput("plot_scalar"),
           shiny::checkboxInput("isolate_toggle", tags$b("Remove isolates?"), FALSE),
           shiny::checkboxInput("simplify_toggle", tags$b("Remove self-loops and duplicate edges?"), FALSE),
+          shiny::checkboxInput("sparsify_toggle", tags$b("Backbone network"), value = FALSE),
+          shiny::conditionalPanel(
+            condition = "input.sparsify_toggle == true && input.edge_weight_col != 'Empty'",
+            shiny::sliderInput("alpha", label = "alpha", min = 0, max = 0.5, value = 0.05)),
+          shiny::conditionalPanel(
+            condition = "input.sparsify_toggle == true && input.edge_weight_col == 'Empty'",
+            shiny::sliderInput("s", label = "s", min = 0, max = 1, value = 0.5)),
           shiny::uiOutput("layout_picker"),
           tags$p(shiny::HTML("<u>Node Features</u>")),
           shiny::uiOutput("node_size_method"),
@@ -424,7 +431,7 @@ server <- function(input, output, session) {
   })
 
   #Display Node Data
-  output$node_raw_upload <- shiny::renderDataTable({
+  output$node_raw_upload <- DT::renderDT({
     print(class(node_data()))
     shiny::validate(
       shiny::need(!is.null(node_data()), 'Upload Node Data!')
@@ -436,7 +443,7 @@ server <- function(input, output, session) {
 
 
   #Display Edge Data
-  output$edge_raw_upload <- shiny::renderDataTable({
+  output$edge_raw_upload <- DT::renderDT({
     shiny::validate(
       shiny::need(input$raw_edges, 'Upload Edge Data!'),
     )
@@ -446,13 +453,13 @@ server <- function(input, output, session) {
 
   ### Process edge and node data ----
   # Redisplay Datatables
-  output$node_processed <- shiny::renderDataTable({
+  output$node_processed <- DT::renderDT({
     # shiny::validate(
     #   shiny::need(input$raw_nodes, 'Upload Node Data!'),
     # )
     node_data()
   })
-  output$edge_processed <- shiny::renderDataTable({
+  output$edge_processed <- DT::renderDT({
     # shiny::validate(
     #   shiny::need(input$raw_edges, 'Upload Edge Data!'),
     # )
@@ -473,7 +480,7 @@ server <- function(input, output, session) {
                                      ),
                                      shiny::mainPanel(
                                        style = "overflow-x: auto;",
-                                       shiny::dataTableOutput('node_processed')
+                                       DT::DTOutput('node_processed')
                                      )
                      ), target = "Process Edge Data ")
   })
@@ -974,7 +981,7 @@ nodes_used <- shiny::reactive({
 
 
 
-  #### Update isolates ----
+  # 3. Update isolates
   net4 <- shiny::reactive({
     if (input$isolate_toggle == TRUE) {
       net <- net7()
@@ -1001,6 +1008,35 @@ nodes_used <- shiny::reactive({
     } else {
       net <- net4()
       #igraph::V(net)$color <- color_generator()
+      net
+    }
+  })
+
+  # 3. Sparsify network
+
+  net9 <- shiny::reactive({
+    if (input$sparsify_toggle == TRUE) {
+      net <- net5()
+
+      # Eventually add ability to use multiple-layered networks?
+      if (igraph::any_multiple(net) == TRUE) {
+        print("Merging multiple edges for backboning")
+        net <- igraph::simplify(net)
+      }
+
+      print(net)
+      if (input$edge_weight_col != 'Empty') { # checks if network weight was selected
+        if (any(igraph::E(net)$weight < 0) == T) {stop("Can't backbone a network with negative weights.")} # check for negative weights
+        net <- backbone::disparity(net, input$alpha, class = "igraph") # sparsify with alpha
+        net
+      } else {
+        net <- igraph::delete_edge_attr(net, "weight")
+        net <- igraph::as.undirected(net)
+        net <- backbone::sparsify.with.lspar(net, input$s)} # sparsify with s
+        net
+
+    } else {
+      net <- net5()
       net
     }
   })
@@ -1066,7 +1102,7 @@ nodes_used <- shiny::reactive({
 
   net8 <-
     shiny::reactive({
-      net <- net5()
+      net <- net9()
       if (input$multi_relational_toggle == TRUE) {
         if (input$filter_relation_type != 'None') {
           net <- igraph::delete.edges(net, igraph::E(net)[igraph::E(net)$type == input$filter_relation_type])
@@ -1344,7 +1380,7 @@ nodes_used <- shiny::reactive({
   })
 
 
-  output$statistics_table <- DT::renderDataTable({#print("Reached data table")
+  output$statistics_table <- DT::renderDT({#print("Reached data table")
     nodelist3()[, input$show_vars, drop = FALSE]})
   output$downloadTable <- shiny::downloadHandler(
     filename = function() {
@@ -1599,7 +1635,7 @@ nodes_used <- shiny::reactive({
   # })
 
   #replace table
-  output$qap_table <- DT::renderDataTable({
+  output$qap_table <- DT::renderDT({
     qap_df()
   })
 
