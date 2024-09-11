@@ -427,8 +427,19 @@ nc_read <- function(
     if (cat.to.factor == TRUE) {
       warning(paste0("Network Canvas protocol file not provided. `nc_read` will select categorical variables to recode as factors based on patterns in column names, but accuracy is not guaranteed."))
       egos <- apply_catToFactor(egos)
-      alters <- apply_catToFactor(alters)
-      el <- apply_catToFactor(el)
+
+      if (is.data.frame(alters)) {
+        alters <- apply_catToFactor(alters)
+      } else {
+        alters <- lapply(alters, apply_catToFactor)
+      }
+
+      if (is.data.frame(el)) {
+        el <- apply_catToFactor(el)
+      } else {
+        el <- lapply(el, apply_catToFactor)
+      }
+
     }
 
     # End non-protocol condition
