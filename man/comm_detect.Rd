@@ -4,12 +4,14 @@
 \alias{comm_detect}
 \title{Community Detection Across Multiple Routines (\code{comm_detect})}
 \usage{
-comm_detect(g, modres = 1, shiny = FALSE)
+comm_detect(g, modres = 1, slow_routines = FALSE, shiny = FALSE)
 }
 \arguments{
 \item{g}{An igraph object. If the igraph object contains a directed network, the function will treat the network as undirected before running community detection routines.}
 
 \item{modres}{A modularity resolution parameter used when performing community detection using the Leiden method.}
+
+\item{slow_routines}{A logical indicating whether time-intensive community detection routines should be performed on larger networks. Edge betweenness, leading eigenvector, link communities, and stochastic blockmodeling each take a very long time to identify communities in networks consisting of more than a few thousand nodes. By default, \code{comm_detect} will skip performing these routines on networks with more than 5,000 nodes and inform the user that it is doing so.}
 
 \item{shiny}{An argument indicating whether the output from the \code{comm_detect} function will be fed into the IDEANet visualization app.}
 }
