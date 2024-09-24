@@ -4,6 +4,7 @@
 #'
 #' @param g An igraph object. If the igraph object contains a directed network, the function will treat the network as undirected before running community detection routines.
 #' @param modres A modularity resolution parameter used when performing community detection using the Leiden method.
+#' @param slow_routines A logical indicating whether time-intensive community detection routines should be performed on larger networks. Edge betweenness, leading eigenvector, link communities, and stochastic blockmodeling each take a very long time to identify communities in networks consisting of more than a few thousand nodes. By default, \code{comm_detect} will skip performing these routines on networks with more than 5,000 nodes and inform the user that it is doing so.
 #' @param shiny An argument indicating whether the output from the \code{comm_detect} function will be fed into the IDEANet visualization app.
 #'
 #' @return \code{comm_detect} returns three data frames. \code{comm_members} indicates each node's assigned community membership from each community detection routine. \code{comm_summaries} indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. \code{comp_scores} contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. If \code{shiny == FALSE}, this function will also plot a series of network visualizations in which nodes are colored by their assigned community memberships from each routine.
@@ -44,7 +45,16 @@
 # TW: 9.08.2022. Updated to better handle 2+ unconnected components and isolates with leaging eigen and spinglass
 #PJM: 5.03.2024. Streamlined opening conversions and fixed modularity function calls to use weights
 
-comm_detect <- function(g, modres=1, shiny = FALSE) {
+comm_detect <- function(g, modres=1,
+                        slow_routines = FALSE,
+                        shiny = FALSE) {
+
+  # browser()
+
+  # Change ARPACK defaults
+  # ad <- igraph::arpack_defaults
+  # ad$maxiter <- 8000
+
 
   # Create a list for storing output
   output_list <- list()
@@ -64,7 +74,7 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   # To get going with these, we'll make an undirected version of input graph `g`
   # Add warning that network will be converted to undirected
   if (igraph::is_directed(g)) {
-    message("WARNING: The `comm_detect` function currently supports undirected graphs only. Directed networks will be collapsed to undirected before running community detection algorithms.")
+    message("The `comm_detect` function currently supports undirected graphs only. Directed networks will be collapsed to undirected before running community detection algorithms.")
   }
 
   g_undir <- igraph::as.undirected(g, mode = "collapse")
@@ -82,24 +92,44 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   n <- igraph::vcount(g_undir)
   w_dens <- sum(igraph::E(g_undir)$weight)*2/(n*(n-1))
 
+  # If size of network exceeds 5,000, skip SBM, linkcomm, edge betweenness, and leading eigen
+  if (n > 5000 & slow_routines == FALSE) {
+    message("Detecting network consisting of more than 5000 nodes. Edge betweenness, leading eigenvector, link communities, and stochastic blockmodel routines will be skipped to ensure quick processing. If you would like to proceed with these methods included, set `slow_routines = TRUE`.")
+  }
+
   # Get reciprocal of edge weight for algorithms that treat edge weights as distances
   igraph::E(g_undir)$r_weight <- 1/igraph::E(g_undir)$weight
 
   # Betweenness does edges as distances. Need reciprocal
   if (stats::var(igraph::E(g_undir)$weight) > 0) {
-    message("WARNING: Calling cluster_edge_betweenness with reciprocal weights, which may affect selected membership vector incorrectly.")
+    warning("Calling cluster_edge_betweenness with reciprocal weights, which may affect selected membership vector incorrectly.")
   }
-  edge_betweenness <- igraph::cluster_edge_betweenness(g_undir,
-                                                       weights = igraph::E(g_undir)$r_weight,
-                                                       directed = FALSE,
-                                                       membership = T,
-                                                       modularity = T)
+
+  if (n > 5000 & slow_routines == FALSE) {
+    # PICK UP HERE
+    edge_betweenness <- data.frame(names = igraph::V(g_undir)$name,
+                                   membership = NA,
+                                   modularity = NA)
+  } else {
+    edge_betweenness <- igraph::cluster_edge_betweenness(g_undir,
+                                                         weights = igraph::E(g_undir)$r_weight,
+                                                         directed = FALSE,
+                                                         membership = T,
+                                                         modularity = T)
+  }
+
+
   fast_greedy <- igraph::cluster_fast_greedy(g_undir,
                                              weights = igraph::E(g_undir)$weight) # Only undirected graphs
+
+
   infomap <- igraph::cluster_infomap(g_undir,
                                      e.weights = igraph::E(g_undir)$weight) # Modularity for undirected graphs only
+
+
   label_prop <- igraph::cluster_label_prop(g_undir,
                                            weights = igraph::E(g_undir)$weight) # Needs to be undirected
+
   leiden_mod <- igraph::cluster_leiden(g_undir,
                                        objective_function = "modularity",
                                        resolution_parameter=modres,
@@ -112,18 +142,42 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
                                        weights = igraph::E(g_undir)$weight,
                                        n_iterations = 5)
 
+
+
   # louvain <- igraph::cluster_louvain(g_undir) # Will take directed but gives error
   # optimal <- igraph::cluster_optimal(g) # Works fine with directed, but ignores directions
 
   walktrap <- igraph::cluster_walktrap(g_undir,
                                        weights = igraph::E(g_undir)$weight) # Works with directed
 
+
   # Get number of isolated components
   num_components <- igraph::components(g_undir)
 
   if (num_components$no == 1) {
     spinglass <- igraph::cluster_spinglass(g_undir, weights = igraph::E(g_undir)$weight) # Works with directed, but need to ask about arguments (there are many)
-    leading_eigen <- igraph::cluster_leading_eigen(g_undir, weights = igraph::E(g_undir)$weight) # Needs to be undirected
+
+
+
+    if (n > 5000 & slow_routines == FALSE) {
+
+      leading_eigen <- list(membership = rep(NA, length(igraph::V(g_undir))),
+                            modularity = NA)
+    } else {
+
+      leading_eigen <- tryCatch(igraph::cluster_leading_eigen(g_undir, weights = igraph::E(g_undir)$weight), # Needs to be undirected
+                                error = function(cond) {
+                                  warning("Could not find clustering solution using leading eigenvector. Values associated with this method will be set to NA.")
+
+
+                                  return(list(membership = rep(NA, length(igraph::V(g_undir))),
+                                              modularity = NA))
+
+                                }
+      )
+    }
+
+
   } else {
 
     igraph::V(g_undir)$component <- num_components$membership
@@ -149,8 +203,29 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
 
       } else {
 
-        this_leading_eigen <- igraph::cluster_leading_eigen(this_component,
-                                                            weights = igraph::E(this_component)$weight)$membership
+
+
+        if (n > 5000 & slow_routines == FALSE) {
+
+          this_leading_eigen <- rep(NA, length(igraph::V(this_component)))
+
+        } else {
+
+          this_leading_eigen <- tryCatch(igraph::cluster_leading_eigen(this_component, weights = igraph::E(this_component)$weight)$membership, # Needs to be undirected
+                                         error = function(cond) {
+                                           message("Could not find clustering solution for this component using leading eigenvector. Values associated with this method will be set to NA.")
+
+
+                                           return(membership = rep(NA, length(igraph::V(this_component))))
+
+
+                                         }
+          )
+
+        }
+
+
+
         this_spinglass <- igraph::cluster_spinglass(this_component,
                                                     weights = igraph::E(this_component)$weight)$membership # Works with directed, but need to ask about arguments (there are many)
 
@@ -192,6 +267,7 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
     colnames(subgraph_memberships) <- c("id", "component", "leading_eigen_membership", "spinglass_membership")
 
   }
+
 
   # Ideally, we'd also wanna run the cliquefinder one
   # Ken Frank has a package for his cliquefinder tool (Either in Email or on CRAN)
@@ -257,24 +333,35 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   }
   # cf1_membership$id <- as.character(cf1_membership$id)
 
+
+
   ## Link comm ##
-  #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
-  linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(.data$from, .data$to)
-  #### In some cases, such as when given a star graph, `linkcomm` won't detect any communities.
-  #### if this is the case, just create the `lc_membership` dataframe manually and assign all nodes
-  #### to the same community (or `NA`s depending on our team's ultimate preference)
-  lc <- tryCatch(linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F),
-                 error = function(e) {return(NULL)})# Defaulting to false for now)
-  if (!is.null(lc)) {
-    lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
-    clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
-    clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
-    lc_membership <- multigroup_assign(g_sym, clust)
-    colnames(lc_membership) <- c("lc_cluster", "id")
+  if (n > 5000 & slow_routines == FALSE) {
+
+    lc_membership <-  data.frame(id = memberships$id,
+                                 lc_cluster = NA)
+
   } else {
-    warning("linkcomm did not detect any distinct communities. All nodes will be assigned to the same single community (1).")
-    lc_membership <- data.frame(id = memberships$id,
-                                lc_cluster = 1)
+    #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
+    linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(.data$from, .data$to)
+    #### In some cases, such as when given a star graph, `linkcomm` won't detect any communities.
+    #### if this is the case, just create the `lc_membership` dataframe manually and assign all nodes
+    #### to the same community (or `NA`s depending on our team's ultimate preference)
+    lc <- tryCatch(linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F),
+                   error = function(e) {return(NULL)})# Defaulting to false for now)
+    if (!is.null(lc)) {
+      # browser()
+      lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
+      clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
+      clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
+      lc_membership <- multigroup_assign(g_sym, clust)
+      colnames(lc_membership) <- c("lc_cluster", "id")
+    } else {
+      warning("linkcomm did not detect any distinct communities. All nodes will be assigned to the same single community (1).")
+      lc_membership <- data.frame(id = memberships$id,
+                                  lc_cluster = 1)
+    }
+
   }
 
   lc_membership$id <- as.character(lc_membership$id)
@@ -294,11 +381,35 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   # Note that the maximum modularity identified by cluster_edge_betweenness for weighted networks,
   # which we have computed here with reciprocal weights, is not the same as the modularity for
   # those memberships with the original weights, so we recalculate it here.
-  edge_betweenness_stats <- data.frame(method = "edge_betweenness",
-                                       num_communities = max(edge_betweenness$membership),
-                                       #modularity = edge_betweenness$modularity)
-                                       #modularity = max(edge_betweenness$modularity))
-                                       modularity = igraph::modularity(g_undir, edge_betweenness$membership, weights = igraph::E(g_undir)$weight))
+
+  if (n > 5000 & slow_routines == FALSE) {
+
+    edge_betweenness_stats <- data.frame(method = "edge_betweenness",
+                                         num_communities = NA,
+                                         #modularity = edge_betweenness$modularity)
+                                         #modularity = max(edge_betweenness$modularity))
+                                         modularity = NA)
+
+    lc_stats <- data.frame(method = "lc",
+                           num_communities = NA,
+                           modularity = NA)
+
+
+
+  } else {
+
+    edge_betweenness_stats <- data.frame(method = "edge_betweenness",
+                                         num_communities = max(edge_betweenness$membership),
+                                         #modularity = edge_betweenness$modularity)
+                                         #modularity = max(edge_betweenness$modularity))
+                                         modularity = igraph::modularity(g_undir, edge_betweenness$membership, weights = igraph::E(g_undir)$weight))
+
+    lc_stats <- data.frame(method = "lc",
+                           num_communities = length(unique(memberships$cp_cluster)),
+                           modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster + 1), weights = igraph::E(g_undir)$weight))
+
+  }
+
 
   fast_greedy_stats <- data.frame(method = "fast_greedy",
                                   num_communities = max(fast_greedy$membership),
@@ -315,17 +426,36 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
 
   if (num_components$no == 1) {
 
-    leading_eigen_stats <- data.frame(method = "leading_eigen",
-                                      num_communities = max(leading_eigen$membership),
-                                      modularity = leading_eigen$modularity)
+    if (n > 5000 & slow_routines == FALSE) {
+
+      leading_eigen_stats <- data.frame(method = "leading_eigen",
+                                        num_communities = NA,
+                                        modularity = NA)
+
+    } else {
+
+      leading_eigen_stats <- data.frame(method = "leading_eigen",
+                                        num_communities = max(leading_eigen$membership),
+                                        modularity = leading_eigen$modularity)
+    }
+
+
   } else {
 
-    igraph::V(g_undir)$leading_eigen <- memberships$leading_eigen_membership
+    if (n > 5000 & slow_routines == FALSE) {
 
-    leading_eigen_stats <- data.frame(method = "leading_eigen",
-                                      num_communities = max(memberships$leading_eigen_membership, na.rm = T),
-                                      modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$leading_eigen, weights = igraph::E(g_undir)$weight))
+      leading_eigen_stats <- data.frame(method = "leading_eigen",
+                                        num_communities = NA,
+                                        modularity = NA)
 
+    } else {
+
+      igraph::V(g_undir)$leading_eigen <- memberships$leading_eigen_membership
+
+      leading_eigen_stats <- data.frame(method = "leading_eigen",
+                                        num_communities = max(memberships$leading_eigen_membership, na.rm = T),
+                                        modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$leading_eigen, weights = igraph::E(g_undir)$weight))
+    }
   }
 
 
@@ -369,15 +499,11 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   igraph::V(g)$cf1 <- memberships$cp_cluster
   igraph::V(g)$lc <- memberships$lc
 
-  igraph::modularity(g_undir, membership = (igraph::V(g)$cf1 + 1), weights = igraph::E(g_undir)$weight)
-  igraph::modularity(g_undir, membership = (igraph::V(g)$lc + 1), weights = igraph::E(g_undir)$weight)
 
   cf1_stats <- data.frame(method = "cp",
                           num_communities = length(unique(memberships$cp_cluster)),
                           modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster + 1), weights = igraph::E(g_undir)$weight))
-  lc_stats <- data.frame(method = "lc",
-                         num_communities = length(unique(memberships$cp_cluster)),
-                         modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster + 1), weights = igraph::E(g_undir)$weight))
+
 
   community_summaries <- rbind(edge_betweenness_stats,
                                fast_greedy_stats,
@@ -401,21 +527,32 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   # Some functions create modularity scores that vary depending on seed. Something to keep in mind for later.
 
   # Get median k and feed into stochastic block model
-  median_k <- stats::median(community_summaries$num_communities)
+  median_k <- stats::median(community_summaries$num_communities, na.rm = T)
 
 
   # Turn graph `g` into an adjacency matrix
   #adjmat <- as.matrix(igraph::as_adjacency_matrix(g_undir, type = "both", names = TRUE))
 
+
+
   # Run stochastic blockmodel
-  sbm <- spectral_sbm(Adj = g_sym,
-                      k = median_k)
+  if (n > 5000 & slow_routines == FALSE) {
+    memberships$sbm_membership <- NA
+    sbm_stats <- data.frame(method = "sbm", num_communities = NA,
+                            modularity = NA)
+  } else {
+    sbm <- spectral_sbm(Adj = g_sym,
+                        k = median_k)
 
-  # Add SBM information to node and network-level datasets
-  memberships$sbm_membership <- sbm
+    # Add SBM information to node and network-level datasets
+    memberships$sbm_membership <- sbm
 
-  sbm_stats <- data.frame(method = "sbm", num_communities = max(sbm),
-                          modularity = igraph::modularity(g_undir, membership = sbm, weights = igraph::E(g_undir)$weight))
+    sbm_stats <- data.frame(method = "sbm", num_communities = max(sbm),
+                            modularity = igraph::modularity(g_undir, membership = sbm, weights = igraph::E(g_undir)$weight))
+
+  }
+
+
   community_summaries <- rbind(community_summaries, sbm_stats)
   rownames(community_summaries) <- NULL
 
@@ -468,135 +605,156 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
 
     for (j in start_col:ncol(memberships)) {
 
-      compare_scores[length(compare_scores) + 1] <- igraph::compare(memberships[,i], memberships[,j], "adjusted.rand")
-
+      if (sum(is.na(memberships[,i])) == nrow(memberships) | sum(is.na(memberships[,j])) == nrow(memberships)) {
+        compare_scores[length(compare_scores) + 1] <- NA
+      } else {
+        compare_scores[length(compare_scores) + 1] <- igraph::compare(memberships[,i], memberships[,j], "adjusted.rand")
+      }
     }
   }
 
   compare_scores <- matrix(compare_scores, nrow = (ncol(memberships)-sub_val))
 
   # Kieran: Made unique here as was having dimension issues because of repetition
-  rownames(compare_scores) <- unique(community_summaries$method)
-  colnames(compare_scores) <- unique(community_summaries$method)
+  rownames(compare_scores) <- c("edge_betweenness",
+                                "fast_greedy","infomap",
+                                "label_prop", "leiden_mod",
+                                "leiden_cpm", "walktrap",
+                                "leading_eigen",
+                                "spinglass", "sbm",
+                                "cp", "lc")
+  colnames(compare_scores) <- c("edge_betweenness",
+                                "fast_greedy","infomap",
+                                "label_prop", "leiden_mod",
+                                "leiden_cpm", "walktrap",
+                                "leading_eigen",
+                                "spinglass", "sbm",
+                                "cp", "lc")
   diag(compare_scores) <- NA
 
+  compare_scores[is.nan(compare_scores)] <- NA
 
   # Plot network with nodes colored by community membership
   if (!shiny) {
-    fr <- igraph::layout.fruchterman.reingold(g)
+    # Don't create plots if too large
+    if (n > 5000) {
+      base::message("Network is too large to visualize all membership assignments simultaneously. Visualizations will not be generated.")
+    } else {
+      fr <- igraph::layout.fruchterman.reingold(g)
 
-    graphics::par(mfrow = c(2, 3))
-
-
-    # Edge betweenness
-    plot(g,
-         main = "Edge Betweenness",
-         vertex.size = 5,
-         #edge.width = .1,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,'edge_betweenness_membership'],
-         layout = fr)
-
-    # Fast/Greedy
-    plot(g,
-         main = "Fast/Greedy",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,'fast_greedy_membership'],
-         layout = fr)
-
-    # Infomap
-    plot(g,
-         main = "Infomap",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,'infomap_membership'],
-         layout = fr)
-
-    # Label Prop
-    plot(g,
-         main = "Label Prop.",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,"label_prop_membership"],
-         layout = fr)
-
-    # Leading Eigen
-    plot(g,
-         main = "Leading Eigen.",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,"leading_eigen_membership"],
-         layout = fr)
-
-    # Leiden (Mod)
-    plot(g,
-         main = "Leiden (Maximizing Modularity)",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,"leiden_mod_membership"],
-         layout = fr)
+      graphics::par(mfrow = c(2, 3))
 
 
-    # Leiden (CPM)
-    plot(g,
-         main = "Leiden (Constant Potts Model)",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,"leiden_cpm_membership"],
-         layout = fr)
+      # Edge betweenness
+      plot(g,
+           main = "Edge Betweenness",
+           vertex.size = 5,
+           #edge.width = .1,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,'edge_betweenness_membership'],
+           layout = fr)
 
-    # Spinglass
-    plot(g,
-         main = "Spinglass",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,"spinglass_membership"],
-         layout = fr)
+      # Fast/Greedy
+      plot(g,
+           main = "Fast/Greedy",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,'fast_greedy_membership'],
+           layout = fr)
 
-    # Walktrap
-    plot(g,
-         main = "Walktrap",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,"walktrap_membership"],
-         layout = fr)
+      # Infomap
+      plot(g,
+           main = "Infomap",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,'infomap_membership'],
+           layout = fr)
 
-    # SBM
-    plot(g,
-         main = "Stochastic Blockmodel",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,"sbm_membership"],
-         layout = fr)
+      # Label Prop
+      plot(g,
+           main = "Label Prop.",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,"label_prop_membership"],
+           layout = fr)
 
-    # CP
-    plot(g,
-         main = "Clique Percolation",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,"cp_cluster"],
-         layout = fr)
+      # Leading Eigen
+      plot(g,
+           main = "Leading Eigen.",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,"leading_eigen_membership"],
+           layout = fr)
 
-    # LC
-    plot(g,
-         main = "Link Communities",
-         vertex.size = 5,
-         edge.arrow.size = .01,
-         vertex.label = NA,
-         vertex.color = memberships[,"lc_cluster"],
-         layout = fr)
+      # Leiden (Mod)
+      plot(g,
+           main = "Leiden (Maximizing Modularity)",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,"leiden_mod_membership"],
+           layout = fr)
+
+
+      # Leiden (CPM)
+      plot(g,
+           main = "Leiden (Constant Potts Model)",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,"leiden_cpm_membership"],
+           layout = fr)
+
+      # Spinglass
+      plot(g,
+           main = "Spinglass",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,"spinglass_membership"],
+           layout = fr)
+
+      # Walktrap
+      plot(g,
+           main = "Walktrap",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,"walktrap_membership"],
+           layout = fr)
+
+      # SBM
+      plot(g,
+           main = "Stochastic Blockmodel",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,"sbm_membership"],
+           layout = fr)
+
+      # CP
+      plot(g,
+           main = "Clique Percolation",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,"cp_cluster"],
+           layout = fr)
+
+      # LC
+      plot(g,
+           main = "Link Communities",
+           vertex.size = 5,
+           edge.arrow.size = .01,
+           vertex.label = NA,
+           vertex.color = memberships[,"lc_cluster"],
+           layout = fr)
+    }
   }
 
 
@@ -634,6 +792,7 @@ comm_detect <- function(g, modres=1, shiny = FALSE) {
   output_list$score_comparison <- cs
   # assign(x= cn, value = cs,.GlobalEnv)
 
+
   return(output_list)
 
 }
@@ -670,9 +829,12 @@ spectral_sbm <- function(Adj, ##adjacency matrix
 
 multigroup_assign <- function(gmat, clust){
 
+  # browser()
+
   cpcomms <- matrix(nrow = nrow(gmat), ncol=length(clust), 0) # create node by community matrix
   rownames(cpcomms) <- rownames(gmat)
   colnames(cpcomms) <- 1:length(clust)
+
 
   for (i in 1:length(clust)){ # assign a 1 if node is part of community
     cpcomms[clust[[i]],i]<-1

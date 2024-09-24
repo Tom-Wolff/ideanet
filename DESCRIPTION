@@ -22,15 +22,16 @@ Imports:
     gridGraphics,
     igraph,
     intergraph,
+    jsonlite,
     linkcomm,
     magrittr,
-    MASS,
     Matrix,
     methods,
     moments,
     network,
     readxl,
     rlang,
+    RSpectra,
     shiny,
     sna,
     stringr,
@@ -48,7 +49,7 @@ Suggests:
     rmarkdown,
     shinycssloaders,
     visNetwork
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Depends: 
     R (>= 2.10)
 VignetteBuilder: knitr

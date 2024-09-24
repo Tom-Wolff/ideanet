@@ -31,6 +31,10 @@ nc_read <- function(
 
 ) {
 
+  # Creating fake objects to sidestep global binding issue
+  level_name <- NULL
+  var_type <- NULL
+
   # browser()
 
   # If user puts a forward slash at the end of the directory path they define,
@@ -200,7 +204,7 @@ nc_read <- function(
       these_alters <- alters %>% dplyr::filter(node_type == unique(alters$node_type)[[i]])
 
       # Use first CSV file stored in `data_file` column to read in which variables to keep for this type
-      keep_cols <- colnames(read.csv(these_alters[[1, "data_file"]]))
+      keep_cols <- colnames(utils::read.csv(these_alters[[1, "data_file"]]))
       # Finalize list of variables to keep based on earlier processing
       keep_cols <- c("ego_id", "alter_id", "node_type",
                      keep_cols[!keep_cols %in% c("nodeID", "null")])
@@ -242,7 +246,7 @@ nc_read <- function(
       this_el <- el %>% dplyr::filter(edge_type == unique(el$edge_type)[[i]])
 
       # Use first CSV file stored in `data_file` column to read in which variables to keep for this type
-      keep_cols <- colnames(read.csv(this_el[[1, "data_file"]]))
+      keep_cols <- colnames(utils::read.csv(this_el[[1, "data_file"]]))
       # Finalize list of variables to keep based on earlier processing
       keep_cols <- c("ego_id", "edge_id", "edge_type",
                      keep_cols[!keep_cols %in% c("edgeID", "null")])
@@ -289,7 +293,7 @@ nc_read <- function(
     exdir_path <- paste(stringr::str_extract(protocol, ".*\\/"), "nc_unzip/", sep = "")
 
     # Extract protocol file contents
-    unzip(protocol, exdir = exdir_path)
+    utils::unzip(protocol, exdir = exdir_path)
 
     # Read in JSON
     nc_json <- jsonlite::fromJSON(paste(exdir_path, "protocol.json", sep = ""))

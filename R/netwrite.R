@@ -137,6 +137,9 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 "system_measure_plot"),
                      message = TRUE) {
 
+
+  # netwrite_start <- Sys.time()
+
   # If a vector of edge weights are passed, check to see that all weights exceed
   # zero, otherwise return an error
   if (!is.null(weights)) {
@@ -887,6 +890,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                       "system_measure_plot"),
                            message = TRUE) {
 
+  # basic_start <- Sys.time()
 
   # Need to create a list for storing output
   basic_output <- list()
@@ -937,8 +941,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       g <- igraph::graph_from_adjacency_matrix(adjacency_matrix, mode=c('directed'), diag = TRUE,
                                                weighted = adj_weight)
 
-
-
       # Create Nodes file with Node-level measures
       edges <- as.data.frame(igraph::as_edgelist(g, names=FALSE))
 
@@ -960,6 +962,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Create alternate closeness function
       # Reachability function (eliminating loops)
 
+      # processing <- Sys.time()
+
       # Adding Node-level measures
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
 
@@ -976,6 +980,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         }
 
       }
+
+      # node_level_time <- Sys.time()
+
       # Extracting largest weakly-connected component
       # Extracting largest bicomponent
       # Calculating proportion of two-step paths that are also one-step paths (trans_rate)
@@ -995,6 +1002,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         global_clustering_coefficient <- gcc(g)
         average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
       }
+
+      # system_level_time1 <- Sys.time()
+
       # UNDIRECTED
     } else {
       # Set up conditional for generating weighted graph from weighted adjacency matrix
@@ -1044,6 +1054,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Create an alternate closeness function
       # Reachablility function (Eliminate Loops, reaching yourself isn't that useful)
 
+      # processing <- Sys.time()
+
       # Adding Node-Level Measures
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
         nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
@@ -1058,6 +1070,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         }
 
       }
+
+      # node_level_time <- Sys.time()
+
       # Extracting the largest weakly connected component
       # Extracting the largest bi-component
       # Calculating the Proportion of Two-Step Path that Are Also One-Step Paths
@@ -1077,6 +1092,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         global_clustering_coefficient <- gcc(g)
         average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
       }
+
+      #.system_level_time1 <- Sys.time()
 
 
 
@@ -1198,6 +1215,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     colnames(nodes) <- c('id')
     nodes$id <- nodes$id - 1
 
+    # processing <- Sys.time()
+
     # Create an alternate closeness function
     # Reachablility function (Eliminate Loops, reaching yourself isn't that useful)
     # Adding Node-Level Measures
@@ -1214,6 +1233,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       }
 
     }
+
+    # node_level_time <- Sys.time()
+
     # Extracting the largest weakly connected component
     # Extracting the largest bi-component
     # Calculating the Proportion of Two-Step Path that Are Also One-Step Paths
@@ -1232,6 +1254,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       global_clustering_coefficient <- gcc(g)
       average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
     }
+
+    # system_level_time1 <- Sys.time()
+
     # EDGELIST
   } else {
 
@@ -1264,7 +1289,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Adding Nodes
     if(is.null(nodelist[[1]]) == TRUE) {
       #if(length(nodelist) == 1 & nodelist[[1]] == FALSE) {
-      print("make nodes no nodelist")
+      # print("make nodes no nodelist")
       nodes <- as.data.frame(sort(unique(c(edgelist[,2], edgelist[,3]))))
       nodes <- cbind(seq(1,nrow(nodes),1), nodes)
       colnames(nodes) <- c('id', 'label')
@@ -1394,6 +1419,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Adding edge weights
     igraph::edge.attributes(g)$weight <- edgelist[,6]
 
+    # processing <- Sys.time()
 
     #   print('node-level measures')
     # Create an alternate closeness function
@@ -1412,6 +1438,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       }
 
     }
+
+    # node_level_time <- Sys.time()
+
     # Extracting the largest weakly connected component
     # Extracting the largest bi-component
     # Calculating the Proportion of Two-Step Path that Are Also One-Step Paths
@@ -1426,17 +1455,28 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         nodes <- dplyr::left_join(nodes, bicomponent$largest_bicomponent_memberships, by = "id")
       }
       degree_assortativity <- degree_assortativity(g, directed=as.logical(directed))
+      # deg_asst_time <- Sys.time()
       reciprocity_rate <- igraph::reciprocity(g, ignore.loops = TRUE, mode='ratio')
+      # rec_rate_time <- Sys.time()
       transitivity_rate <- trans_rate_igraph(g)
+      # trans_rate_time <- Sys.time()
       transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
+      # trans_rate_b_time <- Sys.time()
       global_clustering_coefficient <- gcc(g)
+      # gcc_time <- Sys.time()
       average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
+      # avg_path_time <- Sys.time()
 
       multiplex <- multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
                                               weight_type = weight_type,
                                               type = type)
+      #.multiplex_time <- Sys.time()
+
 
     }
+
+    # system_level_time1 <- Sys.time()
+
     # Outputting Network Objects
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
     ### I've added some code that reverts the weights back to original if need be.
@@ -1483,7 +1523,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       basic_output[[`net_name`]] <- g
       # assign(x = net_name, value = g,.GlobalEnv)
     }
+
   } # End edgelist condition
+
 
   ###########################################
   #    G E N E R A T I N G   R E P O R T    #
@@ -1493,13 +1535,17 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
     # Weak component summaries
     num_clusters <- igraph::clusters(g, mode="weak")[[3]]
+    # num_clust_time <- Sys.time()
     largest_size <- max(igraph::clusters(g, mode="weak")[[2]])
+    # largest_time <- Sys.time()
     proportion_largest <- max(igraph::clusters(g, mode="weak")[[2]])/nrow(nodes)
+    # prop_largest_time <- Sys.time()
 
     # Strong component summaries
     strong_num_clusters <- igraph::clusters(g, mode="strong")[[3]]
     strong_largest_size <- max(igraph::clusters(g, mode="strong")[[2]])
     strong_proportion_largest <- max(igraph::clusters(g, mode="strong")[[2]])/nrow(nodes)
+    # strong_time <- Sys.time()
 
     # Indicating if Adjacency matrix is singular, thus having eigen and
     # bonacich centralities calculated on undirected adjacency matrix
@@ -1508,6 +1554,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     } else {
       singular <- "Yes"
     }
+    singular_time <- Sys.time()
 
 
     # Undirected and directed pairwise reachability
@@ -1552,7 +1599,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
     }
-
+    # pairwise_time <- Sys.time()
 
 
 
@@ -1570,29 +1617,39 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     num_types <- ifelse((is.null(type) == TRUE), NA, length(unique(type)))
 
+    # basic_system_time <- Sys.time()
+
     mutual <- suppressWarnings(igraph::dyad_census(g)$mut)
     asym <- suppressWarnings(igraph::dyad_census(g)$asym)
     null_ties <- suppressWarnings(igraph::dyad_census(g)$null)
 
+    # dyad_census_time <- Sys.time()
+
+    t_census <- suppressWarnings(igraph::triad_census(g))
+
     # Triad census
-    triad_003 =  suppressWarnings(igraph::triad_census(g)[[1]])
-    triad_012 =  suppressWarnings(igraph::triad_census(g)[[2]])
-    triad_102 =  suppressWarnings(igraph::triad_census(g)[[3]])
-    triad_021D = suppressWarnings(igraph::triad_census(g)[[4]])
-    triad_021U = suppressWarnings(igraph::triad_census(g)[[5]])
-    triad_021C = suppressWarnings(igraph::triad_census(g)[[6]])
-    triad_111D = suppressWarnings(igraph::triad_census(g)[[7]])
-    triad_111U = suppressWarnings(igraph::triad_census(g)[[8]])
-    triad_030T = suppressWarnings(igraph::triad_census(g)[[9]])
-    triad_030C = suppressWarnings(igraph::triad_census(g)[[10]])
-    triad_201 =  suppressWarnings(igraph::triad_census(g)[[11]])
-    triad_120D = suppressWarnings(igraph::triad_census(g)[[12]])
-    triad_120U = suppressWarnings(igraph::triad_census(g)[[13]])
-    triad_120C = suppressWarnings(igraph::triad_census(g)[[14]])
-    triad_210 =  suppressWarnings(igraph::triad_census(g)[[15]])
-    triad_300 =  suppressWarnings(igraph::triad_census(g)[[16]])
+    triad_003 =  t_census[[1]]
+    triad_012 =  t_census[[2]]
+    triad_102 =  t_census[[3]]
+    triad_021D = t_census[[4]]
+    triad_021U = t_census[[5]]
+    triad_021C = t_census[[6]]
+    triad_111D = t_census[[7]]
+    triad_111U = t_census[[8]]
+    triad_030T = t_census[[9]]
+    triad_030C = t_census[[10]]
+    triad_201 =  t_census[[11]]
+    triad_120D = t_census[[12]]
+    triad_120U = t_census[[13]]
+    triad_120C = t_census[[14]]
+    triad_210 =  t_census[[15]]
+    triad_300 =  t_census[[16]]
+
+    # triad_census_time <- Sys.time()
 
     avg_geodesic <- igraph::average.path.length(g, directed = directed)
+
+    # avg_geo_time <- Sys.time()
 
     ### Jim wanted to add transitivity correlation score as an additional
     ### network-level measure. This is readymade in `sna`, so we'll use
@@ -1605,6 +1662,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     sna_mode <- ifelse(directed == T, "digraph", "graph")
     trans_cor <- sna::gtrans(intergraph::asNetwork(igraph::simplify(g, remove.multiple = T)), mode = sna_mode, measure = "correlation")
 
+    # trans_cor_time <- Sys.time()
 
     # print("density")
     if (directed == TRUE){
@@ -1615,10 +1673,14 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       density_undirected <- igraph::edge_density(g)
     }
 
+    # density_time <- Sys.time()
+
     num_isolates <- sum(nodes$total_degree == 0)
 
     # print("self_loops")
     num_self_loops <- sum(igraph::is.loop(g, eids = igraph::E(g)))
+
+    # iso_time <- Sys.time()
 
 
     # Centralization scores
@@ -1812,9 +1874,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     }
 
+    # centralization_time <- Sys.time()
+
 
     # K-core cohesion (ask Jim for best name for this measure)
     k_core_cohesion <- k_cohesion(graph = g)
+
+    # kcore_time <- Sys.time()
 
 
     measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties',
@@ -2078,6 +2144,62 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                                                                                    "Number of 210 Triads")), ]
     }
 
+    # make_df_time <- Sys.time()
+
+
+
+    # sys_level_time_vec <- c(deg_asst_time-node_level_time,
+    #                         rec_rate_time-deg_asst_time,
+    #                         trans_rate_time-rec_rate_time,
+    #                         trans_rate_b_time-trans_rate_time,
+    #                         gcc_time-trans_rate_b_time,
+    #                         avg_path_time-gcc_time,
+    #                         system_level_time1-avg_path_time,
+    #
+    #                         num_clust_time-system_level_time1,
+    #                         largest_time-num_clust_time,
+    #                         prop_largest_time-largest_time,
+    #                         strong_time-prop_largest_time,
+    #                         singular_time-strong_time,
+    #                         pairwise_time-singular_time,
+    #                         basic_system_time-pairwise_time,
+    #                         dyad_census_time-basic_system_time,
+    #                         triad_census_time-dyad_census_time,
+    #                         avg_geo_time-triad_census_time,
+    #                         density_time-avg_geo_time,
+    #                         iso_time-density_time,
+    #                         centralization_time-iso_time,
+    #                         kcore_time-centralization_time,
+    #                         make_df_time-kcore_time)
+    #
+    # basic_output$sys_level_time_df <- data.frame(stage = c(
+    #   "deg_asst_time",
+    #   "rec_rate_time",
+    #   "trans_rate_time",
+    #   "trans_rate_b_time",
+    #   "gcc_time",
+    #   "avg_path_time",
+    #   "system_level_time1",
+    #
+    #   "num_clust_time",
+    #   "largest_time",
+    #   "prop_largest_time",
+    #   "strong_time",
+    #   "singular_time",
+    #   "pairwise_time",
+    #   "basic_system_time",
+    #   "dyad_census_time",
+    #   "triad_census_time",
+    #   "avg_geo_time",
+    #   "density_time",
+    #   "iso_time",
+    #   "centralization_time",
+    #   "kcore_time",
+    #   "make_df_time"),
+    #   bigger_stage = c(rep(1, 7), rep(2, 15)),
+    #   duration = sys_level_time_vec)
+
+
 
     # If nodelist is in output, create indicator of singular Adjmat
     if ("nodelist" %in% output & directed == TRUE) {
@@ -2097,6 +2219,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # suppressWarnings(rm(bicomponent_summary, largest_bicomponent_memberships, envir = .GlobalEnv))
 
   }
+
+  # system_level_time2 <- Sys.time()
+
 
 
   # System & Node-Level Visualizations
@@ -2207,6 +2332,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     p_1
 
   }
+
+  # system_plot <- Sys.time()
 
 
   if ("node_measure_plot" %in% output) {
@@ -2458,6 +2585,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   }
 
+  # node_plot <- Sys.time()
+
   # Assigning Report Elements to the Global Environment
   if ("system_measure_plot" %in% output) {
     basic_output$system_measure_plot <- p_1
@@ -2482,6 +2611,18 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     basic_output$largest_bi_component <- bicomponent$largest_bi_component
     # suppressWarnings(rm(largest_bi_component, largest_bi_component_ids))
   }
+
+  # finish_time <- Sys.time()
+  #
+  # time_vec <- c(processing-basic_start, node_level_time-processing,
+  #               system_level_time1-node_level_time, system_level_time2-system_level_time1,
+  #               system_plot-system_level_time2, node_plot-system_plot,
+  #               finish_time-node_plot)
+  #
+  # basic_output$time_df <- data.frame(stage = c("processing", "node_measures",
+  #                                              "system_measures1", "system_measures2",
+  #                                              "system plot", "node plot", "finish"),
+  #                                    duration = time_vec)
 
 
   return(basic_output)
