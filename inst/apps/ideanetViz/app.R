@@ -125,8 +125,18 @@ ui <- shiny::fluidPage(
             shiny::uiOutput('filter_relation_type'),
             shiny::uiOutput('toggle_relational_coloring')
           ),
+          shiny::uiOutput('toggle_edge_coloring'),
           shiny::uiOutput('interactive'),
-          shiny::uiOutput('edge_weight_method')
+          shiny::uiOutput('edge_weight_method'),
+          conditionalPanel(
+            condition = "input.edge_weight_method != 'Uniform'",
+            shiny::uiOutput("filter_edge_by_weight"),
+            shiny::conditionalPanel(
+              condition = "input.filter_edge_by_weight",
+              shiny::uiOutput("filter_edge_weight")
+            )
+          ),
+          shiny::br()
           #shiny::uiOutput('edge_weight_scalar'),
         ),
         shiny::mainPanel(
@@ -502,7 +512,7 @@ server <- function(input, output, session) {
 
 
 
-nodes_used <- shiny::reactive({
+  nodes_used <- shiny::reactive({
     print('here nodes used')
     if(!is.null(node_data())) {
       temp <- FALSE
@@ -546,6 +556,7 @@ nodes_used <- shiny::reactive({
   output$multi_relational_toggle <- shiny::renderUI({
     shiny::checkboxInput("multi_relational_toggle", tags$b("Check if the graph is multirelational"), FALSE)
   })
+
 
   output$relational_column <- shiny::renderUI({
     shiny::selectInput('relational_column', label = "Column with relation type", choices = append("Empty",colnames(edge_data())), selected = 'Empty', multiple = FALSE)
@@ -878,8 +889,18 @@ nodes_used <- shiny::reactive({
     palette <- NULL
 
     if (input$palette_input == 'Uniform') {
-      rep(input$uniform_hex_code, number_of_color_groups_edges())
-      palette <- rep(input$uniform_hex_code, number_of_color_groups_edges())
+      if (input$multi_relational_toggle == TRUE && input$relational_column != "Empty" && input$toggle_edge_coloring == TRUE) {
+        if (number_of_color_groups_edges() == 1) {
+          grDevices::rainbow(10)[5]
+          palette <- grDevices::rainbow(10)[5]
+        } else {
+          grDevices::rainbow(number_of_color_groups_edges())
+          palette <- grDevices::rainbow(number_of_color_groups_edges())
+        }
+      } else{
+        rep(input$uniform_hex_code, number_of_color_groups_edges())
+        palette <- rep(input$uniform_hex_code, number_of_color_groups_edges())
+      }
     } else if (input$palette_input == 'Rainbow') {
       if (number_of_color_groups_edges() == 1) {
         grDevices::rainbow(10)[5]
@@ -937,20 +958,38 @@ nodes_used <- shiny::reactive({
   #Set edge and vertex Color Attribute in network
   net3 <- shiny::reactive({
     net <- net6()
+
     if (input$community_input != "None") {
-      igraph::V(net)$color <- color_matcher()$colrs[match(igraph::V(net)$communities, color_matcher()$groups)]
+      if (all(!is.na(igraph::V(net)$communities))) {
+        igraph::V(net)$color <- color_matcher()$colrs[match(igraph::V(net)$communities, color_matcher()$groups)]
+      }
     } else {
       igraph::V(net)$color <- color_matcher()$colrs[match(igraph::V(net)$group, color_matcher()$groups)]
     }
 
-    if (input$multi_relational_toggle == TRUE) {
-      if (input$relational_column != "Empty") {
-        igraph::E(net)$type <- edge_data()[,input$relational_column]
+    if (input$toggle_edge_coloring == TRUE && igraph::ecount(net) > 0) {
+
+      if (input$multi_relational_toggle == TRUE && input$relational_column != "Empty") {
+        igraph::E(net)$type <- edge_data()[, input$relational_column]
         igraph::E(net)$color <- color_matcher_edges()$colrs[match(igraph::E(net)$type, color_matcher_edges()$groups)]
+
+      } else if (input$multi_relational_toggle == FALSE) {
+        edge_ends <- igraph::ends(net, es = igraph::E(net), names = FALSE)
+        from_nodes <- edge_ends[, 1]
+        igraph::E(net)$color <- igraph::V(net)$color[from_nodes]
+
       }
+    } else {
+      igraph::E(net)$color <- input$uniform_hex_code
     }
+
     net
   })
+
+
+
+
+
   #### Update Edge weights ----
   #set edge weight
   # output$edge_weight_scalar <- shiny::renderUI({
@@ -976,15 +1015,24 @@ nodes_used <- shiny::reactive({
 
   #### Update isolates ----
   net4 <- shiny::reactive({
-    if (input$isolate_toggle == TRUE) {
-      net <- net7()
-      bad.vs<-igraph::V(net)[igraph::degree(net) == 0]
-      net <- igraph::delete.vertices(net, bad.vs)
-      net
-    } else {
-      net <- net7()
-      net
+    print("Starting net4 reactive")
+    net <- net7()
+    print(paste("net4 (initial) class:", class(net)))
+    print(paste("Is net4 (initial) an igraph object?", igraph::is.igraph(net)))
+
+    if (!igraph::is.igraph(net)) {
+      print("Error: net7() did not return a valid igraph object")
+      return(NULL)
     }
+
+    if (input$isolate_toggle == TRUE) {
+      bad.vs <- igraph::V(net)[igraph::degree(net) == 0]
+      net <- igraph::delete.vertices(net, bad.vs)
+    }
+
+    print(paste("net4 (final) class:", class(net)))
+    print(paste("Is net4 (final) an igraph object?", igraph::is.igraph(net)))
+    net
 
   })
 
@@ -993,16 +1041,19 @@ nodes_used <- shiny::reactive({
   # 2. Simplify (Self Loops and Repeating Edges)
 
   net5 <- shiny::reactive({
+    print("Starting net5 reactive")
+    net <- net4()
+    print(paste("net5 (initial) class:", class(net)))
+    print(paste("Is net5 (initial) an igraph object?", igraph::is.igraph(net)))
     if (input$simplify_toggle == TRUE) {
-      net <- net4()
       net <- igraph::simplify(net)
-      #igraph::V(net)$color <- color_generator()
-      net
+      print("Net simplified")
     } else {
-      net <- net4()
-      #igraph::V(net)$color <- color_generator()
-      net
+      print("Net not simplified")
     }
+    print(paste("net5 (final) class:", class(net)))
+    print(paste("Is net5 (final) an igraph object?", igraph::is.igraph(net)))
+    net
   })
 
   #### Pick Network layout ----
@@ -1028,13 +1079,32 @@ nodes_used <- shiny::reactive({
       shinyWidgets::materialSwitch(inputId = "interactive_switch", label = "Toggle Interactivity", status = "info", value = FALSE)
     })
 
-  #set method for weighting edges
-  output$edge_weight_method <-
-    shiny::renderUI({
-      shiny::selectInput(inputId = "edge_weight_method", label = "Edge width method", choices = c("Uniform", "Edge Data"), selected = "Uniform", multiple = FALSE)
-    })
+  current_edge_weight_method <- reactiveVal("Uniform")
 
+  output$edge_weight_method <- shiny::renderUI({
+    choices <- if (!is.null(input$edge_weight_col) && input$edge_weight_col != 'Empty') {
+      c("Uniform", "Edge Data")
+    } else {
+      "Uniform"
+    }
+    shiny::selectInput(inputId = "edge_weight_method", label = "Edge width method", choices = choices, selected = "Uniform")
+  })
 
+  observeEvent(input$edge_weight_method, {
+    if (input$edge_weight_method == "Uniform") {
+      current_edge_weight_method("Uniform")
+    } else {
+      current_edge_weight_method("Edge Data")
+    }
+  })
+
+  output$filter_edge_by_weight <- shiny::renderUI({
+    shiny::checkboxInput(inputId = "filter_edge_by_weight", label = "Filter edges by weight", value = FALSE)
+  })
+
+  output$filter_edge_weight <- shiny::renderUI({
+    shiny::numericInput(inputId = "filter_edge_weight", label = "Remove edges with weight less than: ", value = 0)
+  })
   # output$edge_color_method <- shiny::renderUI({
   #
   # })
@@ -1064,69 +1134,115 @@ nodes_used <- shiny::reactive({
     shiny::checkboxInput(inputId = "toggle_relational_coloring", label = "Toggle Multi-relational Coloring", value = TRUE)
   })
 
-  net8 <-
-    shiny::reactive({
-      net <- net5()
-      if (input$multi_relational_toggle == TRUE) {
-        if (input$filter_relation_type != 'None') {
-          net <- igraph::delete.edges(net, igraph::E(net)[igraph::E(net)$type == input$filter_relation_type])
+  output$toggle_edge_coloring <- shiny::renderUI({
+    # If multi-relational coloring is enabled, edge coloring should be on by default
+    edge_coloring_default <- if (input$multi_relational_toggle) TRUE else FALSE
+
+    shiny::checkboxInput(
+      inputId = "toggle_edge_coloring",
+      label = "Add Edge Coloring",
+      value = edge_coloring_default
+    )
+  })
+
+  # Ensure the edge coloring checkbox reacts to changes in multi-relational toggle
+  observeEvent(input$multi_relational_toggle, {
+    updateCheckboxInput(
+      session,
+      inputId = "toggle_edge_coloring",
+      value = if (input$multi_relational_toggle) TRUE else FALSE
+    )
+  })
+
+net8 <-
+  shiny::reactive({
+    net <- net5()
+    if (input$multi_relational_toggle == TRUE) {
+      if (input$filter_relation_type != 'None') {
+        net <- igraph::delete.edges(net, igraph::E(net)[igraph::E(net)$type == input$filter_relation_type])
+      }
+      if (input$toggle_relational_coloring == FALSE && "color" %in% igraph::edge_attr_names(net)) {
+        if (input$relational_column != 'Empty') {
+          edge_ends <- igraph::ends(net, es = igraph::E(net), names = FALSE)
+          from_nodes <- edge_ends[, 1]
+          igraph::E(net)$color <- igraph::V(net)$color[from_nodes]
         }
-        if (input$toggle_relational_coloring == FALSE) {
-          if (input$relational_column != 'Empty') {
-            net <- igraph::delete_edge_attr(net,'color')
-          }
-        }}
+      }
+    }
 
-      net.visn <- visNetwork::toVisNetworkData(net)
+    if (input$edge_weight_col != 'Empty') {
+      if (input$filter_edge_by_weight == TRUE) {
+        print(paste("Filtering edges with weight <", input$filter_edge_weight))
+        net <- igraph::delete.edges(net, igraph::E(net)[igraph::E(net)$weight < input$filter_edge_weight])
+      }
+    }
 
-      #set node labels manually because for SOME REASON it chooses to misbehave
-      net.visn$nodes$label <- igraph::V(net)$label
+    net.visn <- visNetwork::toVisNetworkData(net)
 
-      net.visn$nodes$label <- igraph::V(net)$label
+    # Debug output for colors
+    cat("Node colors:\n")
+    print(table(net.visn$nodes$color))
 
-      print(net.visn$nodes$label)
+    if ("color" %in% names(net.visn$edges)) {
+      cat("\nEdge colors:\n")
+      print(table(net.visn$edges$color))
+    } else {
+      cat("\nNo edge colors found.\n")
+    }
+
+    #set node labels manually because for SOME REASON it chooses to misbehave
+    net.visn$nodes$label <- igraph::V(net)$label
+
+    net.visn$nodes$label <- igraph::V(net)$label
+
+    print(net.visn$nodes$label)
 
 
-      if (input$interactive_switch) {
+    if (input$interactive_switch) {
+      if (input$edge_weight_method == "Uniform") {
+        net.visn$edges$value <- net.visn$edges$uni_weight
+        visNetwork::visNetwork(net.visn$nodes, net.visn$edges, width = "100%") %>%
+          visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
+          visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
+                                 nodesIdSelection = T) %>%
+          visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+          visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date()))  %>%
+          visNetwork::visGroups()
+      } else {
+        net.visn$edges$value <- net.visn$edges$weight
+        visNetwork::visNetwork(net.visn$nodes, net.visn$edges) %>%
+          visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
+          visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
+                                 nodesIdSelection = T) %>%
+          visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+          visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
+          visNetwork::visGroups()
+      }} else {
         if (input$edge_weight_method == "Uniform") {
           net.visn$edges$value <- net.visn$edges$uni_weight
-          visNetwork::visNetwork(net.visn$nodes, net.visn$edges, width = "100%") %>%
+          visNetwork::visNetwork(net.visn$nodes, net.visn$edges) %>%
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-            visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
-                                   nodesIdSelection = T) %>%
+            visNetwork::visInteraction(dragNodes = FALSE,
+                                       dragView = FALSE) %>%
             visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
-            visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date()))  %>%
+            visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
             visNetwork::visGroups()
         } else {
           net.visn$edges$value <- net.visn$edges$weight
           visNetwork::visNetwork(net.visn$nodes, net.visn$edges) %>%
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-            visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
-                                   nodesIdSelection = T) %>%
+            visNetwork::visInteraction(dragNodes = FALSE,
+                                       dragView = FALSE) %>%
             visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
             visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
             visNetwork::visGroups()
-        }} else {
-          if (input$edge_weight_method == "Uniform") {
-            net.visn$edges$value <- net.visn$edges$uni_weight
-            visNetwork::visNetwork(net.visn$nodes, net.visn$edges) %>%
-              visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-              visNetwork::visInteraction(dragNodes = FALSE,
-                                         dragView = FALSE) %>%
-              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
-              visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
-              visNetwork::visGroups()
-          } else {
-            net.visn$edges$value <- net.visn$edges$weight
-            visNetwork::visNetwork(net.visn$nodes, net.visn$edges) %>%
-              visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-              visNetwork::visInteraction(dragNodes = FALSE,
-                                         dragView = FALSE) %>%
-              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
-              visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
-              visNetwork::visGroups()
-          }}
-    })
+        }}
+  })
+
+
+
+
+
 
   output$network <- visNetwork::renderVisNetwork(net8())
 
@@ -1210,7 +1326,7 @@ nodes_used <- shiny::reactive({
       shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
       shiny::need(nodes_done(), 'Select node id column!')
       # shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
-      )
+    )
     if (input$multi_relational_toggle == TRUE) {
       shiny::selectInput('system_level_chooser', 'Choose which relation you want to visualize', choices = names(system_measure_plot), selected = NULL)
     }
@@ -1223,7 +1339,7 @@ nodes_used <- shiny::reactive({
       # shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
       shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
       shiny::need(nodes_done(), 'Select node id column!')
-      )
+    )
     if (input$multi_relational_toggle == TRUE) {
       shiny::selectInput('node_level_chooser', 'Choose which relation you want to visualize', choices = names(node_measure_plot), selected = NULL)
     }
