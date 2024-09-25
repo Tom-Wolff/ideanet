@@ -79,7 +79,6 @@
 #' described in Hunter, Goodreau & Handcock (2008).
 "fauxmesa_edges"
 
-
 #' Nodelist of marriage alliances and business relationships between Florentine families during the Italian Renaissance
 #'
 #' Breiger & Pattison (1986), in their discussion of local role analysis, use a subset of data on
@@ -252,20 +251,3 @@
 #' @source Original Data, Collected by Danielle Montagne, Joseph Quinn, Liann Tucker, and Tom Wolff.
 "ngq_aa"
 
-
-#' Division I-A College Football, Fall 2000
-#' 
-#' This dataset is a copy of the data in the football.gml file from Mark Newman's Network data website, as compiled by M. Girvan and M. Newman and used here with their permission. As described in their football.txt file, the data contains the network of American football games between Division I-A colleges during the regular season of Fall 2000. The nodes have values that indicate to which conferences they belong. If you make use of these data, please cite M. Girvan and M. E. J. Newman, Community structure in social and biological networks, Proc. Natl. Acad. Sci. USA 99, 7821-7826 (2002). Note also their correction that two edges were erroneously duplicated in this data set, and have been removed (21 SEP 2014).
-#' 
-#' @format 
-#' An igraph object with 115 nodes and 613 edges, including vertex attributes:
-#' \describe{
-#'   \item{id}{Numerical node index, 0 to 114.}
-#'   \item{label}{College name of each node.}
-#'   \item{value}{Numerical indicator of conference affiliation: \code{0} Atlantic Coast Conference, \code{1} Big East, \code{2} Big Ten, \code{3} Big 12, \code{4} Conference USA, \code{5} Independents, \code{6} Mid-American, \code{7} Mountain West, \code{8} Pacific-10, \code{9} Southeastern, \code{10} Sun Belt, \code{11} Western Athletic.}
-#'   ...
-#' }
-#' @source M. Girvan and M. E. J. Newman, Community structure in social and biological networks, Proc. Natl. Acad. Sci. USA 99, 7821-7826 (2002). Data downloaded from https://websites.umich.edu/~mejn/netdata/.
-"football"
-  
- 
