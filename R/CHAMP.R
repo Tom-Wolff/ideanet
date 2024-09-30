@@ -35,6 +35,8 @@ CHAMP <- function( network,
                    partitions,
                    plottitle=NULL ){
 
+
+  # browser()
 # In the original CHAMP paper and python implementation, we use QHull to do the heavy lifting. But since we're only dealing with a 1D parameter space here (for single-layer networks; multilayer networks will be dealt with elsewhere), we can instead brute-force the identification of the upper envelope of the Q(gamma) lines. (See the paper for figures of this.) Importantly, our simple algorithm here searching for the next line crossing could fail in the (rare?) circumstance where three different partitions intersect on the upper envelope of Q(gamma) at the same point.
 
   # Check input network is undirected
@@ -75,6 +77,53 @@ CHAMP <- function( network,
     }
 
 
+    # TOM'S ADDITION TO REMOVE AND RELABEL IDENTICAL CLUSTERING
+    match_df <- membership_df[,2:ncol(membership_df)]
+
+    match_mat <- matrix(rep(NA, ncol(match_df)^2), ncol = ncol(match_df))
+
+    for (i in 1:(ncol(match_df))) {
+      for(j in 1:(ncol(match_df))) {
+
+        if (i == j) {
+          next
+        } else {
+          match_mat[i, j] <- identical(membership_df[,i], membership_df[,j])
+        }
+      }
+    }
+
+    rownames(match_mat) <- colnames(match_df)
+    colnames(match_mat) <- colnames(match_df)
+
+    # These are the columns we should definitely keep (no matches)
+    keep_cols <- colnames(match_mat)[colSums(match_mat, na.rm = T) == 0]
+
+    # Identify which community detection methods should be lumped together
+    matched_rows <- match_mat[rowSums(match_mat, na.rm = T) > 0, ]
+    matched_rows[is.na(matched_rows)] <- FALSE
+    # Go through this subsetted column and identify which methods match one another
+    if (nrow(matched_rows) > 0) {
+
+    consolidate_cols <- c()
+    for (i in 1:nrow(matched_rows)) {
+      consolidate_cols <- c(consolidate_cols,
+                            paste(sort(c(rownames(matched_rows)[i], colnames(matched_rows)[matched_rows[i,]])), collapse = "/"))
+    }
+
+    # Get unique values from `consolidate_cols`
+    consolidate_cols <- unique(consolidate_cols)
+    #### Get just the first name of each of the sets
+    to_extract <- stringr::str_replace_all(consolidate_cols, "\\/.*$", "")
+
+    keep_df <- membership_df[,c("id", keep_cols, to_extract)]
+    colnames(keep_df) <- c("id", keep_cols, consolidate_cols)
+
+    membership_df <- keep_df
+    # END REMOVAL/RELABELING
+    }
+
+
   }
 
   # Identify whether the object fed to `partitions` is from `get_partitions` or
@@ -106,6 +155,52 @@ CHAMP <- function( network,
 
     ### Remove any methods that were skipped in `comm_detect`
     membership_df <- partitions$memberships[, !(colSums(is.na(partitions$memberships)) == nrow(partitions$memberships))]
+
+
+    # REMOVAL/RELABELING IDENTICAL PARTITIONINGS
+    match_df <- membership_df[,2:ncol(membership_df)]
+
+    match_mat <- matrix(rep(NA, ncol(match_df)^2), ncol = ncol(match_df))
+
+    for (i in 1:(ncol(match_df))) {
+      for(j in 1:(ncol(match_df))) {
+
+        if (i == j) {
+          next
+        } else {
+          match_mat[i, j] <- identical(membership_df[,i], membership_df[,j])
+        }
+      }
+    }
+
+    rownames(match_mat) <- colnames(match_df)
+    colnames(match_mat) <- colnames(match_df)
+
+    # These are the columns we should definitely keep (no matches)
+    keep_cols <- colnames(match_mat)[colSums(match_mat, na.rm = T) == 0]
+
+    # Identify which community detection methods should be lumped together
+    matched_rows <- match_mat[rowSums(match_mat, na.rm = T) > 0, ]
+    matched_rows[is.na(matched_rows)] <- FALSE
+    # Go through this subsetted column and identify which methods match one another
+    if (nrow(matched_rows) > 0) {
+      consolidate_cols <- c()
+      for (i in 1:nrow(matched_rows)) {
+        consolidate_cols <- c(consolidate_cols,
+                              paste(sort(c(rownames(matched_rows)[i], colnames(matched_rows)[matched_rows[i,]])), collapse = "/"))
+      }
+
+      # Get unique values from `consolidate_cols`
+      consolidate_cols <- unique(consolidate_cols)
+      #### Get just the first name of each of the sets
+      to_extract <- stringr::str_replace_all(consolidate_cols, "\\/.*$", "")
+
+      keep_df <- membership_df[,c("id", keep_cols, to_extract)]
+      colnames(keep_df) <- c("id", keep_cols, consolidate_cols)
+
+      membership_df <- keep_df
+      # END REMOVAL/RELABELING
+    }
 
 
     mod_matrix <- data.frame(row.names = colnames(membership_df)[-1],
