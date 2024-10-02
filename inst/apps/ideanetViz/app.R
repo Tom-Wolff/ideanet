@@ -183,27 +183,34 @@ ui <- shiny::fluidPage(
       "Node-Level Measures",
       shiny::sidebarLayout(
         shiny::sidebarPanel(
-          style = "height: 90vh; overflow-y: auto;",
-          shiny::uiOutput('show_vars'),
-          shiny::br(),
-          shiny::checkboxInput('graph_wanted', tags$b("Do you want to graph a variable?"), FALSE),
-          shiny::conditionalPanel(
-            condition = "input.graph_wanted == true",
-            shiny::uiOutput('data_table_vis_var')
+          shiny::wellPanel(
+            style = "height: 60vh;",
+            strong("Columns in node variables to show:"),
+            div(
+              style = "background-color: white; padding: 10px; height: 100%; overflow-y: auto;",
+              shiny::uiOutput('show_vars')
+            )
           ),
-          shiny::conditionalPanel(
-            condition = "input.graph_wanted == true & input.var_wanted == false",
-            shiny::uiOutput('data_table_vis_type')
-          ),
-          shiny::conditionalPanel(
-            condition = "input.graph_wanted == true",
-            shiny::checkboxInput('var_wanted', tags$b("Add second variable? (optional)"),FALSE)
-          ),
-          shiny::conditionalPanel(
-            condition = "input.var_wanted == true & input.graph_wanted == true",
-            shiny::uiOutput('data_table_vis_var2')
-          ),
-          shiny::downloadButton("downloadTable", "Download",icon = shiny::icon("download")),
+          shiny::wellPanel(
+            shiny::checkboxInput('graph_wanted', tags$b("Do you want to graph a variable?"), FALSE),
+            shiny::conditionalPanel(
+              condition = "input.graph_wanted == true",
+              shiny::uiOutput('data_table_vis_var')
+            ),
+            shiny::conditionalPanel(
+              condition = "input.graph_wanted == true & input.var_wanted == false",
+              shiny::uiOutput('data_table_vis_type')
+            ),
+            shiny::conditionalPanel(
+              condition = "input.graph_wanted == true",
+              shiny::checkboxInput('var_wanted', tags$b("Add second variable? (optional)"), FALSE)
+            ),
+            shiny::conditionalPanel(
+              condition = "input.var_wanted == true & input.graph_wanted == true",
+              shiny::uiOutput('data_table_vis_var2')
+            ),
+            shiny::downloadButton("downloadTable", "Download", icon = shiny::icon("download"))
+          )
         ),
         shiny::mainPanel(
           style = "overflow-x: auto;",
@@ -212,7 +219,8 @@ ui <- shiny::fluidPage(
           shiny::plotOutput('statistics_graph')
         )
       )
-    ),
+    )
+    ,
     ### Analysis tab ----
     # shiny::tabPanel(
     #   "Advanced Analysis Modules",
@@ -1391,7 +1399,7 @@ net8 <-
   ggplot2::theme_set(ggplot2::theme_light(base_size = 18))
 
   output$show_vars <- shiny::renderUI({
-    shiny::checkboxGroupInput("show_vars", "Columns in node variables to show:",
+    shiny::checkboxGroupInput("show_vars", "",
                               names(node_measures), selected = names(node_measures)[1:5])
   })
 
