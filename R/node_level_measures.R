@@ -154,6 +154,11 @@ node_level_igraph <- function(nodes, g, directed, message, weights) {
   #
   # assign("node_measure_times", time_df, .GlobalEnv)
 
+  # Depending on if the network given is weighted or not, the name of the betweenness
+  # may appear as either `betweenness` or `betweenness_scores`. We don't want the latter
+  # to occur, so we're renaming it here to be safe:
+  colnames(nodes)[colnames(nodes) == "betweenness_scores"] <- "betweenness"
+
   return(nodes)
 
 }

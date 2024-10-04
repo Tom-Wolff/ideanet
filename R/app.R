@@ -13,7 +13,19 @@ ideanetViz <- function() {
                            "DT",
                            "shinycssloaders",
                            "shinyWidgets",
-                           "visNetwork"))
+                           "visNetwork"),
+                         version = c("0.5-1",
+                                     "1.2.0",
+                                     "0.28",
+                                     "1.0.0",
+                                     "0.7.6",
+                                     "2.1.2"),
+                         compare = c(">=",
+                                     ">=",
+                                     ">=",
+                                     ">=",
+                                     ">=",
+                                     ">="))
 
   name = "ideanetViz"
   appDir <- system.file(paste0("apps/", name), package = "ideanet")

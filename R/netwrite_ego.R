@@ -1342,7 +1342,9 @@ ego_netwrite <- function(egos,
 
   if (egor == TRUE) {
 
-    rlang::check_installed("egor")
+    rlang::check_installed("egor",
+                           version = "1.23.3",
+                           compare = ">=")
 
     # 1. Rename columns to reflect egor formatting. `egor` is flexible with column
     # names in theory, but in practice using other names can result in bugs when
