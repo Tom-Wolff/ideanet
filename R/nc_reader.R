@@ -35,7 +35,7 @@ nc_read <- function(
   level_name <- NULL
   var_type <- NULL
 
-  # browser()
+  #browser()
 
   # If user puts a forward slash at the end of the directory path they define,
   # it will cause problems. Check if this happens and correct

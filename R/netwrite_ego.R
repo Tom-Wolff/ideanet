@@ -286,7 +286,6 @@ ego_netwrite <- function(egos,
 
 
 
-
   # Adjust this to clearly label ego-alter edge type variables
   if (!is.null(alter_types)) {
 
