@@ -14,7 +14,7 @@
 #' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
 #' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
-#' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"}, indicating that higher values represent stronger ties, and \code{"distance"}, indicating that higher values represent weaker ties.
+#' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"}, indicating that higher values represent stronger ties, and \code{"distance"}, indicating that higher values represent weaker ties. Note: some underlying functions assume that edges represent distances. If \code{weight_type} is set to \code{"frequency"}, these functions will use the reciprocal of \code{weights} as distance values in calculation.
 #' @param directed A logical value indicating whether edges should be treated as a directed or undirected when constructing the network.
 #' @param net_name A character value indicating the name to which network/igraph objects should be given.
 #' @param shiny A logical value indicating whether \code{netwrite} is being used in conjunction with IDEANet's Shiny-based visualization app. \code{shiny} should also be set to \code{TRUE} when using \code{ideanet} in an R Markdown file that users expect to knit into a document.
@@ -137,7 +137,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 "system_measure_plot"),
                      message = TRUE) {
 
-
+  # browser()
   # netwrite_start <- Sys.time()
 
   # If a vector of edge weights are passed, check to see that all weights exceed
@@ -890,6 +890,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                       "system_measure_plot"),
                            message = TRUE) {
 
+  # browser()
   # basic_start <- Sys.time()
 
   # Need to create a list for storing output
@@ -925,10 +926,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Also need to adjust for type of weight
       # Make Weights Reflect Frequency Rather than Distance
       if(weight_type == 'frequency') {
+        adjacency_matrix <- adjacency_matrix
+      }else{
         adjacency_matrix <- 1/adjacency_matrix
         adjacency_matrix[is.infinite(adjacency_matrix)] <- 0
-      }else{
-        adjacency_matrix <- adjacency_matrix
       }
 
       # If `remove_loops == TRUE`, remove self-loops
@@ -940,6 +941,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Generating directed graph
       g <- igraph::graph_from_adjacency_matrix(adjacency_matrix, mode=c('directed'), diag = TRUE,
                                                weighted = adj_weight)
+
+      if (is.null(adj_weight)) {
+        igraph::E(g)$weight <- 1
+      }
 
       # Create Nodes file with Node-level measures
       edges <- as.data.frame(igraph::as_edgelist(g, names=FALSE))
@@ -968,7 +973,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
 
         nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                   message = message, weights = weights)
+                                   message = message, weights = weights,
+                                   weight_type = weight_type)
 
 
         # If original `node_id` name is specified, rename column `attr` to match
@@ -1000,7 +1006,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         transitivity_rate <- trans_rate_igraph(g)
         transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
         global_clustering_coefficient <- gcc(g)
-        average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
+        if (weight_type == "frequency") {
+          average_path_length <- igraph::mean_distance(g, directed=as.logical(directed),
+                                                       weights = 1/igraph::E(g)$weight)
+        } else {
+          average_path_length <- igraph::mean_distance(g, directed=as.logical(directed))
+        }
       }
 
       # system_level_time1 <- Sys.time()
@@ -1018,10 +1029,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Also need to adjust for type of weight
       # Make Weights Reflect Frequency Rather than Distance
       if(weight_type == 'frequency') {
+        adjacency_matrix <- adjacency_matrix
+      }else{
         adjacency_matrix <- 1/adjacency_matrix
         adjacency_matrix[is.infinite(adjacency_matrix)] <- 0
-      }else{
-        adjacency_matrix <- adjacency_matrix
       }
 
       # If `remove_loops == TRUE`, remove self-loops
@@ -1059,7 +1070,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Adding Node-Level Measures
       if ("nodelist" %in% output | "node_measure_plot" %in% output) {
         nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                   message = message, weights = weights)
+                                   message = message, weights = weights,
+                                   weight_type = weight_type)
 
         # If original `node_id` name is specified, rename column `attr` to match
         if (!is.null(node_id)) {
@@ -1090,7 +1102,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         transitivity_rate <- trans_rate_igraph(g)
         transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
         global_clustering_coefficient <- gcc(g)
-        average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
+
+        if (weight_type == "frequency") {
+          average_path_length <- igraph::mean_distance(g, directed=as.logical(directed),
+                                                       weights = 1/igraph::E(g)$weight)
+        } else {
+          average_path_length <- igraph::mean_distance(g, directed=as.logical(directed))
+        }
       }
 
       #.system_level_time1 <- Sys.time()
@@ -1104,10 +1122,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
     ### I've added some code that reverts the weights back to original if need be.
     if(weight_type == 'frequency') {
+      adjacency_matrix <- adjacency_matrix
+    }else{
       adjacency_matrix <- 1/adjacency_matrix
       adjacency_matrix[is.infinite(adjacency_matrix)] <- 0
-    }else{
-      adjacency_matrix <- adjacency_matrix
     }
 
     if ("adjacency_matrix" %in% output) {
@@ -1125,7 +1143,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
     ### I've added some code that reverts the weights back to original if need be.
-    if(weight_type == 'frequency' & !is.null(adj_weight) == TRUE) {
+    if(weight_type == 'distance' & !is.null(adj_weight) == TRUE) {
       igraph::E(g)$weight <- 1/igraph::E(g)$weight
     }
 
@@ -1222,7 +1240,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Adding Node-Level Measures
     if ("nodelist" %in% output | "node_measure_plot" %in% output) {
       nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                 message = message, weights = weights)
+                                 message = message, weights = weights,
+                                 weight_type = weight_type)
 
       # If original `node_id` name is specified, rename column `attr` to match
       if (!is.null(node_id)) {
@@ -1252,7 +1271,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       transitivity_rate <- trans_rate_igraph(g)
       transitivity_rate_b <- trans_rate_igraph(g, binarize = TRUE)
       global_clustering_coefficient <- gcc(g)
-      average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
+
+      if (weight_type == "frequency") {
+        average_path_length <- igraph::mean_distance(g, directed=as.logical(directed),
+                                                     weights = 1/igraph::E(g)$weight)
+      } else {
+        average_path_length <- igraph::mean_distance(g, directed=as.logical(directed))
+      }
     }
 
     # system_level_time1 <- Sys.time()
@@ -1380,7 +1405,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     edgelist[,5] <- edgelist[,5] - 1
 
     # Make Weights Reflect Frequency Rather than Distance
-    if(weight_type == 'frequency') {
+    if(weight_type != 'frequency') {
       edgelist[,6] <- as.numeric(1/edgelist[,6])
     }else{
       edgelist[,6] <- edgelist[,6]
@@ -1427,7 +1452,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Adding Node-Level Measures
     if ("nodelist" %in% output | "node_measure_plot" %in% output) {
       nodes <- node_level_igraph(nodes = nodes, g = g, directed = directed,
-                                 message = message, weights = weights)
+                                 message = message, weights = weights,
+                                 weight_type = weight_type)
 
       # If original `node_id` name is specified, rename column `attr` to match
       if (!is.null(node_id)) {
@@ -1464,7 +1490,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # trans_rate_b_time <- Sys.time()
       global_clustering_coefficient <- gcc(g)
       # gcc_time <- Sys.time()
-      average_path_length <- igraph::average.path.length(g, directed=as.logical(directed))
+      if (weight_type == "frequency") {
+          average_path_length <- igraph::mean_distance(g, directed=as.logical(directed),
+                                                       weights = 1/igraph::E(g)$weight)
+      } else {
+          average_path_length <- igraph::mean_distance(g, directed=as.logical(directed))
+      }
       # avg_path_time <- Sys.time()
 
       multiplex <- multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
@@ -1480,7 +1511,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Outputting Network Objects
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
     ### I've added some code that reverts the weights back to original if need be.
-    if(weight_type == 'frequency') {
+    if(weight_type != 'frequency') {
       edgelist[,6] <- as.numeric(1/edgelist[,6])
     }else{
       edgelist[,6] <- edgelist[,6]
@@ -1500,7 +1531,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
     ### I've added some code that reverts the weights back to original if need be.
-    if(weight_type == 'frequency') {
+    if(weight_type != 'frequency') {
       igraph::E(g)$weight <- edgelist[,6]
     }
 
@@ -1647,7 +1678,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # triad_census_time <- Sys.time()
 
-    avg_geodesic <- igraph::average.path.length(g, directed = directed)
+    avg_geodesic <- igraph::mean_distance(g, directed = directed)
 
     # avg_geo_time <- Sys.time()
 
@@ -1699,7 +1730,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       bet_centr_u <- betweenness_centralization(g = g_no_iso,
                                                 weights = igraph::E(g_no_iso)$weight,
-                                                directed = FALSE)
+                                                directed = FALSE,
+                                                weight_type = weight_type)
 
 
       cent_bet_undir <- bet_centr_u$betweenness_centralization
@@ -1707,7 +1739,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       bet_centr_d <- betweenness_centralization(g = g_no_iso,
                                                 weights = igraph::E(g_no_iso)$weight,
-                                                directed = TRUE)
+                                                directed = TRUE,
+                                                weight_type = weight_type)
 
 
 
@@ -1761,7 +1794,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #                                                 mode = "in",
       #                                                 normalized = TRUE)$centralization
 
-      close_centr <- closeness_centralization(g, directed = TRUE)
+      close_centr <- closeness_centralization(g, directed = TRUE, weight_type = weight_type)
 
 
       cent_close_undir <- close_centr$centralization_un
@@ -1802,7 +1835,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #                                                      normalized = TRUE)$centralization
       bet_centr_u <- betweenness_centralization(g = g_no_iso,
                                                 weights = igraph::E(g_no_iso)$weight,
-                                                directed = FALSE)
+                                                directed = FALSE,
+                                                weight_type = weight_type)
 
       cent_bet_undir <- bet_centr_u$betweenness_centralization
       cent_bet_undir_bin <- bet_centr_u$binarized_betweenness_centralization
@@ -1845,7 +1879,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #                                                    mode = "all",
       #                                                    normalized = TRUE)$centralization
       cent_close_undir <- closeness_centralization(g_no_iso,
-                                                   directed = FALSE)
+                                                   directed = FALSE, weight_type = weight_type)
       cent_close_out <- NA
       cent_close_in <- NA
 

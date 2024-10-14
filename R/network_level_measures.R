@@ -159,11 +159,13 @@ largest_bicomponent_igraph <- function(g) {
 #############################################################
 
 
-betweenness_centralization <- function(g, weights, directed) {
+betweenness_centralization <- function(g, weights, directed, weight_type) {
+
+  # browser()
 
   # First step is to run the `betweenness` function and see wheter it produces
   # one measure or two
-  bet_scores <- betweenness(g, weights = weights, directed = directed)
+  bet_scores <- betweenness(g, weights = weights, directed = directed, weight_type = weight_type)
 
   # Might as well generate the star graph here too
   star_graph <- igraph::make_star(length(igraph::V(g)), mode = "undirected")
@@ -343,13 +345,16 @@ degree_centralization <- function(g, directed = directed) {
 #########################################################
 
 
-closeness_centralization <- function(g, directed = directed) {
+closeness_centralization <- function(g, directed = directed, weight_type) {
+
+  # browser()
 
   # DIRECTED NETS
   if (directed == TRUE) {
 
     # Get closeness scores
-    g_closeness_scores <- closeness_igraph(g, directed = TRUE)
+    g_closeness_scores <- closeness_igraph(g, directed = TRUE,
+                                           weight_type = weight_type)
     ### Incoming Ties
     max_in <- max(g_closeness_scores$closeness_in, na.rm = TRUE)
     numerator_in <- sum(max_in - g_closeness_scores$closeness_in)
@@ -363,19 +368,25 @@ closeness_centralization <- function(g, directed = directed) {
     # Generate star graphs for network of this size and calculate denominators
     ### Incoming Ties
     star_in <- igraph::make_star(length(igraph::V(g)), mode = "in")
-    star_in_closeness <- closeness_igraph(star_in, directed = TRUE)
+    igraph::E(star_in)$weight <- 1
+    star_in_closeness <- closeness_igraph(star_in, directed = TRUE,
+                                          weight_type = weight_type)
     max_star_in_closeness <- max(star_in_closeness$closeness_in, na.rm = TRUE)
     denom_in <- sum(max_star_in_closeness - star_in_closeness$closeness_in)
     centralization_in <- numerator_in/denom_in
     ### Outgoing Ties
     star_out <- igraph::make_star(length(igraph::V(g)), mode = "out")
-    star_out_closeness <- closeness_igraph(star_out, directed = TRUE)
+    igraph::E(star_out)$weight <- 1
+    star_out_closeness <- closeness_igraph(star_out, directed = TRUE,
+                                           weight_type = weight_type)
     max_star_out_closeness <- max(star_out_closeness$closeness_out, na.rm = TRUE)
     denom_out <- sum(max_star_out_closeness - star_out_closeness$closeness_out)
     centralization_out <- numerator_out/denom_out
     ### Undirected Ties
     star_undirected <- igraph::make_star(length(igraph::V(g)), mode = "undirected")
-    star_un_closeness <- closeness_igraph(star_undirected, directed = FALSE)
+    igraph::E(star_undirected)$weight <- 1
+    star_un_closeness <- closeness_igraph(star_undirected, directed = FALSE,
+                                          weight_type = "distance")
     max_star_un_closeness <- max(star_un_closeness, na.rm = TRUE)
     denom_un <- sum(max_star_un_closeness - star_un_closeness)
     centralization_un <- numerator_un/denom_un
@@ -388,14 +399,17 @@ closeness_centralization <- function(g, directed = directed) {
 
     # UNDIRECTED NETS
   } else {
-    g_closeness_scores <- closeness_igraph(g, directed = FALSE)
+    g_closeness_scores <- closeness_igraph(g, directed = FALSE,
+                                           weight_type = weight_type)
     max_closeness <- max(g_closeness_scores, na.rm = TRUE)
     numerator <- sum(max_closeness - g_closeness_scores)
 
     # Generate star graph for network of this size
     star_undirected <- igraph::make_star(length(igraph::V(g)), mode = "undirected")
+    igraph::E(star_undirected)$weight <- 1
 
-    star_closeness <- closeness_igraph(star_undirected, directed = FALSE)
+    star_closeness <- closeness_igraph(star_undirected, directed = FALSE,
+                                       weight_type = "distance")
     max_star_closeness <- max(star_closeness, na.rm = TRUE)
     denominator <- sum(max_star_closeness - star_closeness)
 
@@ -621,6 +635,9 @@ degree_assortativity <- function(g, directed) {
 #########################################
 
 average_geodesic <- function(g) {
+
+  # browser()
+
   # Generating the number and lengths of all geodesics between all nodes
   gd <- sna::geodist(g, count.paths = FALSE)
 

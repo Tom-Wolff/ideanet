@@ -2,7 +2,8 @@
 #    N O D E - L E V E L   M E A S U R E S    #
 ###############################################
 
-node_level_igraph <- function(nodes, g, directed, message, weights) {
+node_level_igraph <- function(nodes, g, directed, message, weights,
+                              weight_type) {
 
   # browser()
 
@@ -25,11 +26,11 @@ node_level_igraph <- function(nodes, g, directed, message, weights) {
     weighted_indegree <- igraph::strength(g, mode='in', loops=FALSE)
     weighted_outdegree <- igraph::strength(g, mode='out', loops=FALSE)
     # Closeness has three elements now
-    closeness_in <- closeness_igraph(g, directed = TRUE)$closeness_in
-    closeness_out <- closeness_igraph(g, directed = TRUE)$closeness_out
-    closeness_undirected <- closeness_igraph(g, directed = TRUE)$closeness_un
+    closeness_in <- closeness_igraph(g, directed = TRUE, weight_type = weight_type)$closeness_in
+    closeness_out <- closeness_igraph(g, directed = TRUE, weight_type = weight_type)$closeness_out
+    closeness_undirected <- closeness_igraph(g, directed = TRUE, weight_type = weight_type)$closeness_un
     # closeness_time <- Sys.time()
-    betweenness_scores <- betweenness(g, weights, directed)
+    betweenness_scores <- betweenness(g, weights, directed, weight_type = weight_type)
     # betweenness_time <- Sys.time()
     # bonpow <- igraph::bonpow(g, loops=FALSE, exponent = 0.75)
     bonpow <- bonacich_igraph(g, directed=as.logical(directed),
@@ -104,9 +105,9 @@ node_level_igraph <- function(nodes, g, directed, message, weights) {
 
   }else{
 
-    closeness <- closeness_igraph(g, directed = FALSE)
+    closeness <- closeness_igraph(g, directed = FALSE, weight_type = weight_type)
     # closeness_time <- Sys.time()
-    betweenness_scores <- betweenness(g, weights, directed)
+    betweenness_scores <- betweenness(g, weights, directed, weight_type = weight_type)
     # betweenness_time <- Sys.time()
     # bonpow <- igraph::bonpow(g, loops=FALSE, exponent = 0.75)
     bonpow <- bonacich_igraph(g, directed=as.logical(directed),
@@ -264,8 +265,17 @@ total_degree <- function(g,
 ###########################
 
 # Create an alternate closeness function
-closeness_igraph <- function(g, directed){
-  geo <- 1/igraph::distances(g, mode='out')
+closeness_igraph <- function(g, directed, weight_type){
+
+  # browser()
+
+  # If weights are frequency measures, convert to distances
+  if (weight_type == "frequency") {
+    geo <- 1/igraph::distances(g, mode='out', weights = 1/igraph::edge_attr(g, "weight"))
+  } else {
+    geo <- 1/igraph::distances(g, mode='out')
+  }
+
   diag(geo) <- 0 # Define self-ties as 0
 
   # Jim wants scores normalized (divided by n-1), so let's collect that
@@ -276,7 +286,15 @@ closeness_igraph <- function(g, directed){
 
     # Need to create an undirected version of the network and do the same process above
     g_un <- igraph::as.undirected(g)
-    geo2 <- 1/igraph::distances(g_un, mode = "out")
+
+    # Handing weights as distances again
+    if (weight_type == "frequency") {
+      geo2 <- 1/igraph::distances(g_un, mode = "out")
+    } else {
+      geo2 <- igraph::distances(g_un, mode = "out")
+    }
+
+
     diag(geo2) <- 0
 
     closeness_list <- list(closeness_out = rowSums(geo)/denom,
@@ -295,7 +313,9 @@ closeness_igraph <- function(g, directed){
 #    B E T W E E N E S S    #
 #############################
 
-betweenness <- function(g, weights, directed){
+betweenness <- function(g, weights, directed, weight_type){
+
+  # browser()
 
   # Binarizing Network if Weights Used
   if (!is.null(weights) == TRUE){
@@ -319,8 +339,17 @@ betweenness <- function(g, weights, directed){
   if(is.null(weights) == TRUE){
     betweenness <- igraph::betweenness(g, directed=as.logical(directed), weights=NULL)
   }else{
-    betweenness <- igraph::betweenness(g, directed=as.logical(directed),
-                                       weights = igraph::get.edge.attribute(g, "weight"))
+
+    # Making sure edge weights are being treated as distances
+    if (weight_type == "frequency") {
+      betweenness <- igraph::betweenness(g, directed=as.logical(directed),
+                                         weights = 1/igraph::edge_attr(g, "weight"))
+    } else {
+      betweenness <- igraph::betweenness(g, directed=as.logical(directed),
+                                         weights = igraph::edge_attr(g, "weight"))
+    }
+
+
   }
 
   # Creating Output Matrix
@@ -491,7 +520,12 @@ reachable_igraph <- function(g, directed){
 
 burt_ch <- function(g) {
 
-  adj <- igraph::get.adjacency(g)
+  # If network lacks weight attribute, set weights to 1
+  if (is.null(igraph::edge_attr(g, "weight"))) {
+    igraph::E(g)$weight <- 1
+  }
+
+  adj <- igraph::as_adjacency_matrix(g, attr = "weight")
 
   # See if this is a weighted matrix
   weighted <- max(adj, na.rm = TRUE) > 1

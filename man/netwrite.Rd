@@ -51,7 +51,7 @@ netwrite(
 
 \item{missing_code}{A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.}
 
-\item{weight_type}{A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"}, indicating that higher values represent stronger ties, and \code{"distance"}, indicating that higher values represent weaker ties.}
+\item{weight_type}{A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"}, indicating that higher values represent stronger ties, and \code{"distance"}, indicating that higher values represent weaker ties. Note: some underlying functions assume that edges represent distances. If \code{weight_type} is set to \code{"frequency"}, these functions will use the reciprocal of \code{weights} as distance values in calculation.}
 
 \item{directed}{A logical value indicating whether edges should be treated as a directed or undirected when constructing the network.}
 

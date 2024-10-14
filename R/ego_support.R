@@ -4,6 +4,8 @@
 
 alter_centrality <- function(x, directed) {
 
+  # browser()
+
   # Two necessary conditions:
   ### 1. Is ego an isolate? If that's the case, no igraph objects would have
   ### been stored for it in `igraph_list`
@@ -59,9 +61,13 @@ alter_centrality <- function(x, directed) {
       total_degree <- rep(0, length(igraph::V(x$igraph)))
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph, directed = FALSE)
+      closeness <- closeness_igraph(x$igraph, directed = FALSE,
+                                    # NOTE: FOR CLOSENESS AND BETWEENNESS, WE'RE ASSUMING WEIGHTS ARE DISTANCES
+                                    # BECAUSE WE DON'T CURRENTLY SUPPORT WEIGHTED GRAPHS
+                                    weight_type = "distance")
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
-      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
+      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE,
+                                        weight_type = "distance")
       # Remove the final value here, as that's ego's score
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
       eigen_cen <- rep(NA, length(total_degree))
@@ -94,12 +100,14 @@ alter_centrality <- function(x, directed) {
       total_degree <- rep(0, length(igraph::V(x$igraph)))
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE)
+      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE,
+                                           weight_type = "distance")
       closeness_in <- closeness_scores$closeness_in
       closeness_out <- closeness_scores$closeness_out
       closeness_un <- closeness_scores$closeness_un
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
-      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
+      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE,
+                                        weight_type = "distance")
       # Remove the final value here, as that's ego's score
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
       eigen_cen <- rep(NA, length(total_degree))
@@ -133,9 +141,11 @@ alter_centrality <- function(x, directed) {
       total_degree <- total_degree(x$igraph, directed = FALSE)$total_degree_all
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph, directed = FALSE)
+      closeness <- closeness_igraph(x$igraph, directed = FALSE,
+                                    weight_type = "distance")
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
-      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE)
+      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE,
+                                        weight_type = "distance")
       # Remove the final value here, as that's ego's score
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
       bonpow <- bonacich_igraph(x$igraph, directed = FALSE, message = TRUE)
@@ -169,12 +179,14 @@ alter_centrality <- function(x, directed) {
       total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE)
+      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE,
+                                           weight_type = "distance")
       closeness_in <- closeness_scores$closeness_in
       closeness_out <- closeness_scores$closeness_out
       closeness_un <- closeness_scores$closeness_un
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
-      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE)
+      betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE,
+                                        weight_type = "distance")
       # Remove the final value here, as that's ego's score
       betweenness_scores <- betweenness_scores[-length(betweenness_scores)]
       bonpow <- bonacich_igraph(x$igraph, directed = TRUE, message = TRUE)
