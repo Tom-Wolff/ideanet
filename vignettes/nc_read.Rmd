@@ -108,6 +108,24 @@ nc_data <- nc_read(path = "~/Desktop/network_canvas_directory/",
 
 `nc_read` will read in all CSV files located in the specified directory, process them, and return a list containing a formatted ego list (named `egos`), alter list (named `alters`), and alter-alter edgelist (if applicable, this will be named `alter_edgelist`). If multiple edge types exist for ego-alter and/or alter-alter ties, edgelists for each type of tie are stored as individual data frames as elements in a list. 
 
+
+### Handing Problematic Data Entry Using `nc_merge`
+
+In some cases, `nc_read` will fail to merge CSVs that are exported for individual responses. This can occur when R detects a variable to be of one class (such as a numeric) in one file but detects the same variable to be of a different class (such as a character) in another file. Users can sidestep this issue by using the `nc_merge` function to merge these files into a format that `nc_read` will successfully process.
+
+To use `nc_merge`, users must specify the path of individual CSVs exported from Network Canvas that would normally be given to `nc_read`. `nc_merge` takes a second argument, `export_path`, that specifies a second, separate directory where merged CSV files are to be stored. Once users run `nc_merge`, they can use `nc_read` as they normally would. However, users should ensure that the directory specified in `nc_read`'s `path` argument matches that specified as `export_path` in `nc_merge`:
+
+```{r nc_merge, eval = FALSE}
+
+nc_merge(path = "~/Desktop/network_canvas_directory/",
+         export_path = "~/Desktop/merged_network_canvas_directory/")
+
+
+nc_data <- nc_read(path = "~/Desktop/merged_network_canvas_directory/",
+                   cat.to.factor = TRUE)
+```
+
+
 ## Using `nc_read` with `ego_netwrite`
 
 The various dataframes created by `nc_read` are formatted for use with `ideanet`'s `ego_netwrite` function. If a Network Canvas protocol features only one type of alter and only one type of alter-alter tie, users need only specify the `egos`, `alters`, and `alter_edgelists` items as the ego list, alter list, and alter-alter edgelist (respectively) where `ego_netwrite` asks for them. `ego_netwrite` also asks users to specify the names of columns containing unique identifiers in the ego list, alter list, and alter-alter edgelist. For your convenience, `nc_read` creates new identifier columns whose simple names can be used in lieu of Network Canvas's original identifiers:

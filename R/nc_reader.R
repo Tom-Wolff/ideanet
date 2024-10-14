@@ -35,7 +35,7 @@ nc_read <- function(
   level_name <- NULL
   var_type <- NULL
 
-  #browser()
+  # browser()
 
   # If user puts a forward slash at the end of the directory path they define,
   # it will cause problems. Check if this happens and correct
@@ -81,8 +81,10 @@ nc_read <- function(
       node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
       node_type <- stringr::str_replace(node_type, "attributeList_", "")
       node_type <- stringr::str_replace(node_type, ".csv", "")
-      alters$node_type <- node_type
-      alters$data_file <- paste(path, alter_files[[i]], sep = "/")
+      if (node_type != "merged") {
+          alters$node_type <- node_type
+          alters$data_file <- paste(path, alter_files[[i]], sep = "/")
+      }
     } else {
       this_alter <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
       # Only need to do the rest if there are actually alter nominated by ego,
@@ -92,8 +94,10 @@ nc_read <- function(
         node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
         node_type <- stringr::str_replace(node_type, "attributeList_", "")
         node_type <- stringr::str_replace(node_type, ".csv", "")
-        this_alter$node_type <- node_type
-        this_alter$data_file <- paste(path, alter_files[[i]], sep = "/")
+        if (node_type != "merged") {
+            this_alter$node_type <- node_type
+            this_alter$data_file <- paste(path, alter_files[[i]], sep = "/")
+        }
         alters <- dplyr::bind_rows(alters, this_alter)
       }
     }
@@ -120,8 +124,10 @@ nc_read <- function(
       edge_type <- stringr::str_extract(edge_files[[i]], "edgeList.*.csv")
       edge_type <- stringr::str_replace(edge_type, "edgeList_", "")
       edge_type <- stringr::str_replace(edge_type, ".csv", "")
-      el$edge_type <- edge_type
-      el$data_file <- paste(path, edge_files[[i]], sep = "/")
+      if (edge_type != "merged") {
+          el$edge_type <- edge_type
+          el$data_file <- paste(path, edge_files[[i]], sep = "/")
+      }
     } else {
       this_el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = T)
 
@@ -132,8 +138,10 @@ nc_read <- function(
         edge_type <- stringr::str_extract(edge_files[[i]], "edgeList.*.csv")
         edge_type <- stringr::str_replace(edge_type, "edgeList_", "")
         edge_type <- stringr::str_replace(edge_type, ".csv", "")
-        this_el$edge_type <- edge_type
-        this_el$data_file <- paste(path, edge_files[[i]], sep = "/")
+        if (edge_type != "merged") {
+            this_el$edge_type <- edge_type
+            this_el$data_file <- paste(path, edge_files[[i]], sep = "/")
+        }
         el <- dplyr::bind_rows(el, this_el)
       }
     }
