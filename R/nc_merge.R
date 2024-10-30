@@ -161,13 +161,13 @@ nc_merge <- function(
 
 
   # Exporting merged CSVs
-  write.csv(egos,
+  utils::write.csv(egos,
             paste(export_path, "merged_ego.csv", sep = "/"))
-  write.csv(alters,
+  utils::write.csv(alters,
             paste(export_path, "attributeList_merged.csv", sep = "/"))
 
   if (no_el == FALSE) {
-    write.csv(el,
+    utils::write.csv(el,
               paste(export_path, "edgeList_merged.csv", sep = "/"))
   }
 

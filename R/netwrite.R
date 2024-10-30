@@ -642,7 +642,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # System-level measures summaries list
       ### Rename the `measures` column to the edge type
-      colnames(this_netwrite$system_level_measures) <- c("measure", "description", names(edges_list)[[i]])
+      colnames(this_netwrite$system_level_measures) <- c("measure_labels", "description", names(edges_list)[[i]])
       s_measures_list[[i]] <- this_netwrite$system_level_measures
       # suppressWarnings(rm(system_level_measures))
 

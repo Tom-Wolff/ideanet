@@ -14,6 +14,9 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
 
   total_degree <- custom_degree$total_degree_all
   weighted_degree <- igraph::strength(g, mode='all', loops=FALSE)
+  # Normalized weighted degree is weighted degree/(n-1)
+  # OR just divide by sum of all edge weights (MAKE THIS AN ADDED VALUE RATHER THAN A REPLACEMENT)
+  norm_weighted_degree <- weighted_degree/sum(weighted_degree)
   comp_membership <- component_memberships(g)
 
   # degree_time <- Sys.time()
@@ -25,10 +28,33 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
     out_degree <- custom_degree$total_degree_out
     weighted_indegree <- igraph::strength(g, mode='in', loops=FALSE)
     weighted_outdegree <- igraph::strength(g, mode='out', loops=FALSE)
+    # Normalized weighted degree for in and out
+    norm_weighted_indegree <- weighted_indegree/sum(weighted_indegree)
+    norm_weighted_outdegree <- weighted_outdegree/sum(weighted_outdegree)
     # Closeness has three elements now
-    closeness_in <- closeness_igraph(g, directed = TRUE, weight_type = weight_type)$closeness_in
-    closeness_out <- closeness_igraph(g, directed = TRUE, weight_type = weight_type)$closeness_out
-    closeness_undirected <- closeness_igraph(g, directed = TRUE, weight_type = weight_type)$closeness_un
+    ### NOTE: `igraph::harmonic_closeness` achieves the same end as our custom function, so
+    ### we'll be using that instead. Make sure you specify that in documentation
+    # closeness_in <- closeness_igraph(g, directed = TRUE, weight_type = weight_type)$closeness_in
+    # closeness_out <- closeness_igraph(g, directed = TRUE, weight_type = weight_type)$closeness_out
+    # closeness_undirected <- closeness_igraph(g, directed = TRUE, weight_type = weight_type)$closeness_un
+    if (weight_type == "frequency") {
+      closeness_in <- igraph::harmonic_centrality(g, mode = "in",
+                                                  normalized = TRUE)
+      closeness_out <- igraph::harmonic_centrality(g, mode = "out",
+                                                   normalized = TRUE)
+      closeness_undirected <- igraph::harmonic_centrality(g, mode = "all",
+                                                          normalized = TRUE)
+    } else {
+      closeness_in <- igraph::harmonic_centrality(g, mode = "in",
+                                                  weights = 1/igraph::E(g)$weight,
+                                                  normalized = TRUE)
+      closeness_out <- igraph::harmonic_centrality(g, mode = "out",
+                                                   weights = 1/igraph::E(g)$weight,
+                                                   normalized = TRUE)
+      closeness_undirected <- igraph::harmonic_centrality(g, mode = "all",
+                                                          weights = 1/igraph::E(g)$weight,
+                                                          normalized = TRUE)
+    }
     # closeness_time <- Sys.time()
     betweenness_scores <- betweenness(g, weights, directed, weight_type = weight_type)
     # betweenness_time <- Sys.time()
@@ -67,8 +93,11 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
       bon_cent_out_negative <- max(bonpow_negative[[4]], na.rm = T)
       bon_cent_sym_negative <- max(bonpow_negative[[6]], na.rm = T)
 
-      nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree, weighted_degree, in_degree, out_degree,
-                                   weighted_indegree, weighted_outdegree,
+      nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree,
+                                   weighted_degree, norm_weighted_degree,
+                                   in_degree, out_degree,
+                                   weighted_indegree, norm_weighted_indegree,
+                                   weighted_outdegree, norm_weighted_outdegree,
                                    closeness_in, closeness_out, closeness_undirected,
                                    betweenness_scores,
                                    bonpow_in, bonpow_out, bonpow_sym,
@@ -91,8 +120,11 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
       bon_cent_neg <- max(bonpow_negative[[2]], na.rm = T)
       bonpow_negative <- bonpow_negative[[1]]
 
-      nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree, weighted_degree, in_degree, out_degree,
-                                   weighted_indegree, weighted_outdegree,
+      nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree,
+                                   weighted_degree, norm_weighted_degree,
+                                   in_degree, out_degree,
+                                   weighted_indegree, norm_weighted_indegree,
+                                   weighted_outdegree, norm_weighted_outdegree,
                                    closeness_in, closeness_out, closeness_undirected,
                                    betweenness_scores, bonpow, bonpow_negative,
                                    eigen_cen, constraint, effective_size, reachability))
@@ -105,7 +137,14 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
 
   }else{
 
-    closeness <- closeness_igraph(g, directed = FALSE, weight_type = weight_type)
+    # closeness <- closeness_igraph(g, directed = FALSE, weight_type = weight_type)
+    if (weight_type == "frequency") {
+      closeness <- igraph::harmonic_centrality(g, normalized = TRUE)
+    } else {
+      closeness <- igraph::harmonic_centrality(g,
+                                               weights = 1/igraph::E(g)$weight,
+                                               normalized = TRUE)
+    }
     # closeness_time <- Sys.time()
     betweenness_scores <- betweenness(g, weights, directed, weight_type = weight_type)
     # betweenness_time <- Sys.time()
@@ -131,7 +170,8 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
     bon_cent_neg <- bonpow_negative[[2]]
     bonpow_negative <- bonpow_negative[[1]]
 
-    nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree, weighted_degree,
+    nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree,
+                                 weighted_degree, norm_weighted_degree,
                                  closeness, betweenness_scores, bonpow,
                                  bonpow_negative,
                                  eigen_cen, constraint, effective_size,
@@ -337,16 +377,19 @@ betweenness <- function(g, weights, directed, weight_type){
 
   # Calculating Betweenness
   if(is.null(weights) == TRUE){
-    betweenness <- igraph::betweenness(g, directed=as.logical(directed), weights=NULL)
+    betweenness <- igraph::betweenness(g, directed=as.logical(directed), weights=NULL,
+                                       normalize=T)
   }else{
 
     # Making sure edge weights are being treated as distances
     if (weight_type == "frequency") {
       betweenness <- igraph::betweenness(g, directed=as.logical(directed),
-                                         weights = 1/igraph::edge_attr(g, "weight"))
+                                         weights = 1/igraph::edge_attr(g, "weight"),
+                                         normalize=T)
     } else {
       betweenness <- igraph::betweenness(g, directed=as.logical(directed),
-                                         weights = igraph::edge_attr(g, "weight"))
+                                         weights = igraph::edge_attr(g, "weight"),
+                                         normalize=T)
     }
 
 
@@ -613,7 +656,14 @@ ef2 <- function(g) {
   # browser()
 
   # Convert igraph object to adjmat
-  mat <- igraph::as_adjacency_matrix(igraph::as.undirected(g))
+  # mat <- igraph::as_adjacency_matrix(igraph::as.undirected(g))
+  ### If igraph object doesn't contain a `weight` attribute, create one and set
+  ### all values to `1`:
+  if (!("weight" %in% names(igraph::edge.attributes(g)))) {
+    igraph::E(g)$weight <- 1
+  }
+
+  mat <- igraph::as_adjacency_matrix(igraph::as.undirected(g), attr = "weight")
 
   deg <- Matrix::rowSums(mat)
   redun <- rep(0, nrow(mat))
@@ -747,7 +797,7 @@ bonacich <- function(matrix, bpct = .75) {
 bonacich_igraph <- function(g, directed, bpct = .75,
                             message = TRUE) {
 
-  # browser()
+ # browser()
 
   # Store complete nodelist for merging later on
   nodelist <- data.frame(id = igraph::V(g)$name)
@@ -764,7 +814,14 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
   # Convert igraph object into adjacency matrix
   #bon_adjmat <- as.matrix(igraph::get.adjacency(g, type = "both", names = TRUE))
-  bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE)
+  # bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE)
+  ### If igraph object doesn't contain a `weight` attribute, create one and set
+  ### all values to `1`:
+  if (!("weight" %in% names(igraph::edge.attributes(g)))) {
+    igraph::E(g)$weight <- 1
+  }
+
+  bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE, attr = "weight")
 
   # We need to ensure that the adjacency matrix used in calculating eigenvectors/values
   # is not singular. The following checks for this. If the adjacency matrix is found
@@ -789,7 +846,8 @@ bonacich_igraph <- function(g, directed, bpct = .75,
       g <- igraph::as.undirected(g)
       # Make `bon_adjmat` undirected
       # bon_adjmat <- as.matrix(igraph::get.adjacency(g, type = "both", names = TRUE))
-      bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE)
+      # bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE)
+      bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE, attr = "weight")
     }
   }
 
@@ -804,7 +862,7 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
     # Convert undirected network into adjacency matrix
     # bon_sym_mat <- as.matrix(igraph::get.adjacency(undir_net, type = "both", names = TRUE))
-    bon_sym_mat <- igraph::get.adjacency(undir_net, type = "both", names = TRUE)
+    bon_sym_mat <- igraph::get.adjacency(undir_net, type = "both", names = TRUE, attr = "weight")
 
     # We now have everyting we need to get the three versions of Bonacich power centrality
     # First let's get the indegree version
@@ -814,7 +872,7 @@ bonacich_igraph <- function(g, directed, bpct = .75,
     colnames(bonacich_in) <- paste(colnames(bonacich_in), "_in", sep = "")
 
     # Next we get the outdegree version (note that we're transposing `bon_adjmat` in the `matrix` argument)
-    bonacich_out <- bonacich(matrix = t(bon_adjmat), bpct = bpct)
+    bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct)
 
     # Update column names
     colnames(bonacich_out) <- paste(colnames(bonacich_out), "_out", sep = "")
@@ -903,6 +961,8 @@ eigen_custom <- function(matrix) {
 
     # Prepare data frame for output
     eigen_df <- data.frame(eigen_centrality = eigencent)
+    # Normalizing scores: divide eigen scores by `sqrt(2)`
+    eigen_df$eigen_centrality <- eigen_df$eigen_centrality/sqrt(2)
   }
   return(eigen_df)
 }
@@ -912,6 +972,12 @@ eigen_igraph <- function(g, directed,
                          message = TRUE){
 
   # browser()
+
+  ### If igraph object doesn't contain a `weight` attribute, create one and set
+  ### all values to `1`:
+  if (!("weight" %in% names(igraph::edge.attributes(g)))) {
+    igraph::E(g)$weight <- 1
+  }
 
   # Store complete nodelist for merging later on
   nodelist <- data.frame(id = igraph::V(g)$name)
@@ -971,7 +1037,7 @@ eigen_igraph <- function(g, directed,
         subgraph <- igraph::delete.vertices(g, v = igraph::V(g)$component != i)
 
         # Convert subgraph of component into an adjacency matrix
-        sub_adj <- igraph::as_adjacency_matrix(subgraph, type = "both")
+        sub_adj <- igraph::as_adjacency_matrix(subgraph, type = "both", attr = "weight")
 
         # Make transpose of subgraph adjmat
         sub_adj_t <- Matrix::t(sub_adj)
@@ -980,7 +1046,7 @@ eigen_igraph <- function(g, directed,
         subgraph_undir <- igraph::as.undirected(subgraph)
 
         # Convert into adjacency matrix
-        undir_mat <- igraph::as_adjacency_matrix(subgraph_undir, type = "both")
+        undir_mat <- igraph::as_adjacency_matrix(subgraph_undir, type = "both", attr = "weight")
 
         # Get eigenvector centrality measures for indegree
         eigen_in <- eigen_custom(sub_adj)
@@ -1009,6 +1075,9 @@ eigen_igraph <- function(g, directed,
 
         # Bind to `eigen_scores` data frame
         eigen_scores <- rbind(eigen_scores, subgraph_scores)
+
+        # Divide by 1/sqrt(2) to normalize
+
       }
 
     # End directed network condition
@@ -1019,7 +1088,7 @@ eigen_igraph <- function(g, directed,
         subgraph <- igraph::delete.vertices(g, v = igraph::V(g)$component != i)
 
         # Convert subgraph of component into an adjacency matrix
-        sub_adj <- igraph::as_adjacency_matrix(subgraph, type = "both")
+        sub_adj <- igraph::as_adjacency_matrix(subgraph, type = "both", attr = "weight")
 
         # If component consists of a single dyad, go ahead and skip
         if (nrow(sub_adj) <= 2) {
@@ -1045,7 +1114,7 @@ eigen_igraph <- function(g, directed,
     # If the network is a directed network
     if (directed == TRUE) {
       # Convert graph to adjacency matrix
-      eigen_adj <- igraph::as_adjacency_matrix(g, type = "both")
+      eigen_adj <- igraph::as_adjacency_matrix(g, type = "both", attr = "weight")
 
       # Make transpose of subgraph adjmat
       eigen_adj_t <- Matrix::t(eigen_adj)
@@ -1054,7 +1123,7 @@ eigen_igraph <- function(g, directed,
       eigen_undir <- igraph::as.undirected(g)
 
       # Convert into adjacency matrix
-      undir_mat <- igraph::as_adjacency_matrix(g, type = "both")
+      undir_mat <- igraph::as_adjacency_matrix(g, type = "both", attr = "weight")
 
       # Get eigenvector centrality measures for indegree
       eigen_in <- eigen_custom(eigen_adj)
@@ -1080,7 +1149,7 @@ eigen_igraph <- function(g, directed,
     } else {
       # If the network is undirected...
       # Convert graph to adjacency matrix
-      eigen_adj <- igraph::as_adjacency_matrix(g, type = "both")
+      eigen_adj <- igraph::as_adjacency_matrix(g, type = "both", attr = "weight")
 
       # Get Eigenvector centrality measures
       eigen_scores <- eigen_custom(eigen_adj)

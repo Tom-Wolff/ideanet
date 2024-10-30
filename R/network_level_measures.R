@@ -233,11 +233,13 @@ eigen_centralization <- function(g, directed) {
     numerator_u <- sum(max(eigen_cent_u, na.rm = TRUE) - eigen_cent_u, na.rm = TRUE)
 
     star_d <- igraph::make_star(length(igraph::V(g2)), mode = "in")
+    igraph::E(star_d)$weight <- 1
     igraph::V(star_d)$name <- 0:(length(igraph::V(g2))-1)
     eigen_star_d <- eigen_igraph(star_d, directed = TRUE, message = FALSE)
     denominator_d <- sum(max(eigen_star_d, na.rm = TRUE) - eigen_star_d, na.rm = TRUE)
 
     star_u <- igraph::make_star(length(igraph::V(g2)), mode = "undirected")
+    igraph::E(star_u)$weight <- 1
     igraph::V(star_u)$name <- 0:(length(igraph::V(g2))-1)
     eigen_star_u <- eigen_igraph(star_u, directed = FALSE, message = FALSE)
     denominator_u <- sum(max(eigen_star_u, na.rm = TRUE) - eigen_star_u, na.rm = TRUE)
@@ -255,6 +257,7 @@ eigen_centralization <- function(g, directed) {
     numerator_u <- sum(max(eigen_cent_u, na.rm = TRUE) - eigen_cent_u, na.rm = TRUE)
 
     star_u <- igraph::make_star(length(igraph::V(g2)), mode = "undirected")
+    igraph::E(star_u)$weight <- 1
     igraph::V(star_u)$name <- 0:(length(igraph::V(g2))-1)
     eigen_star_u <- eigen_igraph(star_u, directed = FALSE, message = FALSE)
     denominator_u <- sum(max(eigen_star_u, na.rm = TRUE) - eigen_star_u, na.rm = TRUE)

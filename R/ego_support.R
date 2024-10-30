@@ -61,10 +61,11 @@ alter_centrality <- function(x, directed) {
       total_degree <- rep(0, length(igraph::V(x$igraph)))
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph, directed = FALSE,
-                                    # NOTE: FOR CLOSENESS AND BETWEENNESS, WE'RE ASSUMING WEIGHTS ARE DISTANCES
-                                    # BECAUSE WE DON'T CURRENTLY SUPPORT WEIGHTED GRAPHS
-                                    weight_type = "distance")
+      # closeness <- closeness_igraph(x$igraph, directed = FALSE,
+      #                               # NOTE: FOR CLOSENESS AND BETWEENNESS, WE'RE ASSUMING WEIGHTS ARE DISTANCES
+      #                               # BECAUSE WE DON'T CURRENTLY SUPPORT WEIGHTED GRAPHS
+      #                               weight_type = "distance")
+      closeness <- igraph::closeness(x$igraph, mode = "all", normalized = TRUE)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE,
                                         weight_type = "distance")
@@ -100,11 +101,14 @@ alter_centrality <- function(x, directed) {
       total_degree <- rep(0, length(igraph::V(x$igraph)))
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE,
-                                           weight_type = "distance")
-      closeness_in <- closeness_scores$closeness_in
-      closeness_out <- closeness_scores$closeness_out
-      closeness_un <- closeness_scores$closeness_un
+      # closeness_scores <- closeness_igraph(x$igraph, directed = TRUE,
+      #                                      weight_type = "distance")
+      # closeness_in <- closeness_scores$closeness_in
+      # closeness_out <- closeness_scores$closeness_out
+      # closeness_un <- closeness_scores$closeness_un
+      closeness_in <- igraph::closeness(x$igraph, mode = "in", normalized = TRUE)
+      closeness_out <- igraph::closeness(x$igraph, mode = "out", normalized = TRUE)
+      closeness_un <- igraph::closeness(x$igraph, mode = "all", normalized = TRUE)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE,
                                         weight_type = "distance")
@@ -141,8 +145,9 @@ alter_centrality <- function(x, directed) {
       total_degree <- total_degree(x$igraph, directed = FALSE)$total_degree_all
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness <- closeness_igraph(x$igraph, directed = FALSE,
-                                    weight_type = "distance")
+      # closeness <- closeness_igraph(x$igraph, directed = FALSE,
+      #                               weight_type = "distance")
+      closeness <- igraph::closeness(x$igraph, mode = "all", normalized = TRUE)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = FALSE,
                                         weight_type = "distance")
@@ -179,11 +184,14 @@ alter_centrality <- function(x, directed) {
       total_degree <- igraph::degree(x$igraph, mode = "all", loops = FALSE)
       # WEIGHTED DEGREE TBD
       comp_membership <- component_memberships(x$igraph)
-      closeness_scores <- closeness_igraph(x$igraph, directed = TRUE,
-                                           weight_type = "distance")
-      closeness_in <- closeness_scores$closeness_in
-      closeness_out <- closeness_scores$closeness_out
-      closeness_un <- closeness_scores$closeness_un
+      # closeness_scores <- closeness_igraph(x$igraph, directed = TRUE,
+      #                                      weight_type = "distance")
+      # closeness_in <- closeness_scores$closeness_in
+      # closeness_out <- closeness_scores$closeness_out
+      # closeness_un <- closeness_scores$closeness_un
+      closeness_in <- igraph::closeness(x$igraph, mode = "in", normalized = TRUE)
+      closeness_out <- igraph::closeness(x$igraph, mode = "out", normalized = TRUE)
+      closeness_un <- igraph::closeness(x$igraph, mode = "all", normalized = TRUE)
       # DO WE NEED EGO IN THIS CALCULATION? CHECK WITH GABE
       betweenness_scores <- betweenness(x$igraph_ego, weights = NULL, directed = TRUE,
                                         weight_type = "distance")
