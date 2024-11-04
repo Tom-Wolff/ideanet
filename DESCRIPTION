@@ -1,10 +1,41 @@
 Package: ideanet
 Type: Package
 Title: IDEANet - Integrating Data Exchange and Analysis for Networks
-Version: 0.1.0
-Author: Tom Wolff, Jonathan Howard Morgan, Gabriel Varela, Kieran Lele, Ethan Bhojani, Dana Pasquale, Peter Mucha, James Moody 
+Version: 1.0.0
+Date: 2024-10-31
+Description: A a suite of convenient tools for social network analysis geared toward students, entry-level users, and non-expert practitioners.
+Authors@R: 
+                c(person(given = "Tom",
+                        family = "Wolff",
+                        role = c("aut", "cre"),
+                        email = "tom.wolff@northwestern.edu"),
+                 person(given = c("Jonathan", "Howard"),
+                        family = "Morgan",
+                        role = "aut",
+                        email = "jonathan.h.morgan@gmail.com"),
+                 person(given = "Gabriel",
+                        family = "Varela",
+                        role = "aut",
+                        email = "gabriel.varela@duke.edu"),
+                 person(given = "Kieran",
+                        family = "Lele",
+                        role = "aut"),
+                 person(given = "Ethan",
+                        family = "Bhojani",
+                        role = "aut"),
+                 person(given = "Dana",
+                        family = "Pasquale",
+                        role = "aut",
+                        email = "dana.pasquale@duke.edu"),
+                 person(given = "Peter",
+                        family = "Mucha",
+                        role = "aut",
+                        email = "Peter.J.Mucha@dartmouth.edu"),
+                 person(given = "James",
+                        family = "Moody",
+                        role = "aut",
+                        email = "jmoody77@duke.edu"))
 Maintainer: Tom Wolff <tom.wolff@northwestern.edu>
-Description: A set of tools designed for streamlining social network analysis, particularly geared toward entry-level users.
 License: GPL (>= 3) + file LICENSE
 Encoding: UTF-8
 LazyData: true

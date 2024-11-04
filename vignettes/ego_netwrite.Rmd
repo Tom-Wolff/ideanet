@@ -91,7 +91,7 @@ Let's look over each of these data frames:
 ```{r ngq_egos}
 dplyr::glimpse(ngq_egos)
 ```
-Our ego list contains information for the 60 egos in our dataset. The ego list also has information regarding the age, sex, race/ethnicity, educational attainment, and political leanings of each ego.
+Our ego list contains information for the 20 egos in our dataset. The ego list also has information regarding the age, sex, race/ethnicity, educational attainment, and political leanings of each ego.
 
 ```{r ngq_alters}
 dplyr::glimpse(ngq_alters)
@@ -107,17 +107,17 @@ It is worth remembering, as stated earlier, that alter-alter edgelists should be
 
 ```{r ego28, eval = FALSE}
 ngq_aa %>%
-  dplyr::filter(ego_id == 28)
+  dplyr::filter(ego_id == 4)
 ```
 
 ```{r ego28_knitr, echo = FALSE}
 knitr::kable(head(ngq_aa %>%
-  dplyr::filter(ego_id == 28)))
+  dplyr::filter(ego_id == 4)))
 ```
 
-Here we see that ego indicated two types of relationships for each of the 10 connected dyads in their network. Accordingly, these 10 relationships are stored as 20 rows in our data.
+Here we see that ego indicated some pairs of nodes as being connected as friends and others as being  connected as relatives. Each dyad is given its own row, and the type of relationship for each dyad is clearly identified in the `type` column.
 
-Using the `ego_netwrite` function, we will generate an extensive set of measures and summaries for each of the 60 networks in this dataset. `ego_netwrite` asks users to specify several arguments pertaining to our ego list, alter list, and alter-alter edgelist. In order to familiarize ourselves with this function, we list these arguments below, organized by category. 
+Using the `ego_netwrite` function, we will generate an extensive set of measures and summaries for each of the 20 networks in this dataset. `ego_netwrite` asks users to specify several arguments pertaining to our ego list, alter list, and alter-alter edgelist. In order to familiarize ourselves with this function, we list these arguments below, organized by category. 
 
 _Ego List Arguments_
 
@@ -261,35 +261,35 @@ Finally, `ego_netwrite` constructs `igraph` objects for each individual ego netw
 names(igraph_objects[[1]])
 ```
 
-The `ego` item is simply the unique ID number for the ego corresponding to a given sub-list, and is mainly included to allow users to search for a specific ego within `igraph_objects`. Here we confirm that the sixth element in `igraph_objects` contains items corresponding to ego 6 in `summaries`:
+The `ego` item is simply the unique ID number for the ego corresponding to a given sub-list, and is mainly included to allow users to search for a specific ego within `igraph_objects`. Here we confirm that the sixth element in `igraph_objects` contains items corresponding to ego 4 in `summaries`:
 
 ```{r ego_search}
-which(lapply(igraph_objects, function(x){x$ego} == 6) == TRUE)
+which(lapply(igraph_objects, function(x){x$ego} == 4) == TRUE)
 ```
 
 `ego_info` contains additional information about the specific ego, stored as a single-row data frame. The information contained in `ego_info` is identical to that provided for the specific node in the ego list used as an input for `ego_netwrite`: 
 
 ```{r ego_info, eval = FALSE}
-igraph_objects[[6]]$ego_info
+igraph_objects[[4]]$ego_info
 ```
 
 ```{r ego_info_kable, echo = FALSE}
-knitr::kable(igraph_objects[[6]]$ego_info)
+knitr::kable(igraph_objects[[4]]$ego_info)
 ```
 
-By default, `ego_netwrite` produces two `igraph` objects for each ego, which may be used for visualizations or for additional analyses. Depending on their needs, users may require a representation of an ego network in which the ego itself is either included or excluded from the network. The object entitled `igraph` contains the entire network with ego excluded, while the one entitled `igraph_ego` contains the network with ego included. Let's take a look at the `igraph` object for ego 6: 
+By default, `ego_netwrite` produces two `igraph` objects for each ego, which may be used for visualizations or for additional analyses. Depending on their needs, users may require a representation of an ego network in which the ego itself is either included or excluded from the network. The object entitled `igraph` contains the entire network with ego excluded, while the one entitled `igraph_ego` contains the network with ego included. Let's take a look at the `igraph` object for ego 4: 
 
 ```{r}
-igraph_objects[[6]]$igraph
+igraph_objects[[4]]$igraph
 ```
-We see here that this network contains 10 nodes and 43 edges. These values reflect the 10 alters nominated by ego and the 43 edges ego reported existing between them. Also note that the alter- and edge-level attributes found in our original alter list and alter-alter edgelist are already embedded in this igraph object. The inclusion of these attributes may help users customize visualizations more easily. To show this in practice, let's visualize ego 6's `igraph` ego object which each alter's respective node colored by their sex:
+We see here that this network contains 10 nodes and 43 edges. These values reflect the 10 alters nominated by ego and the 43 edges ego reported existing between them. Also note that the alter- and edge-level attributes found in our original alter list and alter-alter edgelist are already embedded in this igraph object. The inclusion of these attributes may help users customize visualizations more easily. To show this in practice, let's visualize ego 4's `igraph` ego object which each alter's respective node colored by their sex:
 
 ```{r, fig.height = 4, fig.width = 4}
-ego6 <- igraph_objects[[6]]$igraph_ego
+ego4 <- igraph_objects[[4]]$igraph_ego
 
-plot(ego6,
-     vertex.color = igraph::V(ego6)$sex,
-     layout = igraph::layout.fruchterman.reingold(ego6))
+plot(ego4,
+     vertex.color = igraph::V(ego4)$sex,
+     layout = igraph::layout.fruchterman.reingold(ego4))
 ```
 
 By default, nodes in the plotted `igraph` object will be displayed with their zero-indexed unique ID numbers as labels, while the node representing ego will be labeled "ego."
@@ -348,7 +348,7 @@ While relationship types between ego and alters are coded as a series of logical
 
 ```{r multitype_el2, echo = FALSE}
 knitr::kable(ngq_aa %>%
-  dplyr::filter(ego_id == 28) %>% dplyr::slice(1:6))
+  dplyr::filter(ego_id == 4) %>% dplyr::slice(1:6))
 ```
 
 The `type` column in our alter-alter edgelist (`ngq_aa`) specifies whether a given alter-alter dyad entails a friendship, familial relationship, or miscellaneous relationship. To have `ego_netwrite` process these data according to relationship type, we pass this column as a vector into the function's `aa_type` argument:
@@ -373,7 +373,7 @@ aa_types_nw <- ego_netwrite(egos = ngq_egos,
 list2env(aa_types_nw, .GlobalEnv)
 ```
 
-Incorporating alter-alter relationship types creates several new columns in our `alters` dataframe. In addition to the set of node-level measures `ego_netwrite` always generates, the function produces the same set of measures for each unique relationship type. This allows us to see each node's centrality, for example, in its respective network of friendship, familial, and miscellaneous ties. These measures are given the same names as their counterparts for the overall ego network but have the name of their corresponding type appended to the end (e.g. `total_degree_friends`).
+Incorporating alter-alter relationship types creates several new columns in our `alters` dataframe. In addition to the set of node-level measures `ego_netwrite` always generates, the function produces the same set of measures for each unique relationship type. This allows us to see each node's centrality, for example, in its respective network of friendship and familial, and miscellaneous ties. These measures are given the same names as their counterparts for the overall ego network but have the name of their corresponding type appended to the end (e.g. `total_degree_friends`).
 
 ```{r aa_alters, echo = FALSE}
 knitr::kable(head(alters))
