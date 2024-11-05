@@ -115,7 +115,7 @@ knitr::kable(head(ngq_aa %>%
   dplyr::filter(ego_id == 4)))
 ```
 
-Here we see that ego indicated some pairs of nodes as being connected as friends and others as being  connected as relatives. Each dyad is given its own row, and the type of relationship for each dyad is clearly identified in the `type` column.
+Here we see that ego indicated the first six pairs of nodes in this edgelist as being connected by friendships. This edgelist also includes pairs of nodes that are connected as relatives, though we don't display them above. Within the edgelist, each dyad is given its own row, and the type of relationship for each dyad is clearly identified in the `type` column.
 
 Using the `ego_netwrite` function, we will generate an extensive set of measures and summaries for each of the 20 networks in this dataset. `ego_netwrite` asks users to specify several arguments pertaining to our ego list, alter list, and alter-alter edgelist. In order to familiarize ourselves with this function, we list these arguments below, organized by category. 
 
