@@ -91,7 +91,7 @@ Let's look over each of these data frames:
 ```{r ngq_egos}
 dplyr::glimpse(ngq_egos)
 ```
-Our ego list contains information for the 20 egos in our dataset. The ego list also has information regarding the age, sex, race/ethnicity, educational attainment, and political leanings of each ego.
+Our ego list contains information for the 10 egos in our dataset. The ego list also has information regarding the age, sex, race/ethnicity, educational attainment, and political leanings of each ego.
 
 ```{r ngq_alters}
 dplyr::glimpse(ngq_alters)
@@ -117,7 +117,7 @@ knitr::kable(head(ngq_aa %>%
 
 Here we see that ego indicated the first six pairs of nodes in this edgelist as being connected by friendships. This edgelist also includes pairs of nodes that are connected as relatives, though we don't display them above. Within the edgelist, each dyad is given its own row, and the type of relationship for each dyad is clearly identified in the `type` column.
 
-Using the `ego_netwrite` function, we will generate an extensive set of measures and summaries for each of the 20 networks in this dataset. `ego_netwrite` asks users to specify several arguments pertaining to our ego list, alter list, and alter-alter edgelist. In order to familiarize ourselves with this function, we list these arguments below, organized by category. 
+Using the `ego_netwrite` function, we will generate an extensive set of measures and summaries for each of the 10 networks in this dataset. `ego_netwrite` asks users to specify several arguments pertaining to our ego list, alter list, and alter-alter edgelist. In order to familiarize ourselves with this function, we list these arguments below, organized by category. 
 
 _Ego List Arguments_
 
