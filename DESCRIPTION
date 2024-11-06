@@ -1,6 +1,6 @@
 Package: ideanet
 Type: Package
-Title: IDEANet - Integrating Data Exchange and Analysis for Networks
+Title: Integrating Data Exchange and Analysis for Networks (IDEANet)
 Version: 1.0.0
 Date: 2024-10-31
 Description: A a suite of convenient tools for social network analysis geared toward students, entry-level users, and non-expert practitioners.
