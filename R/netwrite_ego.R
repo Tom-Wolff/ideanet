@@ -52,47 +52,13 @@
 #' head(overall_summary)
 #'
 #' # View sociogram of second ego network
-#' plot(igraph_objects[[2]]$igraph_ego)
+#' plot(igraph_objects[[4]]$igraph_ego)
 #'
 #'
-#' #  Processing with Different Ego-Alter Relation Types
-#' ngq_altertype <- ego_netwrite(egos = ngq_egos,
-#'                               ego_id = ngq_egos$ego_id,
-#'
-#'                               alters = ngq_alters,
-#'                               alter_id = ngq_alters$alter_id,
-#'                               alter_ego = ngq_alters$ego_id,
-#'                               alter_types = c("family", "friend", "other_rel"),
-#'                               max_alters = 10,
-#'
-#'                               alter_alter = ngq_aa,
-#'                               aa_ego = ngq_aa$ego_id,
-#'                               i_elements = ngq_aa$alter1,
-#'                               j_elements = ngq_aa$alter2,
-#'
-#'                               directed = FALSE)
-#'
-#' list2env(ngq_altertype, .GlobalEnv)
-#'
-#'
-#' #  Processing with Different Alter-Alter Relation Types
-#' ngq_aatype <- ego_netwrite(egos = ngq_egos,
-#'                            ego_id = ngq_egos$ego_id,
-#'
-#'                            alters = ngq_alters,
-#'                            alter_id = ngq_alters$alter_id,
-#'                            alter_ego = ngq_alters$ego_id,
-#'                            max_alters = 10,
-#'                            alter_alter = ngq_aa,
-#'
-#'                            aa_ego = ngq_aa$ego_id,
-#'                            i_elements = ngq_aa$alter1,
-#'                            j_elements = ngq_aa$alter2,
-#'                            aa_type = ngq_aa$type,
-#'
-#'                            directed = FALSE)
-#'
-#' list2env(ngq_aatype, .GlobalEnv)
+#' # For advanced applications involving multiple relationship types
+#' # and `egor` object creation, please consult the `ego_netwrite` vignette
+#' vignette("ego_netwrite", package = "ideanet")
+
 
 
 ego_netwrite <- function(egos,
