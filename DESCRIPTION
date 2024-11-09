@@ -23,6 +23,10 @@ Authors@R:
                  person(given = "Ethan",
                         family = "Bhojani",
                         role = "aut"),
+                 person(given = "Emily",
+                        family = "Heraty",
+                        role = "aut",
+                        email = "emily.heraty@duke.edu"),
                  person(given = "Dana",
                         family = "Pasquale",
                         role = "aut",
@@ -36,7 +40,7 @@ Authors@R:
                         role = "aut",
                         email = "jmoody77@duke.edu"))
 Maintainer: Tom Wolff <tom.wolff@northwestern.edu>
-License: GPL (>= 3) + file LICENSE
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Imports:
