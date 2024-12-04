@@ -4,6 +4,8 @@
 #'
 #' \code{ideanetViz}'s design is centered around a series of tabs lining the top of the app, which are ordered according to a typical workflow for acquiring, processing, exploring, and modeling data.
 #'
+#' @return Launches an external window in which users can interact with the \code{ideanetViz} GUI. At different points in working with the GUI, users have the option to export generated data as CSV files and visualizations as image files.
+#'
 #' @export
 
 ideanetViz <- function() {

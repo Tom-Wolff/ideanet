@@ -167,11 +167,7 @@ ngq_nw <- ego_netwrite(egos = ngq_egos,
                        directed = FALSE)
 ```
 
-Upon completion, `ego_netwrite` stores its outputs in a single list object. However, one may find it more convenient to extract elements of this list to the R Global Environment. We take this approach by using the `list2env` function:
-
-```{r list2env}
-list2env(ngq_nw, .GlobalEnv)
-```
+Upon completion, `ego_netwrite` stores its outputs in a single list object. In the following section, we'll examine each of the outputs within this list and what they contain.
 
 ## Interpreting `ego_netwrite` Output
 
@@ -180,11 +176,11 @@ list2env(ngq_nw, .GlobalEnv)
 Alongside other outputs, `ego_netwrite` produces cleaned and reformatted versions of each of the three data frames it takes as inputs. Our ego list, stored in the `egos` object, is more or less the same. However, `ego_netwrite` may rename our original column for unique ego IDs as `original_ego_id` and create a new `ego_id` column to ensure consistent processing. We see this is the case here in how the function has handled our NGQ data:
 
 ```{r egos, eval = FALSE}
-head(egos)
+head(ngq_nw$egos)
 ```
 
 ```{r egos_kable, echo = FALSE}
-knitr::kable(head(egos))
+knitr::kable(head(ngq_nw$egos))
 ```
 
 
@@ -193,11 +189,11 @@ knitr::kable(head(egos))
 In contrast, `ego_netwrite`'s updated alter list is noticeably different from the alter list we started with. `ego_netwrite` calculates a set of frequently used node-level measures for each individual alter based on their position within their respective ego network. This set includes measure of node centrality and membership in isolated components, where applicable, and follows the original variables appearing in our alter list. Additionally, the first two columns of this data frame contain new unique ID numbers for alters and their corresponding egos to ensure the the alter list accurately links to our ego list and alter-alter edgelist. Note that alter IDs here are zero-indexed-- this is done to maximize compatibility with the `igraph` package, which has been known to rely on zero-indexing.
 
 ```{r alters, eval = FALSE}
-head(alters)
+head(ngq_nw$alters)
 ```
 
 ```{r alters_kable, echo = FALSE}
-knitr::kable(head(alters))
+knitr::kable(head(ngq_nw$alters))
 ```
 
 ### Alter-Alter Edgelist
@@ -205,11 +201,11 @@ knitr::kable(head(alters))
 The alter-alter edgelist has been updated to to contain unique dyad-level ids, ego IDs, simplified ego and alter IDs (`i_id` and `j_id`, respectively), and the original id variables as they initially appeared in our input. As with alter ids in `alters`, `i_id` and `j_id` here are zero-indexed to maximize compatibility with the `igraph`.
 
 ```{r alter_edgelist, eval = FALSE}
-head(alter_edgelist)
+head(ngq_nw$alter_edgelist)
 ```
 
 ```{r alter_edgelist_knitr, echo = FALSE}
-knitr::kable(head(alter_edgelist))
+knitr::kable(head(ngq_nw$alter_edgelist))
 ```
 
 ### Network-Level Measures
@@ -217,25 +213,25 @@ knitr::kable(head(alter_edgelist))
 Beyond our modified inputs, `ego_netwrite`'s output contains a dataset providing `summaries` of each ego network. These summaries include measures of network size, number of isolates, fragmentation, centralization, and the prevalence of certain kinds of dyads and triads in the network.
 
 ```{r summaries, eval = FALSE}
-head(summaries)
+head(ngq_nw$summaries)
 ```
 
 ```{r summaries_kable, echo = FALSE}
-knitr::kable(head(summaries))
+knitr::kable(head(ngq_nw$summaries))
 ```
 
 Users may find it convenient to combine `summaries` and `egos` into a single dataframe, as elements stored in each object may be used simultaneously in later statistical modeling. Combining the two objects is as simple as merging along the `ego_id` column:
 
 ```{r ego_merge, eval = FALSE}
-egos2 <- egos %>%
-  dplyr::left_join(summaries, by = "ego_id")
+egos2 <- ngq_nw$egos %>%
+  dplyr::left_join(ngq_nw$summaries, by = "ego_id")
 
 head(egos2)
 ```
 
 ```{r ego_merge_kable, echo = FALSE}
-egos2 <- egos %>%
-  dplyr::left_join(summaries, by = "ego_id")
+egos2 <- ngq_nw$egos %>%
+  dplyr::left_join(ngq_nw$summaries, by = "ego_id")
 
 knitr::kable(head(egos2))
 ```
@@ -245,11 +241,11 @@ knitr::kable(head(egos2))
 Additionally, `ego_netwrite` provides an `overall_summary` that allows users to get a sense of the properties of a typical ego network in their dataset. Because certain measures are impossible to calculate for ego networks consisting of 0-1 alters, certain measures in `overall_summary` are only calculated for networks containing 2+ alters. Measures calculated in this way are specified as such in the `measure_descriptions` column.
 
 ```{r overall, eval = FALSE}
-overall_summary
+ngq_nw$overall_summary
 ```
 
 ```{r overall_kable, echo = FALSE}
-knitr::kable(overall_summary)
+knitr::kable(ngq_nw$overall_summary)
 ```
 
 
@@ -258,34 +254,34 @@ knitr::kable(overall_summary)
 Finally, `ego_netwrite` constructs `igraph` objects for each individual ego network and stores them in the `igraph_objects` list. Each element in this list is a sub-list corresponding to an individual ego. Let's take a look at the elements of each sub-list: 
 
 ```{r igraph1}
-names(igraph_objects[[1]])
+names(ngq_nw$igraph_objects[[1]])
 ```
 
 The `ego` item is simply the unique ID number for the ego corresponding to a given sub-list, and is mainly included to allow users to search for a specific ego within `igraph_objects`. Here we confirm that the sixth element in `igraph_objects` contains items corresponding to ego 4 in `summaries`:
 
 ```{r ego_search}
-which(lapply(igraph_objects, function(x){x$ego} == 4) == TRUE)
+which(lapply(ngq_nw$igraph_objects, function(x){x$ego} == 4) == TRUE)
 ```
 
 `ego_info` contains additional information about the specific ego, stored as a single-row data frame. The information contained in `ego_info` is identical to that provided for the specific node in the ego list used as an input for `ego_netwrite`: 
 
 ```{r ego_info, eval = FALSE}
-igraph_objects[[4]]$ego_info
+ngq_nw$igraph_objects[[4]]$ego_info
 ```
 
 ```{r ego_info_kable, echo = FALSE}
-knitr::kable(igraph_objects[[4]]$ego_info)
+knitr::kable(ngq_nw$igraph_objects[[4]]$ego_info)
 ```
 
 By default, `ego_netwrite` produces two `igraph` objects for each ego, which may be used for visualizations or for additional analyses. Depending on their needs, users may require a representation of an ego network in which the ego itself is either included or excluded from the network. The object entitled `igraph` contains the entire network with ego excluded, while the one entitled `igraph_ego` contains the network with ego included. Let's take a look at the `igraph` object for ego 4: 
 
 ```{r}
-igraph_objects[[4]]$igraph
+ngq_nw$igraph_objects[[4]]$igraph
 ```
 We see here that this network contains 10 nodes and 43 edges. These values reflect the 10 alters nominated by ego and the 43 edges ego reported existing between them. Also note that the alter- and edge-level attributes found in our original alter list and alter-alter edgelist are already embedded in this igraph object. The inclusion of these attributes may help users customize visualizations more easily. To show this in practice, let's visualize ego 4's `igraph` ego object which each alter's respective node colored by their sex:
 
 ```{r, fig.height = 4, fig.width = 4}
-ego4 <- igraph_objects[[4]]$igraph_ego
+ego4 <- ngq_nw$igraph_objects[[4]]$igraph_ego
 
 plot(ego4,
      vertex.color = igraph::V(ego4)$sex,
@@ -303,7 +299,7 @@ It is common for egocentric datasets to record several different types of relati
 When working with different types of relationships between egos and alters, relationship types should be stored as a series of logical or dummy variables in the dummy list. This is already the case in `ngq_alters`: we see that relationship types are coded in the columns `family`, `friend`, and `other_rel`:
 
 ```{r ngq_alters_el, echo = FALSE}
-knitr::kable(head(ngq_alters))
+knitr::kable(head(ngq_nw$ngq_alters))
 ```
 
 To handle these codings in `ego_netwrite`, we need only add the `alter_types` argument. As described earlier in this vignette, `alter_types` takes a character vector containing the names of columns in the alter list storing type codings, which `ego_netwrite` uses to identify these columns when processing.
@@ -324,20 +320,18 @@ alter_types_nw <- ego_netwrite(egos = ngq_egos,
                        i_elements = ngq_aa$alter1,
                        j_elements = ngq_aa$alter2,
                        directed = FALSE)
-
-list2env(alter_types_nw, .GlobalEnv)
 ```
 
 When ego-alter relationship types are accounted for, the ego-level `summaries` dataframe contains additional columns indicating the extent to which different types of ego-alter relationships are correlated with one another. The number of columns added reflects the number of unique pairs of relationship types for which correlations are calculated. Values within these columns are coded `NA` if all ego-alter relationships in a given network are of a single type; otherwise values should be interpreted as one normally would with correlations. We see here that egos 2-6 only reported having one type of relationship across all their nominated alters. By contrast, ego 1 included both friends and family members in their network, but these categories were mutually exclusive.
 
 ```{r summary_cors, echo = FALSE}
-knitr::kable(head(summaries %>% dplyr::select(ego_id, dplyr::contains("cor"))))
+knitr::kable(head(alter_types_nw$summaries %>% dplyr::select(ego_id, dplyr::contains("cor"))))
 ```
 
 With multiple relationship types in hand, the `overall_summary` data frame is now considerably longer. Dataset-wide summaries are now given for specific types of relationships in isolation, as well as for all relationship types combined. Parenthetical phrases in the `measure_labels` column beginning with "Ego-Alter" indicate the specific relationship type described for a given measure:
 
 ```{r overall_summaries_rel1, echo = FALSE}
-knitr::kable(overall_summary)
+knitr::kable(alter_types_nw$overall_summary)
 ```
 
 ### Different Types of Alter-Alter Relationships
@@ -369,41 +363,39 @@ aa_types_nw <- ego_netwrite(egos = ngq_egos,
                             # Note the inclusion of `aa_type` here
                             aa_type = ngq_aa$type,
                             directed = FALSE)
-
-list2env(aa_types_nw, .GlobalEnv)
 ```
 
 Incorporating alter-alter relationship types creates several new columns in our `alters` dataframe. In addition to the set of node-level measures `ego_netwrite` always generates, the function produces the same set of measures for each unique relationship type. This allows us to see each node's centrality, for example, in its respective network of friendship and familial, and miscellaneous ties. These measures are given the same names as their counterparts for the overall ego network but have the name of their corresponding type appended to the end (e.g. `total_degree_friends`).
 
 ```{r aa_alters, echo = FALSE}
-knitr::kable(head(alters))
+knitr::kable(head(aa_types_nw$alters))
 ```
 
 Similarly, the ego-level `summaries` dataframe contains new measures of network size, isolate counts, fragmentation, centralization, and dyad/triad prevalence for each unique relationship type. It also calculates correlations for each pair of relationship types between alters in a fashion similar to what we saw for ego-alter ties before.
 
 ```{r aa_summaries, echo = FALSE}
-knitr::kable(head(summaries))
+knitr::kable(head(aa_types_nw$summaries))
 ```
 
 Our `overall_summary` has also been expanded to show dataset-level summaries of each alter-alter relationship type. Parenthetical phrases in the `measure_labels` column beginning with "Alter-Alter" indicate the specific relationship type described for a given measure. Note here that measures relating to network size, number of isolates, and one-node networks remain the same across relation types, as ego-alter relationship types are not taken into account when calculating these measures. By contrast, measures of network density and fragmentation vary given the presence or absence of alter-alter ties.
 
 ```{r aa_overall, echo=FALSE}
-knitr::kable(overall_summary)
+knitr::kable(aa_types_nw$overall_summary)
 ```
 
 Finally, each element in the `igraph_objects` list now contains an "`igraph`" and "`igraph_ego`" object for each alter-alter type, allowing users to look at specific kinds of relationships without having to subset the network themselves.
 
 ```{r aa_igraph_objects}
-names(igraph_objects[[1]])
+names(aa_types_nw$igraph_objects[[1]])
 ```
 
 The availability of these new objects may be convenient for users who wish to visualize differences in the prevalence of certain types of alter-alter ties in a single ego network, as shown in the example below:
 
 ```{r aa_igraph_plots, eval = FALSE}
-ego7 <- igraph_objects[[7]]$igraph_ego
-ego7_friends <- igraph_objects[[7]]$igraph_ego_friends
-ego7_family <- igraph_objects[[7]]$igraph_ego_related
-ego7_other <- igraph_objects[[7]]$igraph_ego_other_rel
+ego7 <- aa_types_nw$igraph_objects[[7]]$igraph_ego
+ego7_friends <- aa_types_nw$igraph_objects[[7]]$igraph_ego_friends
+ego7_family <- aa_types_nw$igraph_objects[[7]]$igraph_ego_related
+ego7_other <- aa_types_nw$igraph_objects[[7]]$igraph_ego_other_rel
 
 ego7_layout <- igraph::layout.fruchterman.reingold(ego7)
 
@@ -429,10 +421,10 @@ plot(ego7_other,
 ```
 
 ```{r aa_igraph_plots_kable, echo = FALSE, fig.height = 4, fig.width = 4}
-ego7 <- igraph_objects[[7]]$igraph_ego
-ego7_friends <- igraph_objects[[7]]$igraph_ego_friends
-ego7_family <- igraph_objects[[7]]$igraph_ego_related
-ego7_other <- igraph_objects[[7]]$igraph_ego_other_rel
+ego7 <- aa_types_nw$igraph_objects[[7]]$igraph_ego
+ego7_friends <- aa_types_nw$igraph_objects[[7]]$igraph_ego_friends
+ego7_family <- aa_types_nw$igraph_objects[[7]]$igraph_ego_related
+ego7_other <- aa_types_nw$igraph_objects[[7]]$igraph_ego_other_rel
 
 ego7_layout <- igraph::layout.fruchterman.reingold(ego7)
 
@@ -466,6 +458,8 @@ Network scholars are often interested in questions pertaining to *homophily* (in
 To see how we use these functions we'll start with measures of diversity for categorical variables. Users should note that each of these functions takes columns from the `alters` dataframe as its inputs. Although we will not go into specific detail about each measure generated here, we encourage readers to consult `ideanet`’s documentation for a bit of added context.
 
 ```{r h_index}
+alters <- aa_types_nw$alters
+
 # H-Index
 race_h_index <- h_index(ego_id = alters$ego_id,
                         measure = alters$race,
@@ -479,6 +473,8 @@ race_iqv <- iqv(ego_id = alters$ego_id,
 While the above measures of attribute diversity apply to networks belonging to egos, you might notice that they do not take ego’s own attribute values into account. Measures of homophily, by contrast, compare alter attributes to ego's in order to gauge how likely ego is to form ties with similar others. Accordingly, measures of homophily in ego networks require additional arguments whose values can be extracted from the `egos` dataframe:
 
 ```{r homophily}
+egos <- aa_types_nw$egos
+
 # Ego Homophily (Count)
 race_homophily_c <- ego_homophily(ego_id = egos$ego_id,
                                   ego_measure = egos$race,

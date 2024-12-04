@@ -9,13 +9,12 @@ title_head <- function(title){
 
   formatted <- paste("\n#    ", formatted, "    #\n", sep = "")
 
-
-
-  cat(rep("#", (nchar(formatted)-2)), sep = "")
-  cat(paste("\n#", paste(rep(" ", nchar(formatted)-4), collapse = ""), "#", sep = ""))
-  cat(formatted)
-  cat(paste("#", paste(rep(" ", nchar(formatted)-4), collapse = ""), "#\n", sep = ""))
-  cat(rep("#", (nchar(formatted)-2)), sep = "")
+message(paste0(paste0(rep("#", (nchar(formatted)-2)), collapse = ""),
+  paste("\n#", paste(rep(" ", nchar(formatted)-4), collapse = ""), "#", sep = ""),
+  formatted,
+  paste("#", paste(rep(" ", nchar(formatted)-4), collapse = ""), "#\n", sep = ""),
+  paste0(rep("#", (nchar(formatted)-2)), collapse = ""),
+  collapse = ""))
 
 }
 
@@ -29,8 +28,9 @@ section_head <- function(title){
 
   formatted <- paste("\n#    ", formatted, "    #\n", sep = "")
 
-  cat(rep("#", (nchar(formatted)-2)), sep = "")
-  cat(formatted)
-  cat(rep("#", (nchar(formatted)-2)), sep = "")
+  message(paste0(paste0(rep("#", (nchar(formatted)-2)), collapse = ""),
+                 formatted,
+                 paste0(rep("#", (nchar(formatted)-2)), collapse = "")),
+          collapse = "")
 
 }

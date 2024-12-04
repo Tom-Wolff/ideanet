@@ -21,7 +21,7 @@
 #' @param output A character vector indicating the kinds of objects \code{netwrite} should assign to the global environment. \code{netwrite} produces several outputs that may not all be necessary to a user's needs. Users can specify which outputs they specifically want in order to minimize the number of objects appearing in the global environment. Potential outputs include igraph object(s) (\code{"graph"}), subgraph(s) of only nodes that appear in the largest component and/or bicomponent of the network (\code{"largest_component"}, \code{"largest_bi_component"}), data frame(s) containing node-level measures (\code{"node_measure_plot"}), a processed edgelist of the network (\code{"edgelist"}), a data frame indicating network-level summaries (\code{"system_level_measures"}), and summary visualizations for node- and network-level measures (\code{"node_measure_plot"}, \code{"system_measure_plot"}).
 #' @param message A logical value indicating whether warning messages should be displayed in the R console during processing.
 #'
-#' @return \code{netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
+#' @return \code{netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Note, however, that this risks overwriting existing objects in the Global Environment should those objects share names with objects in \code{netwrite}'s output. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
 #'
 #' If \code{output} contains \code{graph}, \code{netwrite} will return an igraph object of the network represented in the original data.
 #' If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing igraph objects for each unique relation type as well as the overall network. These output objects are named according to the value specified in the \code{net_name} argument.
@@ -51,26 +51,23 @@
 #'                       directed = TRUE,
 #'                       net_name = "faux_mesa")
 #'
-#' # For easier access of output objects, call `list2env` on output
-#' list2env(nw_fauxmesa, .GlobalEnv)
-#'
 #' ### Inspect updated edgelist
-#' head(edgelist)
+#' head(nw_fauxmesa$edgelist)
 #'
 #' ### Inspect data frame of node-level measures
-#' head(node_measures)
+#' head(nw_fauxmesa$node_measures)
 #'
 #' ### Inspect system-level summary
-#' head(system_level_measures)
+#' head(nw_fauxmesa$system_level_measures)
 #'
 #' ### Plot sociogram of network
-#' plot(faux_mesa)
+#' plot(nw_fauxmesa$faux_mesa)
 #'
 #' ### View node-level summary visualization
-#' node_measure_plot
+#' nw_fauxmesa$node_measure_plot
 #'
 #' ### View system-level summary visualization
-#' system_measure_plot
+#' nw_fauxmesa$system_measure_plot
 #'
 #'
 #'
@@ -154,13 +151,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
   }
 
-
-  # Turn off warnings if `message == FALSE`
-  if (message == FALSE) {
-    # Save original options setting
-    warn_option <- getOption("warn")
-    options(warn = -1)
-  }
 
 
   # Since we can't seem to create an environment that will go outside the function, we'll have to
@@ -325,6 +315,28 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if (("data.frame" %in% class(nodelist)) == TRUE) {
 
+      if (message == FALSE) {
+        netwrite_output <- suppressWarnings(
+          basic_netwrite(data_type = data_type,
+                                          adjacency_matrix = adjacency_matrix,
+                                          adjacency_list = adjacency_list,
+                                          nodelist = original_nodelist,
+                                          node_id = node_id,
+                                          i_elements = i_elements,
+                                          j_elements = j_elements,
+                                          weights = weights,
+                                          type = type,
+                                          remove_loops = remove_loops,
+                                          missing_code = missing_code,
+                                          weight_type = weight_type,
+                                          directed = directed,
+                                          net_name = net_name,
+                                          shiny = shiny,
+                                          output = output,
+                                          message = message)
+        )
+      } else {
+
       netwrite_output <- basic_netwrite(data_type = data_type,
                                         adjacency_matrix = adjacency_matrix,
                                         adjacency_list = adjacency_list,
@@ -342,26 +354,49 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                         shiny = shiny,
                                         output = output,
                                         message = message)
+      }
 
     } else {
 
-      netwrite_output <- basic_netwrite(data_type = data_type,
-                                        adjacency_matrix = adjacency_matrix,
-                                        adjacency_list = adjacency_list,
-                                        nodelist = just_ids,
-                                        node_id = node_id,
-                                        i_elements = i_elements,
-                                        j_elements = j_elements,
-                                        weights = weights,
-                                        type = type,
-                                        remove_loops = remove_loops,
-                                        missing_code = missing_code,
-                                        weight_type = weight_type,
-                                        directed = directed,
-                                        net_name = net_name,
-                                        shiny = shiny,
-                                        output = output,
-                                        message = message)
+      if (message == FALSE) {
+        netwrite_output <- suppressWarnings(
+                             basic_netwrite(data_type = data_type,
+                                            adjacency_matrix = adjacency_matrix,
+                                            adjacency_list = adjacency_list,
+                                            nodelist = just_ids,
+                                            node_id = node_id,
+                                            i_elements = i_elements,
+                                            j_elements = j_elements,
+                                            weights = weights,
+                                            type = type,
+                                            remove_loops = remove_loops,
+                                            missing_code = missing_code,
+                                            weight_type = weight_type,
+                                            directed = directed,
+                                            net_name = net_name,
+                                            shiny = shiny,
+                                            output = output,
+                                            message = message)
+        )
+      } else {
+        netwrite_output <- basic_netwrite(data_type = data_type,
+                                          adjacency_matrix = adjacency_matrix,
+                                          adjacency_list = adjacency_list,
+                                          nodelist = just_ids,
+                                          node_id = node_id,
+                                          i_elements = i_elements,
+                                          j_elements = j_elements,
+                                          weights = weights,
+                                          type = type,
+                                          remove_loops = remove_loops,
+                                          missing_code = missing_code,
+                                          weight_type = weight_type,
+                                          directed = directed,
+                                          net_name = net_name,
+                                          shiny = shiny,
+                                          output = output,
+                                          message = message)
+      }
 
     }
 
@@ -390,7 +425,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Rearrange columns
       node_measures <- dplyr::select(node_measures, .data$id, dplyr::everything())
 
-      # assign(x = "node_measures", value = node_measures, .GlobalEnv)
       netwrite_output$node_measures <- node_measures
 
 
@@ -487,62 +521,123 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         # If handling aggregate graph that has weights
         if ('weights' %in% colnames(edges_list[[i]]) == TRUE) {
 
-          this_netwrite <- basic_netwrite(data_type = data_type,
-                                          adjacency_matrix = adjacency_matrix,
-                                          adjacency_list = adjacency_list,
-                                          nodelist = nodelist_condition,
-                                          node_id = node_id,
-                                          i_elements=edges_list[[i]]$i_elements,
-                                          j_elements=edges_list[[i]]$j_elements,
-                                          weights=edges_list[[i]]$weights,
-                                          type=edges_list[[i]]$type,
-                                          remove_loops = remove_loops,
-                                          missing_code = missing_code,
-                                          weight_type = weight_type, directed=directed,
-                                          net_name = "this_igraph", # Giving a consistent name for igraph object
-                                          # Makes it easier to place into the list of
-                                          # igraph objects down the line.
-                                          shiny = TRUE,
-                                          # For processing multi-relational nets, we'll want to collect all the
-                                          # possible output objects from `basic_netwrite` at first, then filter out
-                                          # based on the original outputs specified in the `netwrite` call
-                                          output = c("graph",
-                                                     "largest_bi_component",
-                                                     "largest_component",
-                                                     "node_measure_plot",
-                                                     "nodelist",
-                                                     "edgelist",
-                                                     "system_level_measures",
-                                                     "system_measure_plot"),
-                                          message = message)
+          if (message == FALSE) {
+            this_netwrite <- suppressWarnings(
+              basic_netwrite(data_type = data_type,
+                             adjacency_matrix = adjacency_matrix,
+                             adjacency_list = adjacency_list,
+                             nodelist = nodelist_condition,
+                             node_id = node_id,
+                             i_elements=edges_list[[i]]$i_elements,
+                             j_elements=edges_list[[i]]$j_elements,
+                             weights=edges_list[[i]]$weights,
+                             type=edges_list[[i]]$type,
+                             remove_loops = remove_loops,
+                             missing_code = missing_code,
+                             weight_type = weight_type, directed=directed,
+                             net_name = "this_igraph", # Giving a consistent name for igraph object
+                             # Makes it easier to place into the list of
+                             # igraph objects down the line.
+                             shiny = TRUE,
+                             # For processing multi-relational nets, we'll want to collect all the
+                             # possible output objects from `basic_netwrite` at first, then filter out
+                             # based on the original outputs specified in the `netwrite` call
+                             output = c("graph",
+                                        "largest_bi_component",
+                                        "largest_component",
+                                        "node_measure_plot",
+                                        "nodelist",
+                                        "edgelist",
+                                        "system_level_measures",
+                                        "system_measure_plot"),
+                             message = message)
+            )
+          } else {
+            this_netwrite <- basic_netwrite(data_type = data_type,
+                                            adjacency_matrix = adjacency_matrix,
+                                            adjacency_list = adjacency_list,
+                                            nodelist = nodelist_condition,
+                                            node_id = node_id,
+                                            i_elements=edges_list[[i]]$i_elements,
+                                            j_elements=edges_list[[i]]$j_elements,
+                                            weights=edges_list[[i]]$weights,
+                                            type=edges_list[[i]]$type,
+                                            remove_loops = remove_loops,
+                                            missing_code = missing_code,
+                                            weight_type = weight_type, directed=directed,
+                                            net_name = "this_igraph", # Giving a consistent name for igraph object
+                                            # Makes it easier to place into the list of
+                                            # igraph objects down the line.
+                                            shiny = TRUE,
+                                            # For processing multi-relational nets, we'll want to collect all the
+                                            # possible output objects from `basic_netwrite` at first, then filter out
+                                            # based on the original outputs specified in the `netwrite` call
+                                            output = c("graph",
+                                                       "largest_bi_component",
+                                                       "largest_component",
+                                                       "node_measure_plot",
+                                                       "nodelist",
+                                                       "edgelist",
+                                                       "system_level_measures",
+                                                       "system_measure_plot"),
+                                            message = message)
+          }
+
+
 
         }else{
           # Aggregate graph, unweighted
-          this_netwrite <- basic_netwrite(data_type = data_type,
-                                          adjacency_matrix = adjacency_matrix,
-                                          adjacency_list = adjacency_list,
-                                          nodelist = nodelist_condition,
-                                          node_id = node_id,
-                                          i_elements=edges_list[[i]]$i_elements,
-                                          j_elements=edges_list[[i]]$j_elements,
-                                          weights = NULL,
-                                          type=edges_list[[i]]$type,
-                                          remove_loops = remove_loops,
-                                          missing_code = missing_code,
-                                          weight_type = weight_type, directed=directed,
-                                          net_name = "this_igraph",
-                                          shiny = TRUE,
-                                          output = c("graph",
-                                                     "largest_bi_component",
-                                                     "largest_component",
-                                                     "node_measure_plot",
-                                                     "nodelist",
-                                                     "edgelist",
-                                                     "system_level_measures",
-                                                     "system_measure_plot"),
-                                          message = message)
-
-
+          if (message == FALSE) {
+            this_netwrite <- suppressWarnings(
+              basic_netwrite(data_type = data_type,
+                             adjacency_matrix = adjacency_matrix,
+                             adjacency_list = adjacency_list,
+                             nodelist = nodelist_condition,
+                             node_id = node_id,
+                             i_elements=edges_list[[i]]$i_elements,
+                             j_elements=edges_list[[i]]$j_elements,
+                             weights = NULL,
+                             type=edges_list[[i]]$type,
+                             remove_loops = remove_loops,
+                             missing_code = missing_code,
+                             weight_type = weight_type, directed=directed,
+                             net_name = "this_igraph",
+                             shiny = TRUE,
+                             output = c("graph",
+                                        "largest_bi_component",
+                                        "largest_component",
+                                        "node_measure_plot",
+                                        "nodelist",
+                                        "edgelist",
+                                        "system_level_measures",
+                                        "system_measure_plot"),
+                             message = message)
+            )
+          } else {
+            this_netwrite <- basic_netwrite(data_type = data_type,
+                                            adjacency_matrix = adjacency_matrix,
+                                            adjacency_list = adjacency_list,
+                                            nodelist = nodelist_condition,
+                                            node_id = node_id,
+                                            i_elements=edges_list[[i]]$i_elements,
+                                            j_elements=edges_list[[i]]$j_elements,
+                                            weights = NULL,
+                                            type=edges_list[[i]]$type,
+                                            remove_loops = remove_loops,
+                                            missing_code = missing_code,
+                                            weight_type = weight_type, directed=directed,
+                                            net_name = "this_igraph",
+                                            shiny = TRUE,
+                                            output = c("graph",
+                                                       "largest_bi_component",
+                                                       "largest_component",
+                                                       "node_measure_plot",
+                                                       "nodelist",
+                                                       "edgelist",
+                                                       "system_level_measures",
+                                                       "system_measure_plot"),
+                                            message = message)
+          }
         }
 
       } else {
@@ -557,56 +652,112 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
         if('weights' %in% colnames(edges_list[[i]]) == TRUE){
           # Subgraphs, with weights
-          this_netwrite <- basic_netwrite(data_type = data_type,
-                                          adjacency_matrix = adjacency_matrix,
-                                          adjacency_list = adjacency_list,
-                                          nodelist = nodelist_condition,
-                                          node_id = node_id,
-                                          i_elements=edges_list[[i]]$i_elements,
-                                          j_elements=edges_list[[i]]$j_elements,
-                                          weights = edges_list[[i]]$weights,
-                                          type=edges_list[[i]]$type,
-                                          remove_loops = remove_loops,
-                                          missing_code = missing_code,
-                                          weight_type = weight_type, directed=directed,
-                                          net_name = "this_igraph",
-                                          shiny = TRUE,
-                                          output = c("graph",
-                                                     "largest_bi_component",
-                                                     "largest_component",
-                                                     "node_measure_plot",
-                                                     "nodelist",
-                                                     "edgelist",
-                                                     "system_level_measures",
-                                                     "system_measure_plot"),
-                                          message = message)
+
+          if (message == FALSE) {
+            this_netwrite <- suppressWarnings(
+              basic_netwrite(data_type = data_type,
+                             adjacency_matrix = adjacency_matrix,
+                             adjacency_list = adjacency_list,
+                             nodelist = nodelist_condition,
+                             node_id = node_id,
+                             i_elements=edges_list[[i]]$i_elements,
+                             j_elements=edges_list[[i]]$j_elements,
+                             weights = edges_list[[i]]$weights,
+                             type=edges_list[[i]]$type,
+                             remove_loops = remove_loops,
+                             missing_code = missing_code,
+                             weight_type = weight_type, directed=directed,
+                             net_name = "this_igraph",
+                             shiny = TRUE,
+                             output = c("graph",
+                                        "largest_bi_component",
+                                        "largest_component",
+                                        "node_measure_plot",
+                                        "nodelist",
+                                        "edgelist",
+                                        "system_level_measures",
+                                        "system_measure_plot"),
+                             message = message)
+            )
+          } else {
+            this_netwrite <- basic_netwrite(data_type = data_type,
+                                            adjacency_matrix = adjacency_matrix,
+                                            adjacency_list = adjacency_list,
+                                            nodelist = nodelist_condition,
+                                            node_id = node_id,
+                                            i_elements=edges_list[[i]]$i_elements,
+                                            j_elements=edges_list[[i]]$j_elements,
+                                            weights = edges_list[[i]]$weights,
+                                            type=edges_list[[i]]$type,
+                                            remove_loops = remove_loops,
+                                            missing_code = missing_code,
+                                            weight_type = weight_type, directed=directed,
+                                            net_name = "this_igraph",
+                                            shiny = TRUE,
+                                            output = c("graph",
+                                                       "largest_bi_component",
+                                                       "largest_component",
+                                                       "node_measure_plot",
+                                                       "nodelist",
+                                                       "edgelist",
+                                                       "system_level_measures",
+                                                       "system_measure_plot"),
+                                            message = message)
+          }
 
         } else {
           # Subgraphs, without weights
-          this_netwrite <- basic_netwrite(data_type = data_type,
-                                          adjacency_matrix = adjacency_matrix,
-                                          adjacency_list = adjacency_list,
-                                          nodelist = nodelist_condition,
-                                          node_id = node_id,
-                                          i_elements=edges_list[[i]]$i_elements,
-                                          j_elements=edges_list[[i]]$j_elements,
-                                          weights = NULL,
-                                          type=edges_list[[i]]$type,
-                                          remove_loops = remove_loops,
-                                          missing_code = missing_code,
-                                          weight_type = weight_type, directed=directed,
-                                          net_name = "this_igraph",
-                                          shiny = TRUE,
-                                          output = c("graph",
-                                                     "largest_bi_component",
-                                                     "largest_component",
-                                                     "node_measure_plot",
-                                                     "nodelist",
-                                                     "edgelist",
-                                                     "system_level_measures",
-                                                     "system_measure_plot"),
-                                          message = message)
-
+          if (message == FALSE) {
+            this_netwrite <- suppressWarnings(
+              basic_netwrite(data_type = data_type,
+                             adjacency_matrix = adjacency_matrix,
+                             adjacency_list = adjacency_list,
+                             nodelist = nodelist_condition,
+                             node_id = node_id,
+                             i_elements=edges_list[[i]]$i_elements,
+                             j_elements=edges_list[[i]]$j_elements,
+                             weights = NULL,
+                             type=edges_list[[i]]$type,
+                             remove_loops = remove_loops,
+                             missing_code = missing_code,
+                             weight_type = weight_type, directed=directed,
+                             net_name = "this_igraph",
+                             shiny = TRUE,
+                             output = c("graph",
+                                        "largest_bi_component",
+                                        "largest_component",
+                                        "node_measure_plot",
+                                        "nodelist",
+                                        "edgelist",
+                                        "system_level_measures",
+                                        "system_measure_plot"),
+                             message = message)
+            )
+          } else {
+            this_netwrite <- basic_netwrite(data_type = data_type,
+                                            adjacency_matrix = adjacency_matrix,
+                                            adjacency_list = adjacency_list,
+                                            nodelist = nodelist_condition,
+                                            node_id = node_id,
+                                            i_elements=edges_list[[i]]$i_elements,
+                                            j_elements=edges_list[[i]]$j_elements,
+                                            weights = NULL,
+                                            type=edges_list[[i]]$type,
+                                            remove_loops = remove_loops,
+                                            missing_code = missing_code,
+                                            weight_type = weight_type, directed=directed,
+                                            net_name = "this_igraph",
+                                            shiny = TRUE,
+                                            output = c("graph",
+                                                       "largest_bi_component",
+                                                       "largest_component",
+                                                       "node_measure_plot",
+                                                       "nodelist",
+                                                       "edgelist",
+                                                       "system_level_measures",
+                                                       "system_measure_plot"),
+                                            message = message)
+          }
         }
       }
 
@@ -689,40 +840,21 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if ("graph" %in% final_output) {
       netwrite_output[[`net_name`]] <- graph
-      # assign(x = net_name, value = graph, .GlobalEnv)
       netwrite_output$igraph_list <- graphs_list
-      # assign(x = "network_list", value = graphs_list, .GlobalEnv)
-      # suppressWarnings(rm(graph))
-    } # else {
-    #   suppressWarnings(rm(graph, graphs_list))
-    # }
+
+    }
 
     if ("largest_bi_component" %in% final_output) {
-      # netwrite_output$largest_bi_component <- largest_bi_component
-      # assign(x = "largest_bi_component", value = largest_bi_component, .GlobalEnv)
       netwrite_output$largest_bi_component <- bicomponent_list
-      # assign(x = "bicomponent_list", value = bicomponent_list, .GlobalEnv)
-    } # else {
-    #   suppressWarnings(rm(largest_bi_component, bicomponent_list))
-    # }
+    }
 
     if ("largest_component" %in% final_output) {
-      # netwrite_output$largest_component <- largest_component
-      # assign(x = "largest_component", value = largest_component, .GlobalEnv)
       netwrite_output$largest_component <- lcomponent_list
-      # assign(x = "largest_component_list", value = lcomponent_list, .GlobalEnv)
-    } #else {
-    # suppressWarnings(rm(largest_component, lcomponent_list))
-    # }
+    }
 
     if ("node_measure_plot" %in% final_output) {
-      # netwrite_output$node_measure_plot <- node_measure_plot
-      # assign(x = "node_measure_plot", value = node_measure_plot, .GlobalEnv)
       netwrite_output$node_measure_plot <- nplot_list
-      # assign(x = "node_measure_plot_list", value = nplot_list, .GlobalEnv)
-    } #else {
-    # suppressWarnings(rm(node_measure_plot, nplot_list))
-    # }
+    }
 
     # For `nodelist`, we just want a dataframe that has the node-level
     # measures for each relation type. To do this, we're going to want
@@ -731,7 +863,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     for (i in 2:length(node_measures_list)) {
 
-      #  print(i)
 
       this_name <- names(node_measures_list)[[i]]
       new_column_names <- paste(this_name,
@@ -761,44 +892,22 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if ("nodelist" %in% final_output) {
       netwrite_output$node_measures <- node_measures
-      # assign(x = "node_measures", value = node_measures, .GlobalEnv)
-      # netwrite_output$node_measures_list <- node_measures_list
-      # assign(x = "node_measures_list", value = node_measures_list, .GlobalEnv)
-    } # else {
-    #   suppressWarnings(rm(node_measures))
-    #   suppressWarnings(rm(node_measures_list))
-    # }
+    }
 
     if ("edgelist" %in% final_output) {
-      # netwrite_output$edgelist <- edgelist
-      # assign(x = "edgelist", value = edgelist, .GlobalEnv)
       netwrite_output$edgelist <- f_edges_list
-      # assign(x = "edgelist_list", value = f_edges_list, .GlobalEnv)
-    } # else {
-    #   suppressWarnings(rm(edgelist, f_edges_list))
-    # }
+    }
 
     # COME BACK TO THIS ONE AND SEE IF WE CAN COMBINE INTO A SINGLE DATAFRAME
 
     if ("system_level_measures" %in% final_output) {
-      # netwrite_output$system_level_measures <- system_level_measures
-      # assign(x = "system_level_measures", value = system_level_measures, .GlobalEnv)
-
       s_measures_reduce <- suppressMessages(Reduce(dplyr::full_join, s_measures_list))
       netwrite_output$system_level_measures <- s_measures_reduce
-      # assign(x = "system_level_measures_list", value = s_measures_list, .GlobalEnv)
-    } # else {
-    #   suppressWarnings(rm(system_level_measures, s_measures_list))
-    # }
+    }
 
     if ("system_measure_plot" %in% final_output) {
-      # netwrite_output$system_measure_plot <- system_measure_plot
-      # assign(x = "system_measure_plot", value = system_measure_plot, .GlobalEnv)
       netwrite_output$system_measure_plot <- splot_list
-      # assign(x = "system_measure_plot_list", value = splot_list, .GlobalEnv)
-    } # else {
-    #   suppressWarnings(rm(system_measure_plot, splot_list))
-    # }
+    }
 
 
 
@@ -842,9 +951,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   #   suppressWarnings(rm(list = c("system_measure_plot", "system_measure_plot_list"), envir = .GlobalEnv))
   # }
 
-  if (message == FALSE) {
-    options(warn = warn_option)
-  }
 
   return(netwrite_output)
 
@@ -1130,7 +1236,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if ("adjacency_matrix" %in% output) {
       basic_output$adjacency_matrix <- adjacency_matrix
-      # assign(x = 'adjacency_matrix', value = adjacency_matrix,.GlobalEnv)
     }
 
 
@@ -1138,7 +1243,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if ("nodelist" %in% output) {
       basic_output$node_measures <- nodes
-      # assign(x = 'node_measures', value = nodes,.GlobalEnv)
     }
 
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
@@ -1163,7 +1267,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Assign to global environment
     if ("graph" %in% output) {
       basic_output[[`net_name`]] <- g
-      # assign(x = net_name, value = g,.GlobalEnv)
     }
 
     # Create an edgelist and store in output list
@@ -1285,7 +1388,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # EDGELIST
   } else {
 
-    # print("creating edgelist")
 
     # Creating Canonical Node and Edgelists
     if (is.null(weights) == TRUE){
@@ -1314,7 +1416,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Adding Nodes
     if(is.null(nodelist[[1]]) == TRUE) {
       #if(length(nodelist) == 1 & nodelist[[1]] == FALSE) {
-      # print("make nodes no nodelist")
       nodes <- as.data.frame(sort(unique(c(edgelist[,2], edgelist[,3]))))
       nodes <- cbind(seq(1,nrow(nodes),1), nodes)
       colnames(nodes) <- c('id', 'label')
@@ -1422,7 +1523,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
 
 
-    # print('creating igraph object')
     # Creating igraph object
     colnames(nodes)[[2]] <- c('attr')
     # If the nodelist is a data frame, we'll want to add the node attributes
@@ -1446,7 +1546,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # processing <- Sys.time()
 
-    #   print('node-level measures')
     # Create an alternate closeness function
     # Reachablility function (Eliminate Loops, reaching yourself isn't that useful)
     # Adding Node-Level Measures
@@ -1472,7 +1571,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Calculating the Proportion of Two-Step Path that Are Also One-Step Paths
     # Calculating Multiplex Edge Correlation
     # Calculating System-Level Measures
-    # print('system level measures')
     if ("system_level_measures" %in% output | "system_measure_plot" %in% output | "largest_bi_component" %in% output | "largest_component" %in% output) {
       weak_component <- largest_weak_component_igraph(g)
       bicomponent <- largest_bicomponent_igraph(g)
@@ -1518,7 +1616,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
     if ("edgelist" %in% output) {
       basic_output$edgelist <- edgelist
-      # assign(x = 'edgelist', value = edgelist,.GlobalEnv)
     }
     if ("nodelist" %in% output) {
       # We need to force consistency across `ideanet's` various functions to make sure they
@@ -1526,7 +1623,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # will be designated as a numeric vector
       nodes$id <- as.numeric(nodes$id)
       basic_output$node_measures <- nodes
-      # assign(x = 'node_measures', value = nodes,.GlobalEnv)
     }
 
     ### Note: Jim wants the outputted edgelist and igraph object to have the original weights.
@@ -1552,7 +1648,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # Assign to global environment
     if ("graph" %in% output) {
       basic_output[[`net_name`]] <- g
-      # assign(x = net_name, value = g,.GlobalEnv)
     }
 
   } # End edgelist condition
@@ -1688,14 +1783,11 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     ###### The requisite function in `sna` needs specification as to whether
     ###### the network in question is directed or undirected. We'll make an
     ###### object here with that specification
-    # print("trans_cor")
-    # assign("broken_graph", g, .GlobalEnv)
     sna_mode <- ifelse(directed == T, "digraph", "graph")
     trans_cor <- sna::gtrans(intergraph::asNetwork(igraph::simplify(g, remove.multiple = T)), mode = sna_mode, measure = "correlation")
 
     # trans_cor_time <- Sys.time()
 
-    # print("density")
     if (directed == TRUE){
       density_directed <- igraph::edge_density(g)
       density_undirected <- igraph::edge_density(igraph::as.undirected(g))
@@ -1708,7 +1800,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     num_isolates <- sum(nodes$total_degree == 0)
 
-    # print("self_loops")
     num_self_loops <- sum(igraph::is.loop(g, eids = igraph::E(g)))
 
     # iso_time <- Sys.time()
@@ -2154,11 +2245,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(herf_eigen),
                   as.character(k_core_cohesion))
 
-    # print(length(measures))
-    #
-    # assign("measure_labels", measure_labels, .GlobalEnv)
-    # assign("measure_descriptions", measure_descriptions, .GlobalEnv)
-    # assign("measures", measures, .GlobalEnv)
 
     system_level_measures <- cbind(as.data.frame(measure_labels), measure_descriptions, measures)
 
@@ -2256,31 +2342,14 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   # system_level_time2 <- Sys.time()
 
-
-
   # System & Node-Level Visualizations
 
   if ("system_measure_plot" %in% output) {
 
-    if (shiny == FALSE) {
-      grDevices::dev.new(width = 10.6806, height = 7.30556)
-    }
-    options(scipen = 0, digits = 7)
-    system_plot <- function() {
-      # Creating Layout
-      viz_matrix <- matrix(c(10,10,10,10,10,10,10,10,10,
-                             2,2,2,3,3,3,0,0,0,
-                             1,1,1,1,1,1,4,4,4,
-                             1,1,1,1,1,1,0,0,0,
-                             1,1,1,1,1,1,5,5,5,
-                             1,1,1,1,1,1,6,6,6,
-                             1,1,1,1,1,1,0,0,0,
-                             1,1,1,1,1,1,9,9,9,
-                             7,7,7,8,8,8,0,0,0),
-                           ncol  = 9, byrow = TRUE)
-      graphics::layout(viz_matrix)
-      graphics::layout.show(10)
+    # browser()
 
+    # Density Plot
+    density_plot <- function(){
       # Defining degree distribution coordinates
       y_axis <- stats::density(nodes$total_degree)$y
       x_axis <- stats::density(nodes$total_degree)$x
@@ -2293,8 +2362,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       y_spacer <- y_axis[c(length(y_axis))] - y_axis[c(length(y_axis)-1)]
       y_spacer <- y_spacer*0.5
 
+
       # Defining Base Degree Plot
-      graphics::par(mar = c(5,6,2,2),  family='HersheySerif')
+      # graphics::par(mar = c(5,6,2,2),  family='HersheySerif')
       plot(0, type='n', xlab=' ', ylab=' ', xlim=c(min(x_axis), max(x_axis)),
            ylim=c(min(y_axis), max(y_axis)), cex.axis=1.3, family='HersheySerif',
            las=1, main=' ', bty='n')
@@ -2315,55 +2385,132 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # Adding Title
       graphics::title(c("Total Degree Distribution"), family='serif', cex.main=2)
+    }
+    density_grob <- cowplot::as_grob(density_plot)
+
+    #######################################
 
 
-      # Populating Subplots
-      system_plot_names <- c("Number of Weak Components",
-                             "Proportion in the Largest Weak Component",
-                             "Degree Assortativity (Total)",
-                             "Reciprocity Rate",
-                             "Transitivity Rate",
-                             "Global Clustering Coefficient",
-                             "Average Geodesic",
-                             "Multi-Level Edge Correlation")
+    # Populating Subplots
+    system_plot_names <- c("Number of Weak Components",
+                           "Proportion in the Largest Weak Component",
+                           "Degree Assortativity (Total)",
+                           "Reciprocity Rate",
+                           "Transitivity Rate",
+                           "Global Clustering Coefficient",
+                           "Average Geodesic",
+                           "Multi-Level Edge Correlation")
 
-      system_plot_labels <- c("# of Weak Components",
-                              "% in the Largest Weak Component",
-                              "Degree Assortativity",
-                              "Reciprocity Rate",
-                              "Transitivity Rate",
-                              "Global Clustering Coefficient",
-                              "Average Geodesic",
-                              "Multi-Level Edge Correlation")
+    system_plot_labels <- c("# of Weak Components",
+                            "% in the Largest Weak Component",
+                            "Degree Assortativity",
+                            "Reciprocity Rate",
+                            "Transitivity Rate",
+                            "Global Clustering Coefficient",
+                            "Average Geodesic",
+                            "Multi-Level Edge Correlation")
 
-
-      for(i in seq_along(system_plot_names)) {
-        plot_measure <- system_level_measures[system_level_measures$measure_labels == system_plot_names[[i]], 3]
-
-        plot_measure <- ifelse(i < 8, as.numeric(plot_measure), plot_measure)
-        plot_measure <- ifelse(i < 8, round(plot_measure, digits=2), plot_measure)
-        plot_measure <- ifelse(i == 8, trimws(gsub('Edge', '', plot_measure)), plot_measure)
-
-        graphics::par(mar=c(0,0,0,0), family='serif')
-        plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
-             ylim=c(1,10), axes=FALSE, main='', bty='n')
-
-        graphics::text(x=5, y=9, system_plot_labels[[i]], family='serif', font=2, cex=1.3)
-        graphics::text(x=5, y=6.5, plot_measure, family='serif', cex=1.5)
-        rm(plot_measure)
-      }
-
-      # Adding Plot Title
-      graphics::par(mar=c(0,0,0,0), family='serif')
-      plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
-           ylim=c(1,10), axes=FALSE, main='', bty='n')
-      graphics::text(x=5.5, y=5, 'System-Level Measures', family='serif', font=2, cex=3)
+    if (directed == TRUE) {
+      system_plot_names[[9]] <- "Density (Directed)"
+      system_plot_labels[[9]] <- "Density (Directed)"
+    } else {
+      system_plot_names[[9]] <- "Density (Undirected)"
+      system_plot_labels[[9]] <- "Density (Undirected)"
     }
 
-    g <- cowplot::as_grob(system_plot)
-    p_1 <- cowplot::ggdraw(g)
 
-    p_1
+    plot_texts <- list()
+    plot_texts$num_weak <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[1]],
+                                                          system_level_measures[system_level_measures$measure_labels == system_plot_names[[1]], 3],
+                                                          sep = "\n"))
+    plot_texts$prop_weak <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[2]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[2]], 3], 1, 4),
+                                                          sep = "\n"))
+    plot_texts$deg_assort <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[3]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[3]], 3], 1, 4),
+                                                          sep = "\n"))
+    plot_texts$recip <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[4]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[4]], 3], 1, 4),
+                                                          sep = "\n"))
+    plot_texts$trans_rate <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[5]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[5]], 3], 1, 4),
+                                                          sep = "\n"))
+    plot_texts$gcc <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[6]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[6]], 3], 1, 4),
+                                                          sep = "\n"))
+    plot_texts$avg_geo <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[7]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[7]], 3], 1, 4),
+                                                          sep = "\n"))
+
+    if (system_level_measures[system_level_measures$measure_labels == system_plot_names[[8]], 3] == "Singleplex Network") {
+      plot_texts$multi_corr <- ggplot2::ggplot() +
+        ggplot2::theme_void() +
+        ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[8]],
+                                                            system_level_measures[system_level_measures$measure_labels == system_plot_names[[8]], 3],
+                                                            sep = "\n"))
+    } else {
+      plot_texts$multi_corr <- ggplot2::ggplot() +
+        ggplot2::theme_void() +
+        ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[8]],
+                                                            substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[8]], 3], 1, 4),
+                                                            sep = "\n"))
+    }
+
+    plot_texts$density <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[9]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[9]], 3], 1, 6),
+                                                          sep = "\n"))
+
+
+    mid_right <- cowplot::plot_grid(plot_texts$deg_assort,
+                                    plot_texts$recip,
+                                    plot_texts$trans_rate,
+                                    ### NEED TO DECIDE WHAT TO DO ABOUT MULTIPLEX
+                                    ### CORRELATION WHEN 3+ TYPES
+                                    # plot_texts$multi_corr,
+
+                                    ncol = 1)
+
+    center <- cowplot::plot_grid(density_grob, mid_right, ncol = 2,
+                                 rel_widths = c(2.5, 1))
+
+    top_row <- cowplot::plot_grid(plot_texts$num_weak,
+                                  plot_texts$prop_weak,
+                                  plot_texts$density,
+                                  ncol = 3)
+
+    bottom_row <- cowplot::plot_grid(plot_texts$gcc,
+                                     plot_texts$avg_geo,
+                                     ncol = 2)
+
+    p_1 <- cowplot::plot_grid(top_row, center,
+                                      bottom_row,
+                                      nrow = 3, ncol = 1,
+                                      rel_heights = c(1, 5, 1)) +
+      ggplot2::labs(title = "System-Level Measures") +
+      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                        size = 28,
+                                                        face = "bold"))
+
+    if (shiny == FALSE) {
+      print(p_1)
+    }
+
 
   }
 
@@ -2372,250 +2519,356 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   if ("node_measure_plot" %in% output) {
 
-    node_measures_plot <- function() {
-      # Creating Group Index of Measures
-      columns <- colnames(nodes)
-      columns <- columns[columns != "id" & columns != "attr" ]
-      weighted_degree_measures <- columns[grepl("weighted", columns)]
-      weighted_degree_measures <- cbind(rep("weighted_degree", length(weighted_degree_measures)), weighted_degree_measures)
-      colnames(weighted_degree_measures) <- c('type', 'measure')
+    # browser()
 
-      degree_measures <- columns[grepl("_degree", columns)]
-      degree_measures <- degree_measures[!grepl("weighted", degree_measures)]
-      degree_measures <- cbind(rep("degree", length(degree_measures)), degree_measures)
-      colnames(degree_measures) <- c('type', 'measure')
+    # Make list to store ggplots
+    node_gg_list <- list()
 
-      closeness_measures <- columns[grepl("closeness", columns)]
-      closeness_measures <- cbind(rep("closeness", length(closeness_measures)), closeness_measures)
-      colnames(closeness_measures) <- c('type', 'measure')
+    #####################
 
-      betweenness_measures <- columns[grepl("betweenness", columns)]
-      betweenness_measures <- cbind(rep("betweenness", length(betweenness_measures)), betweenness_measures)
-      colnames(betweenness_measures) <- c('type', 'measure')
+    # Weighted Degree
+    columns <- colnames(nodes)
+    columns <- columns[columns != "id" & columns != "attr" ]
+    weighted_degree_measures <- columns[grepl("^weighted", columns)]
+    weighted_degree_measures <- cbind(rep("weighted_degree", length(weighted_degree_measures)), weighted_degree_measures)
+    weighted_degree_measures <- cbind(weighted_degree_measures, stringr::str_to_title(stringr::str_replace_all(weighted_degree_measures[,2], "^weighted_", "")))
+    colnames(weighted_degree_measures) <- c('type', 'measure', 'label')
 
-      bon_measures <- columns[grepl("bon", columns)]
-      bon_measures <- cbind(rep("bonacich", length(bon_measures)), bon_measures)
-      colnames(bon_measures) <- c('type', 'measure')
+    wdeg_setup <- node_gg_setup(index_df = weighted_degree_measures, nodes = nodes)
 
-      eigen_measures <- columns[grepl("eigen", columns)]
-      eigen_measures <- cbind(rep("eigen", length(eigen_measures)), eigen_measures)
-      colnames(eigen_measures) <- c('type', 'measure')
-
-      burt_measures <- columns[grepl("burt", columns)]
-      burt_measures <- cbind(rep("burt", length(burt_measures)), burt_measures)
-      colnames(burt_measures) <- c('type', 'measure')
-
-      reachable_measures <- columns[grepl("reach", columns)]
-      reachable_measures <- cbind(rep("reachable", length(reachable_measures)), reachable_measures)
-      colnames(reachable_measures) <- c('type', 'measure')
-
-      measure_index <- as.data.frame(rbind(weighted_degree_measures,  degree_measures,
-                                           closeness_measures, betweenness_measures,
-                                           bon_measures, eigen_measures,
-                                           burt_measures, reachable_measures))
-
-      rm(columns, weighted_degree_measures, degree_measures, closeness_measures,
-         betweenness_measures, bon_measures, eigen_measures, burt_measures,
-         reachable_measures)
-
-
-
-      # Specifying nicer labels
-      plot_labels <- c('Weighted Degree', 'Degree', 'Closeness',
-                       'Betweenness', 'Bon. Power Cent.',
-                       'Eigenvector Cent.', 'Burt Measures', 'Reachability')
-
-      # Font setting for legend elements
-      graphics::par(family='serif')
-
-
-
-      # Legend elements
-      legend_elements <- vector("list", length(plot_labels))
-      legend_elements[[1]] <- c("degree", "indegree", "outdegree")
-      legend_elements[[2]] <- c("degree", "indegree", "outdegree")
-
-      if ("closeness_in" %in% names(nodes)) {
-        legend_elements[[3]] <- c("inbound", "outbound", "undirected")
-      } else {
-        legend_elements[[3]] <- c()
-      }
-
-      if ("binarized_betweenness" %in% names(nodes)) {
-        legend_elements[[4]] <- c("binarized", "weighted")
-      } else {
-        legend_elements[[4]] <- c()
-      }
-
-      # Handling different amounts of bonacich measures
-      if ("bonpow_in" %in% names(nodes)) {
-        legend_elements[[5]] <- c("in, beta 0.75",
-                                  "out, beta 0.75",
-                                  "sym, beta 0.75",
-                                  "in beta -0.75",
-                                  "out beta -0.75",
-                                  "sym beta -0.75")
-
-      } else {
-
-        legend_elements[[5]] <- c("beta 0.75", "beta -0.75")
-
-      }
-
-      if ("eigen_centrality" %in% names(nodes)) {
-        legend_elements[[6]] <- c()
-      } else {
-        legend_elements[[6]] <- c("incoming", "outgoing", "symmetrized")
-      }
-      legend_elements[[7]] <- c("constraint", "hierarchy")
-      legend_elements[[8]] <- c("incoming", "outgoing", "all")
-
-      # Isolating the measure being visualized based on whether it's directed or not
-      plot_measures <- unique(measure_index$type)
-
-      # Defining the layout used
-      viz_matrix <- matrix(c(10,10,10,10,10,10,10,10,10,
-                             1,1,1,2,2,2,3,3,3,
-                             1,1,1,2,2,2,3,3,3,
-                             1,1,1,2,2,2,3,3,3,
-                             4,4,4,5,5,5,6,6,6,
-                             4,4,4,5,5,5,6,6,6,
-                             4,4,4,5,5,5,6,6,6,
-                             7,7,7,8,8,8,9,9,9,
-                             7,7,7,8,8,8,9,9,9,
-                             7,7,7,8,8,8,9,9,9),
-                           ncol  = 9, byrow = TRUE)
-      graphics::layout(viz_matrix)
-      #layout.show(viz_matrix)
-
-
-
-      # Generating Subplot
-      for(i in seq_along(plot_measures)){
-
-        # Colors
-        colors <- c('brown', 'blue', 'forestgreen', 'purple', 'goldenrod2', 'pink')
-
-        # Identifying measure group & associated measures
-        measures <- measure_index[(measure_index[,1] == plot_measures[[i]]), 2]
-
-
-
-        # Eliminating NA Values
-        sub_measures <- vector('list', length(measures))
-        for(j in seq_along(measures)){
-          plot_measure <- nodes[,measures[[j]]]
-          plot_measure <- plot_measure[!is.na(plot_measure)]
-          sub_measures[[j]] <- plot_measure
-        }
-
-
-        #measure_ranges <- lapply(sub_measures, function(x)range(x))
-        measure_ranges <- numeric(length = length(sub_measures))
-
-        if (length(measure_ranges) > 1) {
-
-          for (j in 1:length(measure_ranges)){
-            this_range <- range(sub_measures[[j]])
-            measure_ranges[[j]] <- this_range[[2]]-this_range[[1]]
-
-          }
-
-          measure_ranges <- as.data.frame(cbind(legend_elements[[i]], measure_ranges))
-          colnames(measure_ranges)[[1]] <- c("name")
-          #          measure_ranges <- measure_ranges[!duplicated(measure_ranges[[2]]), ]
-          measure_ranges <- measure_ranges[!duplicated(measure_ranges[[1]]), ]
-          colors <- colors[1:nrow(measure_ranges)]
-
-        }
-
-
-        # Defining degree distribution coordinates
-        y_axis <- NULL
-        x_axis <- NULL
-        for(j in seq_along(sub_measures)){
-          plot_measure <- sub_measures[[j]]
-          y <- stats::density(plot_measure)$y
-          x <- stats::density(plot_measure)$x
-
-          coordinates <- cbind(as.data.frame(x), y)
-          coordinates <- coordinates[(coordinates[,1] >= min(plot_measure)), ]
-          coordinates <- coordinates[(coordinates[,1] <= max(plot_measure)), ]
-          x <- c(min(plot_measure), coordinates$x, max(plot_measure))
-          ymax <- max(coordinates$y)
-          y <- c(0, coordinates$y, ymax)
-
-          y_axis <- c(y_axis, y)
-          x_axis <- c(x_axis, x)
-        }
-
-        y_axis <- pretty(y_axis)
-        x_axis <- pretty(x_axis)
-        colors <- colors[1:length(measures)]
-
-        # Defining Base Degree Plot
-        graphics::par(mar = c(5,6,2,2), family='HersheySerif')
-        plot(0, type='n', xlab=' ', ylab=' ', xlim=c(min(x_axis), max(x_axis)),
-             ylim=c(min(y_axis), max(y_axis)), cex.axis=1.3, family='HersheySerif',
-             las=1, main=' ', bty='n')
-        graphics::grid(lwd = 2)
-
-        # Adding Margin Text
-        graphics::mtext(side = 1, text = plot_labels[[i]], col = "black", line = 3, cex = 1.2, family='HersheySerif')
-
-        # Plotting Degree
-        for(j in seq_along(sub_measures)){
-          plot_measure <- sub_measures[[j]]
-          y_axis <- stats::density(plot_measure)$y
-          x_axis <- stats::density(plot_measure)$x
-          coordinates <- cbind(as.data.frame(x_axis), y_axis)
-          coordinates <- coordinates[(coordinates$x_axis >= min(plot_measure)), ]
-          x_axis <- coordinates$x_axis
-          y_axis <- coordinates$y_axis
-          graphics::lines(x_axis, y_axis, col=colors[[j]], lwd=1.5)
-
-        }
-
-        if (length(legend_elements[[i]] > 0)) {
-
-
-          graphics::par(family='serif')
-          graphics::legend("topright", legend=measure_ranges[[1]], col=colors, lty=1, cex=.9, bty='n')
-        }
-
-
-
-      }
-
-      # Adding Legend
-      #  if(directed == TRUE){
-      graphics::par(mar=c(0,0,0,0), family='serif')
-      plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
-           ylim=c(1,10), axes=FALSE, main='', bty='n')
-
-      # segments(3, 8, 4, 8, col="blue")
-      # segments(3, 5, 4, 5, col="forestgreen")
-      #
-      graphics::text(x=6, y=7, 'Note: Overlapping lines may ', family='serif', cex=1.3)
-      graphics::text(x=6, y=6, 'merely indicate nearly', family='serif', cex=1.3)
-      graphics::text(x=6, y=5, 'duplicate values', family='serif', cex=1.3)
-      # }else{
-      #   par(mar=c(0,0,0,0), family='serif')
-      #   plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
-      #        ylim=c(1,10), axes=FALSE, main='', bty='n')
-      # }
-
-      # Adding Title
-      graphics::par(mar=c(0,0,0,0), family='serif')
-      plot(0, type='n', xlab=' ', ylab=' ', xlim=c(1,10),
-           ylim=c(1,10), axes=FALSE, main='', bty='n')
-      graphics::text(x=5.5, y=5, 'Node-Level Measures', family='serif', font=2, cex=3)
+    if (nrow(weighted_degree_measures) == 1) {
+          node_gg_list[[1]] <- wdeg_setup$coords %>%
+            ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
+                                         y = wdeg_setup$coords$y_axis)) +
+            ggplot2::geom_line() +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+            ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
+            ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
+            ggplot2::labs(y = "\nDensity\n",
+                          x = NULL,
+                          color = NULL,
+                          caption = "Weighted Degree\n") +
+            ggplot2::theme(legend.position = c(.8, .8),
+                           legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                           plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    } else {
+          node_gg_list[[1]] <- wdeg_setup$coords %>%
+            ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
+                                         y = wdeg_setup$coords$y_axis,
+                                 color = wdeg_setup$coords$measure)) +
+            ggplot2::geom_line() +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+            ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
+            ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
+            ggplot2::labs(y = "\nDensity\n",
+                           x = NULL,
+                           color = NULL,
+                           caption = "Weighted Degree\n") +
+            ggplot2::theme(legend.position = c(.8, .8),
+                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
-    g <- cowplot::as_grob(node_measures_plot)
-    p_2 <- cowplot::ggdraw(g)
 
-    p_2
+    # Degree
+    degree_measures <- columns[grepl("_degree", columns)]
+    degree_measures <- degree_measures[!grepl("weighted", degree_measures)]
+    degree_measures <- cbind(rep("degree", length(degree_measures)), degree_measures)
+    degree_measures <- cbind(degree_measures, stringr::str_to_title(stringr::str_replace_all(degree_measures[,2], "_degree$", "")))
+    colnames(degree_measures) <- c('type', 'measure', 'label')
+
+    deg_setup <- node_gg_setup(index_df = degree_measures, nodes = nodes)
+
+    if (nrow(degree_measures) == 1) {
+          node_gg_list[[2]] <- deg_setup$coords %>%
+            ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
+                                         y = deg_setup$coords$y_axis)) +
+            ggplot2::geom_line() +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+            ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
+            ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
+            ggplot2::labs(y = "\nDensity\n",
+                          x = NULL,
+                          color = NULL,
+                          caption = "Degree\n") +
+            ggplot2::theme(legend.position = c(.8, .8),
+                           legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                           plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    } else {
+          node_gg_list[[2]] <- deg_setup$coords %>%
+            ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
+                                         y = deg_setup$coords$y_axis,
+                                         color = deg_setup$coords$measure)) +
+            ggplot2::geom_line() +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+            ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
+            ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
+            ggplot2::labs(y = "\nDensity\n",
+                 x = NULL,
+                 color = NULL,
+                 caption = "Degree\n") +
+            ggplot2::theme(legend.position = c(.8, .8),
+                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    }
+
+    # Closeness
+    closeness_measures <- columns[grepl("closeness", columns)]
+    closeness_measures <- cbind(rep("closeness", length(closeness_measures)), closeness_measures)
+    closeness_measures <- cbind(closeness_measures, stringr::str_to_title(stringr::str_replace_all(closeness_measures[,2], "^closeness_", "")))
+    colnames(closeness_measures) <- c('type', 'measure', 'label')
+
+    closeness_setup <- node_gg_setup(index_df = closeness_measures, nodes = nodes)
+
+    if (nrow(closeness_measures) == 1) {
+      node_gg_list[[3]] <- closeness_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = closeness_setup$coords$x_axis,
+                                     y = closeness_setup$coords$y_axis)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = closeness_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = closeness_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+                      x = NULL,
+                      color = NULL,
+                      caption = "Closeness\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    } else {
+          node_gg_list[[3]] <- closeness_setup$coords %>%
+            ggplot2::ggplot(ggplot2::aes(x = closeness_setup$coords$x_axis,
+                                         y = closeness_setup$coords$y_axis,
+                                         color = closeness_setup$coords$measure)) +
+            ggplot2::geom_line() +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+            ggplot2::scale_x_continuous(breaks = closeness_setup$x_breaks) +
+            ggplot2::scale_y_continuous(breaks = closeness_setup$y_breaks) +
+            ggplot2::labs(y = "\nDensity\n",
+                 x = NULL,
+                 color = NULL,
+                 caption = "Closeness\n") +
+            ggplot2::theme(legend.position = c(.8, .8),
+                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    }
+
+
+
+    # Betweenness
+    betweenness_measures <- columns[grepl("betweenness", columns)]
+    betweenness_measures <- cbind(rep("betweenness", length(betweenness_measures)), betweenness_measures)
+    if (nrow(betweenness_measures) == 1) {
+      betweenness_measures <- cbind(betweenness_measures, NA)
+    } else {
+      betweenness_measures <- cbind(betweenness_measures,
+                                    stringr::str_to_title(stringr::str_replace_all(betweenness_measures[,2], "^betweenness_", "")))
+    }
+    colnames(betweenness_measures) <- c('type', 'measure', 'label')
+
+    bet_setup <- node_gg_setup(index_df = betweenness_measures, nodes = nodes)
+
+    if (nrow(betweenness_measures) == 1) {
+      node_gg_list[[4]] <- bet_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = bet_setup$coords$x_axis,
+                                     y = bet_setup$coords$y_axis)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = bet_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = bet_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+             x = NULL,
+             color = NULL,
+             caption = "Betweenness\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+              legend.background = ggplot2::element_rect(colour="white", fill="white"),
+              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    } else {
+      node_gg_list[[4]] <- bet_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = bet_setup$coords$x_axis,
+                                     y = bet_setup$coords$y_axis,
+                                     color = bet_setup$coords$measure)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = bet_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = bet_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+             x = NULL,
+             color = NULL,
+             caption = "Betweenness\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+              legend.background = ggplot2::element_rect(colour="white", fill="white"),
+              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    }
+
+
+    # Bonacich
+    bon_measures <- columns[grepl("bon", columns)]
+    bon_measures <- cbind(rep("bonacich", length(bon_measures)), bon_measures)
+    bon_measures <- cbind(bon_measures, stringr::str_to_title(stringr::str_replace_all(bon_measures[,2], "_", " ")))
+    bon_measures[,3] <- stringr::str_replace_all(bon_measures[,3], "^Bonpow ", "")
+    bon_measures[,3] <- stringr::str_replace_all(bon_measures[,3], "^Bonpow", "Beta 0.75")
+    bon_measures[,3] <- stringr::str_replace_all(bon_measures[,3], "^Negative", "Beta -0.75")
+    colnames(bon_measures) <- c('type', 'measure', 'label')
+
+    bon_setup <- node_gg_setup(index_df = bon_measures, nodes = nodes)
+
+    node_gg_list[[5]] <- bon_setup$coords %>%
+      ggplot2::ggplot(ggplot2::aes(x = bon_setup$coords$x_axis,
+                                   y = bon_setup$coords$y_axis,
+                                   color = bon_setup$coords$measure)) +
+      ggplot2::geom_line() +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      ggplot2::scale_x_continuous(breaks = bon_setup$x_breaks) +
+      ggplot2::scale_y_continuous(breaks = bon_setup$y_breaks) +
+      ggplot2::labs(y = "\nDensity\n",
+           x = NULL,
+           color = NULL,
+           caption = "Bonacich\n") +
+      ggplot2::theme(legend.position = c(.8, .8),
+            legend.background = ggplot2::element_rect(colour="white", fill="white"),
+            plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+    # Eigenvector
+    eigen_measures <- columns[grepl("eigen", columns)]
+    eigen_measures <- cbind(rep("eigen", length(eigen_measures)), eigen_measures)
+    if (nrow(eigen_measures) == 1) {
+      eigen_measures <- cbind(eigen_measures, NA)
+    } else {
+      eigen_measures <- cbind(eigen_measures,
+                              stringr::str_to_title(stringr::str_replace_all(eigen_measures[,2], "^eigen_", "")))
+    }
+    colnames(eigen_measures) <- c('type', 'measure', 'label')
+
+    eigen_setup <- node_gg_setup(index_df = eigen_measures, nodes = nodes)
+
+    if (nrow(eigen_measures) == 1) {
+      node_gg_list[[6]] <- eigen_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = eigen_setup$coords$x_axis,
+                                     y = eigen_setup$coords$y_axis)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = eigen_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = eigen_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+             x = NULL,
+             color = NULL,
+             caption = "Eigenvector\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+              legend.background = ggplot2::element_rect(colour="white", fill="white"),
+              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    } else {
+      node_gg_list[[6]] <- eigen_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = eigen_setup$coords$x_axis,
+                                     y = eigen_setup$coords$y_axis,
+                                     color = eigen_setup$coords$measure)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = eigen_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = eigen_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+             x = NULL,
+             color = NULL,
+             caption = "Eigenvector\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+              legend.background = ggplot2::element_rect(colour="white", fill="white"),
+              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    }
+
+    # Burt Measures
+    burt_measures <- columns[grepl("burt", columns)]
+    burt_measures <- cbind(rep("burt", length(burt_measures)), burt_measures)
+    burt_measures <- cbind(burt_measures, stringr::str_to_title(stringr::str_replace_all(burt_measures[,2], "burt_", "")))
+    colnames(burt_measures) <- c('type', 'measure', 'label')
+
+    burt_setup <- node_gg_setup(index_df = burt_measures, nodes = nodes)
+
+    node_gg_list[[7]] <- burt_setup$coords %>%
+      ggplot2::ggplot(ggplot2::aes(x = burt_setup$coords$x_axis,
+                                   y = burt_setup$coords$y_axis,
+                                   color = burt_setup$coords$measure)) +
+      ggplot2::geom_line() +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      ggplot2::scale_x_continuous(breaks = burt_setup$x_breaks) +
+      ggplot2::scale_y_continuous(breaks = burt_setup$y_breaks) +
+      ggplot2::labs(y = "\nDensity\n",
+           x = NULL,
+           color = NULL,
+           caption = "Burt Measures\n") +
+      ggplot2::theme(legend.position = c(.8, .8),
+            legend.background = ggplot2::element_rect(colour="white", fill="white"),
+            plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+
+    # Reachability Measures
+    reachable_measures <- columns[grepl("reach", columns)]
+    reachable_measures <- cbind(rep("reachable", length(reachable_measures)), reachable_measures)
+    if (nrow(reachable_measures) == 1) {
+      reachable_measures <- cbind(reachable_measures, NA)
+    } else {
+      reachable_measures <- cbind(reachable_measures,
+                                  stringr::str_to_title(stringr::str_replace_all(reachable_measures[,2], "^proportion_reachable_", "")))
+    }
+    colnames(reachable_measures) <- c('type', 'measure', 'label')
+
+    reach_setup <- node_gg_setup(index_df = reachable_measures, nodes = nodes)
+
+    if (nrow(reachable_measures) == 1) {
+      node_gg_list[[8]] <- reach_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = reach_setup$coords$x_axis,
+                                     y = reach_setup$coords$y_axis)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = reach_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = reach_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+             x = NULL,
+             color = NULL,
+             caption = "Reachability\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+              legend.background = ggplot2::element_rect(colour="white", fill="white"),
+              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    } else {
+      node_gg_list[[8]] <- reach_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = reach_setup$coords$x_axis,
+                   y = reach_setup$coords$y_axis,
+                   color = reach_setup$coords$measure)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = reach_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = reach_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+             x = NULL,
+             color = NULL,
+             caption = "Reachability\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+              legend.background = ggplot2::element_rect(colour="white", fill="white"),
+              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+    }
+
+    p_2 <- cowplot::plot_grid(plotlist = node_gg_list, nrow = 3, ncol = 3) +
+      ggplot2::labs(title = "\nNode-Level Measures\n") +
+      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                        size = 24,
+                                                        face = "bold"))
+
+    if (shiny == FALSE) {
+      print(p_2)
+    }
 
   }
 
@@ -2624,26 +2877,21 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   # Assigning Report Elements to the Global Environment
   if ("system_measure_plot" %in% output) {
     basic_output$system_measure_plot <- p_1
-    # assign(x = 'system_measure_plot', value = p_1,.GlobalEnv)
   }
   if ("node_measure_plot" %in% output) {
     basic_output$node_measure_plot <- p_2
-    # assign(x = 'node_measure_plot', value = p_2,.GlobalEnv)
   }
   if ("system_level_measures" %in% output) {
     basic_output$system_level_measures <- system_level_measures
-    # assign(x = 'system_level_measures', value = system_level_measures, .GlobalEnv)
   }
 
   # Remove largest component/bicomponent if not specified
   if ("largest_component" %in% output) {
     basic_output$largest_component <- weak_component$largest_component
-    # suppressWarnings(rm(largest_component, largest_component_ids))
   }
 
   if ("largest_bi_component" %in% output) {
     basic_output$largest_bi_component <- bicomponent$largest_bi_component
-    # suppressWarnings(rm(largest_bi_component, largest_bi_component_ids))
   }
 
   # finish_time <- Sys.time()
@@ -2665,5 +2913,88 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 }
 
+# Function for preparing node-level measure plots
 
-# Quick update
+node_gg_setup <- function(index_df, nodes) {
+  measures <- index_df[,2]
+
+  # Eliminating NA Values
+  sub_measures <- vector('list', length(measures))
+  for(j in seq_along(measures)){
+    plot_measure <- nodes[,measures[[j]]]
+    plot_measure <- plot_measure[!is.na(plot_measure)]
+    sub_measures[[j]] <- plot_measure
+  }
+
+  measure_ranges <- numeric(length = length(sub_measures))
+
+  if (length(measure_ranges) > 1) {
+
+    for (j in 1:length(measure_ranges)){
+      this_range <- range(sub_measures[[j]])
+      measure_ranges[[j]] <- this_range[[2]]-this_range[[1]]
+    }
+
+    measure_ranges <- as.data.frame(cbind(index_df[,3], measure_ranges))
+    colnames(measure_ranges)[[1]] <- c("name")
+    #          measure_ranges <- measure_ranges[!duplicated(measure_ranges[[2]]), ]
+    measure_ranges <- measure_ranges[!duplicated(measure_ranges[[1]]), ]
+
+  }
+
+  # Defining degree distribution coordinates
+  y_axis <- NULL
+  x_axis <- NULL
+  for(j in seq_along(sub_measures)){
+    plot_measure <- sub_measures[[j]]
+    y <- stats::density(plot_measure)$y
+    x <- stats::density(plot_measure)$x
+
+    coordinates <- cbind(as.data.frame(x), y)
+    coordinates <- coordinates[(coordinates[,1] >= min(plot_measure)), ]
+    coordinates <- coordinates[(coordinates[,1] <= max(plot_measure)), ]
+    x <- c(min(plot_measure), coordinates$x, max(plot_measure))
+    ymax <- max(coordinates$y)
+    y <- c(0, coordinates$y, ymax)
+
+    y_axis <- c(y_axis, y)
+    x_axis <- c(x_axis, x)
+  }
+
+  y_breaks <- pretty(y_axis)
+  x_breaks <- pretty(x_axis)
+
+  # Plotting Degree
+  for(j in seq_along(sub_measures)){
+    plot_measure <- sub_measures[[j]]
+    y_axis <- stats::density(plot_measure)$y
+    x_axis <- stats::density(plot_measure)$x
+    coordinates <- cbind(as.data.frame(x_axis), y_axis)
+    coordinates <- coordinates[(coordinates$x_axis >= min(plot_measure)), ]
+
+    # this_measure <- measure_index[measure_index$type == measures[[i]], ]
+    # coordinates$measure <- this_measure[j,2]
+    coordinates$measure <- index_df[j,3]
+
+    if (j == 1) {
+      full_coord <- coordinates
+    } else {
+      full_coord <- rbind(full_coord, coordinates)
+    }
+
+
+    # x_axis <- coordinates$x_axis
+    # y_axis <- coordinates$y_axis
+    # graphics::lines(x_axis, y_axis, col=colors[[j]], lwd=1.5)
+
+  }
+
+  full_coord <- full_coord[2:nrow(full_coord), ]
+
+  output_list <- list(coords = full_coord,
+                      y_breaks = y_breaks,
+                      x_breaks = x_breaks)
+
+  return(output_list)
+
+}

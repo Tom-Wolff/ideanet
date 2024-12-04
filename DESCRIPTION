@@ -1,22 +1,25 @@
 Package: ideanet
 Type: Package
-Title: Integrating Data Exchange and Analysis for Networks (IDEANet)
+Title: Integrating Data Exchange and Analysis for Networks ('ideanet')
 Version: 1.0.0
 Date: 2024-10-31
-Description: A a suite of convenient tools for social network analysis geared toward students, entry-level users, and non-expert practitioners.
+Description: A suite of convenient tools for social network analysis geared toward students, entry-level users, and non-expert practitioners. ‘ideanet’ features unique functions for the processing and measurement of sociocentric and egocentric network data. These functions automatically generate node- and system-level measures commonly used in the analysis of these types of networks. Outputs from these functions maximize the ability of novice users to employ network measurements in further analyses while making all users less prone to common data analytic errors. Additionally, ‘ideanet’ features an R Shiny graphic user interface that allows novices to explore network data with minimal need for coding.
 Authors@R: 
                 c(person(given = "Tom",
                         family = "Wolff",
                         role = c("aut", "cre"),
-                        email = "tom.wolff@northwestern.edu"),
+                        email = "tom.wolff@northwestern.edu",
+                        comment = c(ORCID = "0000-0002-4884-251X")),
                  person(given = c("Jonathan", "Howard"),
                         family = "Morgan",
                         role = "aut",
-                        email = "jonathan.h.morgan@gmail.com"),
+                        email = "jonathan.h.morgan@gmail.com",
+                        comment = c(ORCID = "0000-0001-5181-9903")),
                  person(given = "Gabriel",
                         family = "Varela",
                         role = "aut",
-                        email = "gabriel.varela@duke.edu"),
+                        email = "gabriel.varela@duke.edu",
+                        comment = c(ORCID = "0000-0003-2800-1577")),
                  person(given = "Kieran",
                         family = "Lele",
                         role = "aut"),
@@ -30,15 +33,18 @@ Authors@R:
                  person(given = "Dana",
                         family = "Pasquale",
                         role = "aut",
-                        email = "dana.pasquale@duke.edu"),
+                        email = "dana.pasquale@duke.edu",
+                        comment = c(ORCID = "0000-0001-6686-7844")),
                  person(given = "Peter",
                         family = "Mucha",
                         role = "aut",
-                        email = "Peter.J.Mucha@dartmouth.edu"),
+                        email = "Peter.J.Mucha@dartmouth.edu",
+                        comment = c(ORCID = "0000-0002-0648-7230")),
                  person(given = "James",
                         family = "Moody",
                         role = "aut",
-                        email = "jmoody77@duke.edu"))
+                        email = "jmoody77@duke.edu",
+                        comment = c(ORCID = "0000-0002-3311-4173")))
 Maintainer: Tom Wolff <tom.wolff@northwestern.edu>
 License: GPL (>= 3)
 Encoding: UTF-8

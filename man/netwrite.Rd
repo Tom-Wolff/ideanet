@@ -64,7 +64,7 @@ netwrite(
 \item{message}{A logical value indicating whether warning messages should be displayed in the R console during processing.}
 }
 \value{
-\code{netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
+\code{netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Note, however, that this risks overwriting existing objects in the Global Environment should those objects share names with objects in \code{netwrite}'s output. Depending on the values assigned to the \code{output} argument, \code{netwrite} will produce any or all of the following:
 
 If \code{output} contains \code{graph}, \code{netwrite} will return an igraph object of the network represented in the original data.
 If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing igraph objects for each unique relation type as well as the overall network. These output objects are named according to the value specified in the \code{net_name} argument.
@@ -95,26 +95,23 @@ nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
                       directed = TRUE,
                       net_name = "faux_mesa")
 
-# For easier access of output objects, call `list2env` on output
-list2env(nw_fauxmesa, .GlobalEnv)
-
 ### Inspect updated edgelist
-head(edgelist)
+head(nw_fauxmesa$edgelist)
 
 ### Inspect data frame of node-level measures
-head(node_measures)
+head(nw_fauxmesa$node_measures)
 
 ### Inspect system-level summary
-head(system_level_measures)
+head(nw_fauxmesa$system_level_measures)
 
 ### Plot sociogram of network
-plot(faux_mesa)
+plot(nw_fauxmesa$faux_mesa)
 
 ### View node-level summary visualization
-node_measure_plot
+nw_fauxmesa$node_measure_plot
 
 ### View system-level summary visualization
-system_measure_plot
+nw_fauxmesa$system_measure_plot
 
 
 

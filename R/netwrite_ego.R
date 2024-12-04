@@ -20,7 +20,7 @@
 #' @param egor A logical value indicating whether output should include an \code{egor} object, which is often useful for visualizaton and for simulation larger networks from egocentric data.
 #' @param egor_design If creating an \code{egor} object, a list of arguments to \code{\link[srvyr:as_survey_design]{srvyr::as_survey_design}} specifying the sampling design for egos. This argument corresponds to \code{ego_design} in \code{\link[egor:egor]{egor::egor}}.
 #'
-#' @return \code{ego_netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Outputs include a data frame containing measures of ego attributes, another data frame containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite} returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.
+#' @return \code{ego_netwrite} returns a list containing several output objects. Users may find it easier to access and work with outputs by applying \link{list2env} to this list, which will separate outputs and store them in the R Global Environment. Note, however, that this risks overwriting existing objects in the Global Environment should those objects share names with objects in \code{netwrite}'s output. Outputs include a data frame containing measures of ego attributes, another data frame containing measures of alter attributes and network position, a third containing the alter-alter edgelist (when applicable), a fourth containing summary measures for each individual ego network, and a fifth providing summary measures for the overall dataset. Additionally, \code{ego_netwrite} returns a list of \code{igraph} objects constructed for each individual ego network, as well as an \code{egor} object for the overall dataset if desired.
 #'
 #' @export
 #'
@@ -43,16 +43,15 @@
 #'                        j_elements = ngq_aa$alter2,
 #'                        directed = FALSE)
 #'
-#' list2env(ngq_nw, .GlobalEnv)
 #'
 #' # View summaries of individual ego networks
-#' head(summaries)
+#' head(ngq_nw$summaries)
 #'
 #' # View summary of overall dataset
-#' head(overall_summary)
+#' head(ngq_nw$overall_summary)
 #'
-#' # View sociogram of second ego network
-#' plot(igraph_objects[[4]]$igraph_ego)
+#' # View sociogram of fourth ego network
+#' plot(ngq_nw$igraph_objects[[4]]$igraph_ego)
 #'
 #'
 #' # For advanced applications involving multiple relationship types
@@ -373,6 +372,8 @@ ego_netwrite <- function(egos,
     alter_alter_output <- "to_populate"
 
     for (i in 1:length(ego_ids)) {
+
+      print(i)
 
       # a. Within each node ID, get the unique values for alter IDs in the alter DF
       #    and in the alter-alter edgelist. Then zero-index.

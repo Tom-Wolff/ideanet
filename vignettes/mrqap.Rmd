@@ -27,8 +27,6 @@ nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
                         j_elements = fauxmesa_edges$to,
                         directed = FALSE,
                         net_name = "faux_mesa")
-
-list2env(nw_fauxmesa, .GlobalEnv)
 ```
 
 When we look at the original nodelist passed to `netwrite` (`fauxmesa_nodes`), we see that we have information about each student's grade level, their race/ethnicity, and their sex. This information exists at the *individual level* in that it pertains to individual students. However, when using MRQAP in analysis, we are generally interested in how *dyadic* measures predict outcomes. In other words, we're interested in whether similarities or differences between nodes lead to outcomes, both of which are understood  at the level of ego-alter relationships. While some users may have dyadic measures stored in their edgelist ahead of time, typically these measures are something one has to generate. The `qap_setup` function in `ideanet` allows users to quickly take node-level attributes and generate dyad-level comparisons with only a few arguments. 
@@ -67,7 +65,7 @@ knitr::kable(var_methods)
 Now that we've ensured everything's in the right order, let's use `qap_setup`:
 
 ```{r qap_setup}
-faux_qap_setup <- qap_setup(net = faux_mesa,
+faux_qap_setup <- qap_setup(net = nw_fauxmesa$faux_mesa,
                             variables = var_methods$variable,
                             methods = var_methods$method,
                             directed = FALSE)

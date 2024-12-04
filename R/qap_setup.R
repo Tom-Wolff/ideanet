@@ -34,7 +34,7 @@
 #'                         variables = c("total_degree"),
 #'                         methods = c("difference"))
 
-qap_setup <- function(net, variables, methods, directed = F, additional_vars = NULL) {
+qap_setup <- function(net, variables, methods, directed = FALSE, additional_vars = NULL) {
 
   ### CONSTRUCTING NODE AND EDGE LISTS ###
 

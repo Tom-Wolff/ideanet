@@ -29,7 +29,7 @@ to_adjmats <- function(graph_list) {
 # Basic triad/position census counter
 ####################################################################
 
-f.rc <- function(mat=NULL,REGE=F,HUSO=F,MES=F, CHECK=T)
+f.rc <- function(mat=NULL,REGE=FALSE,HUSO=FALSE,MES=FALSE, CHECK=TRUE)
 {
   # Calculates a rolecensus/node-level triadcensus according to H.J. Hummell/W. Sodeur (1987)
   # and R. Burt (1990) in the sequence of Burt; cf.
@@ -59,36 +59,38 @@ f.rc <- function(mat=NULL,REGE=F,HUSO=F,MES=F, CHECK=T)
 
   if (length(mat)==0)
   {
-    cat(TEXT0)+
-      cat(TEXT1)+
-      cat(TEXT2)+
-      cat(TEXT3)+
-      cat(TEXT4)+
-      cat(TEXT5)+
-      cat(TEXT6)+
-      cat(TEXT7)+
-      cat(TEXT8)+
-      cat(TEXT9)+
-      cat(TEXT10)+
-      cat(AUT)
-    return(cat('\n\n'))
+
+    message(paste0(TEXT0,
+                   TEXT2,
+                   TEXT3,
+                   TEXT4,
+                   TEXT5,
+                   TEXT6,
+                   TEXT7,
+                   TEXT8,
+                   TEXT9,
+                   TEXT10,
+                   AUT,
+                   collapse = "\n"
+                   ))
+    return(NULL)
   }
 
-  if (HUSO==TRUE & MES==TRUE) {return(cat("<HUSO> and <MES> cannot both be true!\n\n\a"))}
+  if (HUSO==TRUE & MES==TRUE) {stop("<HUSO> and <MES> cannot both be true!\n\n\a")}
 
   # CHECK Soziomatrix
   if (CHECK==TRUE)
   {
-    if (!is.matrix(mat)) {return(cat("Not a matrix!\n\n\a"))}
+    if (!is.matrix(mat)) {stop("Not a matrix!\n\n\a")}
     g1 <- dim(mat)[1]
     g2 <- dim(mat)[2]
-    if ( g1 != g2 ) {return(cat("Matrix is not quadratic!\n\n\a"))}
+    if ( g1 != g2 ) {stop("Matrix is not quadratic!\n\n\a")}
     l0 <- length(which(mat==0))
     l1 <- length(which(mat==1))
     l <- l0+l1
-    if(l != g1*g2) {return(cat("Not a binary matrix!\n\n\a"))}
+    if(l != g1*g2) {stop("Not a binary matrix!\n\n\a")}
     D <- sum(abs(diag(mat)))
-    if (D != 0) {return(cat("Diagonal values are not zero!\n\n\a"))}
+    if (D != 0) {stop("Diagonal values are not zero!\n\n\a")}
   }
   # END CHECK
 
@@ -113,7 +115,7 @@ f.rc <- function(mat=NULL,REGE=F,HUSO=F,MES=F, CHECK=T)
         if ((i!=j) & (i!=k) & (j!=k))
         {
           TRIAD <- (x[i,j] + 2*x[i,k] +  4*x[j,i] +  8*x[j,k] + 16*x[k,i] + 32*x[k,j] + 1)
-          if (TRIAD < 1 | TRIAD > 64) {return(cat('Error in calculating TRIAD numbers!\n\n\a'))}
+          if (TRIAD < 1 | TRIAD > 64) {stop('Error in calculating TRIAD numbers!\n\n\a')}
           ################## triads no. 1 to 16
           if (TRIAD ==  1) {z[i, 1]<-z[i, 1]+1;z[j, 1]<-z[j, 1]+1;z[k, 1]<-z[k, 1]+1;next() }
           if (TRIAD ==  2) {z[i, 2]<-z[i, 2]+1;z[j, 4]<-z[j, 4]+1;z[k, 8]<-z[k, 8]+1;next() }

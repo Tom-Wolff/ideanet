@@ -88,11 +88,7 @@ nw_fauxmesa <- netwrite(data_type = "edgelist",
 
 Many network measures only apply to networks with particular structures.  For example, eigenvector based methods cannot apply to isolates and many measures assume a network with one large connected component. In cases (as here), where the network does not conform to those expectations, we have made choices that seem reasonable to us (such as assigning `NA` values or running the measure separately by connected component) and send a warning to the output. Users should take care to inspect these warnings to see if they apply to measures they intend to use in analysis and that they agree with our choices. Here we see that certain centrality measures have been adjusted to account for the presence of singular matrices, multiple components, and isolated nodes.
 
-Upon completion, `netwrite` stores its outputs in a single list object. However, one may find it more convenient to extract elements of this list to the R Global Environment. We take this approach by using the `list2env` function:
-
-```{r list2env}
-list2env(nw_fauxmesa, .GlobalEnv)
-```
+Upon completion, `netwrite` stores its outputs in a single list object. In the following section, we'll examine each of the outputs within this list and what they contain.
 
 ## Interpreting `netwrite` Output
 
@@ -101,17 +97,17 @@ list2env(nw_fauxmesa, .GlobalEnv)
 `netwrite` outputs multiple measures aimed at characterizing the network's global structure. One can view a select set of these measures in a summary visualization stored in the `system_measure_plot` object:
 
 ```{r system_measure_plot, fig.height = 4, fig.width=7}
-system_measure_plot
+nw_fauxmesa$system_measure_plot
 ```
 
 A more comprehensive set of measures is available in traditional table form via the `system_level_measures` object:
 
 ```{r system_level_measures, eval = FALSE}
-head(system_level_measures)
+head(nw_fauxmesa$system_level_measures)
 ```
 
 ```{r system_level_measures_kable, echo = FALSE}
-knitr::kable(head(system_level_measures))
+knitr::kable(head(nw_fauxmesa$system_level_measures))
 ```
 
 ### `igraph` Object(s)
@@ -119,28 +115,28 @@ knitr::kable(head(system_level_measures))
 `igraph` is one of the standard network analysis packages in R. `netwrite` creates an `igraph` object that contains all of the original data from the input nodelist and edgelist, plus edge-level and node-level metrics computed on the network by `netwrite`. This `igraph` object allows for traditional network manipulation, such as plotting. The `igraph` object will bear the name users specify in `netwrite`'s `net_name` argument (here `faux_mesa`); otherwise it will be stored as an object named `network`.
 
 ```{r igraph_object}
-faux_mesa
+nw_fauxmesa$faux_mesa
 ```
 
 Note that this `igraph` object has various measures embedded in it as node- and edge- attributes. Having these measures already contained in the `igraph` object ensures that node attributes are properly linked to the network object, which allows us to use them when customizing network visualizations. Here we plot our network with nodes colored by student grade level, which appeared in our original nodelist:
 
 ```{r plot_faux_mesa, fig.height = 4, fig.width = 4}
-plot(faux_mesa,
+plot(nw_fauxmesa$faux_mesa,
      vertex.label = NA,
      vertex.size = 4,
      edge.arrow.size = 0.2,
-     vertex.color = igraph::V(faux_mesa)$grade)
+     vertex.color = igraph::V(nw_fauxmesa$faux_mesa)$grade)
 ```
 
 In addition to the full network, researchers may be interested in the shape of major sub-components. `netwrite` outputs two additional graph objects: the largest component in the network, and the largest bi-component of the network.
 
 ```{r largest_component, fig.height = 4, fig.width = 4}
-plot(largest_component, vertex.label = NA, vertex.size = 2, edge.arrow.size = 0.2, 
+plot(nw_fauxmesa$largest_component, vertex.label = NA, vertex.size = 2, edge.arrow.size = 0.2, 
      main = "Largest Component")
 ```
 
 ```{r largest_bi_component, fig.height = 4, fig.width = 4}
-plot(largest_bi_component, vertex.label = NA, vertex.size = 2, edge.arrow.size = 0.2, 
+plot(nw_fauxmesa$largest_bi_component, vertex.label = NA, vertex.size = 2, edge.arrow.size = 0.2, 
      main = "Largest Bicomponent")
 ```
 
@@ -151,11 +147,11 @@ In some cases, networks may have 2+ largest components of equal size. When this 
 `netwrite` outputs an edgelist dataframe of the same length as the input edgelist. This edgelist object contains unique dyad-level ids, simplified ego and alter ids (`i_id` and `j_id`, respectively), and the original id values and weights as they initially appeared in `edges` (uniformly set to 1 if no weights are defined).
 
 ```{r edgelist, eval = FALSE}
-head(edgelist)
+head(nw_fauxmesa$edgelist)
 ```
 
 ```{r edgelist_kable, echo = FALSE}
-knitr::kable(head(edgelist))
+knitr::kable(head(nw_fauxmesa$edgelist))
 ```
 
 You may notice that `i_id` and `j_id` are zero-indexed. This is done to maximize compatibility with the `igraph` package.
@@ -165,17 +161,17 @@ You may notice that `i_id` and `j_id` are zero-indexed. This is done to maximize
 Finally, `netwrite` returns several popular node-level measures as a dataframe of values and plots their distributions. These are accessed via the `node_measures` and `node_measure_plot` objects, respectively. The metrics set are restricted to those applicable to the type of graph (weighted/unweighted, directed/undirected).
 
 ```{r node_measures, eval = FALSE}
-head(node_measures)
+head(nw_fauxmesa$node_measures)
 ```
 
 ```{r node_measures_kable, echo = FALSE}
-knitr::kable(head(node_measures))
+knitr::kable(head(nw_fauxmesa$node_measures))
 ```
 
 On first glance, one sees that the `node_measures` dataframe contains simplified node identifiers matching those appearing in `edgelist`. One also sees that `node_measures` contains all original node-level attributes as they appeared in our original nodelist. Depending on how it was initially named, a nodelist's original column of node identifiers may be renamed to `original_id`.
 
 ```{r node_measure_plot, fig.height = 6, fig.width = 7}
-node_measure_plot
+nw_fauxmesa$node_measure_plot
 ```
 
 `netwrite` makes it simple to compute complex structural metrics on existing relational data. The output of `netwrite` is designed to facilitate the discovery process by providing key visualizations that help support exploratory analysis.
@@ -195,14 +191,12 @@ nw_triad <- netwrite(data_type = "adjacency_matrix",
                      adjacency_matrix = triad,
                      directed = TRUE,
                      net_name = "triad_igraph")
-
-list2env(nw_triad, .GlobalEnv)
 ```
 
 To show that we've successfully processed this matrix, let's plot the `igraph` object produced by `netwrite`:
 
 ```{r}
-plot(triad_igraph,
+plot(nw_triad$triad_igraph,
      edge.arrow.size = 0.2,
      vertex.label = NA)
 ```
@@ -231,32 +225,30 @@ nw_flor <- netwrite(nodelist = florentine_nodes,
                     type = florentine_edges$type,
                     directed = FALSE,
                     net_name = "florentine")
-
-list2env(nw_flor, .GlobalEnv)
 ```
 
 When given a multi-relational network, `netwrite` will return the outputs described previously in slightly different ways. First, we can see that the `edgelist` object is now a list containing an edgelist subset by each type of tie. Additionally, this list contains a complete edgelist for the `summary_graph` containing all ties.
 
 ```{r edgelist_business, eval = FALSE}
-head(edgelist$business)
+head(nw_flor$edgelist$business)
 ```
 
 ```{r edgelist_business_kable, echo=FALSE}
-knitr::kable(head(edgelist$business))
+knitr::kable(head(nw_flor$edgelist$business))
 ```
 
 ```{r edgelist_summary, eval = FALSE}
-head(edgelist$summary_graph)
+head(nw_flor$edgelist$summary_graph)
 ```
 
 ```{r edgelist_summary_kable, echo = FALSE}
-knitr::kable(head(edgelist$summary_graph))
+knitr::kable(head(nw_flor$edgelist$summary_graph))
 ```
 
 `node_measures` remains a single data frame, but now includes each node-level metric calculated for each individual relation type as well as the overall graph. We see here that `netwrite` has calculated 3 different values for `total_degree`. However, `node_measures_plot` is now a list containing summary visualizations for each relation type as well as the overall `summary_graph`.
 
 ```{r total_degree_type, echo = FALSE}
-knitr::kable(node_measures %>% 
+knitr::kable(nw_flor$node_measures %>% 
   dplyr::select(id, total_degree, marriage_total_degree, business_total_degree) %>%
   head())
 ```
@@ -264,22 +256,25 @@ knitr::kable(node_measures %>%
 Similarly, `system_level_measures` remains a single data frame, while `system_measure_plot` has become a list containing multiple visualizations. Note that `system_level_measures` now contains additional column detailing measure values for each individual relation type.
 
 ```{r system_measures_multi, eval = FALSE}
-head(system_level_measures)
+head(nw_flor$system_level_measures)
 ```
 
 ```{r system_measures_multi_kable, echo=FALSE}
-knitr::kable(head(system_level_measures))
+knitr::kable(head(nw_flor$system_level_measures))
 ```
 
 `netwrite` also produces both an `igraph` object of the overall network, as it does with networks with a single relation type, as well as a list of `igraph` objects for each subset of the network. Here we access the `igraph_list` object to compare business and marriage relationships between families side-by-side:
 
-```{r flor_igraph, fig.height = 4, fig.width = 7}
-par(mfrow = c(1, 2), mar = c(1, 1, 1, 1))
+```{r flor_igraph1, fig.height = 4, fig.width = 7}
 # Create a consistent layout for both plots
-flor_layout <- igraph::layout.fruchterman.reingold(igraph_list$marriage)
-plot(igraph_list$marriage, vertex.label = NA, vertex.size = 4, edge.arrow.size = 0.2, 
+flor_layout <- igraph::layout.fruchterman.reingold(nw_flor$igraph_list$marriage)
+plot(nw_flor$igraph_list$marriage, vertex.label = NA, vertex.size = 4, edge.arrow.size = 0.2, 
      vertex.color = "gray", main = "Marriage Network", layout = flor_layout)
-plot(igraph_list$business, vertex.label = NA, vertex.size = 4, edge.arrow.size = 0.2, 
+```
+
+
+```{r flor_igraph2, fig.height = 4, fig.width = 7}
+plot(nw_flor$igraph_list$business, vertex.label = NA, vertex.size = 4, edge.arrow.size = 0.2, 
      vertex.color = "red", main = "Business Network", layout = flor_layout)
 ```
 
@@ -290,7 +285,7 @@ When analyzing a network, users are often interested in whether nodes cluster to
 Using `comm_detect` is simple: you only needs to pass an `igraph` object produced by `netwrite` into the function. Let's quickly apply several community detection methods to the Florentine families network we just processed.
 
 ```{r, fig.height = 6, fig.width = 7}
-flor_communities <- comm_detect(florentine)
+flor_communities <- comm_detect(nw_flor$florentine)
 ```
 
 The `comm_detect` function returns a list of three data frames, and will automatically generate a set of visualizations showing each node's community membership as determined by each community detection method. Within the list produced, the `summaries` data frame details the number of communities detected by each method, as well as the modularity score associated with each method. This offers one way of comparing community detection methods— higher modularity scores (within a single network) typically indicate more effective partitioning of the network (though there are many scores that one can use).
@@ -326,6 +321,6 @@ knitr::kable(head(flor_communities$memberships))
 `memberships` is designed to be easily merged with the `node_measures` data frame produced by `netwrite`, should users be inclined to combine the two.
 
 ```{r membership_merge, eval = FALSE}
-node_info <- node_measures %>%
+node_info <- nw_flor$node_measures %>%
   dplyr::left_join(flor_communities$memberships, by = "id")
 ```

@@ -7,7 +7,7 @@
 #' @param slow_routines A logical indicating whether time-intensive community detection routines should be performed on larger networks. Edge betweenness, leading eigenvector, link communities, and stochastic blockmodeling each take a very long time to identify communities in networks consisting of more than a few thousand nodes. By default, \code{comm_detect} will skip performing these routines on networks with more than 5,000 nodes and inform the user that it is doing so.
 #' @param shiny An argument indicating whether the output from the \code{comm_detect} function will be fed into the IDEANet visualization app.
 #'
-#' @return \code{comm_detect} returns three data frames. \code{comm_members} indicates each node's assigned community membership from each community detection routine. \code{comm_summaries} indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. \code{comp_scores} contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. If \code{shiny == FALSE}, this function will also plot a series of network visualizations in which nodes are colored by their assigned community memberships from each routine.
+#' @return \code{comm_detect} returns a list contianing three data frames. \code{comm_members} indicates each node's assigned community membership from each community detection routine. \code{comm_summaries} indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. \code{comp_scores} contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. A fourth element in the list, \code{plots}, contains a series of network visualizations in which nodes are colored by their assigned community memberships from each routine. If \code{shiny == FALSE}, this function will display these visualizations in the user's plot window.
 #'
 #'
 #' @export
@@ -49,7 +49,7 @@ comm_detect <- function(g, modres=1,
                         slow_routines = FALSE,
                         shiny = FALSE) {
 
-  # browser()
+
 
   # Change ARPACK defaults
   # ad <- igraph::arpack_defaults
@@ -640,120 +640,152 @@ comm_detect <- function(g, modres=1,
     if (n > 5000) {
       base::message("Network is too large to visualize all membership assignments simultaneously. Visualizations will not be generated.")
     } else {
+
+      # browser()
+
       fr <- igraph::layout.fruchterman.reingold(g)
 
-      graphics::par(mfrow = c(2, 3))
+      eb_plot <- function(){
+        plot(g,
+             vertex.size = 5,
+             #edge.width = .1,
+             edge.arrow.size = .01,
+             vertex.label = NA,
+             vertex.color = memberships[,'edge_betweenness_membership'],
+             layout = fr)
+      }
+      eb_grob <- cowplot::as_grob(eb_plot)
 
 
-      # Edge betweenness
-      plot(g,
-           main = "Edge Betweenness",
-           vertex.size = 5,
-           #edge.width = .1,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,'edge_betweenness_membership'],
-           layout = fr)
+      fg_plot <- function() {
+        plot(g,
+             vertex.size = 5,
+             edge.arrow.size = .01,
+             vertex.label = NA,
+             vertex.color = memberships[,'fast_greedy_membership'],
+             layout = fr)
+      }
+      fg_grob <- cowplot::as_grob(fg_plot)
 
-      # Fast/Greedy
-      plot(g,
-           main = "Fast/Greedy",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,'fast_greedy_membership'],
-           layout = fr)
+      infomap_plot <- function(){
+        plot(g,
+            vertex.size = 5,
+            edge.arrow.size = .01,
+            vertex.label = NA,
+            vertex.color = memberships[,'infomap_membership'],
+            layout = fr)
+      }
+      infomap_grob <- cowplot::as_grob(infomap_plot)
 
-      # Infomap
-      plot(g,
-           main = "Infomap",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,'infomap_membership'],
-           layout = fr)
-
-      # Label Prop
-      plot(g,
-           main = "Label Prop.",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,"label_prop_membership"],
-           layout = fr)
-
-      # Leading Eigen
-      plot(g,
-           main = "Leading Eigen.",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,"leading_eigen_membership"],
-           layout = fr)
-
-      # Leiden (Mod)
-      plot(g,
-           main = "Leiden (Maximizing Modularity)",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,"leiden_mod_membership"],
-           layout = fr)
+      label_prop_plot <- function(){
+        plot(g,
+             vertex.size = 5,
+             edge.arrow.size = .01,
+             vertex.label = NA,
+             vertex.color = memberships[,"label_prop_membership"],
+             layout = fr)
+      }
+      label_prop_grob <- cowplot::as_grob(label_prop_plot)
 
 
-      # Leiden (CPM)
-      plot(g,
-           main = "Leiden (Constant Potts Model)",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,"leiden_cpm_membership"],
-           layout = fr)
+      communityplot1 <- cowplot::plot_grid(eb_grob, fg_grob, infomap_grob, label_prop_grob, nrow = 2,
+                                           scale = 1.3,
+                                           labels = c("Edge Betweenness", "Fast-Greedy", "Infomap", "Label Prop."),
+                                           hjust = c(-.5, -1, -1.8, -1.2)
+                        )
 
-      # Spinglass
-      plot(g,
-           main = "Spinglass",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,"spinglass_membership"],
-           layout = fr)
+      plot(communityplot1)
 
-      # Walktrap
-      plot(g,
-           main = "Walktrap",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,"walktrap_membership"],
-           layout = fr)
 
-      # SBM
-      plot(g,
-           main = "Stochastic Blockmodel",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,"sbm_membership"],
-           layout = fr)
 
-      # CP
-      plot(g,
-           main = "Clique Percolation",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,"cp_cluster"],
-           layout = fr)
 
-      # LC
-      plot(g,
-           main = "Link Communities",
-           vertex.size = 5,
-           edge.arrow.size = .01,
-           vertex.label = NA,
-           vertex.color = memberships[,"lc_cluster"],
-           layout = fr)
+
+      leading_eig_plot <- ~plot(g,
+                                vertex.size = 5,
+                                edge.arrow.size = .01,
+                                vertex.label = NA,
+                                vertex.color = memberships[,"leading_eigen_membership"],
+                                layout = fr)
+      leading_eig_grob <- cowplot::as_grob(leading_eig_plot)
+
+
+      leiden_mod_plot <- ~plot(g,
+                           vertex.size = 5,
+                           edge.arrow.size = .01,
+                           vertex.label = NA,
+                           vertex.color = memberships[,"leiden_mod_membership"],
+                           layout = fr)
+      leiden_mod_grob <- cowplot::as_grob(leiden_mod_plot)
+
+      leiden_cpm_plot <- ~plot(g,
+                               vertex.size = 5,
+                               edge.arrow.size = .01,
+                               vertex.label = NA,
+                               vertex.color = memberships[,"leiden_cpm_membership"],
+                               layout = fr)
+      leiden_cpm_grob <- cowplot::as_grob(leiden_cpm_plot)
+
+      spinglass_plot <- ~plot(g,
+                              vertex.size = 5,
+                              edge.arrow.size = .01,
+                              vertex.label = NA,
+                              vertex.color = memberships[,"spinglass_membership"],
+                              layout = fr)
+      spinglass_grob <- cowplot::as_grob(spinglass_plot)
+
+
+
+      communityplot2 <- cowplot::plot_grid(leading_eig_grob, leiden_mod_grob, leiden_cpm_grob, spinglass_grob, nrow = 2,
+                                           scale = 1.3,
+                                           labels = c("Leading Eigen.", "Leiden (Modularity)", "Leiden (CPM)", "Spinglass"),
+                                           hjust = c(-.7, -.4, -.9, -1.3)
+      )
+
+      plot(communityplot2)
+
+
+
+      walktrap_plot <- ~plot(g,
+                             vertex.size = 5,
+                             edge.arrow.size = .01,
+                             vertex.label = NA,
+                             vertex.color = memberships[,"walktrap_membership"],
+                             layout = fr)
+      walktrap_grob <- cowplot::as_grob(walktrap_plot)
+
+      sbm_plot <- ~plot(g,
+                        vertex.size = 5,
+                        edge.arrow.size = .01,
+                        vertex.label = NA,
+                        vertex.color = memberships[,"sbm_membership"],
+                        layout = fr)
+      sbm_grob <- cowplot::as_grob(sbm_plot)
+
+     cp_plot <- ~plot(g,
+                      vertex.size = 5,
+                      edge.arrow.size = .01,
+                      vertex.label = NA,
+                      vertex.color = memberships[,"cp_cluster"],
+                      layout = fr)
+     cp_grob <- cowplot::as_grob(cp_plot)
+
+     lc_plot <- ~plot(g,
+                      vertex.size = 5,
+                      edge.arrow.size = .01,
+                      vertex.label = NA,
+                      vertex.color = memberships[,"lc_cluster"],
+                      layout = fr)
+     lc_grob <- cowplot::as_grob(lc_plot)
+
+
+     communityplot3 <- cowplot::plot_grid(walktrap_grob, sbm_grob, cp_grob, lc_grob, nrow = 2,
+                                          scale = 1.3,
+                                          labels = c("Walktrap", "Stochastic Blockmodel", "Clique Percolation", "Linkcomm"),
+                                          hjust = c(-1.5, -.35, -.5, -1.3)
+     )
+
+     plot(communityplot3)
+
     }
   }
 
@@ -791,6 +823,13 @@ comm_detect <- function(g, modres=1,
   # Assigns the matrix of adjusted rand scores to global environment
   output_list$score_comparison <- cs
   # assign(x= cn, value = cs,.GlobalEnv)
+
+  # Add plot to output
+  if (shiny == FALSE) {
+      output_list$plots <- list("membership_plot1" = communityplot1,
+                                "membership_plot2" = communityplot2,
+                                "membership_plot3" = communityplot3)
+  }
 
 
   return(output_list)
@@ -860,3 +899,7 @@ multigroup_assign <- function(gmat, clust){
   cp_maxcomm <- tibble::tibble(cluster = cp_maxcomm) %>% dplyr::mutate(id = as.numeric(rownames(gmat)))
   return(cp_maxcomm)
 }
+
+
+
+

@@ -40,8 +40,6 @@ nw_flor <- netwrite(nodelist = florentine_nodes,
                     type = florentine_edges$type,
                     directed = FALSE,
                     net_name = "florentine")
-
-list2env(nw_flor, .GlobalEnv)
 ```
 
 We'll be passing resulting `igraph_list` and `node_measures` object to the `role_analysis` function.
@@ -81,8 +79,8 @@ For our first example, let's look at how to identify role positions using the hi
 
 ```{r flor_cluster, warning = FALSE}
 flor_cluster <- role_analysis(method = "cluster",
-                              graph = igraph_list,
-                              nodes = node_measures,
+                              graph = nw_flor$igraph_list,
+                              nodes = nw_flor$node_measures,
                               directed = FALSE,
                               min_partitions = 2,
                               max_partitions = 7,
@@ -93,24 +91,18 @@ flor_cluster <- role_analysis(method = "cluster",
 
 Note that we've set `fast_triad` to be `TRUE` here to expedite counting the number of triad positions, or *motifs*, that each node occupies in the network. This is acceptable for the current network given its small size; however, as stated earlier, setting `fast_triad` to `TRUE` may lead to memory issues with your computer given too large a network. Should this occur, we recommend setting `fast_triad` to `FALSE` and trying again.
 
-`role_analysis` is similar to `netwrite` in that it simultaneously creates several outputs stored in a single list object. As with `netwrite`, users may find it more convenient to extract outputs from this list and move them to the R Global Environment using the `list2env` function:
-
-```{r list2env_cluster}
-list2env(flor_cluster, .GlobalEnv)
-```
-
-Having done this, we can now examine some of these outputs and see what they offer:
+`role_analysis` is similar to `netwrite` in that it simultaneously creates several outputs stored in a single list object. In the following section, we'll examine each of the outputs within this list and what they contain.
 
 ### Cluster Memberships
 
 Depending on the amount of partitioning applied during clustering, individual nodes may vary in terms of cluster membership. Users can inspect cluster membership of individual nodes at each level of partitioning using the `cluster_assignments` object:
 
 ```{r cluster_assignments, eval = FALSE}
-head(cluster_assignments) 
+head(flor_cluster$cluster_assignments) 
 ```
 
 ```{r cluster_assignments_kable, echo = FALSE}
-knitr::kable(head(cluster_assignments))
+knitr::kable(head(flor_cluster$cluster_assignments))
 ```
 
 Here `id` contains each node's simplified identifier as it appears in the `node_measures` dataframe produced by `netwrite`. Columns beginning with the `cut_` prefix indicate a specific level of partitioning. In most cases, we are interested in finding a single solution that best categorizes nodes into different types ("roles") according to their relational characteristics. `role_analysis` determines the optimal level of partitioning by taking the distance matrix used in the clustering process and converting it into a similarity matrix. This similarity matrix is then treated as a dense network whose modularity varies according to the membership of nodes within derived clusters. Finally, `role_analysis` designates the level of partitioning whose cluster assignments produce the highest modularity score as the best fit. In effect, this converts a multirelational role problem into a single-relation community detection problem in a dense network.
@@ -122,7 +114,7 @@ Cluster assignments at this identified optimal level are stored in the `max_mod`
 To determine the number of clusters produced at the optimal level of partitioning, you can simply identify the maximum value contained in `max_mod`. However, `role_analysis` generates two diagnostic visualizations that provide a faster way of interpreting clustering output. The `cluster_dendrogram` visualization illustrates the cluster membership of nodes at each level of partitioning while also indicating membership of nodes at the optimal partitioning level:
 
 ```{r dendrogram}
-cluster_dendrogram
+flor_cluster$cluster_dendrogram
 ```
 
 ### Modularity Plot
@@ -130,7 +122,7 @@ cluster_dendrogram
 While `cluster_dendrogram` shows where nodes fall at each level of partitioning, `cluster_modularity` shows how the modularity score of the similarity matrix changes at each level of partitioning:
 
 ```{r cluster_modularity, fig.height = 6, fig.width = 7}
-cluster_modularity
+flor_cluster$cluster_modularity
 ```
 
 *Note: this plot may not appear in R Markdown documents, but will appear in a plot window if called in the R console.*
@@ -142,11 +134,11 @@ Looking at this plot and the dendrogram together, we see that nodes in the netwo
 We now know that nodes in this network fall into one of seven positions or "roles." A proper understanding of these results requires more, however. If clusters are supposed to represent different kinds of roles that nodes occupy in the network, we'll want to know *why* certain nodes are placed in one cluster over another and how these clusters differ from one another. The `cluster_summaries` dataframe provides a numerical overview of differences between inferred clusters, allowing us to make progress to this end.
 
 ```{r cluster_summaries, eval = FALSE}
-cluster_summaries
+flor_cluster$cluster_summaries
 ```
 
 ```{r cluster_summaries_kable, echo = FALSE}
-knitr::kable(cluster_summaries)
+knitr::kable(flor_cluster$cluster_summaries)
 ```
 
 `cluster_summaries` provides both crude and standardized averages of the relational measures used to determine cluster membership. These include various measures of network centrality, as well as the frequency with which nodes occupy specific positions in different kinds of triads that appear in the network (motifs). Right away, we see that the single node in cluster 6 differs from its counterparts in other clusters. This node has a considerably higher degree, betweenness, and closeness centrality measures, among others. We also see that our cluster of isolates (cluster 7) appears at the end of this data frame, with all of its values set to `NA` given isolates' lack of connection to other nodes in the network. 
@@ -154,35 +146,35 @@ knitr::kable(cluster_summaries)
 While recognized here, these differences are also visualized in the `cluster_summaries_cent` object. Because the network examined here is multirelational, `cluster_summaries_cent` plots these differences for each unique relationship type in the network, as well as for the overall network:
 
 ```{r cent_marriage, warning = FALSE, fig.height = 6, fig.width = 7}
-cluster_summaries_cent$marriage
+flor_cluster$cluster_summaries_cent$marriage
 ```
 ```{r cent_business, warning = FALSE, fig.height = 6, fig.width = 7}
-cluster_summaries_cent$business
+flor_cluster$cluster_summaries_cent$business
 ```
 
 ```{r cent_summary, warning = FALSE, fig.height = 6, fig.width = 7}
-cluster_summaries_cent$summary_graph
+flor_cluster$cluster_summaries_cent$summary_graph
 ```
 
 Those familiar with positions and motifs in networks know that as many as 36 types of positions can exist in a network, which can be unwieldy to inspect alongside other measures. Consequently, differences in triad positions are visualized separately in `cluster_summaries_triad`:
 
 ```{r triad_marriage, warning = FALSE, fig.height = 6, fig.width = 7}
-cluster_summaries_triad$marriage
+flor_cluster$cluster_summaries_triad$marriage
 ```
 ```{r triad_business, warning = FALSE, fig.height = 6, fig.width = 7}
-cluster_summaries_triad$business
+flor_cluster$cluster_summaries_triad$business
 ```
 ```{r triad_summary, warning = FALSE, fig.height = 6, fig.width = 7}
-cluster_summaries_triad$summary_graph
+flor_cluster$cluster_summaries_triad$summary_graph
 ```
 
 Overall, the node in cluster 6 tends to have the highest values on most measures used to identify roles in the network. Those familiar with the substantive setting of this network will not be surprised to learn that this node represents the Medici family, which was known for its power and influence in Renaissance Florence. Additionally, nodes in cluster 2 tend to appear in more clustered parts of this network due to their business ties. If one is curious to see where the Medici and families in other role positions appear relative to one another in the network, one can quickly take the information contained in `cluster_assignments` and assign it as a node-level attribute in an `igraph` object for visualization:
 
 ```{r igraph_viz, fig.height = 6, fig.width = 7}
-igraph::V(florentine)$role <- cluster_assignments$best_fit
-plot(florentine, 
-     vertex.color = as.factor(igraph::V(florentine)$role),
-     vertex.label = igraph::V(florentine)$family)
+igraph::V(nw_flor$florentine)$role <- flor_cluster$cluster_assignments$best_fit
+plot(nw_flor$florentine, 
+     vertex.color = as.factor(igraph::V(nw_flor$florentine)$role),
+     vertex.label = igraph::V(nw_flor$florentine)$family)
 ```
 
 ### Heatmaps
@@ -190,10 +182,10 @@ plot(florentine,
 A final point of consideration in positional analysis involves knowing whether nodes in a particular role tend to form ties among themselves or with nodes in other roles. When using hierarchical clustering, `role_analysis` generates a series of heatmaps, contained in a list, to visualize the frequency of tie formation within and between clusters. Each heatmap measures connections across clusters using different measures, and the names of these measures are used to extract their corresponding plot from the list:
 
 ```{r, fig.height = 6, fig.width = 7}
-cluster_relations_heatmaps$chisq # Chi-squared
-cluster_relations_heatmaps$density # Density
-cluster_relations_heatmaps$density_std # Density (Standardized)
-cluster_relations_heatmaps$density_centered # Density (Zero-floored)
+flor_cluster$cluster_relations_heatmaps$chisq # Chi-squared
+flor_cluster$cluster_relations_heatmaps$density # Density
+flor_cluster$cluster_relations_heatmaps$density_std # Density (Standardized)
+flor_cluster$cluster_relations_heatmaps$density_centered # Density (Zero-floored)
 ```
 
 Looking at the density-based heatmaps here, one finds a high level of connection between the Medici family and families belonging to cluster 4. One can also see that families in cluster 2 have a high propensity to be tied to families in cluster 5.
@@ -204,14 +196,12 @@ Alongside hierarchical clustering, the CONvergence of iterated CORrelations (CON
 
 ```{r, warning = FALSE, fig.show = "hide", message = FALSE}
 flor_concor <- role_analysis(method = "concor",
-                             graph = igraph_list,
-                             nodes = node_measures,
+                             graph = nw_flor$igraph_list,
+                             nodes = nw_flor$node_measures,
                              directed = FALSE,
                              min_partitions = 1,
                              max_partitions = 4,
                              viz = TRUE)
-
-list2env(flor_concor, .GlobalEnv)
 ```
 
 Using CONCOR in `role_analysis` produces fewer outputs, but those that are produced resemble select items produced using hierarchical clustering. `concor_assignments`, for example, appends "block" assignments to the end of the `node_measures` data frame that the user feeds into the `role_analysis` function: 
@@ -219,11 +209,11 @@ Using CONCOR in `role_analysis` produces fewer outputs, but those that are produ
 ### Block Memberships
 
 ```{r block_assignments, eval = FALSE}
-concor_assignments %>%
+flor_concor$concor_assignments %>%
   dplyr::select(id, family, dplyr::starts_with("block"), best_fit)
 ```
 ```{r block_assignments_kable, echo = FALSE}
-knitr::kable(concor_assignments %>%
+knitr::kable(flor_concor$concor_assignments %>%
   dplyr::select(id, family, dplyr::starts_with("block"), best_fit))
 ```
 
@@ -232,15 +222,15 @@ knitr::kable(concor_assignments %>%
 As with the hierarchical clustering method, the optimal level of partitioning for CONCOR is determined according to the maximization of modularity in a similarity matrix. One can inspect how modularity changes at different levels of partitioning using the `concor_modularity` visualization:
 
 ```{r concor_modularity, fig.height = 6, fig.width = 7}
-concor_modularity
+flor_concor$concor_modularity
 ```
 
 Visualizing CONCOR assignments in a conventional network visualization entails a similar process to that used for hierarchical clustering.
 
 ```{r concor_sociogram, fig.height = 6, fig.width = 7}
-igraph::V(florentine)$concor <- concor_assignments$best_fit
-plot(florentine, 
-     vertex.color = as.factor(igraph::V(florentine)$concor),
+igraph::V(nw_flor$florentine)$concor <- flor_concor$concor_assignments$best_fit
+plot(nw_flor$florentine, 
+     vertex.color = as.factor(igraph::V(nw_flor$florentine)$concor),
      vertex.label = NA)
 ```
 
@@ -249,7 +239,7 @@ plot(florentine,
 In lieu of a dendrogram, users can see how smaller partitions branch off of larger parents with the `concor_block_tree` visualization. Like `cluster_dendrogram`, this visualization allows users to quickly gauge the relative size of blocks inferred by CONCOR:
 
 ```{r concor_tree, fig.height = 6, fig.width = 7}
-concor_block_tree
+flor_concor$concor_block_tree
 ```
 
 ### Heatmaps
@@ -257,18 +247,18 @@ concor_block_tree
 Finally, users can also assess the level of connection across CONCOR blocks using the `concor_relations_heatmaps` object:
 
 ```{r concor_heatmaps, fig.height = 6, fig.width = 7}
-concor_relations_heatmaps$chisq
-concor_relations_heatmaps$density
-concor_relations_heatmaps$density_std
-concor_relations_heatmaps$density_centered
+flor_concor$concor_relations_heatmaps$chisq
+flor_concor$concor_relations_heatmaps$density
+flor_concor$concor_relations_heatmaps$density_std
+flor_concor$concor_relations_heatmaps$density_centered
 ```
 
 On the whole, using CONCOR tells us that nodes in the Florentine network fall into one of only two blocks (plus a third block for our isolate), and that nodes within these roles tend to interact among themselves rather than with nodes in the other block. These simpler results are less informative than those produced by the hierarchical clustering method. But this is not to say that CONCOR is an inferior approach to positional analysis. Interpreting results from positional analysis often entails more subjectivity than other network analysis methods. Although two partitions may maximize modularity, users may find that a higher level of partitioning produces blocks with important substantive differences. Were we to accept four blocks as a more appropriate fit than two, we see our inferred blocks start to resemble the groups we inferred using hierarchical clustering. Moreover, this resemblance also comes with only a small drop in modularity:
 
 ```{r concor_sociogram2, fig.height = 6, fig.width = 7}
-igraph::V(florentine)$concor2 <- concor_assignments$block_2
-plot(florentine, 
-     vertex.color = as.factor(igraph::V(florentine)$concor2),
+igraph::V(nw_flor$florentine)$concor2 <- flor_concor$concor_assignments$block_2
+plot(nw_flor$florentine, 
+     vertex.color = as.factor(igraph::V(nw_flor$florentine)$concor2),
      vertex.label = NA)
 ```
 

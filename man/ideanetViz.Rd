@@ -6,6 +6,9 @@
 \usage{
 ideanetViz()
 }
+\value{
+Launches an external window in which users can interact with the \code{ideanetViz} GUI. At different points in working with the GUI, users have the option to export generated data as CSV files and visualizations as image files.
+}
 \description{
 \code{ideanetViz} is a Shiny app that presents the output of \code{ideanet}'s workflow for sociocentric data (i.e. \code{\link{netwrite}}) in a clear and accessible GUI. This GUI is convenient for users with limited R experience and is useful for classrooms, workshops, and other educational spaces. It is also useful for experienced users interested in quick exploration of network data. Moreover, \code{ideanetViz} streamlines customization of network visualizations and provides quick access into \code{ideanet}'s more advanced analytic tools for sociocentric networks.
 
