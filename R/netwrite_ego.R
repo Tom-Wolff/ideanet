@@ -373,7 +373,6 @@ ego_netwrite <- function(egos,
 
     for (i in 1:length(ego_ids)) {
 
-      print(i)
 
       # a. Within each node ID, get the unique values for alter IDs in the alter DF
       #    and in the alter-alter edgelist. Then zero-index.

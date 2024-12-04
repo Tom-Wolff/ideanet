@@ -190,7 +190,8 @@ Now we pass this matrix into `netwrite`.
 nw_triad <- netwrite(data_type = "adjacency_matrix",
                      adjacency_matrix = triad,
                      directed = TRUE,
-                     net_name = "triad_igraph")
+                     net_name = "triad_igraph",
+                     shiny = TRUE)
 ```
 
 To show that we've successfully processed this matrix, let's plot the `igraph` object produced by `netwrite`:
