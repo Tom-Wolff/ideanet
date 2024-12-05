@@ -34,7 +34,11 @@
 #'                         variables = c("total_degree"),
 #'                         methods = c("difference"))
 
-qap_setup <- function(net, variables, methods, directed = FALSE, additional_vars = NULL) {
+qap_setup <- function(net, variables = NULL, methods = NULL, directed = FALSE, additional_vars = NULL) {
+
+  if (is.null(variables) | is.null(methods)) {
+    stop("Variable or Methods is empty. Both must be of equal length.")
+  }
 
   ### CONSTRUCTING NODE AND EDGE LISTS ###
 
