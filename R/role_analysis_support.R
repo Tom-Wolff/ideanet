@@ -1378,6 +1378,19 @@ concor_tree <- function(df) {
 
   block_assigns <- df[,2:(ncol(df)-2)]
 
+  # Handling if only one partitioning level was selected
+  if (!("data.frame" %in% class(block_assigns))) {
+    # Record plot and assign to environment
+    graphics::plot.new()
+    plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+    text(x = 0.5, y = 0.5, paste("Only one partitioning level selected.\n",
+                                 "Partitioning tree not available.\n"),
+         cex = 1, col = "black")
+    tree_plot <- grDevices::recordPlot()
+    grDevices::dev.off()
+    return(tree_plot)
+  } else {
+
   # Relabel Nodes
 
   for (i in 1:ncol(block_assigns)) {
@@ -1430,6 +1443,8 @@ concor_tree <- function(df) {
   # assign(x = "concor_block_tree", value = tree_plot, .GlobalEnv)
   grDevices::dev.off()
   return(tree_plot)
+
+  }
 
 }
 

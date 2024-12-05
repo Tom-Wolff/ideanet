@@ -682,8 +682,39 @@ nodes_used <- shiny::reactive({
     nodes <- nodes %>%
       dplyr::left_join(memberships, by = "id")
     if (ran_toggle_role_detect$x==1) {
-      nodes <- nodes %>%
-        dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id")
+      # if (input$select_role_type == "concor") {
+      #   nodes <- nodes %>%
+      #     dplyr::left_join(concor_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
+      #     dplyr::mutate(concor_best_fit = best_fit) %>%
+      #     dplyr::select(-best_fit)
+      # } else {
+      #   nodes <- nodes %>%
+      #     dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
+      #     dplyr::mutate(cluster_best_fit = best_fit) %>%
+      #     dplyr::select(-best_fit)
+      # }
+
+      if (exists("concor_assignments") & exists("cluster_assignments")) {
+        nodes <- nodes %>%
+          dplyr::left_join(concor_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
+          dplyr::mutate(concor_best_fit = best_fit) %>%
+          dplyr::select(-best_fit) %>%
+          dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
+          dplyr::mutate(cluster_best_fit = best_fit) %>%
+          dplyr::select(-best_fit)
+      } else if (exists("cluster_assignments") & !exists("concor_assignments")) {
+        nodes <- nodes %>%
+          dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
+          dplyr::mutate(cluster_best_fit = best_fit) %>%
+          dplyr::select(-best_fit)
+      } else if (!exists("cluster_assignments") & exists("concor_assignments")) {
+        nodes <- nodes %>%
+          dplyr::left_join(concor_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
+          dplyr::mutate(concor_best_fit = best_fit) %>%
+          dplyr::select(-best_fit)
+      }
+
+
     }
     as.data.frame(nodes)
   })
@@ -762,7 +793,7 @@ nodes_used <- shiny::reactive({
   output$community_detection <- shiny::renderUI({
     if (ran_toggle_role_detect$x==1) {
       vals <- nodelist3() %>%
-        dplyr::select(ends_with('membership'),'best_fit') %>%
+        dplyr::select(dplyr::ends_with('membership'), dplyr::ends_with('best_fit')) %>%
         dplyr::select(-c("strong_membership", "weak_membership")) %>%
         colnames()
     } else {
@@ -1688,58 +1719,94 @@ nodes_used <- shiny::reactive({
       shiny::need(ran_toggle_role_detect$x == 1, "Input Role Detection Parameters and Run!")
     )
     if(input$select_role_viz == "cluster_modularity") {
-      grDevices::replayPlot(cluster_modularity)
+      if (exists("cluster_modularity")) {
+        grDevices::replayPlot(cluster_modularity)
+      }
     }
     else if(input$select_role_viz == 'cluster_dendrogram') {
+      if (exists("cluster_dendrogram")) {
       grDevices::replayPlot(cluster_dendrogram)
+      }
     }
     else if(input$select_role_viz == 'cluster_relations_sociogram') {
+      if (exists('cluster_relations_sociogram')) {
       grDevices::replayPlot(cluster_relations_sociogram$summary_graph)
+      }
     }
     else if(input$select_role_viz == 'cluster_sociogram') {
+      if (exists('cluster_sociogram')) {
       grDevices::replayPlot(cluster_sociogram)
+      }
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_chisq') {
+      if (exists('cluster_relations_heatmaps')) {
       plot(cluster_relations_heatmaps$chisq)
+      }
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_density') {
+      if (exists('cluster_relations_heatmaps')) {
       plot(cluster_relations_heatmaps$density)
+      }
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_density_std') {
+      if (exists('cluster_relations_heatmaps')) {
       plot(cluster_relations_heatmaps$density_std)
+      }
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_density_centered') {
+      if (exists('cluster_relations_heatmaps')) {
       plot(cluster_relations_heatmaps$density_centered)
+      }
     }
     else if(input$select_role_viz == 'cluster_summaries_cent') {
+      if (exists('cluster_summaries_cent')) {
       plot(cluster_summaries_cent$summary_graph)
+      }
     }
     else if(input$select_role_viz == 'cluster_summaries_triad') {
+      if (exists('cluster_summaries_triad')) {
       plot(cluster_summaries_triad$summary_graph)
+      }
     }
     else if(input$select_role_viz == 'concor_block_tree') {
+      if (exists('concor_block_tree')) {
       grDevices::replayPlot(concor_block_tree)
+      }
     }
     if(input$select_role_viz == "concor_modularity") {
+      if (exists("concor_modularity")) {
       grDevices::replayPlot(concor_modularity)
+      }
     }
     else if(input$select_role_viz == 'concor_relations_sociogram') {
+      if (exists('concor_relations_sociogram')) {
       grDevices::replayPlot(concor_relations_sociogram$summary_graph)
+      }
     }
     else if(input$select_role_viz == 'concor_sociogram') {
+      if (exists('concor_sociogram')) {
       grDevices::replayPlot(concor_sociogram)
+      }
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_chisq') {
+      if (exists('concor_relations_heatmaps')) {
       plot(concor_relations_heatmaps$chisq)
+      }
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_density') {
+      if (exists('concor_relations_heatmaps')) {
       plot(concor_relations_heatmaps$density)
+      }
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_density_std') {
+      if (exists('concor_relations_heatmaps')) {
       plot(concor_relations_heatmaps$density_std)
+      }
     }
-    else if(input$select_role_viz == 'concor_relations_heatmaps_density_std') {
+    else if(input$select_role_viz == 'concor_relations_heatmaps_density_centered') {
+      if (exists('concor_relations_heatmaps')) {
       plot(concor_relations_heatmaps$density_centered)
+      }
     }
   })
 

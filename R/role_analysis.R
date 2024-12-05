@@ -204,6 +204,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
                            dendro_names = FALSE
 ) {
 
+
   # If not manually specified by user, limit application of dplyr-based triad counting to networks
   # with 500 nodes or fewer
 
