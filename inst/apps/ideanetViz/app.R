@@ -1499,14 +1499,21 @@ nodes_used <- shiny::reactive({
   ran_toggle_qap <- shiny::reactiveValues(x=0)
 
   shiny::observeEvent(input$run_QAP_setup, {
-    net <- net5()
-    print("FOREACH")
-    # foreach::foreach(i=1:length(chosen_var())) %do% {
-    #   net <- igraph::set_vertex_attr(net,chosen_var()[i],value=nodelist3() %>% dplyr::pull(parse_expr(chosen_var()[i])))
-    # }
-    print("IS THIS WHERE QAP BREAKS?")
-    list2env(qap_setup(net,chosen_var(),chosen_methods()), .GlobalEnv)
-    ran_toggle_qap$x <- 1
+    shiny::validate(
+      shiny::need(!is.null(chosen_var()), "Error: Please select at least one variable."),
+      shiny::need(!is.null(chosen_methods()), "Error: Please select at least one method.")
+    )
+
+     tryCatch({
+      net <- net5()
+      # Call the qap_setup function
+      result <- qap_setup(net, chosen_var(), chosen_methods())
+      list2env(result, .GlobalEnv)
+      ran_toggle_qap$x <- 1
+    }, error = function(e) {
+      shiny::showNotification("An error occurred while running QAP setup. Please check your inputs.", type = "error")
+      print(e$message)
+    })
   })
 
   #Run QAP MODEL
