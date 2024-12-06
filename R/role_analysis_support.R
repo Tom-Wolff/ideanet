@@ -1393,8 +1393,8 @@ concor_tree <- function(df) {
     # Record plot and assign to environment
     graphics::plot.new()
     plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
-    text(x = 0.5, y = 0.5, paste("Only one partitioning level selected.\n",
-                                 "Partitioning tree not available.\n"),
+    graphics::text(x = 0.5, y = 0.5, paste("Only one partitioning level selected.\n",
+                                           "Partitioning tree not available.\n"),
          cex = 1, col = "black")
     tree_plot <- grDevices::recordPlot()
     grDevices::dev.off()

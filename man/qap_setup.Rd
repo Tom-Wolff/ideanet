@@ -4,7 +4,13 @@
 \alias{qap_setup}
 \title{Individual to Dyadic variable transformation (\code{qap_setup}).}
 \usage{
-qap_setup(net, variables, methods, directed = FALSE, additional_vars = NULL)
+qap_setup(
+  net,
+  variables = NULL,
+  methods = NULL,
+  directed = FALSE,
+  additional_vars = NULL
+)
 }
 \arguments{
 \item{net}{An \code{igraph} or \code{network} object.}
