@@ -21,9 +21,10 @@
 #'                       i_elements = fauxmesa_edges$from,
 #'                       j_elements = fauxmesa_edges$to,
 #'                       directed = TRUE,
-#'                       net_name = "faux_mesa")
+#'                       net_name = "faux_mesa",
+#'                       output = "graph")
 #'
-#' # Run community detection function
+#' # Run comm_detect
 #' faux_communities <- comm_detect(g = nw_fauxmesa$faux_mesa)
 
 

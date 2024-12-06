@@ -121,20 +121,4 @@ nw_triad <- netwrite(data_type = "adjacency_matrix",
                      adjacency_matrix = triad,
                      directed = TRUE,
                      net_name = "triad_igraph")
-
-
-# Run netwrite on a multirelational network
-flor <- netwrite(nodelist = florentine_nodes,
-                 node_id = "id",
-                 i_elements = florentine_edges$source,
-                 j_elements = florentine_edges$target,
-                 type = florentine_edges$type,
-                 directed = FALSE,
-                 net_name = "florentine")
-
-# View system level summary
-flor$system_level_measures
-
-# View system level summary for network of marriage relations
-flor$system_measure_plot$marriage
 }
