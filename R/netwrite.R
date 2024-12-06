@@ -2668,7 +2668,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       betweenness_measures <- cbind(betweenness_measures, NA)
     } else {
       betweenness_measures <- cbind(betweenness_measures,
-                                    stringr::str_to_title(stringr::str_replace_all(betweenness_measures[,2], "^betweenness_", "")))
+                                    stringr::str_to_title(stringr::str_replace_all(betweenness_measures[,2], "_", " ")))
     }
     colnames(betweenness_measures) <- c('type', 'measure', 'label')
 

@@ -924,7 +924,17 @@ cluster_heatmaps <- function(node_data,
 
     this_mat[is.na(this_mat)] <- 0
     this_mat <- as.matrix(this_mat[,2:ncol(this_mat)])
-    this_mat <- this_mat[,sort(colnames(this_mat))]
+
+    # Incorrectly sorting if column names are numeric. Otherwise will be
+    # sorted as "1, 10, 11, 2, 3, ..."
+    if (sum(is.na(as.numeric(colnames(this_mat)))) == 0) {
+      this_mat <- this_mat[,sort(as.numeric(colnames(this_mat)))]
+    } else {
+      this_mat <- this_mat[,sort(colnames(this_mat))]
+    }
+
+
+
 
     # # Need to handle if one or more clusters doesn't have any
     # # outgoing ties
