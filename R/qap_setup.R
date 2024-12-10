@@ -4,7 +4,7 @@
 #'
 #' @param net An \code{igraph} or \code{network} object.
 #' @param variables A vector of strings naming attributes to be transformed from individual-level to dyadic-level.
-#' @param methods A vector of strings naming methods to be applied to the \code{variables} vector. The \code{methods} vector must be the same length as the \code{variables} vector. Methods are applied in order (e.g, first method is applied to the first named attribute in \code{variables}). Possible methods are "
+#' @param methods A vector of strings naming methods to be applied to the \code{variables} vector. The \code{methods} vector must be the same length as the \code{variables} vector. Methods are applied in order (e.g, first method is applied to the first named attribute in \code{variables}). Possible methods are "reduced_category", "multi_category", "both", and "difference". For more information about methods, consult the included vignette.
 #' @param directed A logical statement identifying if the network should be treated as directed. Defaults to \code{FALSE}.
 #' @param additional_vars A data frame containing additional individual-level variables not contained in the primary network input. Additional dataframe must contain an \code{id} or \code{label} variables which matches network exactly.
 #' @return \code{qap_setup} returns a list of elements that include:
