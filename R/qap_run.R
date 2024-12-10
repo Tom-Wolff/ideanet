@@ -43,7 +43,14 @@ qap_run <- function(net, dependent = NULL, variables, directed = FALSE, family =
   if ("igraph" %in% class(net)) {
     iso <- which(igraph::degree(net) == 0)
     net <- igraph::delete_vertices(net, iso)
-    if (igraph::any_multiple(net) == TRUE) {net <- igraph::simplify(net, edge.attr.comb = "sum")}
+
+    # if graph is multiplex, have to merge it.
+    if (igraph::any_multiple(net) == TRUE) {
+      edge_attrs <- igraph::edge.attributes(net)
+      edge_attr_comb <- lapply(edge_attrs, function(attr) {if (is.numeric(attr)) {"sum"} else {"random"}}) #sum for numeric, random for character.
+      names(edge_attr_comb) <- names(edge_attrs)
+      net <- igraph::simplify(net, edge.attr.comb = edge_attr_comb)}
+
     edges <- igraph::as_data_frame(net, what = "edges")
     nodes <- igraph::as_data_frame(net, what = "vertices")
     net <- network::network(x = edges, directed = directed)
