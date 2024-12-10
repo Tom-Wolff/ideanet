@@ -8,7 +8,7 @@ qap_run(
   net,
   dependent = NULL,
   variables,
-  directed = F,
+  directed = FALSE,
   family = "linear",
   reps = 500
 )
