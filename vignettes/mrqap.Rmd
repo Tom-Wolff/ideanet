@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 MRQAP tests associations across the dyads of a network. Questions generally ask whether one relation is associated with another relation in multi-relational networks (e.g. *do marriage ties correlate with business ties?*), or whether similarity on dyadic features predict tie formation (e.g. *are same-race pairs more likely to be friends?* or generally *what shared characteristics predict friendship nominations among adolescents in an American high school?*). MRQAP is an extension of the Mantel test which uses node permutation to accommodate issues of non-independence that bias traditional regression analysis estimates using (sociocentric) network data. To illustrate how to use MRQAP with `ideanet`, we'll use the Faux Mesa High dataset native to the package.
 
-Preparing to use `ideanet`'s MRQAP module is  easy: all we need is the `igraph` object produced using `netwrite`, as this object contains the various node-level attributes contained in a user's original nodelist as well as the node-level measurements produced by `netwrite`.
+Preparing to use `ideanet`'s MRQAP module is easy: all we need is the `igraph` object produced using `netwrite`, as this object contains the various node-level attributes contained in a user's original nodelist as well as the node-level measurements produced by `netwrite`.
 
 ```{r nw_fauxmesa, warning = FALSE}
 library(ideanet)
@@ -30,7 +30,7 @@ nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
                         shiny = TRUE)
 ```
 
-When we look at the original nodelist passed to `netwrite` (`fauxmesa_nodes`), we see that we have information about each student's grade level, their race/ethnicity, and their sex. This information exists at the *individual level* in that it pertains to individual students. However, when using MRQAP in analysis, we are generally interested in how *dyadic* measures predict outcomes. In other words, we're interested in whether similarities or differences between nodes lead to outcomes, both of which are understood  at the level of ego-alter relationships. While some users may have dyadic measures stored in their edgelist ahead of time, typically these measures are something one has to generate. The `qap_setup` function in `ideanet` allows users to quickly take node-level attributes and generate dyad-level comparisons with only a few arguments. 
+When we look at the original nodelist passed to `netwrite` (`fauxmesa_nodes`), we see that we have information about each student's grade level, their race/ethnicity, and their sex. This information exists at the *individual level* in that it pertains to individual students. However, when using MRQAP analysis, we are generally interested in how *dyadic* measures predict outcomes. In other words, we're interested in whether similarities or differences between nodes lead to outcomes, both of which are understood at the level of ego-alter relationships. While some users may have dyadic measures stored in their edgelist ahead of time, typically these measures are something one has to generate. The `qap_setup` function in `ideanet` allows users to quickly take node-level attributes and generate dyad-level comparisons with only a few arguments. 
 
 These argument are:
 
@@ -92,6 +92,8 @@ With our variables of interest in hand, we turn to the MRQAP analysis itself. `i
 * `reps`: Select the number of permutations. Relevant to null-hypothesis testing only. Default is set to `500`.
 * `family`: The functional form the model should follow. Currently available are `"linear"` and `"binomial"`. 
   * **NOTE:** Binomial MRQAP can take a while to simulate; for exploratory purposes, it is recommended to stick to a linear functional form.
+  
+**NOTE:** If the input network is multi-relational, `qap_run` will automatically merge duplicated rows. This is necessary given that, at this time, the MRQAP wrapper does not elegantly handle repeated observations. When merging rows, it will take the *sum* of numeric edge attributes, and a *random* value of character edge attributes. If the user is interested in the association between two types of ties (e.g., marriage ties predicting business ties), we recommend that they create a set of binary edge attributes using `qap_setup`.
   
 Let's use `qap_run` using the default 500 permutations. While we can significantly decrease the number of permutations to allow for lower computation times, this may make confidence intervals in our results less interpretable. As far as variables go in this example, we'll include `same_sex`, `both_race_White`, and `abs_diff_grade`. 
 
