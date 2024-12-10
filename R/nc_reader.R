@@ -72,7 +72,7 @@ nc_read <- function(
 
   for (i in 1:length(alter_files)) {
     if (i == 1) {
-      alters <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
+      alters <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = TRUE)
       # Need to handle the case in which ego 1 is an isolate
       if (nrow(alters) == 0) {
         alters[1,] <- NA
@@ -86,7 +86,7 @@ nc_read <- function(
           alters$data_file <- paste(path, alter_files[[i]], sep = "/")
       }
     } else {
-      this_alter <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = T)
+      this_alter <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = TRUE)
       # Only need to do the rest if there are actually alter nominated by ego,
       # otherwise can skip
       if (nrow(this_alter) > 0) {
@@ -114,7 +114,7 @@ nc_read <- function(
 
   for (i in 1:length(edge_files)) {
     if (i == 1) {
-      el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = T)
+      el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = TRUE)
       # Handling if first ego is an isolate
       if (nrow(el) == 0) {
         el[1,] <- NA
@@ -129,7 +129,7 @@ nc_read <- function(
           el$data_file <- paste(path, edge_files[[i]], sep = "/")
       }
     } else {
-      this_el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = T)
+      this_el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = TRUE)
 
       if (nrow(this_el) == 0) {
         next

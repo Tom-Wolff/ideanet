@@ -851,7 +851,7 @@ netread_ucinet <- function(path, net_name = "network") {
   x$V1 <- stringr::str_replace_all(x$V1, "\'", " ")
   x$break_point <- stringr::str_detect(x$lower, ":") | stringr::str_detect(x$lower, "\\bdl\\b")
 
-  break_points <- c(which(x$break_point == T), (nrow(x)+1))
+  break_points <- c(which(x$break_point == TRUE), (nrow(x)+1))
 
   uci_list <- list()
   uci_list_names <- character()
@@ -887,7 +887,7 @@ netread_ucinet <- function(path, net_name = "network") {
   ##### If `n` value exists, parse
   if (sum(uci_list$metadata$num_nodes) > 0) {
     ###### Get row with n value
-    node_row <- uci_list$metadata[uci_list$metadata$num_nodes == T,]
+    node_row <- uci_list$metadata[uci_list$metadata$num_nodes == TRUE]
     ###### Extract the `n = [number]` expression
     num_nodes <- unlist(stringr::str_extract_all(node_row$lower, "n\\s*=\\s*[0-9]+"))
     ###### Extract the number in this expression and make numeric
@@ -899,7 +899,7 @@ netread_ucinet <- function(path, net_name = "network") {
   ###### If an `nmat` or `nm` value exists, parse
   if (sum(uci_list$metadata$num_mat) > 0) {
     ###### Get row with nmat value
-    mat_row <- uci_list$metadata[uci_list$metadata$num_mat == T, ]
+    mat_row <- uci_list$metadata[uci_list$metadata$num_mat == TRUE, ]
     ###### Extract the `nmat = [number]` expression
     num_mat <- unlist(stringr::str_extract_all(mat_row$lower, c("nmat\\s*=\\s*[0-9]+", "nm\\s*=\\s*[0-9]+")))
     ###### Extract the number in this expression and make numeric
@@ -911,7 +911,7 @@ netread_ucinet <- function(path, net_name = "network") {
   ###### If `nr` value exists, parse
   if (sum(uci_list$metadata$num_rows) > 0) {
     ###### Get row with `nr` value
-    nr_row <- uci_list$metadata[uci_list$metadata$num_rows == T, ]
+    nr_row <- uci_list$metadata[uci_list$metadata$num_rows == TRUE, ]
     ###### Extract the `nr = [number]` expression
     num_rows <- unlist(stringr::str_extract_all(nr_row$lower, "nr\\s*=\\s*[0-9]+"))
     ###### Extract thhee number in this expression and make numeric
@@ -924,7 +924,7 @@ netread_ucinet <- function(path, net_name = "network") {
   ###### If `nr` value exists, parse
   if (sum(uci_list$metadata$num_cols) > 0) {
     ###### Get row with `nr` value
-    nc_row <- uci_list$metadata[uci_list$metadata$num_cols == T, ]
+    nc_row <- uci_list$metadata[uci_list$metadata$num_cols == TRUE, ]
     ###### Extract the `nr = [number]` expression
     num_cols <- unlist(stringr::str_extract_all(nc_row$lower, "nc\\s*=\\s*[0-9]+"))
     ###### Extract thhee number in this expression and make numeric
@@ -933,7 +933,7 @@ netread_ucinet <- function(path, net_name = "network") {
 
   ###### Data format
   uci_list$metadata$format <- stringr::str_detect(uci_list$metadata$lower, "format")
-  format_row <- uci_list$metadata[uci_list$metadata$format == T, ]
+  format_row <- uci_list$metadata[uci_list$metadata$format == TRUE, ]
   format_val <- format_row$lower[stringr::str_detect(format_row$lower, "format")]
   format <- c("edgelist1", "edgelist2", "fullmatrix", "nodelist1", "nodelist2")[stringr::str_detect(format_val, c("edgelist1", "edgelist2", "fullmatrix", "nodelist1", "nodelist2"))]
 

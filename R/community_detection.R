@@ -115,8 +115,8 @@ comm_detect <- function(g, modres=1,
     edge_betweenness <- igraph::cluster_edge_betweenness(g_undir,
                                                          weights = igraph::E(g_undir)$r_weight,
                                                          directed = FALSE,
-                                                         membership = T,
-                                                         modularity = T)
+                                                         membership = TRUE,
+                                                         modularity = TRUE)
   }
 
 
@@ -348,11 +348,11 @@ comm_detect <- function(g, modres=1,
     #### In some cases, such as when given a star graph, `linkcomm` won't detect any communities.
     #### if this is the case, just create the `lc_membership` dataframe manually and assign all nodes
     #### to the same community (or `NA`s depending on our team's ultimate preference)
-    lc <- tryCatch(linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F),
+    lc <- tryCatch(linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = FALSE, verbose = FALSE, plot = FALSE),
                    error = function(e) {return(NULL)})# Defaulting to false for now)
     if (!is.null(lc)) {
       # browser()
-      lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = F, verbose = F, plot = F) # Defaulting to false for now
+      lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = FALSE, verbose = FALSE, plot = FALSE) # Defaulting to false for now
       clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
       clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
       lc_membership <- multigroup_assign(g_sym, clust)
@@ -454,7 +454,7 @@ comm_detect <- function(g, modres=1,
       igraph::V(g_undir)$leading_eigen <- memberships$leading_eigen_membership
 
       leading_eigen_stats <- data.frame(method = "leading_eigen",
-                                        num_communities = max(memberships$leading_eigen_membership, na.rm = T),
+                                        num_communities = max(memberships$leading_eigen_membership, na.rm = TRUE),
                                         modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$leading_eigen, weights = igraph::E(g_undir)$weight))
     }
   }
@@ -485,7 +485,7 @@ comm_detect <- function(g, modres=1,
     igraph::V(g_undir)$spinglass <- memberships$spinglass_membership
 
     spinglass_stats <- data.frame(method = "spinglass",
-                                  num_communities = max(memberships$spinglass_membership, na.rm = T),
+                                  num_communities = max(memberships$spinglass_membership, na.rm = TRUE),
                                   modularity = igraph::modularity(g_undir, membership = igraph::V(g_undir)$spinglass, weights = igraph::E(g_undir)$weight))
 
 
@@ -528,7 +528,7 @@ comm_detect <- function(g, modres=1,
   # Some functions create modularity scores that vary depending on seed. Something to keep in mind for later.
 
   # Get median k and feed into stochastic block model
-  median_k <- stats::median(community_summaries$num_communities, na.rm = T)
+  median_k <- stats::median(community_summaries$num_communities, na.rm = TRUE)
 
 
   # Turn graph `g` into an adjacency matrix

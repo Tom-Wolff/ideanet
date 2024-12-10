@@ -452,7 +452,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   # ##### to calculating modularity
   # sim_vec <- dist_mat
   # sim_vec[is.infinite(sim_vec)] <- NA
-  # max(sim_vec, na.rm = T) # This is getting kind of wacky,
+  # max(sim_vec, na.rm = TRUE) # This is getting kind of wacky,
   # # the range is kind of out of control
   #
   #
@@ -460,7 +460,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   # Take top nth percentile of similarity scores
   for (i in 1:nrow(dist_mat)) {
 
-    dist_mat[i, (dist_mat[i,] < stats::quantile(dist_mat[i,], backbone, na.rm = T))] <- 0
+    dist_mat[i, (dist_mat[i,] < stats::quantile(dist_mat[i,], backbone, na.rm = TRUE))] <- 0
 
   }
 
@@ -510,7 +510,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   for (i in 1:ncol(cut_df2)) {
 
     this_vec <- cut_df2[,i]
-    this_vec[is.na(this_vec)] <- (max(this_vec, na.rm = T) + 1)
+    this_vec[is.na(this_vec)] <- (max(this_vec, na.rm = TRUE) + 1)
     cut_df2[,i] <- this_vec
 
   }
@@ -546,13 +546,13 @@ cluster_method <- function(graph, # igraph object generated from netwrite
 
   role_std_summary <- role_std %>%
     dplyr::group_by(.data$cluster) %>%
-    dplyr::summarize_all(mean, na.rm = T) %>%
+    dplyr::summarize_all(mean, na.rm = TRUE) %>%
     dplyr::select(-.data$id) %>%
     dplyr::ungroup()
 
 
   role_std_sd <- as.data.frame(t(role_std_summary %>%
-                                   dplyr::summarize_all(stats::sd, na.rm = T)))
+                                   dplyr::summarize_all(stats::sd, na.rm = TRUE)))
   colnames(role_std_sd) <- "sd"
   role_std_sd$var <- rownames(role_std_sd)
 
@@ -831,7 +831,7 @@ concor_method <- function(graph,
   for (i in min_partitions:max_partitions) {
 
 
-    blks <- tryCatch(concorR::concor(m_list = adjmat_list, nsplit = i, self_ties = F),
+    blks <- tryCatch(concorR::concor(m_list = adjmat_list, nsplit = i, self_ties = FALSE),
                      error = function(e) e)
 
     if ('error' %in% class(blks)) {
@@ -869,7 +869,7 @@ concor_method <- function(graph,
 
   ## 2. Adjust correlation scores so that there are only non-negative
   ## scores in the matrix. igraph won't play with negative edge weights.
-  min_val <- min(cor_mat, na.rm = T)
+  min_val <- min(cor_mat, na.rm = TRUE)
   if (min_val < 0) {
     cor_mat <- cor_mat + -1*min_val
   }
@@ -891,7 +891,7 @@ concor_method <- function(graph,
   # a2. NEED TO MAKE THE PERCENTILE THRESHOLD ADJUSTABLE
   for (i in 1:nrow(cor_mat)) {
 
-    cor_mat[i, (cor_mat[i,] < stats::quantile(cor_mat[i,], backbone, na.rm = T))] <- 0
+    cor_mat[i, (cor_mat[i,] < stats::quantile(cor_mat[i,], backbone, na.rm = TRUE))] <- 0
 
   }
 
@@ -916,7 +916,7 @@ concor_method <- function(graph,
     # an `NA` value. This will crash the modularity calculation. To remedy this, we need
     # to replace `NA` values and treat them as their own de facto block (unclassified)
     these_blocks <- assignment_df[,i]
-    these_blocks[is.na(these_blocks)] <- max(these_blocks, na.rm = T) + 1
+    these_blocks[is.na(these_blocks)] <- max(these_blocks, na.rm = TRUE) + 1
     igraph::V(cor_igraph)$block <- these_blocks
 
     this_mod <- data.frame(cut = colnames(assignment_df)[i],
@@ -951,7 +951,7 @@ concor_method <- function(graph,
   ## 8. Merge best fit assignments to full nodelist
   full_roster <- dplyr::left_join(nodes, assignment_df, by = "id")
   full_roster$best_fit <- ifelse(is.na(full_roster$best_fit),
-                                 max(full_roster$best_fit, na.rm = T) + 1,
+                                 max(full_roster$best_fit, na.rm = TRUE) + 1,
                                  full_roster$best_fit)
 
   ## 6. Add block assignments to list of igraph objects

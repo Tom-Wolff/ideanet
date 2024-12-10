@@ -60,9 +60,9 @@ ei_index <- function(ego_id,
   ei_df <- var_df %>%
     dplyr::group_by(ego_id) %>%
     dplyr::summarize(length = dplyr::n(),
-                     num_sim = sum(as.character(.data$alter_val) == as.character(.data$ego_val), na.rm = T),
+                     num_sim = sum(as.character(.data$alter_val) == as.character(.data$ego_val), na.rm = TRUE),
                      prop_sim = .data$num_sim/length,
-                     num_diff = sum(as.character(.data$alter_val) != as.character(.data$ego_val), na.rm = T),
+                     num_diff = sum(as.character(.data$alter_val) != as.character(.data$ego_val), na.rm = TRUE),
                      prop_diff = .data$num_diff/length,
                      ei_index = (.data$prop_diff - .data$prop_sim)/length) %>%
     dplyr::ungroup() %>%

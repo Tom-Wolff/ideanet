@@ -39,7 +39,7 @@ f.rc <- function(mat=NULL,REGE=FALSE,HUSO=FALSE,MES=FALSE, CHECK=TRUE)
   # http://www.uni-duisburg-essen.de/hummell/pdf/RoleCensus.pdf
   #
   # Input: Binary quadrat. matrix with diagonal entries to 0
-  # <REGE=T> transforms rolecensus into binary values (checks only for
+  # <REGE=TRUE> transforms rolecensus into binary values (checks only for
   # presence/absence of rolecensus types a la REGE)
   # Author: H.J. Hummell
   # 30.06.2013 14:51:12
@@ -49,11 +49,11 @@ f.rc <- function(mat=NULL,REGE=FALSE,HUSO=FALSE,MES=FALSE, CHECK=TRUE)
   TEXT2 <- 'Info: http://www.uni-duisburg-essen.de/hummell/rolecensus/ \n'
   TEXT3 <- 'Ordering of the 36 different "triadic positions" according to R.Burt\n'
   TEXT4 <- 'Info: http://www.uni-duisburg-essen.de/hummell/pdf/RoleCensus.pdf\n'
-  TEXT5 <- 'Parameters: <mat=NULL>, <REGE=F>, <HUSO=F>, <MES=F>, <CHECK=T>\n'
-  TEXT6 <- '<REGE=T> transforms rolecensus into binary values (checks only for presence/absence of role types a la REGE)\n'
-  TEXT7 <- '<HUSO=T> gives Hummell/Sodeurs original sequence of "triadic positions"\n'
+  TEXT5 <- 'Parameters: <mat=NULL>, <REGE=FALSE>, <HUSO=FALSE>, <MES=FALSE>, <CHECK=T>\n'
+  TEXT6 <- '<REGE=TRUE> transforms rolecensus into binary values (checks only for presence/absence of role types a la REGE)\n'
+  TEXT7 <- '<HUSO=TRUE> gives Hummell/Sodeurs original sequence of "triadic positions"\n'
   TEXT8 <- 'Info: http://www.uni-duisburg-essen.de/hummell/rolecensus/PositionenZensus.jpg\n'
-  TEXT9 <- '<MES=T> gives the sequence according to Solomon Messing from the <triads> package\n'
+  TEXT9 <- '<MES=TRUE> gives the sequence according to Solomon Messing from the <triads> package\n'
   TEXT10 <- 'Rather slow routine!\n'
   AUT <- 'H.J.Hummell; 30.06.2013.\n'
 
@@ -204,7 +204,7 @@ f.rc <- function(mat=NULL,REGE=FALSE,HUSO=FALSE,MES=FALSE, CHECK=TRUE)
   # All "triadic positions" are counted 6 times
   z <- z/6
 
-  if (HUSO==F)
+  if (HUSO==FALSE)
   {
     # Reordering of 36 "triadic positions" in the sequence of Hummell/Sodeur
     # into the sequence of R. Burt, 1990
@@ -1392,7 +1392,7 @@ concor_tree <- function(df) {
   if (!("data.frame" %in% class(block_assigns))) {
     # Record plot and assign to environment
     graphics::plot.new()
-    plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+    plot(c(0, 1), c(0, 1), ann = FALSE, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
     graphics::text(x = 0.5, y = 0.5, paste("Only one partitioning level selected.\n",
                                            "Partitioning tree not available.\n"),
          cex = 1, col = "black")

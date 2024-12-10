@@ -81,17 +81,17 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
       bonpow_out <- bonpow[[3]]
       bonpow_sym <- bonpow[[5]]
 
-      bon_cent_in <- max(bonpow[[2]], na.rm = T)
-      bon_cent_out <- max(bonpow[[4]], na.rm = T)
-      bon_cent_sym <- max(bonpow[[6]], na.rm = T)
+      bon_cent_in <- max(bonpow[[2]], na.rm = TRUE)
+      bon_cent_out <- max(bonpow[[4]], na.rm = TRUE)
+      bon_cent_sym <- max(bonpow[[6]], na.rm = TRUE)
 
       bonpow_in_negative <- bonpow_negative[[1]]
       bonpow_out_negative <- bonpow_negative[[3]]
       bonpow_sym_negative <- bonpow_negative[[5]]
 
-      bon_cent_in_negative <- max(bonpow_negative[[2]], na.rm = T)
-      bon_cent_out_negative <- max(bonpow_negative[[4]], na.rm = T)
-      bon_cent_sym_negative <- max(bonpow_negative[[6]], na.rm = T)
+      bon_cent_in_negative <- max(bonpow_negative[[2]], na.rm = TRUE)
+      bon_cent_out_negative <- max(bonpow_negative[[4]], na.rm = TRUE)
+      bon_cent_sym_negative <- max(bonpow_negative[[6]], na.rm = TRUE)
 
       nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree,
                                    weighted_degree, norm_weighted_degree,
@@ -115,9 +115,9 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
 
     } else {
 
-      bon_cent <- max(bonpow[[2]], na.rm = T)
+      bon_cent <- max(bonpow[[2]], na.rm = TRUE)
       bonpow <- bonpow[[1]]
-      bon_cent_neg <- max(bonpow_negative[[2]], na.rm = T)
+      bon_cent_neg <- max(bonpow_negative[[2]], na.rm = TRUE)
       bonpow_negative <- bonpow_negative[[1]]
 
       nodes <- as.data.frame(cbind(nodes, comp_membership, total_degree,
@@ -378,18 +378,18 @@ betweenness <- function(g, weights, directed, weight_type){
   # Calculating Betweenness
   if(is.null(weights) == TRUE){
     betweenness <- igraph::betweenness(g, directed=as.logical(directed), weights=NULL,
-                                       normalize=T)
+                                       normalize = TRUE)
   }else{
 
     # Making sure edge weights are being treated as distances
     if (weight_type == "frequency") {
       betweenness <- igraph::betweenness(g, directed=as.logical(directed),
                                          weights = 1/igraph::edge_attr(g, "weight"),
-                                         normalize=T)
+                                         normalize = TRUE)
     } else {
       betweenness <- igraph::betweenness(g, directed=as.logical(directed),
                                          weights = igraph::edge_attr(g, "weight"),
-                                         normalize=T)
+                                         normalize = TRUE)
     }
 
 
@@ -445,7 +445,7 @@ reachable_igraph <- function(g, directed){
   num_nodes <- length(igraph::V(g))
 
   # Get edgelist
-  edgelist <- igraph::get.edgelist(g, names = F)
+  edgelist <- igraph::get.edgelist(g, names = FALSE)
 
   # Remove self-loops
   edgelist <- edgelist[edgelist[,1] != edgelist[,2], ]
@@ -809,7 +809,7 @@ bonacich_igraph <- function(g, directed, bpct = .75,
       warning("(Bonacich power centrality) Isolates detected in network. Isolates will be removed from network when calculating power centrality measure, and will be assigned NA values in final output.")
     }
     # Remove isolates
-    g <- igraph::delete.vertices(g, v = igraph::degree(g, mode = "all", loops = F) == 0)
+    g <- igraph::delete.vertices(g, v = igraph::degree(g, mode = "all", loops = FALSE) == 0)
   }
 
   # Convert igraph object into adjacency matrix
@@ -856,7 +856,7 @@ bonacich_igraph <- function(g, directed, bpct = .75,
   # transpose of the original adjacency matrix, and a third one based on a symmetrized version
   # of the adjacency matrix. The following conditional flow generates all three measures
   # if netwrite is working with a directed network:
-  if (directed == T) {
+  if (directed == TRUE) {
     # Create symmetrized (undirected) version of network
     undir_net <- igraph::as.undirected(g)
 
@@ -989,7 +989,7 @@ eigen_igraph <- function(g, directed,
       warning("(Eigenvector centrality) Isolates detected in network. Isolates will be removed from network when calculating eigenvector centrality measure, and will be assigned NA values in final output.\n")
     }
     # Remove isolates
-    g <- igraph::delete.vertices(g, v = igraph::degree(g, mode = "all", loops = F) == 0)
+    g <- igraph::delete.vertices(g, v = igraph::degree(g, mode = "all", loops = FALSE) == 0)
   }
 
   # Assign component membership as a vertex attribute

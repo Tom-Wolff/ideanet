@@ -73,7 +73,7 @@ qap_setup <- function(net, variables = NULL, methods = NULL, directed = FALSE, a
                           stop("Make sure your additional ego dataframe contains an id or label variable")))
 
     # Check if the two ids are identical
-    if (identical(vec1, vec2) == F) {
+    if (identical(vec1, vec2) == FALSE) {
       error_m <- paste0("Make sure the id or label of the additional ego dataframe match model ids exactly.
      There are ", length(vec1), " ids in the model and ", length(vec2), " ids in the additional
      dataframe, of which ", length(intersect(vec1, vec2)), " intersect.")
@@ -87,7 +87,7 @@ qap_setup <- function(net, variables = NULL, methods = NULL, directed = FALSE, a
   ### CONSTRUCTING DYAD MEASURES FROM EGO MEASURES ###
 
   # check if there are as many variables as methods
-  if ((length(variables) == length(methods)) == F) {
+  if ((length(variables) == length(methods)) == FALSE) {
     stop("Different number of variables and methods")
   }
 
@@ -113,7 +113,7 @@ qap_setup <- function(net, variables = NULL, methods = NULL, directed = FALSE, a
                           dplyr::case_when(!!rlang::sym(paste0(variable, "_alter")) ==
                                              !!rlang::sym(paste0(variable, "_ego")) ~ 1,
                                            is.na(!!rlang::sym(paste0(variable, "_ego"))) |
-                                             is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+                                             is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, TRUE ~ 0))
       }
 
       # If method "multi_category", create an tidyselect::all_of(variable) for each value and then dichotomize.
@@ -126,7 +126,7 @@ qap_setup <- function(net, variables = NULL, methods = NULL, directed = FALSE, a
                             dplyr::case_when((!!rlang::sym(paste0(variable, "_alter")) == opts[n]) &
                                                (!!rlang::sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
                                              is.na(!!rlang::sym(paste0(variable, "_ego"))) |
-                                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+                                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, TRUE ~ 0))
         }
       }
 
@@ -148,7 +148,7 @@ qap_setup <- function(net, variables = NULL, methods = NULL, directed = FALSE, a
                           dplyr::case_when(!!rlang::sym(paste0(variable, "_alter")) ==
                                              !!rlang::sym(paste0(variable, "_ego")) ~ 1,
                                            is.na(!!rlang::sym(paste0(variable, "_ego"))) |
-                                             is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+                                             is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, TRUE ~ 0))
 
         opts <- nodes %>% dplyr::select(tidyselect::all_of(variable)) %>% dplyr::distinct() %>% tidyr::drop_na() %>% dplyr::pull()
 
@@ -158,7 +158,7 @@ qap_setup <- function(net, variables = NULL, methods = NULL, directed = FALSE, a
                             dplyr::case_when((!!rlang::sym(paste0(variable, "_alter")) == opts[n]) &
                                                (!!rlang::sym(paste0(variable, "_ego")) == opts[n]) ~ 1,
                                              is.na(!!rlang::sym(paste0(variable, "_ego"))) |
-                                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, T ~ 0))
+                                               is.na(!!rlang::sym(paste0(variable, "_alter"))) ~ NA_real_, TRUE ~ 0))
         }
       }
     }

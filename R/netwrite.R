@@ -206,6 +206,15 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     if (fix_nodelist == TRUE) {
       el_ids <- sort(unique(c(i_elements, j_elements)))
       just_ids <- sort(unique(c(just_ids, el_ids)))
+
+      # Create an expanded dataframe to include nodes not originally appearing in nodelist
+      nodelist_union <- data.frame(id = just_ids)
+      # Add a variable indicating whether nodes appear in `original_nodelist`
+      nodelist_union$in_original_nodelist <- nodelist_union$id %in% original_nodelist[, node_id]
+      # Rename columns
+      colnames(nodelist_union) <- c(node_id, "in_original_nodelist")
+      # Merge into `original_nodelist`
+      original_nodelist <- dplyr::left_join(nodelist_union, original_nodelist, by = node_id)
     }
 
   } else {
@@ -230,7 +239,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   if (is.logical(nodelist)) {
 
     just_ids <- sort(unique(c(i_elements, j_elements)))
-
 
   }
 
@@ -1768,8 +1776,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     ###### The requisite function in `sna` needs specification as to whether
     ###### the network in question is directed or undirected. We'll make an
     ###### object here with that specification
-    sna_mode <- ifelse(directed == T, "digraph", "graph")
-    trans_cor <- sna::gtrans(intergraph::asNetwork(igraph::simplify(g, remove.multiple = T)), mode = sna_mode, measure = "correlation")
+    sna_mode <- ifelse(directed == TRUE, "digraph", "graph")
+    trans_cor <- sna::gtrans(intergraph::asNetwork(igraph::simplify(g, remove.multiple = TRUE)), mode = sna_mode, measure = "correlation")
 
     # trans_cor_time <- Sys.time()
 

@@ -63,8 +63,8 @@ largest_bicomponent_igraph <- function(g) {
 
     # Get Bicomponent summary info
     bicomponent_summary <- data.frame(num_bicomponents = 1,
-                                      size_bicomponent = sum(merge_df$in_largest_bicomponent, na.rm = T),
-                                      prop_bicomponent = sum(merge_df$in_largest_bicomponent, na.rm = T)/nrow(merge_df))
+                                      size_bicomponent = sum(merge_df$in_largest_bicomponent, na.rm = TRUE),
+                                      prop_bicomponent = sum(merge_df$in_largest_bicomponent, na.rm = TRUE)/nrow(merge_df))
 
     output_list$bicomponent_summary <- bicomponent_summary
     # assign(x = "bicomponent_summary", value = bicomponent_summary, .GlobalEnv)
@@ -100,8 +100,8 @@ largest_bicomponent_igraph <- function(g) {
       if (i == 1) {
 
         sum_df <- data.frame(num_bicomponents = length(largest_id),
-                             size_bicomponent = sum(bicomp_id_merge$in_largest_bicomponent, na.rm = T),
-                             prop_bicomponent = sum(bicomp_id_merge$in_largest_bicomponent, na.rm = T)/length(igraph::V(g)$name))
+                             size_bicomponent = sum(bicomp_id_merge$in_largest_bicomponent, na.rm = TRUE),
+                             prop_bicomponent = sum(bicomp_id_merge$in_largest_bicomponent, na.rm = TRUE)/length(igraph::V(g)$name))
 
         bicomponent_summary <- rbind(bicomponent_summary, sum_df)
 
@@ -815,7 +815,7 @@ k_cohesion <- function(graph) {
   }
 
   # 2. Simplify graph (remove multiple edges)
-  graph <- igraph::simplify(graph, remove.multiple = T, remove.loops = T)
+  graph <- igraph::simplify(graph, remove.multiple = TRUE, remove.loops = TRUE)
 
   # 3. Get k-coreness value for all nodes
   v1_cores <- data.frame(V1 = names(igraph::coreness(graph)),

@@ -35,7 +35,7 @@
 #' # Inspect results
 #' flor_qap$covs_df
 
-qap_run <- function(net, dependent = NULL, variables, directed = F, family = "linear", reps = 500) {
+qap_run <- function(net, dependent = NULL, variables, directed = FALSE, family = "linear", reps = 500) {
 
   tempvars <- c(dependent, variables)
 
@@ -43,7 +43,7 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
   if ("igraph" %in% class(net)) {
     iso <- which(igraph::degree(net) == 0)
     net <- igraph::delete_vertices(net, iso)
-    if (igraph::any_multiple(net) == T) {net <- igraph::simplify(net, edge.attr.comb = "sum")}
+    if (igraph::any_multiple(net) == TRUE) {net <- igraph::simplify(net, edge.attr.comb = "sum")}
     edges <- igraph::as_data_frame(net, what = "edges")
     nodes <- igraph::as_data_frame(net, what = "vertices")
     net <- network::network(x = edges, directed = directed)
@@ -51,10 +51,10 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
 
   # If there is an ego/alter call, create as many unique adjacency matrices as there are values.
   extra_mats <- list()
-  if (directed == T) {
+  if (directed == TRUE) {
     for (i in 1:length(variables)){
       name <- variables[[i]]
-      if (grepl("^.*_ego$|^.*_alter$", name, fixed = F)){
+      if (grepl("^.*_ego$|^.*_alter$", name, fixed = FALSE)){
         varname <- gsub("^(.*)_.*$", "\\1", name)
         type <- gsub("^.*_(.*)", "\\1", name)
         unique_vals <- unique(nodes[[varname]])
@@ -77,7 +77,7 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
   # Create new values in case "both" is utilized
   for (i in 1:length(tempvars)){
     name <- tempvars[[i]]
-    if (grepl("^both_", name, fixed = F)) {
+    if (grepl("^both_", name, fixed = FALSE)) {
       varname <- gsub("^both_(.*)_.*", "\\1", name)
       varvalue <- gsub("^both_.*_(.*)", "\\1", name)
       nodes[[name]] <- ifelse(nodes[[varname]] == varvalue, 1, 0)
@@ -87,15 +87,15 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
   # Get DV matrix
   if (is.null(dependent)) {
     dv <- as.matrix(net)
-  } else if (grepl("^both_", dependent, fixed = F)) {
+  } else if (grepl("^both_", dependent, fixed = FALSE)) {
     dv <- as.matrix(outer(nodes[[dependent]], nodes[[dependent]], "=="))
-  } else if (grepl("^same_", dependent, fixed = F)) {
+  } else if (grepl("^same_", dependent, fixed = FALSE)) {
     dv_name <- gsub("^same_", "", dependent)
     dv <- as.matrix(outer(nodes[[dv_name]], nodes[[dv_name]], "=="))
-  } else if (grepl("^diff_", dependent, fixed = F)) {
+  } else if (grepl("^diff_", dependent, fixed = FALSE)) {
     dv_name <- gsub("^diff_", "", dependent)
     dv <- as.matrix(outer(nodes[[dv_name]], nodes[[dv_name]], "-"))
-  } else if (grepl("^abs_diff_", dependent, fixed = F)) {
+  } else if (grepl("^abs_diff_", dependent, fixed = FALSE)) {
     dv_name <- gsub("^abs_diff_", "", dependent)
     dv <- as.matrix(abs(outer(nodes[[dv_name]], nodes[[dv_name]], "-")))
   } else {
@@ -107,24 +107,24 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
   rem <- list() # list of empty matrices
   for (i in 1:length(variables)) {
     independent <- variables[[i]]
-    if (grepl("same_", independent, fixed = F)) {
+    if (grepl("same_", independent, fixed = FALSE)) {
       iv_name <- gsub("^same_", "", independent)
       iv <- as.matrix(outer(nodes[[iv_name]], nodes[[iv_name]], "=="))
-    } else if (grepl("^both_", independent, fixed = F)) {
+    } else if (grepl("^both_", independent, fixed = FALSE)) {
       iv <- as.matrix(outer(nodes[[independent]], nodes[[independent]], "=="))
-    } else if (grepl("^diff_", independent, fixed = F)) {
+    } else if (grepl("^diff_", independent, fixed = FALSE)) {
       iv_name <- gsub("^diff_", "", independent)
       iv <- as.matrix(outer(nodes[[iv_name]], nodes[[iv_name]], "-"))
-    } else if (grepl("^abs_diff_", independent, fixed = F)) {
+    } else if (grepl("^abs_diff_", independent, fixed = FALSE)) {
       iv_name <- gsub("^abs_diff_", "", independent)
       iv <- as.matrix(abs(outer(nodes[[iv_name]], nodes[[iv_name]], "-")))
-    } else if (grepl("_ego$|_alter$", independent, fixed = F)) {
+    } else if (grepl("_ego$|_alter$", independent, fixed = FALSE)) {
       next
     } else {
       stop(paste0(independent, " is not an output of qap_setup() with prefix `same`,`diff`, `abs_diff` or `both`"))
     }
 
-    if (sum(abs(iv), na.rm = T) == 0) {# check if variables is empty
+    if (sum(abs(iv), na.rm = TRUE) == 0) {# check if variables is empty
       warning(paste0("The variable ", independent, " is empty. It is excluded from the model."))
       rem[[i]] <- independent
     } else {ivs[[independent]] <- iv}
@@ -136,13 +136,13 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
 
   # Run QAP
   if (length(ivs) != 0) {
-    if (directed == T) {mode = "digraph"} else {mode = "graph"}
+    if (directed == TRUE) {mode = "digraph"} else {mode = "graph"}
     if (family == "binomial"){
-      # if (all(dv %in% 0:1) == T){
+      # if (all(dv %in% 0:1) == TRUE){
       res <- sna::netlogit(dv, ivs, reps = reps, mode = mode)
     } else if (family == "linear") {
       res <- sna::netlm(dv, ivs, reps = reps, mode = mode)
-    } else {print("Not an available family -- Try 'linear' or 'binomial'")}
+    } else {stop("Not an available family -- Try 'linear' or 'binomial'")}
 
     # Tidy results
     ivs_names <- names(ivs)
@@ -163,7 +163,7 @@ qap_run <- function(net, dependent = NULL, variables, directed = F, family = "li
     output_list <- list(covs_df = covs_df, mods_df = mods_df)
     return(output_list)
 
-  } else {warning("All IVs are empty. Try a different set of IVs")}
+  } else {stop("All IVs are empty. Try a different set of IVs")}
 }
 
 

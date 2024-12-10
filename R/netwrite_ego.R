@@ -946,7 +946,7 @@ ego_netwrite <- function(egos,
       type_sizes <- alter_hold %>%
         dplyr::select(-.data$alter_id) %>%
         dplyr::group_by(.data$ego_id) %>%
-        dplyr::summarize_all(~sum(.x == 1, na.rm = T)) %>%
+        dplyr::summarize_all(~sum(.x == 1, na.rm = TRUE)) %>%
         dplyr::ungroup()
 
       colnames(type_sizes) <- gsub("^type_", "network_size_", colnames(type_sizes))

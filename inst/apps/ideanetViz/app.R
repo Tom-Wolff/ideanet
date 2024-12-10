@@ -352,9 +352,9 @@ server <- function(input, output, session) {
         # Reading Excel
       } else {
         if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
-          readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header)
+          as.data.frame(readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header))
         } else {
-          readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header)
+          as.data.frame(readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header))
         }
       }
       # If "Adjacency Matrix" is selected
@@ -412,9 +412,9 @@ server <- function(input, output, session) {
         # Reading Excel
       } else {
         if(stringr::str_detect(input$raw_nodes$datapath, "xlsx$")) {
-          readxl::read_xlsx(path = input$raw_nodes$datapath, col_names = input$edge_header)
+          as.data.frame(readxl::read_xlsx(path = input$raw_nodes$datapath, col_names = input$edge_header))
         } else {
-          readxl::read_xls(path = input$raw_nodes$datapath, col_names = input$edge_header)
+          as.data.frame(readxl::read_xls(path = input$raw_nodes$datapath, col_names = input$edge_header))
         }
       }
       # Otherwise store as `NULL`
@@ -1123,8 +1123,8 @@ nodes_used <- shiny::reactive({
           net.visn$edges$value <- net.visn$edges$uni_weight
           visNetwork::visNetwork(net.visn$nodes, net.visn$edges, width = "100%") %>%
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-            visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
-                                   nodesIdSelection = T) %>%
+            visNetwork::visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE),
+                                   nodesIdSelection = TRUE) %>%
             visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
             visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date()))  %>%
             visNetwork::visGroups()
@@ -1132,8 +1132,8 @@ nodes_used <- shiny::reactive({
           net.visn$edges$value <- net.visn$edges$weight
           visNetwork::visNetwork(net.visn$nodes, net.visn$edges) %>%
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-            visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
-                                   nodesIdSelection = T) %>%
+            visNetwork::visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE),
+                                   nodesIdSelection = TRUE) %>%
             visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
             visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
             visNetwork::visGroups()
@@ -1402,7 +1402,7 @@ nodes_used <- shiny::reactive({
             ggplot2::geom_col(fill = "#0073C2FF", color = "#FFFFFF") +
             ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var, y = "N")
         } else {
-          dat <- hist(nodelist3()[,input$data_table_vis_var], plot = F)
+          dat <- hist(nodelist3()[,input$data_table_vis_var], plot = FALSE)
           dat <- data.frame(x = dat$mids, y = dat$counts)
           ggplot2::ggplot(dat, ggplot2::aes(x = x, y = y)) +
             ggplot2::geom_col(fill = "#0073C2FF", color = "#FFFFFF") +
@@ -1631,7 +1631,7 @@ nodes_used <- shiny::reactive({
   #     dep_var <- input$qap_run_dependent
   #   }
   #   qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
-  #           dependent = dep_var, directed = T)
+  #           dependent = dep_var, directed = TRUE)
   #   qap_df <- model_results[[1]]
   #   print(model_results[[1]])
   # })

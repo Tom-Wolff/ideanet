@@ -61,7 +61,7 @@ euclidean_distance <- function(ego_id,
     # Summarize
     dplyr::group_by(ego_id) %>%
     dplyr::summarize(length = dplyr::n(),
-                     euc_num = sqrt(sum(diff, na.rm = T))) %>%
+                     euc_num = sqrt(sum(diff, na.rm = TRUE))) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(euclidean_distance = .data$euc_num/length) %>%
     dplyr::select(-.data$euc_num, -length)

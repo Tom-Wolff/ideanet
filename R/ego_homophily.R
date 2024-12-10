@@ -68,7 +68,7 @@ ego_homophily <- function(ego_id,
 
   hom_counts <- var_df %>%
     dplyr::group_by(ego_id) %>%
-    dplyr::summarize(num_sim = sum(as.character(.data$alter_val) == as.character(.data$ego_val), na.rm = T),
+    dplyr::summarize(num_sim = sum(as.character(.data$alter_val) == as.character(.data$ego_val), na.rm = TRUE),
                      prop_sim = .data$num_sim/dplyr::n()) %>%
     dplyr::ungroup()
 
