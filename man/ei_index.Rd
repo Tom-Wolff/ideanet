@@ -49,12 +49,10 @@ ngq_nw <- ego_netwrite(egos = ngq_egos,
                       j_elements = ngq_aa$alter2,
                       directed = FALSE)
 
-# Split items into Global Environment
-list2env(ngq_nw, .GlobalEnv)
 
 # Calculate E-I Index for Race
-race_ei <- ei_index(ego_id = egos$ego_id, ego_measure = egos$race,
-                   alter_ego = alters$ego_id, alter_measure = alters$race,
+race_ei <- ei_index(ego_id = ngq_nw$egos$ego_id, ego_measure = ngq_nw$egos$race,
+                   alter_ego = ngq_nw$alters$ego_id, alter_measure = ngq_nw$alters$race,
                    prefix = "race")
 
 race_ei

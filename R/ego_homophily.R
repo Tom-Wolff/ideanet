@@ -33,19 +33,17 @@
 #'                       j_elements = ngq_aa$alter2,
 #'                       directed = FALSE)
 #'
-#'# Split items into Global Environment
-#'list2env(ngq_nw, .GlobalEnv)
 #'
 #'# Homophily as a Count
-#'race_homophily_count <- ego_homophily(ego_id = egos$ego_id, ego_measure = egos$race,
-#'                                      alter_ego = alters$ego_id, alter_measure = alters$race,
+#'race_homophily_count <- ego_homophily(ego_id = ngq_nw$egos$ego_id, ego_measure = ngq_nw$egos$race,
+#'                                      alter_ego = ngq_nw$alters$ego_id, alter_measure = ngq_nw$alters$race,
 #'                                      suffix = "race")
 #'
 #'race_homophily_count
 #'
 #'# Homophily as a Proportion
-#'race_homophily_prop <- ego_homophily(ego_id = egos$ego_id, ego_measure = egos$race,
-#'                                     alter_ego = alters$ego_id, alter_measure = alters$race,
+#'race_homophily_prop <- ego_homophily(ego_id = ngq_nw$egos$ego_id, ego_measure = ngq_nw$egos$race,
+#'                                     alter_ego = ngq_nw$alters$ego_id, alter_measure = ngq_nw$alters$race,
 #'                                     prop = TRUE,
 #'                                     suffix = "race")
 #'race_homophily_prop

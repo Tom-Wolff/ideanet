@@ -30,12 +30,10 @@
 #'                       j_elements = ngq_aa$alter2,
 #'                       directed = FALSE)
 #'
-#'# Split items into Global Environment
-#'list2env(ngq_nw, .GlobalEnv)
 #'
 #'# Get IQV for sex
-#'sex_iqv <- iqv(ego_id = alters$ego_id,
-#'               measure = alters$sex,
+#'sex_iqv <- iqv(ego_id = ngq_nw$alters$ego_id,
+#'               measure = ngq_nw$alters$sex,
 #'               prefix = "sex")
 #'
 #'sex_iqv

@@ -32,12 +32,10 @@
 #'                       j_elements = ngq_aa$alter2,
 #'                       directed = FALSE)
 #'
-#'# Split items into Global Environment
-#'list2env(ngq_nw, .GlobalEnv)
 #'
 #'# Calculate Euclidean Distance
-#'pol_euc <- euclidean_distance(ego_id = egos$ego_id, ego_measure = egos$pol,
-#'                              alter_ego = alters$ego_id, alter_measure = alters$pol,
+#'pol_euc <- euclidean_distance(ego_id = ngq_nw$egos$ego_id, ego_measure = ngq_nw$egos$pol,
+#'                              alter_ego = ngq_nw$alters$ego_id, alter_measure = ngq_nw$alters$pol,
 #'                              prefix = "pol")
 #'pol_euc
 
