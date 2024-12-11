@@ -10,8 +10,10 @@ netwrite(
   adjacency_list = FALSE,
   nodelist = FALSE,
   node_id = NULL,
+  node_netid = NULL,
   i_elements = FALSE,
   j_elements = FALSE,
+  edge_netid = NULL,
   fix_nodelist = TRUE,
   weights = NULL,
   type = NULL,
@@ -35,11 +37,15 @@ netwrite(
 
 \item{nodelist}{Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If the latter, a value for \code{node_id} must be specified.}
 
-\item{node_id}{If a data frame is entered for the \code{nodelist} arugment, \code{node_id} should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.}
+\item{node_id}{If a data frame is entered for the \code{nodelist} argument, \code{node_id} should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.}
+
+\item{node_netid}{If a data frame is entered for the \code{nodelist} argument, \code{node_netid} should be a character value indicating the name of the column in the node-level data frame containing unique network identifiers. This argument should be specified if a value is given for \code{edge_netid}.}
 
 \item{i_elements}{If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the sender of ties in the edgelist.}
 
 \item{j_elements}{If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the receiver of ties in the edgelist.}
+
+\item{edge_netid}{If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the specific network to which a particular edge belongs. This argument should be specified if the dataset in use contains multiple independent networks.}
 
 \item{fix_nodelist}{If \code{data_type} is set to \code{"edgelist"} and user inputs a vector or data frame into \code{nodelist}, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, \code{fix_nodelist} is set to \code{FALSE} to identify potential inconsistencies between the nodelist and edgelist to the user.}
 
@@ -82,6 +88,8 @@ If \code{output} contains \code{"system_measure_plot"}, \code{netwrite} will ret
 If \code{output} contains \code{"largest_bi_component"}, \code{netwrite} will return an igraph object of the largest bicomponent in the network represented in the original data. If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing the largest bicomponent for each unique relation type as well as the overall network.
 
 If \code{output} contains \code{"largest_bi_component"}, \code{netwrite} will return an igraph object of the largest main component in the network represented in the original data. If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing the largest main component for each unique relation type as well as the overall network.
+
+If users are working with data containing multiple independent networks, \code{netwrite} will return a list containing the above outputs for each network in their data, provided that users have passed a vector of network identifiers to the \code{edge_netid} argument. Each network's output will be labeled according to its corresponding value in \code{edge_netid}.
 }
 \description{
 The \code{netwrite} function reads in relational data of several formats and processes them into a set of standardized outputs. These outputs include sets of commonly calculated measures at the individual node and network-wide levels.

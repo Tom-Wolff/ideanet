@@ -5,10 +5,12 @@
 #' @param data_type A character value indicating the type of relational data being entered into \code{netwrite}. Available options are \code{edgelist}, \code{adjacency_matrix}, and \code{adjacency_list}.
 #' @param adjacency_matrix If \code{data_type} is set to \code{adjacency_matrix}, a matrix object containing the adjacency matrix for the network being processed.
 #' @param adjacency_list If \code{data_type} is set to \code{adjacency_list}, a data frame containing the adjacency list for the network being processed.
-#' @param nodelist Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If the latter, a value for \code{node_id} must be specified.
-#' @param node_id If a data frame is entered for the \code{nodelist} arugment, \code{node_id} should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
+#' @param edge_netid If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the specific network to which a particular edge belongs. This argument should be specified if the dataset in use contains multiple independent networks.
 #' @param i_elements If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the sender of ties in the edgelist.
 #' @param j_elements If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the receiver of ties in the edgelist.
+#' @param nodelist Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If the latter, a value for \code{node_id} must be specified.
+#' @param node_id If a data frame is entered for the \code{nodelist} argument, \code{node_id} should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
+#' @param node_netid If a data frame is entered for the \code{nodelist} argument, \code{node_netid} should be a character value indicating the name of the column in the node-level data frame containing unique network identifiers. This argument should be specified if a value is given for \code{edge_netid}.
 #' @param fix_nodelist If \code{data_type} is set to \code{"edgelist"} and user inputs a vector or data frame into \code{nodelist}, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, \code{fix_nodelist} is set to \code{FALSE} to identify potential inconsistencies between the nodelist and edgelist to the user.
 #' @param weights A numeric vector indicating the weight of ties in the edgelist. \code{netwrite} requires that all edge weights be positive values.
 #' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.
@@ -39,6 +41,8 @@
 #' If \code{output} contains \code{"largest_bi_component"}, \code{netwrite} will return an igraph object of the largest bicomponent in the network represented in the original data. If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing the largest bicomponent for each unique relation type as well as the overall network.
 #'
 #' If \code{output} contains \code{"largest_bi_component"}, \code{netwrite} will return an igraph object of the largest main component in the network represented in the original data. If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing the largest main component for each unique relation type as well as the overall network.
+#'
+#' If users are working with data containing multiple independent networks, \code{netwrite} will return a list containing the above outputs for each network in their data, provided that users have passed a vector of network identifiers to the \code{edge_netid} argument. Each network's output will be labeled according to its corresponding value in \code{edge_netid}.
 #'
 #' @export
 #'
@@ -79,6 +83,116 @@
 #'                      net_name = "triad_igraph")
 
 
+#################################################
+#    U S E R - F A C I N G   F U N C T I O N    #
+#################################################
+
+netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
+                     adjacency_list=FALSE,
+                     nodelist=FALSE,
+                     # `node_id` takes a character argument specifying
+                     # how the original node ID variable should be named
+                     # in output
+                     node_id = NULL,
+                     # `node_netid` takes a character argument specifying
+                     # which column in the nodelist contains the network identifier
+                     node_netid = NULL,
+
+
+                     i_elements=FALSE,
+                     j_elements=FALSE,
+                     # `edge_netid` takes the column from the edgelist containing
+                     # network identifiers
+                     edge_netid = NULL,
+                     # In the rare event that an edgelist contains node IDs that are
+                     # not in the nodelist, `fix_nodelist` will add these node IDs to the
+                     # nodelist used in network processing
+                     fix_nodelist = TRUE,
+                     # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
+                     weights=NULL, type=NULL,
+                     remove_loops = FALSE,
+                     missing_code=99999,
+                     weight_type='frequency', directed=FALSE,
+                     net_name='network',
+                     shiny = FALSE,
+                     output = c("graph",
+                                "largest_bi_component",
+                                "largest_component",
+                                "node_measure_plot",
+                                "nodelist",
+                                "edgelist",
+                                "system_level_measures",
+                                "system_measure_plot"),
+                     message = TRUE) {
+
+  if (!is.null(edge_netid)) {
+
+    # Create list for storing each context's output
+    context_list <- list()
+
+    # Get unique netid values
+    netid_vals <- unique(edge_netid)
+
+    # For each unique network ID, extract edgelist and, if applicable, nodelist
+    for (i in 1:length(netid_vals)) {
+
+      base::message(paste("Processing network ", netid_vals[[i]], sep = ""))
+
+      these_edges <- faux_edges[edge_netid == netid_vals[[i]],]
+      these_nodes <- FALSE
+
+      if ("data.frame" %in% class(nodelist)) {
+        these_nodes <- nodelist[nodelist[, node_netid] == netid_vals[[i]], ]
+      }
+
+
+      context_list[[i]] <- multi_netwrite(nodelist = these_nodes,
+                                          node_id = node_id,
+                                          i_elements = i_elements,
+                                          j_elements = j_elements,
+                                          fix_nodelist = fix_nodelist,
+                                          weights = weights,
+                                          type = type,
+                                          remove_loops = remove_loops,
+                                          missing_code = missing_code,
+                                          weight_type = weight_type,
+                                          directed = directed,
+                                          net_name = as.character(netid_vals[[i]]),
+                                          shiny = shiny,
+                                          output = output,
+                                          message = message)
+
+    }
+
+    names(context_list) <- netid_vals
+    return(context_list)
+
+
+  } else {
+
+    return(multi_netwrite(data_type = data_type,
+                          adjacency_matrix = adjacency_matrix,
+                          adjacency_list = adjacency_list,
+                          nodelist = nodelist,
+                          node_id = node_id,
+                          i_elements = i_elements,
+                          j_elements = j_elements,
+                          fix_nodelist = fix_nodelist,
+                          weights = weights,
+                          type = type,
+                          remove_loops = remove_loops,
+                          missing_code = missing_code,
+                          weight_type = weight_type,
+                          directed = directed,
+                          net_name = net_name,
+                          shiny = shiny,
+                          output = output,
+                          message = message))
+
+  }
+
+}
+
 
 ##########################################################
 #   PERFORMING MULTI-RELATIONAL FUNCTIONS IF SPECIFIED   #
@@ -89,7 +203,7 @@
 # edgelist present for which `basic_netwrite` needs to be applied to each relation type's
 # respective subgraph
 
-netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
+multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      adjacency_list=FALSE,
                      nodelist=FALSE,
                      # `node_id` takes a character argument specifying
