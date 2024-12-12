@@ -5,7 +5,7 @@
 #' @param data_type A character value indicating the type of relational data being entered into \code{netwrite}. Available options are \code{edgelist}, \code{adjacency_matrix}, and \code{adjacency_list}.
 #' @param adjacency_matrix If \code{data_type} is set to \code{adjacency_matrix}, a matrix object containing the adjacency matrix for the network being processed.
 #' @param adjacency_list If \code{data_type} is set to \code{adjacency_list}, a data frame containing the adjacency list for the network being processed.
-#' @param edgelist A data frame including all ties in the network. If this argument is specified, \code{i_elements}, \code{j_elements}, \code{weights} (if applicable), and \code{type} (if applicable), must be specified as single character values indicating the names of their respective columns.
+#' @param edgelist A data frame including all ties in the network. If this argument is specified, \code{i_elements}, \code{j_elements}, \code{edge_netid} (if applicable), \code{weights} (if applicable), and \code{type} (if applicable), must be specified as single character values indicating the names of their respective columns.
 #' @param edge_netid If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the specific network to which a particular tie in the edgelist belongs, or a single character value indicating the name of the column in \code{edgelist} containing network identifiers.
 #' @param i_elements If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the senders of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.
 #' @param j_elements If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the receivers of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.
@@ -127,6 +127,17 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      message = TRUE) {
 
   # browser()
+
+  # `netwrite` doesn't play nicely with tibbles, so if `nodelist` or `edgelist`
+  # are tibbles we'll need to convert them to data.frames
+
+  if ("tbl" %in% class(edgelist)) {
+    edgelist <- as.data.frame(edgelist)
+  }
+
+  if ("tbl" %in% class(nodelist)) {
+    nodelist <- as.data.frame(nodelist)
+  }
 
 
   if (data_type == "edgelist") {

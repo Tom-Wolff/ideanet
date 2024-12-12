@@ -42,7 +42,7 @@ netwrite(
 
 \item{node_netid}{If a data frame is entered for the \code{nodelist} argument, \code{node_netid} should be a character value indicating the name of the column in the node-level data frame containing unique network identifiers. This argument should be specified if a value is given for \code{edge_netid}.}
 
-\item{edgelist}{A data frame including all ties in the network. If this argument is specified, \code{i_elements}, \code{j_elements}, \code{weights} (if applicable), and \code{type} (if applicable), must be specified as single character values indicating the names of their respective columns.}
+\item{edgelist}{A data frame including all ties in the network. If this argument is specified, \code{i_elements}, \code{j_elements}, \code{edge_netid} (if applicable), \code{weights} (if applicable), and \code{type} (if applicable), must be specified as single character values indicating the names of their respective columns.}
 
 \item{i_elements}{If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the senders of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.}
 
