@@ -126,10 +126,14 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 "system_measure_plot"),
                      message = TRUE) {
 
+  # browser()
+
+
+  if (data_type == "edgelist") {
 
   # Check if edgelist-related arguments are names of columns rather than vectors
   # If this is the case, extract vectors
-  if (length(i_elements) == 1 & class(i_elements) == "character") {
+  if (length(i_elements) == 1 & is.character(i_elements)) {
      if ("data.frame" %in% class(edgelist)) {
         i_elements <- edgelist[, i_elements]
       } else {
@@ -137,7 +141,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       }
   }
 
-  if (length(j_elements) == 1 & class(j_elements) == "character") {
+  if (length(j_elements) == 1 & is.character(j_elements)) {
     if ("data.frame" %in% class(edgelist)) {
       j_elements <- edgelist[, j_elements]
     } else {
@@ -145,7 +149,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
   }
 
-  if (length(weights) == 1 & class(weights) == "character") {
+  if (length(weights) == 1 & is.character(weights)) {
     if ("data.frame" %in% class(edgelist)) {
       weights <- edgelist[, weights]
     } else {
@@ -153,7 +157,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
   }
 
-  if (length(type) == 1 & class(type) == "character") {
+  if (length(type) == 1 & is.character(type)) {
     if ("data.frame" %in% class(edgelist)) {
       type <- edgelist[, type]
     } else {
@@ -161,7 +165,52 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
   }
 
+  if (length(edge_netid) == 1 & is.character(edge_netid)) {
+    if ("data.frame" %in% class(edgelist)) {
+      edge_netid <- edgelist[, edge_netid]
+    } else {
+      stop("Edgelist data frame not given.")
+    }
+  }
 
+  # Create temporary edgelist to pass to sub-functions
+  temp_el <- data.frame(i_elements = i_elements,
+                        j_elements = j_elements)
+
+  if (!is.null(weights)) {
+    temp_el$weights = weights
+  } else {
+    temp_el$weights <- 1
+  }
+
+  if (!is.null(type)) {
+    temp_el$type = type
+  } else {
+    temp_el$type <- NA
+  }
+
+  if (!is.null(edge_netid)) {
+
+    # If network identifiers are numerics, make into a character
+    if (is.numeric(edge_netid)) {
+      edge_netid <- paste("network", edge_netid, sep = "")
+    }
+
+    temp_el$edge_netid = edge_netid
+  } else {
+    temp_el$edge_netid <- NA
+  }
+
+
+  if (!is.null(node_netid) ) {
+    if (is.numeric(nodelist[, node_netid])) {
+      nodelist[, node_netid] <- paste("network", nodelist[, node_netid], sep = "")
+    }
+  }
+
+
+
+  }
 
   if (!is.null(edge_netid)) {
 
@@ -176,21 +225,34 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       base::message(paste("Processing network ", netid_vals[[i]], sep = ""))
 
-      these_edges <- faux_edges[edge_netid == netid_vals[[i]],]
+      # FIX THIS, NEED TO CONSTRUCT THE EDGELIST HERE AT THE TOP
+      these_edges <- temp_el[edge_netid == netid_vals[[i]],]
       these_nodes <- FALSE
 
       if ("data.frame" %in% class(nodelist)) {
         these_nodes <- nodelist[nodelist[, node_netid] == netid_vals[[i]], ]
       }
 
+      if (min(these_edges$weights) == 1 & max(these_edges$weights) == 1) {
+        these_weights <- NULL
+      } else {
+        these_weights <- these_edges$weights
+      }
+
+      if (sum(is.na(these_edges$type)) == nrow(these_edges)) {
+        these_types <- NULL
+      } else {
+        these_types <- these_edges$type
+      }
+
 
       context_list[[i]] <- multi_netwrite(nodelist = these_nodes,
                                           node_id = node_id,
-                                          i_elements = i_elements,
-                                          j_elements = j_elements,
+                                          i_elements = these_edges$i_elements,
+                                          j_elements = these_edges$j_elements,
                                           fix_nodelist = fix_nodelist,
-                                          weights = weights,
-                                          type = type,
+                                          weights = these_weights,
+                                          type = these_types,
                                           remove_loops = remove_loops,
                                           missing_code = missing_code,
                                           weight_type = weight_type,

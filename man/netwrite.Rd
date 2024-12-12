@@ -11,6 +11,7 @@ netwrite(
   nodelist = FALSE,
   node_id = NULL,
   node_netid = NULL,
+  edgelist = FALSE,
   i_elements = FALSE,
   j_elements = FALSE,
   edge_netid = NULL,
@@ -41,17 +42,19 @@ netwrite(
 
 \item{node_netid}{If a data frame is entered for the \code{nodelist} argument, \code{node_netid} should be a character value indicating the name of the column in the node-level data frame containing unique network identifiers. This argument should be specified if a value is given for \code{edge_netid}.}
 
-\item{i_elements}{If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the sender of ties in the edgelist.}
+\item{edgelist}{A data frame including all ties in the network. If this argument is specified, \code{i_elements}, \code{j_elements}, \code{weights} (if applicable), and \code{type} (if applicable), must be specified as single character values indicating the names of their respective columns.}
 
-\item{j_elements}{If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the receiver of ties in the edgelist.}
+\item{i_elements}{If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the senders of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.}
 
-\item{edge_netid}{If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the specific network to which a particular edge belongs. This argument should be specified if the dataset in use contains multiple independent networks.}
+\item{j_elements}{If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the receivers of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.}
+
+\item{edge_netid}{If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the specific network to which a particular tie in the edgelist belongs, or a single character value indicating the name of the column in \code{edgelist} containing network identifiers.}
 
 \item{fix_nodelist}{If \code{data_type} is set to \code{"edgelist"} and user inputs a vector or data frame into \code{nodelist}, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, \code{fix_nodelist} is set to \code{FALSE} to identify potential inconsistencies between the nodelist and edgelist to the user.}
 
-\item{weights}{A numeric vector indicating the weight of ties in the edgelist. \code{netwrite} requires that all edge weights be positive values.}
+\item{weights}{If \code{data_type} is set to \code{"edgelist"}, a numeric vector indicating the weight of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing tie weights. \code{netwrite} requires that all edge weights be positive values.}
 
-\item{type}{A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.}
+\item{type}{If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the types of relationships represented in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing tie types. If \code{type} is specified, \code{netwrite} will treat network(s) as multi-relational and produce additional outputs reflecting the different types of ties appearing in the data.}
 
 \item{remove_loops}{A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.}
 
