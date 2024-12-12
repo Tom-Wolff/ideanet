@@ -130,19 +130,35 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   # Check if edgelist-related arguments are names of columns rather than vectors
   # If this is the case, extract vectors
   if (length(i_elements) == 1 & class(i_elements) == "character") {
-    i_elements <- edgelist[, i_elements]
+     if ("data.frame" %in% class(edgelist)) {
+        i_elements <- edgelist[, i_elements]
+      } else {
+        stop("Edgelist data frame not given.")
+      }
   }
 
   if (length(j_elements) == 1 & class(j_elements) == "character") {
-    j_elements <- edgelist[, j_elements]
+    if ("data.frame" %in% class(edgelist)) {
+      j_elements <- edgelist[, j_elements]
+    } else {
+      stop("Edgelist data frame not given.")
+    }
   }
 
   if (length(weights) == 1 & class(weights) == "character") {
-    weights <- edgelist[, weights]
+    if ("data.frame" %in% class(edgelist)) {
+      weights <- edgelist[, weights]
+    } else {
+      stop("Edgelist data frame not given.")
+    }
   }
 
   if (length(type) == 1 & class(type) == "character") {
-    type <- edgelist[, type]
+    if ("data.frame" %in% class(edgelist)) {
+      type <- edgelist[, type]
+    } else {
+      stop("Edgelist data frame not given.")
+    }
   }
 
 
