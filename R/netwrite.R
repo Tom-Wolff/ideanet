@@ -5,15 +5,16 @@
 #' @param data_type A character value indicating the type of relational data being entered into \code{netwrite}. Available options are \code{edgelist}, \code{adjacency_matrix}, and \code{adjacency_list}.
 #' @param adjacency_matrix If \code{data_type} is set to \code{adjacency_matrix}, a matrix object containing the adjacency matrix for the network being processed.
 #' @param adjacency_list If \code{data_type} is set to \code{adjacency_list}, a data frame containing the adjacency list for the network being processed.
-#' @param edge_netid If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the specific network to which a particular edge belongs. This argument should be specified if the dataset in use contains multiple independent networks.
-#' @param i_elements If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the sender of ties in the edgelist.
-#' @param j_elements If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the receiver of ties in the edgelist.
+#' @param edgelist A data frame including all ties in the network. If this argument is specified, \code{i_elements}, \code{j_elements}, \code{weights} (if applicable), and \code{type} (if applicable), must be specified as single character values indicating the names of their respective columns.
+#' @param edge_netid If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the specific network to which a particular tie in the edgelist belongs, or a single character value indicating the name of the column in \code{edgelist} containing network identifiers.
+#' @param i_elements If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the senders of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.
+#' @param j_elements If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the receivers of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.
+#' @param weights If \code{data_type} is set to \code{"edgelist"}, a numeric vector indicating the weight of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing tie weights. \code{netwrite} requires that all edge weights be positive values.
+#' @param type If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the types of relationships represented in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing tie types. If \code{type} is specified, \code{netwrite} will treat network(s) as multi-relational and produce additional outputs reflecting the different types of ties appearing in the data.
 #' @param nodelist Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If the latter, a value for \code{node_id} must be specified.
 #' @param node_id If a data frame is entered for the \code{nodelist} argument, \code{node_id} should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
 #' @param node_netid If a data frame is entered for the \code{nodelist} argument, \code{node_netid} should be a character value indicating the name of the column in the node-level data frame containing unique network identifiers. This argument should be specified if a value is given for \code{edge_netid}.
 #' @param fix_nodelist If \code{data_type} is set to \code{"edgelist"} and user inputs a vector or data frame into \code{nodelist}, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, \code{fix_nodelist} is set to \code{FALSE} to identify potential inconsistencies between the nodelist and edgelist to the user.
-#' @param weights A numeric vector indicating the weight of ties in the edgelist. \code{netwrite} requires that all edge weights be positive values.
-#' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
 #' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
 #' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"}, indicating that higher values represent stronger ties, and \code{"distance"}, indicating that higher values represent weaker ties. Note: some underlying functions assume that edges represent distances. If \code{weight_type} is set to \code{"frequency"}, these functions will use the reciprocal of \code{weights} as distance values in calculation.
@@ -98,7 +99,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      # which column in the nodelist contains the network identifier
                      node_netid = NULL,
 
-
+                     edgelist = FALSE,
                      i_elements=FALSE,
                      j_elements=FALSE,
                      # `edge_netid` takes the column from the edgelist containing
@@ -124,6 +125,43 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 "system_level_measures",
                                 "system_measure_plot"),
                      message = TRUE) {
+
+
+  # Check if edgelist-related arguments are names of columns rather than vectors
+  # If this is the case, extract vectors
+  if (length(i_elements) == 1 & class(i_elements) == "character") {
+     if ("data.frame" %in% class(edgelist)) {
+        i_elements <- edgelist[, i_elements]
+      } else {
+        stop("Edgelist data frame not given.")
+      }
+  }
+
+  if (length(j_elements) == 1 & class(j_elements) == "character") {
+    if ("data.frame" %in% class(edgelist)) {
+      j_elements <- edgelist[, j_elements]
+    } else {
+      stop("Edgelist data frame not given.")
+    }
+  }
+
+  if (length(weights) == 1 & class(weights) == "character") {
+    if ("data.frame" %in% class(edgelist)) {
+      weights <- edgelist[, weights]
+    } else {
+      stop("Edgelist data frame not given.")
+    }
+  }
+
+  if (length(type) == 1 & class(type) == "character") {
+    if ("data.frame" %in% class(edgelist)) {
+      type <- edgelist[, type]
+    } else {
+      stop("Edgelist data frame not given.")
+    }
+  }
+
+
 
   if (!is.null(edge_netid)) {
 
@@ -1494,7 +1532,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # EDGELIST
   } else {
-
 
     # Creating Canonical Node and Edgelists
     if (is.null(weights) == TRUE){
