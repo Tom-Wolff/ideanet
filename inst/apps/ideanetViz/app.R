@@ -395,7 +395,7 @@ server <- function(input, output, session) {
     # as.data.frame(network_edgelist)
   })
 
-  node_data <- shiny::reactive({
+  raw_node_data <- shiny::reactive({
     # path_edges = input$raw_edges$datapath
     # path_nodes = input$raw_nodes$datapath
     # as.data.frame(network_nodelist)
@@ -405,8 +405,9 @@ server <- function(input, output, session) {
 
     # If `raw_nodes` path is defined...
     if (is.character(test)) {
+
       # Reading CSV
-      if (input$select_file_type_edges == "csv") {
+      raw_nodes <- if (input$select_file_type_edges == "csv") {
         # network edgelist
         read.csv(input$raw_nodes$datapath, header = input$edge_header)
         # Reading Excel
@@ -417,10 +418,20 @@ server <- function(input, output, session) {
           as.data.frame(readxl::read_xls(path = input$raw_nodes$datapath, col_names = input$edge_header))
         }
       }
-      # Otherwise store as `NULL`
     } else {
       NULL
     }
+  })
+
+  node_data <- shiny::reactive({
+    raw_nodes <- raw_node_data()
+    shiny::req(raw_nodes)
+
+    if (shiny::isTruthy(input$node_context_value) && input$node_context_value != "Empty") {
+      raw_nodes <- raw_nodes[raw_nodes[[input$node_context_col]] == input$node_context_value, ]
+    }
+
+    raw_nodes
   })
 
   #Display Node Data
@@ -467,6 +478,11 @@ server <- function(input, output, session) {
                                        shiny::uiOutput("node_labels"),
                                        shiny::uiOutput("node_factor"),
                                        shiny::uiOutput("node_numeric"),
+                                       shiny::uiOutput("node_context_filter"),
+                                       shiny::conditionalPanel(
+                                         condition = "input.node_context_col != 'Empty'",
+                                         shiny::uiOutput("node_context_value")
+                                       ),
                                        tags$p(shiny::span("Questions with an asterisk are required.", style = "color:red")),
                                        tags$p(shiny::HTML("<b>Process</b> the node data by assigning the columns to their function.")),
                                        tags$p(shiny::HTML("The <b>node</b> <b>ids</b> should reflect ids in the edge list. It's required to correctly link the node attributes.")),
@@ -499,7 +515,19 @@ server <- function(input, output, session) {
     shiny::selectInput(inputId = "node_numeric_col", label = "Column with node sizes", choices = append("Empty",colnames(node_data())), multiple = FALSE)
 
   })
+  output$node_context_filter <- shiny::renderUI({
+    raw_nodes <- raw_node_data()
+    shiny::req(raw_nodes)
+    shiny::selectInput(inputId = "node_context_col", label = "Filter by context", choices = append("Empty", colnames(raw_nodes)), multiple = FALSE)
 
+  })
+  output$node_context_value <- shiny::renderUI({
+    raw_nodes <- raw_node_data()
+    shiny::req(input$node_context_col != "Empty")
+    unique_values <- unique(raw_nodes[[input$node_context_col]])
+    shiny::selectInput(inputId = "node_context_value", label = "Which context to use?", choices = append("Empty", unique_values), selected = "Empty", multiple = FALSE)
+
+  })
 
 
 nodes_used <- shiny::reactive({
@@ -582,6 +610,7 @@ nodes_used <- shiny::reactive({
 
   #### Create network 0 to run IDEANet ----
   net0 <- shiny::reactive({
+
     type_ret <- c()
     if (is.null(input$relational_column)) {
       type_ret = NULL
