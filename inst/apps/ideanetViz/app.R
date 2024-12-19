@@ -312,6 +312,7 @@ ui <- shiny::fluidPage(
 
 #Create server
 server <- function(input, output, session) {
+
   if(exists('edge_data')) {
     rm(edge_data)
   }
@@ -399,7 +400,6 @@ server <- function(input, output, session) {
   #     # }
 
   edge_data1 <- shiny::reactive({
-
     shiny::req(input$raw_edges)
 
     # If "Edgelist" is selected
@@ -415,34 +415,42 @@ server <- function(input, output, session) {
         } else {
           as.data.frame(readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header))
         }
-
-        # I THINK THIS IS WHERE EDGE CONTEXT FILTERING OCCURS
-
-
       }
       # If "Adjacency Matrix" is selected
     } else {
-
-
       as.data.frame(netread(path = input$raw_edges$datapath,
                             filetype = input$select_file_type_edges,
                             col_names = input$edge_header,
                             row_names = input$edge_names,
                             format = "adjacency_matrix")$edgelist)
-
     }
-    })
+  })
 
-    edge_data <- shiny::reactive({
-      edge_data <- edge_data1()
-      shiny::req(edge_data)
 
-      if (shiny::isTruthy(input$edge_context_value) && input$edge_context_value != "Empty") {
-        edge_data[edge_data[[input$edge_context_column]] == input$edge_context_value, ]
-      } else {
-        edge_data
-      }
-    })
+  edge_data <- shiny::reactive({
+    edge_data <- edge_data1()
+    shiny::req(edge_data)
+
+    # First apply edge context filtering if it exists
+    if (shiny::isTruthy(input$edge_context_value) && input$edge_context_value != "Empty") {
+      edge_data <- edge_data[edge_data[[input$edge_context_column]] == input$edge_context_value, ]
+    }
+
+    valid_node_ids <- unique_node_ids()
+    if (!is.null(valid_node_ids) &&
+        !is.null(input$edge_in_col) && input$edge_in_col != "Empty" &&
+        !is.null(input$edge_out_col) && input$edge_out_col != "Empty") {
+
+      # Filter edges to only include those where both nodes are in valid_node_ids
+      edge_data <- edge_data[
+        edge_data[[input$edge_in_col]] %in% valid_node_ids &
+          edge_data[[input$edge_out_col]] %in% valid_node_ids,
+      ]
+    }
+
+    edge_data
+
+  })
 
 
     # MAKE EDGE DATA 2, WHERE FILTERING ON CONTEXT OCCURS
@@ -474,21 +482,10 @@ server <- function(input, output, session) {
     # as.data.frame(network_edgelist)
 
   raw_node_data <- shiny::reactive({
-    # path_edges = input$raw_edges$datapath
-    # path_nodes = input$raw_nodes$datapath
-    # as.data.frame(network_nodelist)
-    print(exists("raw_nodes"))
     test <- input$raw_nodes$datapath
-    print(test)
-
-    # If `raw_nodes` path is defined...
     if (is.character(test)) {
-
-      # Reading CSV
-      raw_nodes <- if (input$select_file_type_edges == "csv") {
-        # network edgelist
+      if (input$select_file_type_edges == "csv") {
         read.csv(input$raw_nodes$datapath, header = input$edge_header)
-        # Reading Excel
       } else {
         if(stringr::str_detect(input$raw_nodes$datapath, "xlsx$")) {
           as.data.frame(readxl::read_xlsx(path = input$raw_nodes$datapath, col_names = input$edge_header))
@@ -501,11 +498,25 @@ server <- function(input, output, session) {
     }
   })
 
-  node_data <- shiny::reactive({
+  # store node columns
+  node_columns <- shiny::reactive({
     raw_nodes <- raw_node_data()
-    shiny::req(raw_nodes)
+    if(!is.null(raw_nodes)) {
+      colnames(raw_nodes)
+    } else {
+      NULL
+    }
+  })
 
-    if (shiny::isTruthy(input$node_context_value) && input$node_context_value != "Empty") {
+  node_data <- shiny::reactive({
+
+    if (is.null(input$raw_nodes)) {
+      return(NULL)
+    }
+
+    raw_nodes <- raw_node_data()
+    if (!is.null(raw_nodes) &&
+        shiny::isTruthy(input$node_context_value) && input$node_context_value != "Empty") {
       raw_nodes <- raw_nodes[raw_nodes[[input$node_context_col]] == input$node_context_value, ]
     }
 
@@ -523,6 +534,24 @@ server <- function(input, output, session) {
     node_data()
   })
 
+  #Store node ids
+  unique_node_ids <- shiny::reactiveVal()
+
+ observe({
+   filtered_nodes <- node_data()
+
+   if (is.null(filtered_nodes)) {
+     unique_node_ids(NULL)
+     return()
+   }
+
+   if (!is.null(input$node_id_col) &&
+       input$node_id_col != "Empty") {
+     unique_ids <- unique(filtered_nodes[[input$node_id_col]])
+     unique_node_ids(unique_ids)
+     print(paste("length of unique node IDs:", print(length(unique_ids))))
+   }
+ })
 
   #Display Edge Data
   output$edge_raw_upload <- shiny::renderDataTable({
@@ -582,8 +611,11 @@ server <- function(input, output, session) {
   #Node Processing Options
 
   output$node_ids <- shiny::renderUI({
-
-    shiny::selectInput(inputId = "node_id_col", label = "Column with node IDs*", choices = append("Empty",colnames(node_data())), selected = 'N/A', multiple = FALSE)
+    shiny::req(node_columns())
+    shiny::selectInput(inputId = "node_id_col", label = "Column with node ids*", choices = append("Empty", node_columns()),
+                       selected = if(!is.null(input$node_id_col) && input$node_id_col != "Empty") input$node_id_col else "N/A",
+                       multiple = FALSE
+    )
 
   })
   output$node_labels <- shiny::renderUI({
@@ -613,12 +645,12 @@ server <- function(input, output, session) {
     shiny::selectInput(inputId = "node_context_col", label = "Column with network IDs", choices = append("Empty", colnames(raw_nodes)), multiple = FALSE)
 
   })
+
   output$node_context_value <- shiny::renderUI({
     raw_nodes <- raw_node_data()
     shiny::req(input$node_context_col != "Empty")
     unique_values <- unique(raw_nodes[[input$node_context_col]])
     shiny::selectInput(inputId = "node_context_value", label = "Which network to use?", choices = append("Empty", unique_values), selected = "Empty", multiple = FALSE)
-
   })
 
 
@@ -649,8 +681,6 @@ server <- function(input, output, session) {
       nodes_done(NULL)
     }
   })
-
-
 
   #Edge Processing Options
   output$edge_in <- shiny::renderUI({
@@ -725,56 +755,47 @@ server <- function(input, output, session) {
     if (is.null(input$relational_column)) {
       type_ret = NULL
     } else if (input$relational_column == "Empty") {
-      type_ret = NULL } else {
+      type_ret = NULL
+      } else {
         type_ret <- edge_data()[,input$relational_column]
       }
-    if (!is.null(input$raw_nodes) & shiny::isTruthy(input$node_id_col))  {
+
+
+    if (!is.null(input$raw_nodes) & shiny::isTruthy(input$node_id_col)) {
       if (input$node_id_col != "Empty") {
         print('started netwrite 1')
-        list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                          adjacency_list=FALSE, nodelist=node_data(),
-                          node_id=input$node_id_col,
-                          i_elements=edge_data()[,input$edge_in_col],
-                          j_elements=edge_data()[,input$edge_out_col],
-                          weights=initial_edge(),
-                          type=type_ret,
-                          missing_code=99999, weight_type='frequency',
-                          directed=input$direction_toggle,
-                          net_name='init_net',
-                          shiny=TRUE),
-                 .GlobalEnv)
-        print('processed netwrite')
-        init_net
-
-      } else {
-        print('started netwrite 2')
-        list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                          adjacency_list=FALSE,
-                          i_elements=edge_data()[,input$edge_in_col],
-                          j_elements=edge_data()[,input$edge_out_col],
-                          weights=initial_edge(),
-                          type=type_ret,
-                          missing_code=99999, weight_type='frequency',
-                          directed=input$direction_toggle,
-                          net_name='init_net',shiny=TRUE),
-                 .GlobalEnv)
-        print('processed netwrite')
-        init_net
+        list2env(netwrite(
+          data_type = c('edgelist'), adjacency_matrix = FALSE,
+          adjacency_list = FALSE, nodelist = node_data(),
+          node_id = input$node_id_col,
+          i_elements = edge_data()[, input$edge_in_col],
+          j_elements = edge_data()[, input$edge_out_col],
+          weights = initial_edge(),
+          type = type_ret,
+          missing_code = 99999, weight_type = 'frequency',
+          directed = input$direction_toggle,
+          net_name = 'init_net',
+          shiny = TRUE
+        ), .GlobalEnv)
+        print('processed netwrite 1')
+        return(init_net)
       }
     } else {
-      print('started netwrite 3')
-      list2env(netwrite(data_type = c('edgelist'), adjacency_matrix=FALSE,
-                        adjacency_list=FALSE,
-                        i_elements=edge_data()[,input$edge_in_col],
-                        j_elements=edge_data()[,input$edge_out_col],
-                        weights=initial_edge(),
-                        type=type_ret,
-                        missing_code=99999, weight_type='frequency',
-                        directed=input$direction_toggle,
-                        net_name='init_net',shiny=TRUE),
-               .GlobalEnv)
-      print('processed netwrite')
-      init_net
+      print('started netwrite 2')
+      list2env(netwrite(
+        data_type = c('edgelist'), adjacency_matrix = FALSE,
+        adjacency_list = FALSE,
+        i_elements = edge_data()[, input$edge_in_col],
+        j_elements = edge_data()[, input$edge_out_col],
+        weights = initial_edge(),
+        type = type_ret,
+        missing_code = 99999, weight_type = 'frequency',
+        directed = input$direction_toggle,
+        net_name = 'init_net',
+        shiny = TRUE
+      ), .GlobalEnv)
+      print('processed netwrite 2')
+      return(init_net)
     }
   })
 
