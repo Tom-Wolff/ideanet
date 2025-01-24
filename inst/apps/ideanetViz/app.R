@@ -518,6 +518,7 @@ server <- function(input, output, session) {
     if (!is.null(raw_nodes) &&
         shiny::isTruthy(input$node_context_value) && input$node_context_value != "Empty") {
       raw_nodes <- raw_nodes[raw_nodes[[input$node_context_col]] == input$node_context_value, ]
+      raw_nodes <- raw_nodes[!duplicated(raw_nodes[[input$node_id_col]]), ]
     }
 
     raw_nodes
@@ -680,6 +681,18 @@ server <- function(input, output, session) {
     else{
       nodes_done(NULL)
     }
+  })
+
+  observeEvent(input$node_context_value, {
+    shiny::req(input$node_context_value)
+    nodes <- node_data()
+    edges <- edge_data()
+
+    filtered_node_ids <- nodes[[input$node_id_col]]
+    edge_data <- edges[
+      edges[[input$edge_in_col]] %in% filtered_node_ids &
+        edges[[input$edge_out_col]] %in% filtered_node_ids,
+    ]
   })
 
   #Edge Processing Options
@@ -1258,6 +1271,21 @@ server <- function(input, output, session) {
   net8 <-
     shiny::reactive({
       net <- net5()
+
+      if (input$multi_context_toggle) {
+        shiny::req(input$edge_context_value)
+        net <- igraph::delete.edges(net, igraph::E(net)[
+          !igraph::E(net)$edge_context_col %in% input$edge_context_value
+        ])
+      }
+
+      if (input$multi_context_toggle) {
+        shiny::req(input$node_context_value)
+        net <- igraph::delete.vertices(net, igraph::V(net)[
+          !igraph::V(net)$node_context_col %in% input$node_context_value
+        ])
+      }
+
       if (input$multi_relational_toggle == TRUE) {
         if (input$filter_relation_type != 'None') {
           net <- igraph::delete.edges(net, igraph::E(net)[igraph::E(net)$type == input$filter_relation_type])
