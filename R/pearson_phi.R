@@ -32,11 +32,9 @@
 #'                       j_elements = ngq_aa$alter2,
 #'                       directed = FALSE)
 #'
-#'# Split items into Global Environment
-#'list2env(ngq_nw, .GlobalEnv)
 #'
-#'race_pphi <- pearson_phi(ego_id = egos$ego_id, ego_measure = egos$race,
-#'                         alter_ego = alters$ego_id, alter_measure = alters$race,
+#'race_pphi <- pearson_phi(ego_id = ngq_nw$egos$ego_id, ego_measure = ngq_nw$egos$race,
+#'                         alter_ego = ngq_nw$alters$ego_id, alter_measure = ngq_nw$alters$race,
 #'                         suffix = "race")
 #'
 #'race_pphi
