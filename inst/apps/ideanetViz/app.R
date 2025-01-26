@@ -136,7 +136,8 @@ ui <- shiny::fluidPage(
             shiny::uiOutput('toggle_relational_coloring')
           ),
           shiny::uiOutput('interactive'),
-          shiny::uiOutput('edge_weight_method')
+          shiny::uiOutput('edge_weight_method'),
+          shiny::br()
           #shiny::uiOutput('edge_weight_scalar'),
         ),
         shiny::mainPanel(
@@ -685,14 +686,16 @@ server <- function(input, output, session) {
 
   observeEvent(input$node_context_value, {
     shiny::req(input$node_context_value)
-    nodes <- node_data()
-    edges <- edge_data()
+    if (nodes_done()) {
+      nodes <- node_data()
+      edges <- edge_data()
 
-    filtered_node_ids <- nodes[[input$node_id_col]]
-    edge_data <- edges[
-      edges[[input$edge_in_col]] %in% filtered_node_ids &
+      filtered_node_ids <- nodes[[input$node_id_col]]
+      edge_data <- edges[
+        edges[[input$edge_in_col]] %in% filtered_node_ids &
         edges[[input$edge_out_col]] %in% filtered_node_ids,
-    ]
+      ]
+    }
   })
 
   #Edge Processing Options
@@ -1295,6 +1298,10 @@ server <- function(input, output, session) {
             net <- igraph::delete_edge_attr(net,'color')
           }
         }}
+
+      if (length(igraph::E(net)) == 0 || length(igraph::V(net)) == 0) {
+        stop("The graph is empty after filtering. Check your context or data.")
+      }
 
       net.visn <- visNetwork::toVisNetworkData(net)
 
