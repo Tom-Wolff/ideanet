@@ -1,5 +1,9 @@
 # Integrating Data Exchange and Analysis for Networks (IDEANet)
 
+<!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/ideanet)](https://CRAN.R-project.org/package=ideanet)
+<!-- badges: end -->
+
 <p align="center">
     <img width="400" src="https://github.com/Tom-Wolff/ideanet/assets/36702189/9f0b61b5-9106-4ca4-baa3-c3b2309b4c0f" alt="IDEANet logo">
 </p>
