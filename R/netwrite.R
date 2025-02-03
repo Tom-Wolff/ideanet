@@ -192,6 +192,16 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     original_nodelist_names[which(original_nodelist_names == "name")] <- "original_name"
     colnames(original_nodelist) <- original_nodelist_names
 
+    # Trying this-- if `node_id` is set to `"name"` or `"id"`, change its value to
+    # `"original_name"` or `"original_id"`, respectively
+    if (node_id == "id") {
+      node_id <- "original_id"
+    }
+
+    if (node_id == "name") {
+      node_id <- "original_name"
+    }
+
     # When we iterate over each relation type, we only want to input
     # the vector of node IDs rather than the full nodelist dataframe
     # (if available). If we keep running netwrite over the full
