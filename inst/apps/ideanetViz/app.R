@@ -430,27 +430,35 @@ server <- function(input, output, session) {
 
   edge_data <- shiny::reactive({
     edge_data <- edge_data1()
-    shiny::req(edge_data)
+    shiny::req(edge_data, node_data())  # Ensure nodes are loaded
 
-    # First apply edge context filtering if it exists
+    # Apply context filter if selected
     if (shiny::isTruthy(input$edge_context_value) && input$edge_context_value != "Empty") {
       edge_data <- edge_data[edge_data[[input$edge_context_column]] == input$edge_context_value, ]
     }
 
-    valid_node_ids <- unique_node_ids()
-    if (!is.null(valid_node_ids) &&
-        !is.null(input$edge_in_col) && input$edge_in_col != "Empty" &&
-        !is.null(input$edge_out_col) && input$edge_out_col != "Empty") {
-
-      # Filter edges to only include those where both nodes are in valid_node_ids
+    # Filter edges to only include nodes present in the filtered node dataset
+    valid_node_ids <- unique(node_data()[[input$node_id_col]])
+    if (!is.null(valid_node_ids) && !is.null(input$edge_in_col) && !is.null(input$edge_out_col)) {
       edge_data <- edge_data[
         edge_data[[input$edge_in_col]] %in% valid_node_ids &
           edge_data[[input$edge_out_col]] %in% valid_node_ids,
       ]
     }
 
-    edge_data
+    return(edge_data)
+  })
 
+
+  filtered_edges <- shiny::reactive({
+    edge_data <- edge_data1()
+    shiny::req(edge_data, input$edge_context_value)
+
+    if (input$edge_context_value != "Empty") {
+      edge_data <- edge_data[edge_data[[input$edge_context_column]] == input$edge_context_value, ]
+    }
+
+    edge_data
   })
 
 
@@ -510,20 +518,20 @@ server <- function(input, output, session) {
   })
 
   node_data <- shiny::reactive({
-
-    if (is.null(input$raw_nodes)) {
-      return(NULL)
-    }
+    shiny::req(input$raw_nodes)
 
     raw_nodes <- raw_node_data()
-    if (!is.null(raw_nodes) &&
-        shiny::isTruthy(input$node_context_value) && input$node_context_value != "Empty") {
-      raw_nodes <- raw_nodes[raw_nodes[[input$node_context_col]] == input$node_context_value, ]
+
+    if (!is.null(raw_nodes)) {
+      if (shiny::isTruthy(input$node_context_value) && input$node_context_value != "Empty") {
+        raw_nodes <- raw_nodes[raw_nodes[[input$node_context_col]] == input$node_context_value, ]
+      }
       raw_nodes <- raw_nodes[!duplicated(raw_nodes[[input$node_id_col]]), ]
     }
 
-    raw_nodes
+    return(raw_nodes)
   })
+
 
   #Display Node Data
   output$node_raw_upload <- shiny::renderDataTable({
@@ -685,16 +693,19 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$node_context_value, {
-    shiny::req(input$node_context_value)
+    shiny::req(input$node_context_value, node_data(), edge_data(), input$edge_in_col, input$edge_out_col)
+
     if (nodes_done()) {
       nodes <- node_data()
       edges <- edge_data()
 
-      filtered_node_ids <- nodes[[input$node_id_col]]
-      edge_data <- edges[
-        edges[[input$edge_in_col]] %in% filtered_node_ids &
-        edges[[input$edge_out_col]] %in% filtered_node_ids,
-      ]
+      if (!is.null(nodes) && !is.null(edges) && input$node_id_col != "Empty") {
+        filtered_node_ids <- nodes[[input$node_id_col]]
+        edges <- edges[
+          edges[[input$edge_in_col]] %in% filtered_node_ids &
+            edges[[input$edge_out_col]] %in% filtered_node_ids,
+        ]
+      }
     }
   })
 
@@ -766,54 +777,60 @@ server <- function(input, output, session) {
 
   #### Create network 0 to run IDEANet ----
   net0 <- shiny::reactive({
+    type_ret <- NULL
+    if (!is.null(input$relational_column) && input$relational_column != "Empty") {
+      type_ret <- edge_data()[, input$relational_column]
+    }
 
-    type_ret <- c()
-    if (is.null(input$relational_column)) {
-      type_ret = NULL
-    } else if (input$relational_column == "Empty") {
-      type_ret = NULL
-      } else {
-        type_ret <- edge_data()[,input$relational_column]
-      }
+    # Use only filtered edges and nodes
+    filtered_edges_data <- edge_data()
+    filtered_nodes_data <- node_data()
 
+    if (!is.null(input$raw_nodes) && shiny::isTruthy(input$node_id_col) && input$node_id_col != "Empty") {
+      print('Started netwrite with filtered nodes and edges')
 
-    if (!is.null(input$raw_nodes) & shiny::isTruthy(input$node_id_col)) {
-      if (input$node_id_col != "Empty") {
-        print('started netwrite 1')
-        list2env(netwrite(
-          data_type = c('edgelist'), adjacency_matrix = FALSE,
-          adjacency_list = FALSE, nodelist = node_data(),
-          node_id = input$node_id_col,
-          i_elements = edge_data()[, input$edge_in_col],
-          j_elements = edge_data()[, input$edge_out_col],
-          weights = initial_edge(),
-          type = type_ret,
-          missing_code = 99999, weight_type = 'frequency',
-          directed = input$direction_toggle,
-          net_name = 'init_net',
-          shiny = TRUE
-        ), .GlobalEnv)
-        print('processed netwrite 1')
-        return(init_net)
-      }
-    } else {
-      print('started netwrite 2')
       list2env(netwrite(
-        data_type = c('edgelist'), adjacency_matrix = FALSE,
+        data_type = c('edgelist'),
+        adjacency_matrix = FALSE,
         adjacency_list = FALSE,
-        i_elements = edge_data()[, input$edge_in_col],
-        j_elements = edge_data()[, input$edge_out_col],
+        nodelist = filtered_nodes_data,  # Use filtered nodes
+        node_id = input$node_id_col,
+        i_elements = filtered_edges_data[, input$edge_in_col],
+        j_elements = filtered_edges_data[, input$edge_out_col],
         weights = initial_edge(),
         type = type_ret,
-        missing_code = 99999, weight_type = 'frequency',
+        missing_code = 99999,
+        weight_type = 'frequency',
         directed = input$direction_toggle,
         net_name = 'init_net',
         shiny = TRUE
       ), .GlobalEnv)
-      print('processed netwrite 2')
+
+      print('Processed netwrite with filtered data')
+      return(init_net)
+    } else {
+      print('Started netwrite without nodes')
+
+      list2env(netwrite(
+        data_type = c('edgelist'),
+        adjacency_matrix = FALSE,
+        adjacency_list = FALSE,
+        i_elements = filtered_edges_data[, input$edge_in_col],
+        j_elements = filtered_edges_data[, input$edge_out_col],
+        weights = initial_edge(),
+        type = type_ret,
+        missing_code = 99999,
+        weight_type = 'frequency',
+        directed = input$direction_toggle,
+        net_name = 'init_net',
+        shiny = TRUE
+      ), .GlobalEnv)
+
+      print('Processed netwrite without nodes')
       return(init_net)
     }
   })
+
 
   #### Add node attributes ----
 
@@ -1278,14 +1295,14 @@ server <- function(input, output, session) {
       if (input$multi_context_toggle) {
         shiny::req(input$edge_context_value)
         net <- igraph::delete.edges(net, igraph::E(net)[
-          !igraph::E(net)$edge_context_col %in% input$edge_context_value
+          !igraph::E(net)$edge_context_column %in% input$edge_context_value
         ])
       }
 
       if (input$multi_context_toggle) {
         shiny::req(input$node_context_value)
         net <- igraph::delete.vertices(net, igraph::V(net)[
-          !igraph::V(net)$node_context_col %in% input$node_context_value
+          !igraph::V(net)$node_context_column %in% input$node_context_value
         ])
       }
 
