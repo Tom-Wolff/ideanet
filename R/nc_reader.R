@@ -297,14 +297,14 @@ nc_read <- function(
 
   if (!is.null(protocol)) {
 
-    # Remove filename from protocol path
-    exdir_path <- paste(stringr::str_extract(protocol, ".*\\/"), "nc_unzip/", sep = "")
+    # Create temporary directory for unzipping the protocol file
+    exdir_temp <- tempdir()
 
     # Extract protocol file contents
-    utils::unzip(protocol, exdir = exdir_path)
+    utils::unzip(protocol, exdir = exdir_temp)
 
     # Read in JSON
-    nc_json <- jsonlite::fromJSON(paste(exdir_path, "protocol.json", sep = ""))
+    nc_json <- jsonlite::fromJSON(paste(exdir_temp, "protocol.json", sep = "/"))
 
     # Extract codebook
     codebook <- nc_json$codebook
