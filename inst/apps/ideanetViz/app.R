@@ -522,11 +522,16 @@ server <- function(input, output, session) {
 
     raw_nodes <- raw_node_data()
 
-    if (!is.null(raw_nodes)) {
+    # Ensure the file is not empty
+    if (!is.null(raw_nodes) && nrow(raw_nodes) > 0) {
       if (shiny::isTruthy(input$node_context_value) && input$node_context_value != "Empty") {
         raw_nodes <- raw_nodes[raw_nodes[[input$node_context_col]] == input$node_context_value, ]
       }
-      raw_nodes <- raw_nodes[!duplicated(raw_nodes[[input$node_id_col]]), ]
+      if (!is.null(input$node_id_col) && input$node_id_col != "Empty" && input$node_id_col %in% colnames(raw_nodes)) {
+        raw_nodes <- raw_nodes[!duplicated(raw_nodes[[input$node_id_col]]), ]
+      }
+    } else {
+      return(NULL)
     }
 
     return(raw_nodes)
@@ -1444,6 +1449,17 @@ server <- function(input, output, session) {
     shiny::selectInput(inputId = "measure_chooser", label = "Choose Summary Level", choices = c("System", "Node"), selected = "System", multiple = FALSE)
   })
 
+  output$relation_selector <- shiny::renderUI({
+    shiny::validate(
+      shiny::need(input$raw_edges, 'Upload Edge Data!')
+    )
+
+    if (input$multi_relational_toggle == TRUE && !is.null(input$relational_column) && input$relational_column != "Empty") {
+      relations <- unique(edge_data()[[input$relational_column]])
+      shiny::selectInput('relation_selector', 'Select Relation Type', choices = relations, selected = relations[1])
+    }
+  })
+
   ### Visualize summary statistics ----
 
   output$system_level_chooser <- shiny::renderUI({
@@ -1455,7 +1471,7 @@ server <- function(input, output, session) {
       # shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
     )
     if (input$multi_relational_toggle == TRUE) {
-      shiny::selectInput('system_level_chooser', 'Choose which relation you want to visualize', choices = names(system_measure_plot), selected = NULL)
+      shiny::uiOutput("relation_selector")
     }
   })
 
@@ -1468,7 +1484,7 @@ server <- function(input, output, session) {
       shiny::need(nodes_done(), 'Select node id column!')
     )
     if (input$multi_relational_toggle == TRUE) {
-      shiny::selectInput('node_level_chooser', 'Choose which relation you want to visualize', choices = names(node_measure_plot), selected = NULL)
+      shiny::uiOutput("relation_selector")
     }
   })
 
@@ -1483,13 +1499,14 @@ server <- function(input, output, session) {
       )
 
       # Multirelational
-      if(input$multi_relational_toggle == TRUE) {
+      if (input$multi_relational_toggle == TRUE) {
+        selected_relation <- input$relation_selector
+
         if (input$measure_chooser == "System") {
-          plot(system_measure_plot[[match(input$system_level_chooser,names(system_measure_plot))]])
+          plot(system_measure_plot[[selected_relation]])
         } else {
-          plot(node_measure_plot[[match(input$node_level_chooser,names(node_measure_plot))]])
+          plot(node_measure_plot[[selected_relation]])
         }
-        # Single Relation
       } else {
         if (input$measure_chooser == "System") {
           plot(system_measure_plot)
@@ -1497,7 +1514,6 @@ server <- function(input, output, session) {
           plot(node_measure_plot)
         }
       }
-
     })
 
   ### Visualize nodemeasures ----
