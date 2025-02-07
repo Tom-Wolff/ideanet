@@ -773,6 +773,11 @@ bonacich <- function(matrix, bpct = .75) {
     # so that results are consistent with what we get in SAS, but this is something
     # we need to confirm and possibly be wary of.
 
+    if (is.complex(maxev)) {
+      bonacich_output <- data.frame(bonacich = rep(0, n), bon_centralization = rep(0, n))
+      base::warning("Maximum eigenvector value is complex number. Bonacich centrality scores will be set to 0.")
+    } else {
+
     # Key equation, this is the centrality score
     C <- (Matrix::t(Matrix::solve(i-b*matrix)))%*%Matrix::t(matrix)%*%w
 
@@ -787,6 +792,8 @@ bonacich <- function(matrix, bpct = .75) {
 
     # Collect power centrality scores and centralization scores into single dataframe
     bonacich_output <- data.frame(bonacich = cent, bon_centralization = NBCNT)
+
+    }
 
   }
 
@@ -943,6 +950,9 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 # }
 
 eigen_custom <- function(matrix) {
+
+  # browser()
+
   # To replicate output from SAS, we first need to transpose the adjacency matrix
   # eigen_calc <- eigen(t(matrix))
 
