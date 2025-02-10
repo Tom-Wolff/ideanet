@@ -650,40 +650,89 @@ burt_ch <- function(g) {
 #   efsize <- deg - redun
 #   return(efsize)
 # }
+#
+# ef2 <- function(g) {
+#
+#   # browser()
+#
+#   # Convert igraph object to adjmat
+#   # mat <- igraph::as_adjacency_matrix(igraph::as.undirected(g))
+#   ### If igraph object doesn't contain a `weight` attribute, create one and set
+#   ### all values to `1`:
+#   if (!("weight" %in% names(igraph::edge.attributes(g)))) {
+#     igraph::E(g)$weight <- 1
+#   }
+#
+#   mat <- igraph::as_adjacency_matrix(igraph::as.undirected(g), attr = "weight")
+#
+#   deg <- Matrix::rowSums(mat)
+#   redun <- rep(0, nrow(mat))
+#   # mat <- mat - diag(diag(mat))
+#   dumb_diagonal <- which(row(mat) == col(mat))
+#   dumb_diagonal2 <- mat[dumb_diagonal]
+#
+#   mat <- mat - Matrix::Diagonal(x = dumb_diagonal2)
+#
+#   for (i in 1:nrow(mat)) {
+#     if (deg[i] > 0) {
+#       egoi <- which(mat[i, ] > 0)
+#       d <- length(egoi)
+#       submat <- mat[egoi, egoi]
+#       t <- sum(submat)
+#       redun[i] <- t / d
+#     }
+#   }
+#   efsize <- deg - redun
+#   return(efsize)
+# }
+
 
 ef2 <- function(g) {
 
   # browser()
 
-  # Convert igraph object to adjmat
-  # mat <- igraph::as_adjacency_matrix(igraph::as.undirected(g))
-  ### If igraph object doesn't contain a `weight` attribute, create one and set
-  ### all values to `1`:
-  if (!("weight" %in% names(igraph::edge.attributes(g)))) {
-    igraph::E(g)$weight <- 1
+  # Get adjacency matrix (weighted)
+  if (igraph::is_weighted(g)) {
+    A <- igraph::as_adjacency_matrix(g, attr = "weight", sparse = TRUE)
+  } else {
+    A <- igraph::as_adjacency_matrix(g, sparse = TRUE)
   }
+  n <- nrow(A)  # Number of nodes
 
-  mat <- igraph::as_adjacency_matrix(igraph::as.undirected(g), attr = "weight")
+  eff_size <- numeric(n)  # Storage for effective sizes
 
-  deg <- Matrix::rowSums(mat)
-  redun <- rep(0, nrow(mat))
-  # mat <- mat - diag(diag(mat))
-  dumb_diagonal <- which(row(mat) == col(mat))
-  dumb_diagonal2 <- mat[dumb_diagonal]
-
-  mat <- mat - Matrix::Diagonal(x = dumb_diagonal2)
-
-  for (i in 1:nrow(mat)) {
-    if (deg[i] > 0) {
-      egoi <- which(mat[i, ] > 0)
-      d <- length(egoi)
-      submat <- mat[egoi, egoi]
-      t <- sum(submat)
-      redun[i] <- t / d
+  for (i in 1:n) {
+    neighbors <- which(A[i, ] > 0)  # Ego's direct contacts
+    if (length(neighbors) == 0) {
+      eff_size[i] <- 0  # Isolated nodes have effective size 0
+      next
     }
+
+    # Compute p_{iq}: proportion of i's investment in each contact q
+    total_i_ties <- sum(A[i, ])
+    p_iq <- A[i, ] / total_i_ties
+
+    # Compute m_{qj}: normalized investment of q in j, excluding i
+    m_qj <- matrix(0, n, n)  # Store m_qj values
+    for (q in neighbors) {
+      alters_of_q <- which(A[q, ] > 0 & seq_len(n) != i)  # Exclude i
+      alters_of_q2 <- which(A[q, ] > 0 & seq_len(n) %in% neighbors)
+      if (length(alters_of_q) > 0) {
+        # total_q_ties_excluding_i <- sum(A[q, alters_of_q])
+        total_q_ties_excluding_i <- max(A[q, alters_of_q])
+        m_qj[q, alters_of_q2] <- A[q, alters_of_q2] / total_q_ties_excluding_i
+      }
+    }
+
+    # Compute redundancy for ego i
+    redundancy <- colSums(p_iq * m_qj, na.rm = TRUE)
+
+    # Compute effective size
+    eff_size[i] <- sum(1 - redundancy[neighbors])
+
   }
-  efsize <- deg - redun
-  return(efsize)
+
+  return(eff_size)  # Return with node names
 }
 
 #########################
