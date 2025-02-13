@@ -50,6 +50,19 @@ comm_detect <- function(g, modres=1,
                         slow_routines = FALSE,
                         shiny = FALSE) {
 
+  # browser()
+
+  # The `slow_routines` threshold of 5,000 nodes is usually too time-intensive
+  # for reasonable use in the Shiny app, even when it's passable in RStudio.
+  # We're going to set another, much smaller threshold for the Shiny app.
+  # Initial value set 2.13.25, but subject to change.
+  if (shiny == FALSE) {
+    shiny_skip <- FALSE
+  } else {
+      n_nodes <- igraph::vcount(g)
+      n_edges <- igraph::ecount(g)
+      shiny_skip <- n_nodes*n_edges > 100
+  }
 
 
   # Change ARPACK defaults
@@ -107,7 +120,10 @@ comm_detect <- function(g, modres=1,
   }
 
   if (n > 5000 & slow_routines == FALSE) {
-    # PICK UP HERE
+    edge_betweenness <- data.frame(names = igraph::V(g_undir)$name,
+                                   membership = NA,
+                                   modularity = NA)
+  } else if (shiny_skip == TRUE) {
     edge_betweenness <- data.frame(names = igraph::V(g_undir)$name,
                                    membership = NA,
                                    modularity = NA)
@@ -164,6 +180,9 @@ comm_detect <- function(g, modres=1,
 
       leading_eigen <- list(membership = rep(NA, length(igraph::V(g_undir))),
                             modularity = NA)
+    } else if (shiny_skip == TRUE) {
+      leading_eigen <- list(membership = rep(NA, length(igraph::V(g_undir))),
+                            modularity = NA)
     } else {
 
       leading_eigen <- tryCatch(igraph::cluster_leading_eigen(g_undir, weights = igraph::E(g_undir)$weight), # Needs to be undirected
@@ -207,6 +226,10 @@ comm_detect <- function(g, modres=1,
 
 
         if (n > 5000 & slow_routines == FALSE) {
+
+          this_leading_eigen <- rep(NA, length(igraph::V(this_component)))
+
+        } else if (shiny_skip == TRUE) {
 
           this_leading_eigen <- rep(NA, length(igraph::V(this_component)))
 
@@ -341,7 +364,9 @@ comm_detect <- function(g, modres=1,
 
     lc_membership <-  data.frame(id = memberships$id,
                                  lc_cluster = NA)
-
+  } else if (shiny_skip == TRUE) {
+    lc_membership <-  data.frame(id = memberships$id,
+                                 lc_cluster = NA)
   } else {
     #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
     linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(.data$from, .data$to)
@@ -396,6 +421,17 @@ comm_detect <- function(g, modres=1,
                            modularity = NA)
 
 
+  } else if (shiny_skip == TRUE) {
+
+    edge_betweenness_stats <- data.frame(method = "edge_betweenness",
+                                         num_communities = NA,
+                                         #modularity = edge_betweenness$modularity)
+                                         #modularity = max(edge_betweenness$modularity))
+                                         modularity = NA)
+
+    lc_stats <- data.frame(method = "lc",
+                           num_communities = NA,
+                           modularity = NA)
 
   } else {
 
@@ -432,7 +468,11 @@ comm_detect <- function(g, modres=1,
       leading_eigen_stats <- data.frame(method = "leading_eigen",
                                         num_communities = NA,
                                         modularity = NA)
+    } else if (shiny_skip == TRUE) {
 
+      leading_eigen_stats <- data.frame(method = "leading_eigen",
+                                        num_communities = NA,
+                                        modularity = NA)
     } else {
 
       leading_eigen_stats <- data.frame(method = "leading_eigen",
@@ -448,7 +488,11 @@ comm_detect <- function(g, modres=1,
       leading_eigen_stats <- data.frame(method = "leading_eigen",
                                         num_communities = NA,
                                         modularity = NA)
+    } else if (shiny_skip == TRUE) {
 
+      leading_eigen_stats <- data.frame(method = "leading_eigen",
+                                        num_communities = NA,
+                                        modularity = NA)
     } else {
 
       igraph::V(g_undir)$leading_eigen <- memberships$leading_eigen_membership
@@ -541,6 +585,12 @@ comm_detect <- function(g, modres=1,
     memberships$sbm_membership <- NA
     sbm_stats <- data.frame(method = "sbm", num_communities = NA,
                             modularity = NA)
+
+  } else if (shiny_skip == TRUE) {
+    memberships$sbm_membership <- NA
+    sbm_stats <- data.frame(method = "sbm", num_communities = NA,
+                            modularity = NA)
+
   } else {
     sbm <- spectral_sbm(Adj = g_sym,
                         k = median_k)
