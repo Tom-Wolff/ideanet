@@ -429,36 +429,31 @@ server <- function(input, output, session) {
 
 
   edge_data <- shiny::reactive({
-    edge_data <- edge_data1()
-    shiny::req(edge_data, node_data())  # Ensure nodes are loaded
+    shiny::req(edge_data)
 
     # Apply context filter if selected
-    if (shiny::isTruthy(input$edge_context_value) && input$edge_context_value != "Empty") {
+    if (!is.null(input$edge_context_column) && input$edge_context_column != "Empty" &&
+        !is.null(input$edge_context_value) && input$edge_context_value != "Empty") {
       edge_data <- edge_data[edge_data[[input$edge_context_column]] == input$edge_context_value, ]
     }
 
     # Filter edges to only include nodes present in the filtered node dataset
-    valid_node_ids <- unique(node_data()[[input$node_id_col]])
-    if (!is.null(valid_node_ids) && !is.null(input$edge_in_col) && !is.null(input$edge_out_col)) {
-      edge_data <- edge_data[
-        edge_data[[input$edge_in_col]] %in% valid_node_ids &
-          edge_data[[input$edge_out_col]] %in% valid_node_ids,
-      ]
+    if (!is.null(input$node_id_col) && input$node_id_col != "Empty" &&
+        !is.null(input$edge_in_col) && !is.null(input$edge_out_col)) {
+
+      if (!is.null(node_data()) && nrow(node_data()) > 0) {
+        valid_node_ids <- unique(node_data()[[input$node_id_col]])
+
+        if (!is.null(valid_node_ids) && length(valid_node_ids) > 0) {
+          edge_data <- edge_data[
+            edge_data[[input$edge_in_col]] %in% valid_node_ids &
+              edge_data[[input$edge_out_col]] %in% valid_node_ids,
+          ]
+        }
+      }
     }
 
     return(edge_data)
-  })
-
-
-  filtered_edges <- shiny::reactive({
-    edge_data <- edge_data1()
-    shiny::req(edge_data, input$edge_context_value)
-
-    if (input$edge_context_value != "Empty") {
-      edge_data <- edge_data[edge_data[[input$edge_context_column]] == input$edge_context_value, ]
-    }
-
-    edge_data
   })
 
 
@@ -586,9 +581,7 @@ server <- function(input, output, session) {
     node_data()
   })
   output$edge_processed <- shiny::renderDataTable({
-    # shiny::validate(
-    #   shiny::need(input$raw_edges, 'Upload Edge Data!'),
-    # )
+    req(edge_data1())
     edge_data()
 
   })
@@ -652,6 +645,17 @@ server <- function(input, output, session) {
 # NODE CONTEXT TOGGLE
     output$node_context_toggle <- shiny::renderUI({
     shiny::checkboxInput("node_context_toggle", tags$b("Check if the data contain multiple networks"), FALSE)
+  })
+
+  observeEvent(input$node_context_toggle, {
+    if (!isTruthy(input$node_context_toggle)) {
+      return(NULL)
+    }
+    if (is.null(input$node_context_column) || input$node_context_column == "Empty") {
+      showNotification("Please select a context column before enabling filtering.", type = "error")
+      updateCheckboxInput(session, "node_context_toggle", value = FALSE)
+      return(NULL)
+    }
   })
 
   output$node_context_col <- shiny::renderUI({
@@ -734,6 +738,17 @@ server <- function(input, output, session) {
   })
 
   # EDGE CONTEXT TOGGLE
+
+  observeEvent(input$multi_context_toggle, {
+    if (!isTruthy(input$multi_context_toggle)) {
+      return(NULL)
+    }
+    if (is.null(input$edge_context_column) || input$edge_context_column == "Empty") {
+      showNotification("Please select a context column before enabling filtering.", type = "error")
+      updateCheckboxInput(session, "multi_context_toggle", value = FALSE)
+      return(NULL)
+    }
+  })
 
   output$multi_context_toggle <- shiny::renderUI({
     shiny::checkboxInput("multi_context_toggle", tags$b("Check if the data contain multiple networks"), FALSE)
