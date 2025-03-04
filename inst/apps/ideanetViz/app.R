@@ -408,36 +408,36 @@ server <- function(input, output, session) {
       # Reading CSV
       if (input$select_file_type_edges == "csv") {
         # network edgelist
-        read.csv(input$raw_edges$datapath, header = input$edge_header)
+        data <- read.csv(input$raw_edges$datapath, header = input$edge_header)
         # Reading Excel
       } else {
         if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
-          as.data.frame(readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header))
+          data <- as.data.frame(readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header))
         } else {
-          as.data.frame(readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header))
+          data <- as.data.frame(readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header))
         }
       }
       # If "Adjacency Matrix" is selected
     } else {
-      as.data.frame(netread(path = input$raw_edges$datapath,
+      data <- as.data.frame(netread(path = input$raw_edges$datapath,
                             filetype = input$select_file_type_edges,
                             col_names = input$edge_header,
                             row_names = input$edge_names,
                             format = "adjacency_matrix")$edgelist)
     }
+    return(data)
   })
 
 
   edge_data <- shiny::reactive({
+    edge_data <- edge_data1()  # Load raw edge data
     shiny::req(edge_data)
 
-    # Apply context filter if selected
     if (!is.null(input$edge_context_column) && input$edge_context_column != "Empty" &&
         !is.null(input$edge_context_value) && input$edge_context_value != "Empty") {
       edge_data <- edge_data[edge_data[[input$edge_context_column]] == input$edge_context_value, ]
     }
 
-    # Filter edges to only include nodes present in the filtered node dataset
     if (!is.null(input$node_id_col) && input$node_id_col != "Empty" &&
         !is.null(input$edge_in_col) && !is.null(input$edge_out_col)) {
 
@@ -455,6 +455,7 @@ server <- function(input, output, session) {
 
     return(edge_data)
   })
+
 
 
     # MAKE EDGE DATA 2, WHERE FILTERING ON CONTEXT OCCURS
@@ -564,13 +565,14 @@ server <- function(input, output, session) {
  })
 
   #Display Edge Data
-  output$edge_raw_upload <- shiny::renderDataTable({
-    shiny::validate(
-      shiny::need(input$raw_edges, 'Upload Edge Data!'),
-    )
-    edge_data1()
-  })
-
+ output$edge_raw_upload <- shiny::renderDataTable({
+   shiny::validate(
+     shiny::need(!is.null(edge_data1()), 'Upload Edge Data!')
+   )
+   print("display test")
+   print(edge_data1())
+   edge_data1()
+ })
 
   ### Process edge and node data ----
   # Redisplay Datatables
@@ -583,8 +585,8 @@ server <- function(input, output, session) {
   output$edge_processed <- shiny::renderDataTable({
     req(edge_data1())
     edge_data()
-
   })
+
 
   # NODE DISPLAY TAB
 
@@ -643,7 +645,7 @@ server <- function(input, output, session) {
   })
 
 # NODE CONTEXT TOGGLE
-    output$node_context_toggle <- shiny::renderUI({
+  output$node_context_toggle <- shiny::renderUI({
     shiny::checkboxInput("node_context_toggle", tags$b("Check if the data contain multiple networks"), FALSE)
   })
 
@@ -763,7 +765,6 @@ server <- function(input, output, session) {
     shiny::req(input$edge_context_column != "Empty")
     unique_values <- unique(edge_data[[input$edge_context_column]])
     shiny::selectInput(inputId = "edge_context_value", label = "Which network to use?", choices = append("Empty", unique_values), selected = "Empty", multiple = FALSE)
-
   })
 
 
@@ -1319,7 +1320,7 @@ server <- function(input, output, session) {
         ])
       }
 
-      if (input$multi_context_toggle) {
+      if (input$node_context_toggle) {
         shiny::req(input$node_context_value)
         net <- igraph::delete.vertices(net, igraph::V(net)[
           !igraph::V(net)$node_context_column %in% input$node_context_value
