@@ -355,9 +355,6 @@ comm_detect <- function(g, modres=1,
     cf1_membership <- data.frame(id = memberships$id,
                                  cp_cluster = 1)
   }
-  # cf1_membership$id <- as.character(cf1_membership$id)
-
-
 
   ## Link comm ##
   if (n > 5000 & slow_routines == FALSE) {
@@ -369,7 +366,7 @@ comm_detect <- function(g, modres=1,
                                  lc_cluster = NA)
   } else {
     #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
-    linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(.data$from, .data$to)
+    linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(from, to)
     #### In some cases, such as when given a star graph, `linkcomm` won't detect any communities.
     #### if this is the case, just create the `lc_membership` dataframe manually and assign all nodes
     #### to the same community (or `NA`s depending on our team's ultimate preference)
@@ -377,7 +374,7 @@ comm_detect <- function(g, modres=1,
                    error = function(e) {return(NULL)})# Defaulting to false for now)
     if (!is.null(lc)) {
       # browser()
-      lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = FALSE, verbose = FALSE, plot = FALSE) # Defaulting to false for now
+      # lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = FALSE, verbose = FALSE, plot = FALSE) # Defaulting to false for now
       clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
       clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
       lc_membership <- multigroup_assign(g_sym, clust)
@@ -927,15 +924,15 @@ multigroup_assign <- function(gmat, clust){
 
 
   for (i in 1:length(clust)){ # assign a 1 if node is part of community
-    cpcomms[clust[[i]],i]<-1
+    cpcomms[rownames(cpcomms) %in% clust[[i]], i] <- 1
   }
 
-  ties_sent <- gmat%*%cpcomms # number of ties ego sends to group k
-
-  ties_sent <- ties_sent*cpcomms # remove ties that are sent to a group ego is not a part of
+  ties_sent <- gmat %*% cpcomms # number of ties ego sends to group k
+  ties_sent <- ties_sent * cpcomms # remove ties that are sent to a group ego is not a part of
 
   cp_maxcomm <- matrix(nrow = nrow(ties_sent), ncol = 1, 0)
   rownames(cp_maxcomm) <- rownames(gmat)
+
   for (i in 1:nrow(ties_sent)) {
     maxcols <- which(ties_sent[i,] == max(ties_sent[i,])); # Pick the community to which ego has the most ties
     if (length(maxcols) > 1){
@@ -946,7 +943,14 @@ multigroup_assign <- function(gmat, clust){
 
   nodes <- as.numeric(rownames(gmat))
   isolates <- setdiff(nodes, unlist(clust))
-  cp_maxcomm[row.names(cp_maxcomm) %in% isolates, ] <- 0   # reassign isolates to isolate cluster
+
+  if (length(isolates) > 0) { # if isolates, assign them each to their own cluster
+    new_cluster_start <- length(clust) + 1
+    isolate_clusters <- seq(new_cluster_start, new_cluster_start + length(isolates) - 1)
+    names(isolate_clusters) <- isolates
+    cp_maxcomm[rownames(cp_maxcomm) %in% isolates, ] <- isolate_clusters[as.character(rownames(cp_maxcomm)[rownames(cp_maxcomm) %in% isolates])]
+  }
+
   cp_maxcomm <- tibble::tibble(cluster = cp_maxcomm) %>% dplyr::mutate(id = as.numeric(rownames(gmat)))
   return(cp_maxcomm)
 }
