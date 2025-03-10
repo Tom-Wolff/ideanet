@@ -650,13 +650,13 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$node_context_toggle, {
-    if (!isTruthy(input$node_context_toggle)) {
-      return(NULL)
-    }
-    if (is.null(input$node_context_column) || input$node_context_column == "Empty") {
-      showNotification("Please select a context column before enabling filtering.", type = "error")
-      updateCheckboxInput(session, "node_context_toggle", value = FALSE)
-      return(NULL)
+    if (input$node_context_toggle) {
+      if (is.null(input$node_id_col) || input$node_id_col == "Empty" ||
+          is.null(input$edge_in_col) || input$edge_in_col == "Empty" ||
+          is.null(input$edge_out_col) || input$edge_out_col == "Empty") {
+            showNotification("Please select the ID column.", type = "error")
+            updateCheckboxInput(session, "node_context_toggle", value = FALSE)
+      }
     }
   })
 
@@ -742,13 +742,12 @@ server <- function(input, output, session) {
   # EDGE CONTEXT TOGGLE
 
   observeEvent(input$multi_context_toggle, {
-    if (!isTruthy(input$multi_context_toggle)) {
-      return(NULL)
-    }
-    if (is.null(input$edge_context_column) || input$edge_context_column == "Empty") {
-      showNotification("Please select a context column before enabling filtering.", type = "error")
-      updateCheckboxInput(session, "multi_context_toggle", value = FALSE)
-      return(NULL)
+    if (input$multi_context_toggle) {
+      if (is.null(input$edge_in_col) || input$edge_in_col == "Empty" ||
+          is.null(input$edge_out_col) || input$edge_out_col == "Empty") {
+            showNotification("Please select ID columns.", type = "error")
+            updateCheckboxInput(session, "multi_context_toggle", value = FALSE)
+      }
     }
   })
 
