@@ -91,7 +91,7 @@ comm_detect <- function(g, modres=1,
     message("The `comm_detect` function currently supports undirected graphs only. Directed networks will be collapsed to undirected before running community detection algorithms.")
   }
 
-  g_undir <- igraph::as.undirected(g, mode = "collapse")
+  g_undir <- igraph::as_undirected(g, mode = "collapse") #`as.undirected()` was deprecated in igraph 2.1.0.
 
   # Simplify network to convert multiedges to weighted edges and remove self-loops
   # https://stackoverflow.com/questions/12998456/r-igraph-convert-parallel-edges-to-weight-attribute
@@ -691,7 +691,7 @@ comm_detect <- function(g, modres=1,
 
       # browser()
 
-      fr <- igraph::layout.fruchterman.reingold(g)
+      fr <- igraph::layout_with_fr(g) #`layout.fruchterman.reingold()` was deprecated in igraph 2.1.0.
 
       eb_plot <- function(){
         plot(g,
