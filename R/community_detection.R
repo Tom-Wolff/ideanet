@@ -439,8 +439,8 @@ comm_detect <- function(g, modres=1,
                                          modularity = igraph::modularity(g_undir, edge_betweenness$membership, weights = igraph::E(g_undir)$weight))
 
     lc_stats <- data.frame(method = "lc",
-                           num_communities = length(unique(memberships$cp_cluster)),
-                           modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster + 1), weights = igraph::E(g_undir)$weight))
+                           num_communities = length(unique(memberships$lc_cluster)),
+                           modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster), weights = igraph::E(g_undir)$weight))
 
   }
 
@@ -539,12 +539,12 @@ comm_detect <- function(g, modres=1,
   walktrap_stats <- walktrap_stats[which(walktrap_stats$modularity == max(walktrap_stats$modularity)),]
 
   igraph::V(g)$cf1 <- memberships$cp_cluster
-  igraph::V(g)$lc <- memberships$lc
+  igraph::V(g)$lc <- memberships$lc_cluster
 
 
   cf1_stats <- data.frame(method = "cp",
                           num_communities = length(unique(memberships$cp_cluster)),
-                          modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster + 1), weights = igraph::E(g_undir)$weight))
+                          modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster), weights = igraph::E(g_undir)$weight))
 
 
   community_summaries <- rbind(edge_betweenness_stats,
