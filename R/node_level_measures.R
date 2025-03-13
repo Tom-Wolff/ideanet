@@ -1011,7 +1011,7 @@ eigen_custom <- function(matrix) {
   if (nrow(matrix) == 2) {
     eigen_df <- data.frame(eigen_centrality = rep(NA, nrow(matrix)))
   } else {
-    eigen <- RSpectra::eigs(Matrix::t(matrix), k = 1, which = "LR")
+    eigen <- RSpectra::eigs(Matrix::t(matrix), k = 1, which = "LM")
 
     # Now get that column from the eigenvector matrix;
     # these are the eigenvector centrality scores.
