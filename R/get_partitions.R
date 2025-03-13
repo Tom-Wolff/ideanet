@@ -89,9 +89,9 @@ get_partitions <- function( network,
     for (i in 2:ncol(membs)) {
       memb <- membs[,i]
       #if (min(memb)==0) {memb <- memb + 1} #Some comm_detect() memberships count from 0?
-      names(memb) <- V(network)$name
-      gc <- make_clusters(network, membership=memb, 
-                          algorithm=colnames(membs)[i], modularity = F)
+      names(memb) <- igraph::V(network)$name
+      gc <- igraph::make_clusters(network, membership=memb, 
+                                  algorithm=colnames(membs)[i], modularity = F)
       gc$gamma <- 0 #I don't think this gets used later, but setting for consistency 
       # cluster number 
       cn <- length(gc)

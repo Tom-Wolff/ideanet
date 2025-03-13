@@ -149,13 +149,13 @@ comm_detect <- function(g, modres=1,
 
   leiden_mod <- igraph::cluster_leiden(g_undir,
                                        objective_function = "modularity",
-                                       resolution_parameter=modres,
+                                       resolution = modres,
                                        weights = igraph::E(g_undir)$weight,
                                        n_iterations = 5) # Only undirected graphs # Leiden is better version of louvain
 
   leiden_cpm <- igraph::cluster_leiden(g_undir,
                                        objective_function = "CPM",
-                                       resolution_parameter = w_dens,
+                                       resolution = w_dens,
                                        weights = igraph::E(g_undir)$weight,
                                        n_iterations = 5)
 
