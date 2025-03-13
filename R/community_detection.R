@@ -91,6 +91,11 @@ comm_detect <- function(g, modres=1,
     message("The `comm_detect` function currently supports undirected graphs only. Directed networks will be collapsed to undirected before running community detection algorithms.")
   }
 
+  # Note that, if g is a weighted directed graph here, mode = "collapse" 
+  # actually sums the weights of directed edges, so a reciprocal tie collapses 
+  # to a single undirected edge but with the weight summed. However, if g is
+  # an undirected multigraph, as_undirected leaves it as such (hence the need
+  # for the simplify call that follows)
   g_undir <- igraph::as_undirected(g, mode = "collapse") #`as.undirected()` was deprecated in igraph 2.1.0.
 
   # Simplify network to convert multiedges to weighted edges and remove self-loops
