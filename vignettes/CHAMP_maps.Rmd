@@ -30,28 +30,32 @@ library(ideanet)
 
 That is, CHAMP takes in a set of community structure partitions, where each partition is a different assignment of nodes into communities, and post-processes this set of partitions to identify which partition is optimal (relative to the input set of partitions, in the modularity sense) at each value of the resolution parameter $\gamma$. By doing so, CHAMP helps users be sure they select community structures that are somewhere optimal in the space of $\gamma$ values, and highlights partitions that have wide domains of optimality. The iterative map is then run on this restricted "CHAMP set" of somewhere-optimal partitions, highlighting an even smaller number of partitions that are fixed points of the iterative map (that is, they are self-consistent in the sense of the equivalence found by Newman, 2016).
 
-Note that in most cases the first step, `get_partitions`, which is simply a wrapper to multiple calls of `igraph::cluster_leiden`, will be the most computationally intensive step of this pipeline. Neither CHAMP nor the iterative map find community structures themselves; rather, they are tools to highlight a subset of the partitions input to CHAMP. Generally, the more completely one identifies the possible input set of partitions, the better the results will be from CHAMP and the iterative map. It is important to emphasize that CHAMP and the iterative map are completely deterministic after the input set of partitions has been defined; that is, all of the pseudo-stochasticity from the use of community detection heuristics in this pipeline is in obtaining the input set of partitions in `get_partitions`. The quality of the results from CHAMP and the iterative map are inherently limited by the quality of the input set of partitions, and the optimality of one partition over another identified by CHAMP is only relative to the set input to CHAMP in the second step of this pipeline. Note also that one could add other partitions defined by hand or obtained by other algorithms, as long as they are formatted consistent with the list of `partitions` output by `get_partitions`. Finally, we stress that all of the calculations in CHAMP and the iterative map are , while other objective functions may be preferable in different settings.
+Note that in most cases the first step, `get_partitions`, which is simply a wrapper to multiple calls of `igraph::cluster_leiden` and to `comm_detect`, will be the most computationally intensive step of this pipeline. Neither CHAMP nor the iterative map find community structures themselves; rather, they are tools to highlight a subset of the partitions input to CHAMP. Generally, the more completely one identifies the possible input set of partitions, the better the results will be from CHAMP and the iterative map. It is important to emphasize that CHAMP and the iterative map are completely deterministic after the input set of partitions has been defined by `get_partitions`; that is, all of the pseudo-stochasticity from the use of community detection heuristics in this pipeline is in obtaining the input set of partitions in `get_partitions`. The quality of the results from CHAMP and the iterative map are inherently limited by the quality of the input set of partitions, and the optimality of one partition over another identified by CHAMP in the second step of this pipeline is only relative to the set input to CHAMP. Note also that one could add other partitions defined by hand or obtained by other algorithms, as long as they are formatted consistent with the list of `partitions` output by `get_partitions`. Finally, we stress that all of the calculations in CHAMP and the iterative map are based on modularity as extended with a resolution parameter, while other objective functions may be preferable in different settings.
 
-Keep in mind that, at the end of the day, this pipeline — combining modularity optimization with a resolution parameter, the Leiden algorithm, CHAMP, and the equivalence with inference on the degree-corrected planted partition model — is just one framework for community detection, identifying appropriate resolution parameters for performing modularity-based unsupervised clustering on network data. In many settings, the communities with large domains of optimality identified by `CHAMP` and the partitions that are fixed points found by `get_CHAMP_map` will have better overall properties than some other community labels. However, like unsupervised clustering of any other data, there can be multiple good ways to cluster data and there is no single answer that is best in all settings (see, for example, Peel et al., 2017).
+Keep in mind that, at the end of the day, this pipeline — combining modularity optimization with a resolution parameter, the algorithmic heuristics for this optimization, the CHAMP post-processing, and the equivalence with inference on the degree-corrected planted partition model — is just one framework for community detection, identifying appropriate resolution parameters for performing modularity-based unsupervised clustering on network data. In many settings, the communities with large domains of optimality identified by `CHAMP` and the partitions that are fixed points found by `get_CHAMP_map` will have better overall properties than some other community labels. However, like unsupervised clustering of any other data, there can be multiple good ways to cluster data and there is no single answer that is best in all settings (see, for example, Peel et al., 2017).
 
 These functions, as part of the broader IDEANet project, are supported by the National Science Foundation as part of the Human Networks and Data Science — Infrastructure program (BCS-2024271 and BCS-2140024).
 
-Note that our current R implementation of this pipeline does not handle multilayer networks. The Python implementation at https://github.com/ragibson/ModularityPruning combines the multilayer capabilities of CHAMP with the generalization of Newman's equivalence to multilayer networks derived by Pamfil et al. (2019). An R implementation of this multilayer framework is in development. We also assume that networks are undirected, though possibly weighted (but see the warning discussed in Example 2 below).
+Note that our current R implementation of this pipeline does not handle multilayer networks. The Python implementation at https://github.com/ragibson/ModularityPruning combines the multilayer capabilities of CHAMP with the generalization of Newman's equivalence to multilayer networks derived by Pamfil et al. (2019). An R implementation of this multilayer framework is in development. We also assume that networks are undirected, though possibly weighted (but see the warning discussed in Example 3 below).
 
-## Example 1: Zachary's Karate Club (unweighted)
+## Example 1: Families in Renaissance-era Florence
 
-We quickly demonstrate the 3 main steps with the karate club, available in `igraphdata`, converted to an unweighted graph.
-
+We demonstrate the 3 main steps of the pipeline with the florentine network `igraph` object that combines both types of relations between families in Florence, as built in the `netwrite` vignette.
 ```{r}
-data(karate,package="igraphdata")
-karate <- igraph::delete_edge_attr(karate,"weight")
+nw_flor <- netwrite(nodelist = florentine_nodes,
+                    node_id = "id",
+                    i_elements = florentine_edges$source,
+                    j_elements = florentine_edges$target,
+                    type = florentine_edges$type,
+                    directed = FALSE,
+                    net_name = "florentine")
 par(mar=c(0,0,0.8,0))
-plot(karate, main="Zachary's Karate Club")
+plot(nw_flor$florentine)
 ```
 
 ### Step 1: Collect Partitions
 
-The whole idea of CHAMP is that it post-processes community structure partitions that you've already taken the time to compute. It is not a community finding algorithm itself; rather, it enforces the modularity (with resolution parameter) objective function back onto the (possibly very many) partitions that you have already computed. So to use this we first need to have a set of partitions, which we will obtain here with the `get_partitions` function. Under the hood, it runs `cluster_leiden` from `igraph` at various $\gamma$ resolution parameter values, filters out the duplicate partitions, and then formats the results appropriately in the `partitions` list for what comes next. Because Leiden is a pseudo-stochastic heuristic, we set the random seed first to ensure reproducible results.
+The whole idea of CHAMP is that it post-processes community structure partitions that you've already taken the time to compute. It is not a community finding algorithm itself; rather, it enforces the modularity (with resolution parameter) objective function back onto the (possibly very many) partitions that you have already computed. So to use this we first need to have a set of partitions, which we will obtain here with the `get_partitions` function. Under the hood, it runs `cluster_leiden` from `igraph` at various $\gamma$ resolution parameter values, along with the routines in `comm_detect`, filters out the duplicate partitions, and then formats the results appropriately in the `partitions` list for what comes next. Because Leiden and the other routines in `comm_detect` are pseudo-stochastic heuristics, we set the random seed as part of the function call to ensure reproducible results.
 
 **Arguments for `get_partitions()`:**
 
@@ -60,10 +64,35 @@ The whole idea of CHAMP is that it post-processes community structure partitions
 -   `n_runs`: number of times that the Leiden algorithm will be executed at different $\gamma$ values. Defaults to 100.
 -   `n_iterations`: the number of optimization runs passed to `cluster_leiden`. Defaults to 2.
 -   `seed`: set a seed for reproducible partitions.
+-   `add_comm_detect`: Boolean to decide whether to also call the clustering algorithms included in \code{comm_detect} (default = T). Alternatively, the output of \code{comm_detect} can be provided directly here.
 
 ```{r}
-partitions <- get_partitions(karate, n_runs = 2500, seed = 3478)
+partitions <- get_partitions(nw_flor$florentine, n_runs = 2500, seed = 4781)
 ```
+
+Note that setting `n_runs = 2500` is an insanely overkill number of times to call Leiden for this small network, and indeed we see the resulting report that we only obtain 22 unique partitions. But this call also probably only took a couple seconds at most (depending on your hardware), and since the quality of the deterministic calculations that follow in the next two steps relies on finding good partitions in `get_partitions`, it is generally good practice to be willing to spend a few compute cycles in this step. 
+
+The `partitions` list returned by `get_partitions` includes the counts of the numbers of times that each unique partition was obtained by these pseudo-heuristic algorithms.
+```{r}
+unlist(partitions$count)
+sum(unlist(partitions$count))
+```
+
+You can see in the above that some partitions — like the 2nd, 6th and 10th in the list — were obtained hundreds of times, while a few were only found once or twice. You can also see that there are a total of 2513 results (`n_runs = 2500` calls to `cluster_leiden` at different resolution parameters plus the 13 clustering results obtained in `comm_detect`) that led to these 22 unique partitions. You can directly query different partitions inside the list as follows.
+```{r}
+partitions$partitions[[6]]
+partitions$partitions[[9]]
+```
+
+You can see that the information about each of these partitions includes a label about which clustering routine identified the partition. In particular, you can see that the 9th partition is labeled sbm_membership, indicating which routine called by `comm_detect` found this, while the 6th partition was obtained from one of the `cluster_leiden` calls. Of course, as we saw above, the 6th partition was obtained hundreds of times, and we do not distinguish here whether any of those copies of this partition were found by one of the routines in `comm_detect`; that is, the "leiden" label here merely means that at least one of the copies of this partition was found by `cluster_leiden`. In contrast, the sbm_membership label on the 9th partition means it was not found by any of our many `cluster_leiden` calls at different resolution parameter values. 
+
+You might also reasonably wonder about what resolution parameter values were involved in finding some of these partitions. The range of these `gamma` values is included in the list.
+```{r}
+print(partitions$gamma_min)
+print(partitions$gamma_max)
+```
+
+However, importantly, the CHAMP framework does not actually depend on the resolution parameter value used in the algorithm that found a partition, so we do not store this information. Instead, in the next step CHAMP will take all of the unique partitions that we have found and tell us which of these partitions is best at each resolution parameter.
 
 ### Step 2: CHAMP
 
@@ -76,10 +105,10 @@ Next, we run the `CHAMP` algorithm on the resulting partitions, and plot results
 -   `plottitle`: optionally, a title for the output plot. `Null` by default.
 
 ```{r}
-partitions <- CHAMP(karate, partitions, plottitle = "Zachary's Karate Club (unweighted)")
+partitions <- CHAMP(nw_flor$florentine, partitions, plottitle = "Florentine (combined)")
 ```
 
-In the above plot generated by `CHAMP`, each of the 119 unique partitions returned by `get_partitions` is represented by a line giving its values of $Q(\gamma)$, the modularity of the partition as a function of resolution parameter $\gamma$. `CHAMP` then identifies which of these lines ever appear on the upper envelope of $Q(\gamma)$, that is, which of the corresponding partitions are somewhere optimal in the space of $\gamma$ values. The plot annotates the line segments with numbers indexing which of the input partitions are optimal (relative to the input set) along that line segment, as well as the $\gamma$ values where lines intersect on the upper envelope (that is, where which partition is optimal changes).
+In the above plot generated by `CHAMP`, each of the 22 unique partitions returned by `get_partitions` is represented by a line giving its values of $Q(\gamma)$, the modularity of the partition as a function of resolution parameter $\gamma$. `CHAMP` then identifies which of these lines ever appear on the upper envelope of $Q(\gamma)$, that is, which of the corresponding partitions are somewhere optimal in the space of $\gamma$ values. Notably, `CHAMP` only finds 6 somewhere-optimal partitions here. The plot annotates the line segments with numbers indexing which of the input partitions are optimal (relative to the input set) along that line segment, as well as the $\gamma$ values where lines intersect on the upper envelope (that is, where which partition is optimal changes). As a technical sidebar, we note that our `CHAMP` implementation here only considers partitions that are optimal with $Q(\gamma)>0$, cutting off the line segment for partition 10 at the point where it crosses $Q=0$ and ignoring higher resolution parameter values.
 
 `CHAMP` updates the `partitions` list with the generated `CHAMPfigure` plot shown above and a `CHAMPsummary` that provides essential information about the 13 somewhere-optimal partitions found here.
 
@@ -87,26 +116,84 @@ In the above plot generated by `CHAMP`, each of the 119 unique partitions return
 print(partitions$CHAMPsummary)
 ```
 
-In particular, the `partitions$CHAMPsummary$partition_num` column and the associated numerical annotations on the figure correspond to the list of partitions in `partitions$partitions`. For example, the partition that straddles the default $\gamma=1$ resolution parameter here, which also happens to have a large `gamma_range` and `segment_length` (the length of the corresponding line segment on the upper envelope of Q v. $\gamma$ in the figure) is the 4-community partition with `partition_num` 6 here. Having thus highlighted this partition, we can directly examine it more closely.
+In particular, the `partitions$CHAMPsummary$partition_num` column and the associated numerical annotations on the figure correspond to the list of partitions in `partitions$partitions`. For example, the partition that straddles the default $\gamma=1$ resolution parameter here, which also happens to have a large `gamma_range` and `segment_length` (the length of the corresponding line segment on the upper envelope of Q v. $\gamma$ in the figure) is the 5-community partition with `partition_num` 6 here. Having thus highlighted this partition, we can directly examine it more closely.
 
 ```{r}
 partitions$partitions[[6]]
 igraph::membership(partitions$partitions[[6]])
 par(mar=c(0,0,0,0))
-igraph::plot.igraph(karate,mark.groups = partitions$partitions[[6]])
+igraph::plot.igraph(nw_flor$florentine,mark.groups = partitions$partitions[[6]])
 ```
 
 Running `CHAMP` selects out only the partitions that are optimal at some $\gamma$ and, in so doing, allows the user to see which partitions are optimal over wider ranges of the resolution parameter. In particular, we expect that there might be multiple partitions of interest, and that `CHAMP` will help the user focus their attention down onto a smaller number of possible candidate partitions.
 
 ### Step 3: Compute the SBM-equivalence iterative map on the CHAMP set
 
-In many applications, there may still be many somewhere-optimal partitions in the CHAMP set with comparable gamma range and/or segment length, and the user may be looking for a way to further focus their attention onto a smaller number of partitions. The `get_CHAMP_map` function uses the equivalence of modularity optimization with inference on a degree-corrected planted partition model, as discovered by Newman (2016), to define the corresponding iterative map restricted to the partitions in the CHAMP set, as defined by Gibson & Mucha (2022). In this iterative map, each partition in the set points to an "estimated $\gamma$" value consistent with the equivalence, and thereby points to whichever partition is optimal at that estimated $\gamma$ value. A fixed point of the map, that is, a partition that points to itself (it points to an estimated $\gamma$ in its own domain of optimality), is thus self consistent in the sense of this equivalence, and becomes a natural partition for further attention. 
+In the current example, with only 6 partitions remaining in "the CHAMP set", and only some of those with larger ranges of optimality, a user might reasonably stop here with these results and proceed to study the resulting communities in greater detail. But in many applications, there may still be many somewhere-optimal partitions in the CHAMP set with comparable gamma range and/or segment length, and the user may be looking for a way to further focus their attention onto a smaller number of partitions. The `get_CHAMP_map` function uses the equivalence of modularity optimization with inference on a degree-corrected planted partition model, as discovered by Newman (2016), to define the corresponding iterative map restricted to the partitions in the CHAMP set, as defined by Gibson & Mucha (2022). In this iterative map, each partition in the set points to an "estimated $\gamma$" value consistent with the equivalence, and thereby points to whichever partition is optimal at that estimated $\gamma$ value. A fixed point of the map, that is, a partition that points to itself (it points to an estimated $\gamma$ in its own domain of optimality), is thus self consistent in the sense of this equivalence, and becomes a natural partition for further attention. 
 
 **Arguments for `get_CHAMP_map()`:**
 
 -   `network`: igraph object to analyze.
 -   `partitions`: partitions object generated from `get_partitions`.
 -   `plottitle`: optionally, a title for the output plot. `Null` by default.
+
+```{r}
+partitions <- get_CHAMP_map(nw_flor$florentine, partitions, plotlabel = "Florentine (combined)")
+```
+
+The above figure re-visualizes each of the 6 partitions in the CHAMP set (that is, the somewhere-optimal partitions) as a line segment indicating the number of communities in the partition (on the vertical axis) versus its domain of optimality in $\gamma$ (on the horizontal axis). The arrows in the figure visualize the iterative map on the CHAMP set, directed from the middle of each line segment to the "estimated $\gamma$" value associated with that partition and, thus, the partition that is optimal at that $\gamma$. These values are tabulated in the now updated `partitions$CHAMPsummary`. 
+
+```{r}
+print(partitions$CHAMPsummary)
+```
+
+Looking at the above figure and table, at the bottom of the table we see that the 6-community partition with partition_num 10 maps to the estimated $\gamma$ value listed under next_gamma, where the 5-community partition is optimal (that is, the bottom row of the table lists next_partition_num 6 and next_num_communities 5). Specifically, note that the next_gamma value listed for partition_num 2 is between the starting_gamma and ending_gamma values for partition_num 6, and the next_gamma for this partition then maps to itself. That is, partition_num 6 is a fixed point of the iterative map on the CHAMP set. Similarly, partition_num 5 and partition_num 11 both also map to that same 5-community partition_num 6 fixed point. In contrast, we see that partition_num 2, with 3 communities, is also a fixed point, mapping to itself.
+
+As an aside, note the NA values in the row corresponding to the 2-community partition. This partition is unlike the others here in that it doesn't map to anywhere, because this 2-community partition is a trivial solution in that it simply identifies the 2 disconnected components of the graph without any further community structure within those components, and in the absence of any further community structure it has no associated resolution. This trivial partition where all nodes in each connected component are together in one community cannot be mapped to any other partition (hence the NA values). However, it is theoretically possible in the pipeline for other partitions to map to $\gamma$ values where this trivial partition is optimal (but it does not happen in the present examples).
+
+As the only fixed points of the map on the CHAMP set, partition_num 2 and partition_num 6 are of special interest to us here. The fact that partition_num 6 happens to be the same as the optimal partition at the default resolution parameter $\gamma=1$ is a special feature of this simple example network — in other examples, the fixed points of the CHAMP map occur at other resolution parameter values.
+
+Again, there may be other good partitions in different senses that are not highlighted by these procedures, but we expect there are many cases where this framework — gathering partitions, running `CHAMP`, and picking out the fixed point of the iterative map on the CHAMP set — easily and efficiently highlights partitions of interest.
+
+## Example 2: Zachary's Karate Club (unweighted)
+
+We now re-demonstrate the 3 main steps, this time using the karate club, available in `igraphdata`, converted to an unweighted graph, since it is one of the most popular, classic examples considered in the community detection literature.
+
+```{r}
+data(karate,package="igraphdata")
+karate <- igraph::delete_edge_attr(karate,"weight")
+par(mar=c(0,0,0.8,0))
+plot(karate, main="Zachary's Karate Club")
+```
+
+### Step 1: Collect Partitions
+
+```{r}
+partitions <- get_partitions(karate, n_runs = 2500, seed = 3478)
+```
+
+### Step 2: CHAMP
+
+```{r}
+partitions <- CHAMP(karate, partitions, plottitle = "Zachary's Karate Club (unweighted)")
+```
+
+Once again, the plot generated by `CHAMP` represents each of the unique partitions returned by `get_partitions` (in this example, 128 of them) by a line giving its values of $Q(\gamma)$, the modularity of the partition as a function of resolution parameter $\gamma$. `CHAMP` then identifies which of these lines ever appear on the upper envelope of $Q(\gamma)$, that is, which of the corresponding partitions are somewhere optimal in the space of $\gamma$ values. In this example, there are 13 somewhere-optimal partitions found. Again, `CHAMP` updates the `partitions` list with the generated `CHAMPfigure` plot shown above and a `CHAMPsummary` that provides essential information about the 13 somewhere-optimal partitions found here.
+
+```{r}
+print(partitions$CHAMPsummary)
+```
+
+The partition that straddles the default $\gamma=1$ resolution parameter here, which also happens to have a large `gamma_range` and `segment_length` (the length of the corresponding line segment on the upper envelope of Q v. $\gamma$ in the figure) is the 4-community partition identified as partition_num 8 here. Having thus highlighted this partition, we can directly examine it more closely.
+
+```{r}
+partitions$partitions[[8]]
+igraph::membership(partitions$partitions[[8]])
+par(mar=c(0,0,0,0))
+igraph::plot.igraph(karate,mark.groups = partitions$partitions[[8]])
+```
+
+### Step 3: Compute the SBM-equivalence iterative map on the CHAMP set
 
 ```{r}
 partitions <- get_CHAMP_map(karate, partitions, plotlabel = "Zachary's Karate Club (unweighted)")
@@ -118,15 +205,11 @@ The above figure re-visualizes each of the 13 partitions in the CHAMP set (that 
 print(partitions$CHAMPsummary)
 ```
 
-Looking at the above figure and table, the 2-community partition (labeled partition_num 2 in the `partitions$CHAMPsummary`) maps to the estimated $\gamma$ value listed under next_gamma, where the 3-community partition (next_partition_num 4, next_num_communities 3) is optimal. Specifically, note that the next_gamma value listed for partition_num 2 is between the starting_gamma and ending_gamma values for partition_num 4. Continuing to follow the arrows in the figure and the corresponding data in the table, we see that this 3-community partition maps to one of the 4-community partitions (partition_num 6) that maps to itself. That is, partition_num 6 is a fixed point of the iterative map on the CHAMP set. Similarly, all of the partitions in the table with larger numbers of communities here all eventually map to that same 4-community partition fixed point: the last three partitions in the table, with 8, 9, and 10 communities, all map to one of the 6-community partitions (partition_num 21); the 6-, 7-, and one of the 8-community partitions all map to the 5-community partition (partition_num 14); and that 5-community partition then maps to the 4-community fixed point (partition_num 6). 
+Looking at the above figure and table, we can see that the only partition that maps to itself is the 4-community partition_num 8, and that if we repeatedly follow arrows from any other partition we eventually reach this same partition. As the only fixed point of the map on the CHAMP set, partition_num 8 is of special interest to us here. And, like in the previous example, the fact that this fixed point also happens to be the same as the optimal partition at the default resolution parameter $\gamma=1$ is a special feature of this simple example network (we will see in the final example below a situation where this default is not a fixed point).
 
-As an aside, note the NA values in the row corresponding to the 1-community partition. This trivial partition where all nodes are together in one large community cannot be mapped to any other partition (hence the NA values). However, it is theoretically possible in the pipeline for other partitions to map to $\gamma$ values where this trivial partition is optimal (but it does not happen in the present examples).
+PJM IS HERE -- TURN OFF add_comm_detect FOR NEXT TWO EXAMPLES?
 
-As the only fixed point of the map on the CHAMP set, partition_num 6 is of special interest to us here. The fact that it happens to be the same as the optimal partition at the default resolution parameter $\gamma=1$ is a special feature of this simple example network — in other examples, the fixed points of the CHAMP map occur at other resolution parameter values.
-
-Again, there may be other good partitions in different senses that are not highlighted by these procedures, but we expect there are many cases where this framework — gathering partitions, running `CHAMP`, and picking out the fixed point of the iterative map on the CHAMP set — easily and efficiently highlights partitions of interest.
-
-## Example 2: Zachary's Karate Club, with weights
+## Example 3: Zachary's Karate Club, with weights
 
 We repeat the three steps of this framework for the weighted version of the karate club, to emphasize that weights matter and to highlight an important warning message for the third step (`get_CHAMP_map`) of the framework.
 
@@ -157,7 +240,7 @@ table(igraph::membership(partitions$partitions[[3]]),igraph::membership(partitio
 
 As seen in the plots and the table comparing their memberships, the 3-community partition here is the 4-community partition with two of the communities merged into one.
 
-## Example 3: NCAA College Football Network
+## Example 4: NCAA College Football Network
 
 Another favorite example for demonstrating the need for a resolution parameter is the network of the (then-so-called) Division I-A college football games from the Fall 2000 season. This example was introduced by Girvan and Newman (2002). The GML file for this example can be downloaded (along with a bunch of other cool examples) from Mark Newman’s “Network data” web page at http://www-personal.umich.edu/~mejn/netdata/. We have directly included this `football` data in `ideanet` with permission from Girvan and Newman.
 
