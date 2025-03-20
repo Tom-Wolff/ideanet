@@ -403,6 +403,15 @@ server <- function(input, output, session) {
   edge_data1 <- shiny::reactive({
     shiny::req(input$raw_edges)
 
+    selected_type <- input$select_file_type_edges
+    file_path <- input$raw_edges$datapath
+    file_ext <- tools::file_ext(file_path)  # Extract file extension
+    expected_extensions <- if (selected_type == "csv") c("csv") else c("xls", "xlsx")
+    if (!(file_ext %in% expected_extensions)) {
+      shiny::showNotification("Error: Uploaded file does not match the selected file format!", type = "error")
+      return(NULL)
+    }
+
     # If "Edgelist" is selected
     if (input$edge_format == "Edgelist") {
       # Reading CSV
