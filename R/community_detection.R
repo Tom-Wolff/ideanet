@@ -65,7 +65,7 @@ comm_detect <- function(g, modres=1,
   }
 
   # For processing generic igraph input, not necessarily created by netwrite:
-  if (NA %in% as.numeric(igraph::V(g)$name)) {
+  if (is.null(igraph::V(g)$name) || NA %in% as.numeric(igraph::V(g)$name)) {
     cat('\n')
     warning("Non-numeric IDs detected in the igraph object's `name` attribute. The `name` attribute will be updated to contain zero-indexed ID numbers. The original `name` values will be reassigned to the `original_name` attribute.\n")
     igraph::V(g)$original_name <- igraph::V(g)$name
