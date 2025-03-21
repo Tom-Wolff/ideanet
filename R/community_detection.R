@@ -66,7 +66,8 @@ comm_detect <- function(g, modres=1,
 
   # For processing generic igraph input, not necessarily created by netwrite:
   if (NA %in% as.numeric(igraph::V(g)$name)) {
-    warning("\nNon-numeric IDs detected in the igraph object's `name` attribute. The `name` attribute will be updated to contain zero-indexed ID numbers. The original `name` values will be reassigned to the `original_name` attribute.\n")
+    cat('\n')
+    warning("Non-numeric IDs detected in the igraph object's `name` attribute. The `name` attribute will be updated to contain zero-indexed ID numbers. The original `name` values will be reassigned to the `original_name` attribute.\n")
     igraph::V(g)$original_name <- igraph::V(g)$name
     igraph::V(g)$name <- 0:(igraph::vcount(g)-1)
   }
@@ -127,7 +128,7 @@ comm_detect <- function(g, modres=1,
 
   # Betweenness does edges as distances. Need reciprocal
   if (stats::var(igraph::E(g_undir)$weight) > 0) {
-    warning("Calling cluster_edge_betweenness with reciprocal weights, which may affect selected membership vector incorrectly.")
+    warning("Calling cluster_edge_betweenness with reciprocal weights, which may affect selected membership vector incorrectly.\n")
   }
 
   if (n > 5000 & slow_routines == FALSE) {
