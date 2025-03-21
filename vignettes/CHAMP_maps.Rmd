@@ -270,7 +270,7 @@ At the same time, we note that extending the `gamma_range` beyond its default he
 
 ### What are the communities find here?
 
-Having used this CHAMP and iterative map framework to find only a single fixed-point partition, and to have it not be at the default resolution ($\gamma=1$), we ask ourselves, what are these communities in the fixed-point partition?
+To finish this example, we look more closely at these communities we found to demonstrate that they are useful for understanding this data set. That is, having used this CHAMP and iterative map framework to find only a single fixed-point partition, and to have it not be at the default resolution ($\gamma=1$), we ask ourselves, what are these communities in the fixed-point partition?
 
 ```{r}
 colrs <- RColorBrewer::brewer.pal(10,"BrBG")
