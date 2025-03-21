@@ -78,7 +78,7 @@ unlist(partitions$count)
 sum(unlist(partitions$count))
 ```
 
-You can see in the above that some partitions — like the 2nd, 6th and 10th in the list — were obtained hundreds of times, while a few were only found once or twice. You can also see that there are a total of 2513 results (`n_runs = 2500` calls to `cluster_leiden` at different resolution parameters plus the 13 clustering results obtained in `comm_detect`) that led to these 22 unique partitions. You can directly query different partitions inside the list as follows.
+You can see in the above that some partitions — like the 2nd, 6th and 10th in the list — were obtained hundreds of times, while a few were only found once. You can also see that there are a total of 2513 results (`n_runs = 2500` calls to `cluster_leiden` at different resolution parameters plus the 13 clustering results obtained in `comm_detect`) that led to these 22 unique partitions. You can directly query different partitions inside the list as follows.
 ```{r}
 partitions$partitions[[6]]
 partitions$partitions[[9]]
@@ -125,11 +125,13 @@ par(mar=c(0,0,0,0))
 igraph::plot.igraph(nw_flor$florentine,mark.groups = partitions$partitions[[6]])
 ```
 
-Running `CHAMP` selects out only the partitions that are optimal at some $\gamma$ and, in so doing, allows the user to see which partitions are optimal over wider ranges of the resolution parameter. In particular, we expect that there might be multiple partitions of interest, and that `CHAMP` will help the user focus their attention down onto a smaller number of possible candidate partitions.
+Running `CHAMP` selects out only the partitions that are optimal at some $\gamma$ and, in so doing, allows the user to see which partitions are optimal over wider ranges of the resolution parameter. In particular, we expect that there might be multiple partitions of interest, and that `CHAMP` will help the user focus their attention down onto a smaller number of possible candidate partitions that have large ranges of optimality in $\gamma$.
 
 ### Step 3: Compute the SBM-equivalence iterative map on the CHAMP set
 
-In the current example, with only 6 partitions remaining in "the CHAMP set", and only some of those with larger ranges of optimality, a user might reasonably stop here with these results and proceed to study the resulting communities in greater detail. But in many applications, there may still be many somewhere-optimal partitions in the CHAMP set with comparable gamma range and/or segment length, and the user may be looking for a way to further focus their attention onto a smaller number of partitions. The `get_CHAMP_map` function uses the equivalence of modularity optimization with inference on a degree-corrected planted partition model, as discovered by Newman (2016), to define the corresponding iterative map restricted to the partitions in the CHAMP set, as defined by Gibson & Mucha (2022). In this iterative map, each partition in the set points to an "estimated $\gamma$" value consistent with the equivalence, and thereby points to whichever partition is optimal at that estimated $\gamma$ value. A fixed point of the map, that is, a partition that points to itself (it points to an estimated $\gamma$ in its own domain of optimality), is thus self consistent in the sense of this equivalence, and becomes a natural partition for further attention. 
+In the current example, with only 6 partitions remaining in "the CHAMP set", and only some of those with larger ranges of optimality, a user might reasonably stop here with these results and proceed to study the resulting communities in greater detail. But in many applications, there may still be many somewhere-optimal partitions in the CHAMP set with comparable gamma range and/or segment length, and the user may be looking for a way to further focus their attention onto a smaller number of partitions. 
+
+The `get_CHAMP_map` function uses the equivalence of modularity optimization with inference on a degree-corrected planted partition model, as discovered by Newman (2016), to define the corresponding iterative map restricted to the partitions in the CHAMP set, as defined by Gibson & Mucha (2022). In this iterative map, each partition in the set points to an "estimated $\gamma$" value consistent with the equivalence, and thereby points to whichever partition is optimal at that estimated $\gamma$ value. A fixed point of the map, that is, a partition that points to itself (it points to an estimated $\gamma$ in its own domain of optimality), is thus self consistent in the sense of this equivalence, and becomes a natural partition for further attention. 
 
 **Arguments for `get_CHAMP_map()`:**
 
@@ -149,9 +151,9 @@ print(partitions$CHAMPsummary)
 
 Looking at the above figure and table, at the bottom of the table we see that the 6-community partition with partition_num 10 maps to the estimated $\gamma$ value listed under next_gamma, where the 5-community partition is optimal (that is, the bottom row of the table lists next_partition_num 6 and next_num_communities 5). Specifically, note that the next_gamma value listed for partition_num 2 is between the starting_gamma and ending_gamma values for partition_num 6, and the next_gamma for this partition then maps to itself. That is, partition_num 6 is a fixed point of the iterative map on the CHAMP set. Similarly, partition_num 5 and partition_num 11 both also map to that same 5-community partition_num 6 fixed point. In contrast, we see that partition_num 2, with 3 communities, is also a fixed point, mapping to itself. Note that the "fixed point" message output from `get_CHAMP_map` identifies both partition_num 2 and partition_num 6 as the two partitions that each point to themselves.
 
-As an aside, note the NA values in the row corresponding to the 2-community partition. This partition is unlike the others here in that it doesn't map to anywhere, because this 2-community partition is a trivial solution in that it simply identifies the 2 disconnected components of the graph without any further community structure within those components, and in the absence of any further community structure it has no associated resolution. This trivial partition where all nodes in each connected component are together in one community cannot be mapped to any other partition (hence the NA values). However, it is theoretically possible in the pipeline for other partitions to map to $\gamma$ values where this trivial partition is optimal (but it does not happen in the present examples).
+As an aside, note the NA values in the row corresponding to the 2-community partition. This partition is unlike the others here in that it doesn't map to anywhere, because this 2-community partition is a trivial solution in that it simply identifies the 2 components of the graph (disconnected from one another) without any further community structure within those components, and in the absence of any further community structure it has no associated resolution. This trivial partition where all nodes in each connected component are together in a community cannot be mapped to any other partition (hence the NA values). However, it is theoretically possible in the pipeline for other partitions to map to $\gamma$ values where this trivial partition is optimal (but it does not happen in the present examples).
 
-As the only fixed points of the map on the CHAMP set, partition_num 2 and partition_num 6 are of special interest to us here. The fact that partition_num 6 happens to be the same as the optimal partition at the default resolution parameter $\gamma=1$ is a special feature of this simple example network — in other examples, the fixed points of the CHAMP map occur at other resolution parameter values.
+As the only fixed points of the map on the CHAMP set, partition_num 2 and partition_num 6 are of special interest to us here. The fact that partition_num 6 happens to be the same as the optimal partition at the default resolution parameter $\gamma=1$ is a special feature of this simple example network — in other examples, the fixed points of the CHAMP map may occur at other resolution parameter values.
 
 Again, there may be other good partitions in different senses that are not highlighted by these procedures, but we expect there are many cases where this framework — gathering partitions, running `CHAMP`, and picking out the fixed point of the iterative map on the CHAMP set — easily and efficiently highlights partitions of interest.
 
@@ -209,14 +211,13 @@ Looking at the above figure and table, we can see that the only partition that m
 
 ## Example 3: Zachary's Karate Club, with weights
 
-We now perform the three steps of this framework for the weighted version of the karate club, to emphasize that weights matter and to highlight an important warning message for the third step (`get_CHAMP_map`) of the framework.
+We now perform the three steps of this framework for the weighted version of the karate club, to emphasize that weights matter and to highlight an important warning message for the third step of the framework (`get_CHAMP_map`).
 
 ```{r}
 data(karate,package="igraphdata")
 par(mar=c(0,0,0.8,0))
 igraph::plot.igraph(karate, main="Zachary's Karate Club (weighted)")
-set.seed(3478)
-partitions <- get_partitions(karate, n_runs = 2500)
+partitions <- get_partitions(karate, n_runs = 2500, seed = 3478)
 partitions <- CHAMP(karate,partitions,plottitle="Zachary's Karate Club (weighted)")
 partitions <- get_CHAMP_map(karate,partitions,plotlabel="Zachary's Karate Club (weighted)")
 print(partitions$CHAMPsummary)
