@@ -283,7 +283,7 @@ table(igraph::V(football)$value,
       igraph::membership(partitions$partitions[[36]]))
 ```
 
-Though it isn't completely clear from the figure, the above table indicates that this 12-community fixed-point partition is very well aligned to the `value` labels in the data. This similarity between labels is natural because `value` here denotes the conferences that teams participate in (see https://en.wikipedia.org/wiki/Category:2000_NCAA_Division_I-A_football_standings_templates). For example, we see in the table that Community 1 consists of all 8 teams with `value=7` (this value corresponds to the old Mountain West Conference). Continuing through the table, Community 2 is all 9 teams with `value=0` (the ACC), Community 3 is all 11 teams with `value=2` (the Big Ten), Community 4 is all 12 teams with `value=3` (the Big 12), Community 5 is all 10 teams with `value=4` (the Pac-10) and Community 8 is all 12 teams with `value=9` (the SEC).
+Though it isn't completely clear from the figure, the above table indicates that this 12-community fixed-point partition is very well aligned to the `value` labels in the data. This similarity between labels is natural because `value` here denotes the conferences that teams participated in (see https://en.wikipedia.org/wiki/Category:2000_NCAA_Division_I-A_football_standings_templates). For example, we see in the table that Community 1 consists of all 8 teams with `value=7` (this value corresponds to the old Mountain West Conference). Continuing through the table, Community 2 is all 9 teams with `value=0` (the ACC), Community 3 is all 11 teams with `value=2` (the Big Ten), Community 4 is all 12 teams with `value=3` (the Big 12), Community 5 is all 10 teams with `value=4` (the Pac-10) and Community 8 is all 12 teams with `value=9` (the SEC).
 
 Looking at a community here that is not perfectly aligned with the `value` attribute, we find Community 7
 ```{r}
@@ -305,7 +305,7 @@ aligns perfectly with the 9 teams in Conference USA, while Community 12
 ```{r}
 igraph::V(football)$label[partitions$partitions[[36]]$membership == 12]
 ```
-aligns perfectly with the 9 teams in the Western Athletic Conference. The apparent discrepancy between these memberships and the `value` field is that TexasChristian (TCU) appears to be misassigned by the `value` field to Conference USA (`value=4`) instead of the WAC (`value=11`, which erroneously appears to include BoiseState from the BigWest and independent LouisianaTech).
+aligns perfectly with the 9 teams in the Western Athletic Conference. The apparent discrepancy between these memberships and the `value` field is that TexasChristian (TCU) appears to be misassigned by the `value` field to Conference USA (`value=4`) instead of the WAC (`value=11`, which also erroneously appears to include BoiseState from the Big West and independent LouisianaTech).
 
 Finally, as one last emphasis that sometimes partitions that are not fixed points are still of potential interest, and having highlighted the large-gamma-range partition_num 41, we compare this 14-community partition to the 12-community fixed point:
 ```{r}
@@ -313,7 +313,7 @@ table(igraph::membership(partitions$partitions[[36]]),
       igraph::membership(partitions$partitions[[41]]))
 ```
 
-You can see from this table that the only difference between the two partitions is the splitting the fixed point partition's "Community 7" 14-node community into two parts, and breaking out two teams from "Community 9". If you query these differences by team name, the splitting of Community 7 into two matches the split of the Mid-American Conference into its East and West divisions (grouping independent Connecticut in the West), while the two teams broken off from "Community 9" are independents Navy and NotreDame from the 8 teams of the Big East Conference.
+You can see from this table that these two partitions are identical except for the differences in the splitting of the 12-community fixed point partition's "Community 7" 14-node community into two 7-node communities, and breaking out two teams from "Community 9". If you query these differences by team name, the splitting of Community 7 into two matches the split of the Mid-American Conference into its East and West divisions (grouping independent Connecticut in the West), while the two teams broken off from "Community 9" are independents Navy and NotreDame from the 8 teams of the Big East Conference.
 
 In summary, we find that this 12-community fixed point partition is an excellent clustering of this network data set, with important qualities that are much better than what we would have obtained at the default resolution value ($\gamma=1$).
 
