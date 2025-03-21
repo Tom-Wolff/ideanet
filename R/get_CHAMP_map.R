@@ -41,7 +41,7 @@ get_CHAMP_map <- function( network,
 
   if (igraph::is_weighted(network)) {
     if (sd(igraph::E(network)$weight)) {
-      warning("The theory underlying get_CHAMP_map() is for unweighted networks. The formulae have been naturally generalized to weighted networks, but these have not been well studied.") 
+      warning("\nThe theory underlying get_CHAMP_map() is for unweighted networks. The formulae have been naturally generalized to weighted networks, but these have not been well studied.") 
     }
   }
   
