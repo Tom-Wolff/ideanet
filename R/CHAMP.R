@@ -25,7 +25,7 @@
 #   C H A M P   #
 #################
 
-#PJM: 7.30.2024. Gathered bits of code from Rachel Matthew, Ryan Rebne, Syndey Rosenbaum and Ava Scharfstein into add_champ branch
+#PJM: 7.30.2024. Gathered bits of code from Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein into add_champ branch
 #PJM: 8.8.2024. Fixed error about not finding function "count" and changed output to instead add summary and plot to the input partitions variable
 #PJM: 8.19.2024. Fixed unusual situation where nb_clusters does not appear to be the correct number of communities
 #PJM: 8.19.2024. Fixed vertical axis tick labels

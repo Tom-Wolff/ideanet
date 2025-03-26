@@ -30,7 +30,7 @@
 #   G E T  C H A M P  M A P   #
 ###############################
 
-#PJM: 8.8.2024. Gathered bits of code from Rachel Matthew, Ryan Rebne, Syndey Rosenbaum and Ava Scharfstein into add_champ branch
+#PJM: 8.8.2024. Gathered bits of code from Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein into add_champ branch
 #PJM: 8.19.2024. Edits to add warning for weighted networks and to allow network to be unweighted (instead of treating unweighted graphs as weight=1)
 #PJM: 3.13.2025. Fixed case where the network might have multiple components
 

@@ -23,7 +23,7 @@
 #   G E T  P A R T I T I O N S    #
 ###################################
 
-#PJM: 7.15.2024. Gathered bits of code from Rachel Matthew, Ryan Rebne, Syndey Rosenbaum and Ava Scharfstein into add_champ branch
+#PJM: 7.15.2024. Gathered bits of code from Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein into add_champ branch
 #PJM: 7.30.2024. Adding check for undirected network.
 #PJM: 8.26.2024. Changed gamma_range default to improve behavior.
 #PJM: 3.07.2025. Added comm_detect() to methods considered.
