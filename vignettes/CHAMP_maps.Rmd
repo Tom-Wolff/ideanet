@@ -24,7 +24,7 @@ library(ideanet)
 
 1. `get_partitions` collects a set of community detection partitions from multiple calls to the `igraph::cluster_leiden` method to optimize modularity, $Q$, at various values of the resolution parameter, $\gamma$; 
 
-2. `CHAMP` post-processes the output of `get_partitions` to identify the subset of partitions that are somewhere optimal in the space of $\gamma$ values; and
+2. `CHAMP` post-processes the output of `get_partitions` to identify the subset of partitions that are somewhere optimal in the space of $\gamma$ values, as described in Weir et al. (2017); and
 
 3. `get_CHAMP_map` computes the iterative map defined by Newman (2016) through the identified equivalence between modularity optimization and inference on the degree-corrected planted partition stochastic block model, restricted to the CHAMP set as described by Gibson & Mucha (2022).
 
@@ -37,9 +37,12 @@ Keep in mind that, at the end of the day, this pipeline — combining modularity
 These functions, as part of the broader IDEANet project, are supported by the National Science Foundation as part of the Human Networks and Data Science — Infrastructure program (BCS-2024271 and BCS-2140024).
 
 If you use these functions in your work, please cite
-1. the `ideanet` package, [DOI:10.32614/CRAN.package.ideanet](https://doi.org/10.32614/CRAN.package.ideanet);
-2. the Weir et al. (2017) CHAMP paper, [DOI:10.3390/a10030093](https://doi.org/10.3390/a10030093); and
-3. the Gibson & Mucha (2022) CHAMP mapping paper, [DOI:10.1038/s41598-022-20142-6](https://doi.org/10.3390/a10030093).
+
+1. [the `ideanet` package](https://doi.org/10.32614/CRAN.package.ideanet),
+
+2. [the Weir et al. (2017) CHAMP paper](https://doi.org/10.3390/a10030093), and
+
+3. [the Gibson & Mucha (2022) CHAMP maps paper](https://doi.org/10.1038/s41598-022-20142-6).
 
 Note that our current R implementation of this pipeline does not handle multilayer networks. The Python implementation at https://github.com/ragibson/ModularityPruning combines the multilayer capabilities of CHAMP with the generalization of Newman's equivalence to multilayer networks derived by Pamfil et al. (2019). An R implementation of this multilayer framework is in development. We also assume that networks are undirected, though possibly weighted (but see the warning discussed in Example 3 below).
 
