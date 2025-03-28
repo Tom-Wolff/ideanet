@@ -325,7 +325,7 @@ table(igraph::membership(partitions$partitions[[36]]),
 
 You can see from this table that these two partitions are identical except for the differences in the splitting of the 12-community fixed point partition's "Community 7" 14-node community into two 7-node communities, and breaking out two teams from "Community 9". If you query these differences by team name, the splitting of Community 7 into two matches the split of the Mid-American Conference into its East and West divisions (grouping independent Connecticut in the West), while the two teams broken off from "Community 9" are independents Navy and NotreDame from the 8 teams of the Big East Conference.
 
-Similarly, we again note that Newman (2016) specified 11 communities. Our results above found an 11-community solution, partition_num 33, optimal for $\gamma$ between 1.20 and 1.45, that maps to a $\gamma$ estimate of 2.27 (where the 12-community partition is optimal). Since this estimated $\gamma$ matches the value in Table I of Newman (2016), we assume it is the same partition found there and we compare it with the 12-community fixed point:
+Similarly, we again note that Newman (2016) specified 11 communities. Our results above found an 11-community solution, partition_num 33, optimal for $\gamma$ between 1.20 and 1.45, that maps to a $\gamma$ estimate of 2.27 (where the 12-community partition is optimal). Since this estimated $\gamma$ matches the value in Table I of Newman (2016), we believe it is likely the same partition found there and we compare it with the 12-community fixed point:
 ```{r}
 table(igraph::membership(partitions$partitions[[36]]),
       igraph::membership(partitions$partitions[[33]]))
