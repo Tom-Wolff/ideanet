@@ -11,6 +11,8 @@
 #' @param plottitle Optional title for generated plot of (generalized) modularity versus resolution parameter.
 #'
 #' @returns \code{CHAMP} returns the input list of partitions with a \code{$CHAMPsummary} about which partitions are somewhere optimal (in the sense of modularity Q with a resolution parameter gamma) and their domains of optimality, along with the generated \code{$CHAMPfigure} plot of the upper envelope of Q(gamma). The returned list object also contains the original list entered into the \code{partitions} argument.
+#'
+#' @author Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein
 #' 
 #' @export
 #' 

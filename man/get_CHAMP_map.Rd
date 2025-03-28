@@ -35,3 +35,6 @@ partitions <- get_partitions(karate, n_runs = 2500)
 partitions <- CHAMP(karate,partitions,plottitle="Weighted Karate Club")
 partitions <- get_CHAMP_map(karate,partitions,plotlabel="Weighted Karate Club")
 }
+\author{
+Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein
+}

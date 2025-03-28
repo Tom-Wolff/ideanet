@@ -11,6 +11,8 @@
 #'
 #' @returns \code{get_partitions} returns a list of unique partitions appropriate for subsequent input to \code{CHAMP}.
 #'
+#' @author Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein
+#'
 #' @export
 #'
 #' @examples

@@ -15,7 +15,9 @@
 #' @param plotlabel Optional label to include as annotation on the generated figure.
 #'
 #' @returns \code{get_CHAMP_map} returns the input list of partitions with the \code{$CHAMPsummary} updated to indicate the iterative map, that is, information about the next partition that each partition points to in the map, along with the generated \code{$CHAMPmap} plot of the partitions in the CHAMP set (by their numbers of communities) versus gamma.
-#' 
+#'
+#' @author Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein
+#'  
 #' @export
 #' 
 #' @examples
