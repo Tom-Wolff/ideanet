@@ -786,7 +786,73 @@ ef2 <- function(g) {
 #   return(bonacich_output)
 # }
 
-bonacich <- function(matrix, bpct = .75) {
+# bonacich <- function(matrix, bpct = .75) {
+#
+#   # browser()
+#
+#   # If the network consists of only two nodes, the rest of this function will break.
+#   # `igraph`'s function for Bonacich centrality returns `NaN` values under given such a network.
+#   # Safe to say if we have two nodes, we can just assign `NA` values.
+#
+#   if (nrow(matrix) <= 2) {
+#
+#     bonacich_output <- data.frame(bonacich = rep(NA, nrow(matrix)),
+#                                   bon_centralization = rep(NA, nrow(matrix)))
+#   } else {
+#
+#     # Calculate eigenvalues
+#     evs <- RSpectra::eigs(matrix, k = 1, which = "LR")
+#
+#     # The ones we want are in the first column
+#     # Something's weird here -- it's combining the two columns that SAS outputs into a single value
+#     # This value is a complex sum. For now, it seems like coercing the complex sum using `as.numeric`
+#     # gets us the values we want.
+#
+#     # Get maximum eigenvalue
+#     maxev <- evs$values
+#
+#     if (is.complex(maxev) & Im(maxev) != 0) {
+#       bonacich_output <- data.frame(bonacich = rep(0, n), bon_centralization = rep(0, n))
+#       base::warning("Maximum eigenvector value is complex number. Bonacich centrality scores will be set to 0.")
+#     } else {
+#
+#     maxev <- Re(maxev)
+#
+#     # Get values that go into computation
+#     b <- bpct*(1/maxev) # Diameter of power weight
+#     n <- nrow(matrix) # Size
+#     i <- Matrix::Diagonal(n) # Identity matrix
+#     w <- Matrix::Matrix(rep(1, n), ncol = 1) # Column of 1s
+#
+#     # For some reason, the output of the `solve` function is the transpose
+#     # of the `INV` function in SAS. I'm going to transpose the output of `solve` here
+#     # so that results are consistent with what we get in SAS, but this is something
+#     # we need to confirm and possibly be wary of.
+#
+#
+#     # Key equation, this is the centrality score
+#     C <- (Matrix::t(Matrix::solve(i-b*matrix)))%*%Matrix::t(matrix)%*%w
+#
+#     # This is Bonacich normalizing value alpha
+#     A <- sqrt(n/(Matrix::t(C) %*% C))
+#
+#     # This is the power centrality score
+#     cent <- as.numeric(A) * as.numeric(C)
+#
+#     # This is the centralization score
+#     NBCNT <- sum(max(C) - C)/((n-1)*(n-2))
+#
+#     # Collect power centrality scores and centralization scores into single dataframe
+#     bonacich_output <- data.frame(bonacich = cent, bon_centralization = NBCNT)
+#
+#     }
+#
+#   }
+#
+#   return(bonacich_output)
+# }
+
+bonacich <- function(matrix, directed, bpct = .75) {
 
   # browser()
 
@@ -801,22 +867,14 @@ bonacich <- function(matrix, bpct = .75) {
   } else {
 
     # Calculate eigenvalues
-    evs <- RSpectra::eigs(matrix, k = 1, which = "LR")
-
-    # The ones we want are in the first column
-    # Something's weird here -- it's combining the two columns that SAS outputs into a single value
-    # This value is a complex sum. For now, it seems like coercing the complex sum using `as.numeric`
-    # gets us the values we want.
-
+    ### We're now just going to get the maximum eigenvalue from
+    ### igraph::eigen_centrality
+    this_mode <- ifelse(directed == TRUE, "directed", "undirected")
+    eigen_graph <- igraph::graph_from_adjacency_matrix(matrix, mode = this_mode, weighted = TRUE)
     # Get maximum eigenvalue
-    maxev <- evs$values
+    maxev <- igraph::eigen_centrality(eigen_graph)$value
 
-    if (is.complex(maxev) & Im(maxev) != 0) {
-      bonacich_output <- data.frame(bonacich = rep(0, n), bon_centralization = rep(0, n))
-      base::warning("Maximum eigenvector value is complex number. Bonacich centrality scores will be set to 0.")
-    } else {
 
-    maxev <- Re(maxev)
 
     # Get values that go into computation
     b <- bpct*(1/maxev) # Diameter of power weight
@@ -844,8 +902,6 @@ bonacich <- function(matrix, bpct = .75) {
 
     # Collect power centrality scores and centralization scores into single dataframe
     bonacich_output <- data.frame(bonacich = cent, bon_centralization = NBCNT)
-
-    }
 
   }
 
@@ -925,19 +981,19 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
     # We now have everyting we need to get the three versions of Bonacich power centrality
     # First let's get the indegree version
-    bonacich_in <- bonacich(matrix = bon_adjmat, bpct = bpct)
+    bonacich_in <- bonacich(matrix = bon_adjmat, bpct = bpct, directed = directed)
 
     # Update column names
     colnames(bonacich_in) <- paste(colnames(bonacich_in), "_in", sep = "")
 
     # Next we get the outdegree version (note that we're transposing `bon_adjmat` in the `matrix` argument)
-    bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct)
+    bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct, directed = directed)
 
     # Update column names
     colnames(bonacich_out) <- paste(colnames(bonacich_out), "_out", sep = "")
 
     # Finally, we get the undirected version from the symmetrized adjacency matrix
-    bonacich_sym <- bonacich(matrix = bon_sym_mat, bpct = bpct)
+    bonacich_sym <- bonacich(matrix = bon_sym_mat, bpct = bpct, directed = directed)
 
     # Update column names
     colnames(bonacich_sym) <- paste(colnames(bonacich_sym), "_sym", sep = "")
@@ -947,7 +1003,7 @@ bonacich_igraph <- function(g, directed, bpct = .75,
   }else{
     # If the network is undirected, proceed to get Bonacich power centrality scores on
     # just the base adjacency matrix
-    bon_scores <- bonacich(bon_adjmat, bpct = bpct)
+    bon_scores <- bonacich(bon_adjmat, bpct = bpct, directed = directed)
   }
 
   # Add ID variable for merging back into nodelist
@@ -1001,37 +1057,248 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 #   return(eigen_df)
 # }
 
-eigen_custom <- function(matrix) {
+# eigen_custom <- function(matrix) {
+#
+#   # browser()
+#
+#   # To replicate output from SAS, we first need to transpose the adjacency matrix
+#   # eigen_calc <- eigen(t(matrix))
+#
+#   if (nrow(matrix) == 2) {
+#     eigen_df <- data.frame(eigen_centrality = rep(NA, nrow(matrix)))
+#   } else {
+#     eigen <- RSpectra::eigs(Matrix::t(matrix), k = 1, which = "LM")
+#
+#     # Now get that column from the eigenvector matrix;
+#     # these are the eigenvector centrality scores.
+#     # You sometimes get negative values, but that's
+#     # not an error. Just take the absoluate value of
+#     # negative values
+#     # eigencent <- abs(as.numeric(eigen_calc$vectors[,max_eval]))
+#     eigencent <- abs(as.numeric(eigen$vectors))
+#
+#     # Prepare data frame for output
+#     eigen_df <- data.frame(eigen_centrality = eigencent)
+#     # Normalizing scores: divide eigen scores by `sqrt(2)`
+#     eigen_df$eigen_centrality <- eigen_df$eigen_centrality/sqrt(2)
+#   }
+#   return(eigen_df)
+# }
+#
+# # IGRAPH
+# eigen_igraph <- function(g, directed,
+#                          message = TRUE){
+#
+#   # browser()
+#
+#   ### If igraph object doesn't contain a `weight` attribute, create one and set
+#   ### all values to `1`:
+#   if (!("weight" %in% names(igraph::edge.attributes(g)))) {
+#     igraph::E(g)$weight <- 1
+#   }
+#
+#   # Store complete nodelist for merging later on
+#   nodelist <- data.frame(id = igraph::V(g)$name)
+#
+#   # Detect if isolates are present in the network
+#   if (0 %in% igraph::degree(g, mode = "all")) {
+#     # If isolates are present, indicate that isolates are going to be removed
+#     if (message == TRUE){
+#       warning("(Eigenvector centrality) Isolates detected in network. Isolates will be removed from network when calculating eigenvector centrality measure, and will be assigned NA values in final output.\n")
+#     }
+#     # Remove isolates
+#     g <- igraph::delete.vertices(g, v = igraph::degree(g, mode = "all", loops = FALSE) == 0)
+#   }
+#
+#   # Assign component membership as a vertex attribute
+#   igraph::V(g)$component <- igraph::components(g)$membership
+#
+#   # Calculate Eigenvector centrality for each component
+#   # Unique component ids
+#   unique_components <- unique(igraph::V(g)$component)
+#
+#   # We need to ensure that the adjacency matrix used in calculating eigenvectors/values
+#   # is not singular. The following checks for this. If the adjacency matrix is found
+#   # to be singular, network will be treated as undirected when calculating EVs
+#   if (directed == TRUE) {
+#     # Get adjacency matrix
+#     check_adj <- igraph::as_adjacency_matrix(g, type = "both")
+#     #
+#     # # Get generalized inverse of matrix
+#     # inv_adj <- MASS::ginv(check_adj)
+#     # singular_check <- round(sum(diag(inv_adj %*% check_adj)))
+#     is_singular <- abs(Matrix::det(check_adj)) < 1e-8 ## tolerance
+#
+#     if (isTRUE(is_singular)) {
+#       if (message == TRUE){
+#         warning("(Eigenvector centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
+#       }
+#       directed <- FALSE
+#       g <- igraph::as.undirected(g)
+#     }
+#   }
+#
+#   # Detect if multiple components exist in the network
+#   if (length(unique_components) > 1) {
+#     # Outputting message to the user
+#     if (message == TRUE){
+#       warning("(Eigenvector centrality) Network consists of 2+ unconnected components. Eigenvector centrality scores will be calculated for nodes based on their position within their respective components. Nodes in components consisting of a single dyad will be assigned NA values in final output.\n")
+#     }
+#     # Initialize data frame for storing eigen centrality measures
+#     eigen_scores <- data.frame()
+#
+#     # If the network is a directed network
+#     if (directed == TRUE) {
+#       # For each component...
+#       for (i in 1:length(unique_components)) {
+#         # Make subgraph of component
+#         subgraph <- igraph::delete.vertices(g, v = igraph::V(g)$component != i)
+#
+#         # Convert subgraph of component into an adjacency matrix
+#         sub_adj <- igraph::as_adjacency_matrix(subgraph, type = "both", attr = "weight")
+#
+#         # Make transpose of subgraph adjmat
+#         sub_adj_t <- Matrix::t(sub_adj)
+#
+#         # Make undirected version of component
+#         subgraph_undir <- igraph::as.undirected(subgraph)
+#
+#         # Convert into adjacency matrix
+#         undir_mat <- igraph::as_adjacency_matrix(subgraph_undir, type = "both", attr = "weight")
+#
+#         # Get eigenvector centrality measures for indegree
+#         eigen_in <- eigen_custom(sub_adj)
+#
+#         # Update names to indicate indegree
+#         colnames(eigen_in) <- paste(colnames(eigen_in), "_in", sep = "")
+#
+#         # Get eigenvector centrality measures for outdegree
+#         eigen_out <- eigen_custom(sub_adj_t)
+#
+#         # Update names to indicate outdegree
+#         colnames(eigen_out) <- paste(colnames(eigen_out), "_out", sep = "")
+#
+#         # On symmetric matrix
+#         eigen_sym <- eigen_custom(undir_mat)
+#         colnames(eigen_sym) <- paste(colnames(eigen_sym), "_sym", sep = "")
+#
+#         # Combine into single dataframe
+#         subgraph_scores <- cbind(eigen_in, eigen_out, eigen_sym)
+#
+#         # Add component indicator
+#         subgraph_scores$component <- i
+#
+#         # Add ID variable
+#         subgraph_scores$id <- igraph::V(subgraph)$name
+#
+#         # Bind to `eigen_scores` data frame
+#         eigen_scores <- rbind(eigen_scores, subgraph_scores)
+#
+#         # Divide by 1/sqrt(2) to normalize
+#
+#       }
+#
+#     # End directed network condition
+#     } else {
+#       # For each component...
+#       for (i in 1:length(unique_components)) {
+#         # Make subgraph of component
+#         subgraph <- igraph::delete.vertices(g, v = igraph::V(g)$component != i)
+#
+#         # Convert subgraph of component into an adjacency matrix
+#         sub_adj <- igraph::as_adjacency_matrix(subgraph, type = "both", attr = "weight")
+#
+#         # If component consists of a single dyad, go ahead and skip
+#         if (nrow(sub_adj) <= 2) {
+#           next
+#         }
+#
+#         # Get eigenvector centrality measures
+#         # subgraph_scores <- eigen_custom(sub_adj)
+#         subgraph_scores <- data.frame(eigen_centrality = igraph::eigen_centrality(subgraph)$vector)
+#
+#         # Add component indicator
+#         subgraph_scores$component <- i
+#
+#         # Add ID variable
+#         # subgraph_scores$id <- igraph::V(subgraph)$name
+#         subgraph_scores$id <- names(subgraph_scores$eigen_centrality)
+#
+#         # Bind to `eigen_scores` data frame
+#         eigen_scores <- rbind(eigen_scores, subgraph_scores)
+#       }
+#     }
+#
+#   # If network is only a single component
+#   }else{
+#     # If the network is a directed network
+#     if (directed == TRUE) {
+#       # Convert graph to adjacency matrix
+#       eigen_adj <- igraph::as_adjacency_matrix(g, type = "both", attr = "weight")
+#
+#       # Make transpose of subgraph adjmat
+#       eigen_adj_t <- Matrix::t(eigen_adj)
+#
+#       # Make undirected version of component
+#       eigen_undir <- igraph::as.undirected(g)
+#
+#       # Convert into adjacency matrix
+#       undir_mat <- igraph::as_adjacency_matrix(g, type = "both", attr = "weight")
+#
+#       # Get eigenvector centrality measures for indegree
+#       eigen_in <- eigen_custom(eigen_adj)
+#
+#       # Update names to indicate indegree
+#       colnames(eigen_in) <- paste(colnames(eigen_in), "_in", sep = "")
+#
+#       # Get eigenvector centrality measures for outdegree
+#       eigen_out <- eigen_custom(eigen_adj_t)
+#
+#       # Update names to outdicate outdegree
+#       colnames(eigen_out) <- paste(colnames(eigen_out), "_out", sep = "")
+#
+#       # On symmetric matrix
+#       eigen_sym <- eigen_custom(undir_mat)
+#       colnames(eigen_sym) <- paste(colnames(eigen_sym), "_sym", sep = "")
+#
+#       # Combine into single dataframe
+#       eigen_scores <- cbind(eigen_in, eigen_out, eigen_sym)
+#
+#       # Add ID variable
+#       eigen_scores$id <- igraph::V(g)$name
+#     } else {
+#       # If the network is undirected...
+#       # Convert graph to adjacency matrix
+#       eigen_adj <- igraph::as_adjacency_matrix(g, type = "both", attr = "weight")
+#
+#       # Get Eigenvector centrality measures
+#       eigen_scores <- eigen_custom(eigen_adj)
+#
+#       # Add ID variable
+#       eigen_scores$id <- igraph::V(g)$name
+#     }
+#   }
+#
+#   # There's a rare case in which a network might consist of multiple components,
+#   # each consisting of no more than a single dyad. `eigen_scores` will be an empty
+#   # data frame. The below code corrects this, giving `NA` values to all nodes (verify with Jim)
+#   if (nrow(eigen_scores) == 0) {
+#     eigen_scores <- data.frame(id = igraph::V(g)$name,
+#                                eigen_centrality = NA)
+#   }
+#
+#   # Merge `eigen_scores` back into nodelist
+#   nodelist <- dplyr::left_join(nodelist, eigen_scores, by = "id")
+#
+#   # Remove `id` variable
+#   nodelist$id <- NULL
+#
+#   # Return Result
+#   return(nodelist)
+# }
 
-  # browser()
-
-  # To replicate output from SAS, we first need to transpose the adjacency matrix
-  # eigen_calc <- eigen(t(matrix))
-
-  if (nrow(matrix) == 2) {
-    eigen_df <- data.frame(eigen_centrality = rep(NA, nrow(matrix)))
-  } else {
-    eigen <- RSpectra::eigs(Matrix::t(matrix), k = 1, which = "LM")
-
-    # Now get that column from the eigenvector matrix;
-    # these are the eigenvector centrality scores.
-    # You sometimes get negative values, but that's
-    # not an error. Just take the absoluate value of
-    # negative values
-    # eigencent <- abs(as.numeric(eigen_calc$vectors[,max_eval]))
-    eigencent <- abs(as.numeric(eigen$vectors))
-
-    # Prepare data frame for output
-    eigen_df <- data.frame(eigen_centrality = eigencent)
-    # Normalizing scores: divide eigen scores by `sqrt(2)`
-    eigen_df$eigen_centrality <- eigen_df$eigen_centrality/sqrt(2)
-  }
-  return(eigen_df)
-}
-
-# IGRAPH
 eigen_igraph <- function(g, directed,
-                         message = TRUE){
+                         message = TRUE) {
 
   # browser()
 
@@ -1069,8 +1336,6 @@ eigen_igraph <- function(g, directed,
     check_adj <- igraph::as_adjacency_matrix(g, type = "both")
     #
     # # Get generalized inverse of matrix
-    # inv_adj <- MASS::ginv(check_adj)
-    # singular_check <- round(sum(diag(inv_adj %*% check_adj)))
     is_singular <- abs(Matrix::det(check_adj)) < 1e-8 ## tolerance
 
     if (isTRUE(is_singular)) {
@@ -1098,33 +1363,22 @@ eigen_igraph <- function(g, directed,
         # Make subgraph of component
         subgraph <- igraph::delete.vertices(g, v = igraph::V(g)$component != i)
 
-        # Convert subgraph of component into an adjacency matrix
-        sub_adj <- igraph::as_adjacency_matrix(subgraph, type = "both", attr = "weight")
-
         # Make transpose of subgraph adjmat
         sub_adj_t <- Matrix::t(sub_adj)
+        ### Make igraph object from transpose
+        subgraph_t <- igraph::graph_from_adjacency_matrix(sub_adj_t, mode = "directed", weighted = TRUE)
 
         # Make undirected version of component
         subgraph_undir <- igraph::as.undirected(subgraph)
 
-        # Convert into adjacency matrix
-        undir_mat <- igraph::as_adjacency_matrix(subgraph_undir, type = "both", attr = "weight")
-
         # Get eigenvector centrality measures for indegree
-        eigen_in <- eigen_custom(sub_adj)
-
-        # Update names to indicate indegree
-        colnames(eigen_in) <- paste(colnames(eigen_in), "_in", sep = "")
+        eigen_in <- data.frame(eigen_in = igraph::eigen_centrality(subgraph, directed = TRUE)$vector)
 
         # Get eigenvector centrality measures for outdegree
-        eigen_out <- eigen_custom(sub_adj_t)
-
-        # Update names to outdicate outdegree
-        colnames(eigen_out) <- paste(colnames(eigen_out), "_out", sep = "")
+        eigen_out <- data.frame(eigen_out = igraph::eigen_centrality(subgraph_t, directed = TRUE)$vector)
 
         # On symmetric matrix
-        eigen_sym <- eigen_custom(undir_mat)
-        colnames(eigen_sym) <- paste(colnames(eigen_sym), "_sym", sep = "")
+        eigen_sym <- data.frame(eigen_sym = igraph::eigen_centrality(subgraph_undir, directed = FALSE)$vector)
 
         # Combine into single dataframe
         subgraph_scores <- cbind(eigen_in, eigen_out, eigen_sym)
@@ -1142,7 +1396,7 @@ eigen_igraph <- function(g, directed,
 
       }
 
-    # End directed network condition
+      # End directed network condition
     } else {
       # For each component...
       for (i in 1:length(unique_components)) {
@@ -1158,7 +1412,7 @@ eigen_igraph <- function(g, directed,
         }
 
         # Get eigenvector centrality measures
-        subgraph_scores <- eigen_custom(sub_adj)
+        subgraph_scores <- data.frame(eigen_centrality = igraph::eigen_centrality(subgraph, directed = FALSE)$vector)
 
         # Add component indicator
         subgraph_scores$component <- i
@@ -1171,37 +1425,28 @@ eigen_igraph <- function(g, directed,
       }
     }
 
-  # If network is only a single component
-  }else{
+    # If network is only a single component
+  } else {
     # If the network is a directed network
     if (directed == TRUE) {
-      # Convert graph to adjacency matrix
-      eigen_adj <- igraph::as_adjacency_matrix(g, type = "both", attr = "weight")
 
       # Make transpose of subgraph adjmat
       eigen_adj_t <- Matrix::t(eigen_adj)
+      ### Make igraph object from transpose
+      g_t <- igraph::graph_from_adjacency_matrix(eigen_adj_t, mode = "directed", weighted = TRUE)
+
 
       # Make undirected version of component
-      eigen_undir <- igraph::as.undirected(g)
-
-      # Convert into adjacency matrix
-      undir_mat <- igraph::as_adjacency_matrix(g, type = "both", attr = "weight")
+      g_undir <- igraph::as.undirected(g)
 
       # Get eigenvector centrality measures for indegree
-      eigen_in <- eigen_custom(eigen_adj)
-
-      # Update names to indicate indegree
-      colnames(eigen_in) <- paste(colnames(eigen_in), "_in", sep = "")
+      eigen_in <- data.frame(eigen_in = igraph::eigen_centrality(g, directed = TRUE)$vector)
 
       # Get eigenvector centrality measures for outdegree
-      eigen_out <- eigen_custom(eigen_adj_t)
-
-      # Update names to outdicate outdegree
-      colnames(eigen_out) <- paste(colnames(eigen_out), "_out", sep = "")
+      eigen_out <- data.frame(eigen_out = igraph::eigen_centrality(g_t, directed = TRUE)$vector)
 
       # On symmetric matrix
-      eigen_sym <- eigen_custom(undir_mat)
-      colnames(eigen_sym) <- paste(colnames(eigen_sym), "_sym", sep = "")
+      eigen_sym <- data.frame(eigen_sym = igraph::eigen_centrality(g_undir, directed = FALSE)$vector)
 
       # Combine into single dataframe
       eigen_scores <- cbind(eigen_in, eigen_out, eigen_sym)
@@ -1210,11 +1455,9 @@ eigen_igraph <- function(g, directed,
       eigen_scores$id <- igraph::V(g)$name
     } else {
       # If the network is undirected...
-      # Convert graph to adjacency matrix
-      eigen_adj <- igraph::as_adjacency_matrix(g, type = "both", attr = "weight")
 
       # Get Eigenvector centrality measures
-      eigen_scores <- eigen_custom(eigen_adj)
+      eigen_scores <- data.frame(eigen_centrality = igraph::eigen_centrality(g, directed = FALSE)$vector)
 
       # Add ID variable
       eigen_scores$id <- igraph::V(g)$name
@@ -1238,8 +1481,6 @@ eigen_igraph <- function(g, directed,
   # Return Result
   return(nodelist)
 }
-
-
 
 
 #################################################
