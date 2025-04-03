@@ -10,7 +10,7 @@ get_partitions(
   n_runs = 100,
   n_iterations = 2,
   seed = NULL,
-  add_comm_detect = T
+  add_comm_detect = TRUE
 )
 }
 \arguments{
