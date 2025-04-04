@@ -24,11 +24,12 @@ The \code{CHAMP} method was developed and studied in Weir, William H., Scott Emm
 See also \url{https://github.com/wweir827/CHAMP} and \url{https://github.com/ragibson/ModularityPruning}.
 }
 \examples{
-# Use get_partitions and CHAMP to generate multiple partitions of the Zachary karate club and identify the domains of optimality in the resolution parameter for different partitions
-library(igraphdata)
-data(karate)
+# Use get_partitions and CHAMP to generate multiple partitions of the
+# Zachary karate club and identify the domains of optimality in the
+# resolution parameter for different partitions
+data(karate, package = "igraphdata")
 partitions <- get_partitions(karate, n_runs = 2500)
-partitions <- CHAMP(karate,partitions,plottitle="Weighted Karate Club")
+partitions <- CHAMP(karate, partitions, plottitle = "Weighted Karate Club")
 }
 \author{
 Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein

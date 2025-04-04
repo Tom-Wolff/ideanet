@@ -63,7 +63,6 @@ Imports:
     grDevices,
     gridGraphics,
     igraph (>= 2.1.0),
-    igraphdata,
     intergraph,
     jsonlite,
     linkcomm,
@@ -73,8 +72,8 @@ Imports:
     moments,
     network,
     readxl,
+    reshape2,
     rlang,
-    RSpectra,
     shiny,
     sna,
     stringr,
@@ -94,5 +93,6 @@ Suggests:
     visNetwork
 RoxygenNote: 7.3.2
 Depends: 
-    R (>= 2.10)
+    R (>= 2.10),
+    igraphdata
 VignetteBuilder: knitr

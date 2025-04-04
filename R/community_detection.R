@@ -103,8 +103,8 @@ comm_detect <- function(g, modres=1,
     message("The `comm_detect` function currently supports undirected graphs only. Directed networks will be collapsed to undirected before running community detection algorithms.")
   }
 
-  # Note that, if g is a weighted directed graph here, mode = "collapse" 
-  # actually sums the weights of directed edges, so a reciprocal tie collapses 
+  # Note that, if g is a weighted directed graph here, mode = "collapse"
+  # actually sums the weights of directed edges, so a reciprocal tie collapses
   # to a single undirected edge but with the weight summed. However, if g is
   # an undirected multigraph, as_undirected leaves it as such (hence the need
   # for the simplify call that follows)
@@ -383,7 +383,7 @@ comm_detect <- function(g, modres=1,
                                  lc_cluster = NA)
   } else {
     #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
-    linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(from, to)
+    linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(.data$from, .data$to)
     #### In some cases, such as when given a star graph, `linkcomm` won't detect any communities.
     #### if this is the case, just create the `lc_membership` dataframe manually and assign all nodes
     #### to the same community (or `NA`s depending on our team's ultimate preference)

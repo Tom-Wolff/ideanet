@@ -3,11 +3,11 @@
 #' @description \code{get_CHAMP_map} calculates the iterative map defined by Newman's equivalence between modularity optimization and inference on the degree-corrected planted partition stochastic block model on a \cite{CHAMP} set of partitions. That is, given an input set of partitions of nodes in a network into communities, calculated by \cite{get_partitions} or by other means and coerced into that format, \code{CHAMP} identifies which input partition is optimal at each value of the resolution parameter, gamma, and then \code{get_CHAMP_map} calculates the iterative map of this set onto itself. Importantly, a fixed point of this map, where a partition points to itself, indicates that partition is self-consistent in the sense of this equivalence between modularity and planted partition models. As with \code{CHAMP}, the \code{get_CHAMP_map} code is deterministic and fast given a specified input set of partitions; that is, all of the computational complexity and pseudo-stochastic heuristic nature of community detection is in identifying a good input set in \cite{get_partitions}.
 #'
 #' The \code{CHAMP} method was developed and studied in Weir, William H., Scott Emmons, Ryan Gibson, Dane Taylor, and Peter J. Mucha. “Post-Processing Partitions to Identify Domains of Modularity Optimization.” Algorithms 10, no. 3 (August 19, 2017): 93. \url{https://doi.org/10.3390/a10030093}.
-#' 
+#'
 #' The equivalence between modularity optimization and planted partition inference was derived by M. E. J. Newman in “Equivalence between Modularity Optimization and Maximum Likelihood Methods for Community Detection.” Physical Review E 94, no. 5 (November 22, 2016): 052315. https://doi.org/10.1103/PhysRevE.94.052315.
-#' 
+#'
 #' The iterative map on the CHAMP set was developed and studied in Gibson, Ryan A., and Peter J. Mucha. “Finite-State Parameter Space Maps for Pruning Partitions in Modularity-Based Community Detection.” Scientific Reports 12, no. 1 (September 23, 2022): 15928. https://doi.org/10.1038/s41598-022-20142-6.
-#' 
+#'
 #' See also \url{https://github.com/wweir827/CHAMP} and \url{https://github.com/ragibson/ModularityPruning}.
 #'
 #' @param network The network, as igraph object, to be clustered into communities. Only undirected networks are currently supported. If the object has a 'weight' edge attribute, then that attribute will be used, though it is important to emphasize that the underlying equivalence between modularity and planted partitons defining the iterative map was derived for unweighted networks.
@@ -15,18 +15,21 @@
 #' @param plotlabel Optional label to include as annotation on the generated figure.
 #'
 #' @returns \code{get_CHAMP_map} returns the input list of partitions with the \code{$CHAMPsummary} updated to indicate the iterative map, that is, information about the next partition that each partition points to in the map, along with the generated \code{$CHAMPmap} plot of the partitions in the CHAMP set (by their numbers of communities) versus gamma.
+#'x @import igraphdata
 #'
 #' @author Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein
-#'  
+#'
 #' @export
-#' 
+#'
 #' @examples
-#' # Use get_partitions, CHAMP, and get_CHAMP_map to generate multiple partitions of the Zachary karate club and identify the domains of optimality in the resolution parameter for different partitions
-#' library(igraphdata)
-#' data(karate)
+#' # Use get_partitions, CHAMP, and get_CHAMP_map to generate
+#' # multiple partitions of the Zachary karate club and identify
+#' # the domains of optimality in the resolution parameter for
+#' # different partitions
+#' data(karate, package = "igraphdata")
 #' partitions <- get_partitions(karate, n_runs = 2500)
-#' partitions <- CHAMP(karate,partitions,plottitle="Weighted Karate Club")
-#' partitions <- get_CHAMP_map(karate,partitions,plotlabel="Weighted Karate Club")
+#' partitions <- CHAMP(karate, partitions, plottitle = "Weighted Karate Club")
+#' partitions <- get_CHAMP_map(karate, partitions, plotlabel = "Weighted Karate Club")
 
 ###############################
 #   G E T  C H A M P  M A P   #
@@ -37,26 +40,28 @@
 #PJM: 3.13.2025. Fixed case where the network might have multiple components
 
 # Expects to receive partitions as obtained by get_partitions.R followed by CHAMP.R.
-get_CHAMP_map <- function( network, 
+get_CHAMP_map <- function( network,
                            partitions,
                            plotlabel=NULL ){
 
+
+
   if (igraph::is_weighted(network)) {
-    if (sd(igraph::E(network)$weight)) {
-      warning("The theory underlying get_CHAMP_map() is for unweighted networks. The formulae have been naturally generalized to weighted networks, but these have not been well studied.\n") 
+    if (stats::sd(igraph::E(network)$weight) != 0) {
+      warning("The theory underlying get_CHAMP_map() is for unweighted networks. The formulae have been naturally generalized to weighted networks, but these have not been well studied.\n")
     }
   }
-  
+
   partition_summary <- partitions$CHAMPsummary #as generated by CHAMP.R
-  
+
   numcomponents <- igraph::components(network)$no
   for (x in 1:nrow(partition_summary)) {
     if (partition_summary[x, "num_communities"] > numcomponents) {
       partition <- partitions$partitions[[partition_summary[x, "partition_num"]]]
       res_param <- derive_res_parameter(partition, network)
-      
+
       partition_summary[x, "next_gamma"] <- res_param  # gamma stored
-      
+
       # determining which cluster corresponds to said gamma...
       idx <- which( (res_param > partition_summary$starting_gamma) &
                       (res_param<=partition_summary$ending_gamma) )
@@ -64,16 +69,16 @@ get_CHAMP_map <- function( network,
       partition_summary[x, "next_partition_num"] <- partition_summary[idx, "partition_num"]
       partition_summary[x, "next_num_communities"] <- partition_summary[idx, "num_communities"]
     }
-  } 
+  }
   # partition_summary is now updated to carry this data for all partitions
-  
+
   #PRINT FIXED POINTS:
   for (x in 1:nrow(partition_summary)) {
     if (!is.na(partition_summary[x, "next_gamma"]) &&
         partition_summary[x, "next_gamma"] > partition_summary[x, "starting_gamma"] &&
         partition_summary[x, "next_gamma"] < partition_summary[x, "ending_gamma"]) {
       pnum <- partition_summary[x, "partition_num"]
-      #plot(partitions$partitions[[pnum]], 
+      #plot(partitions$partitions[[pnum]],
       #     network,
       #     main = str_c("Partition", pnum, "with", partition_summary[x, "num_communities"],
       #                  "clusters", sep = " "))
@@ -81,7 +86,7 @@ get_CHAMP_map <- function( network,
                   "communities) is a fixed point of the iterative map"))
     }
   }
-  
+
   #PLOTTING:
   plot_data.1 <- data.frame(
     x = sort(c(partition_summary$starting_gamma, partition_summary$ending_gamma)),
@@ -89,12 +94,12 @@ get_CHAMP_map <- function( network,
     group = sort(c(1:nrow(partition_summary), 1:nrow(partition_summary))),
     color = sort(c(1:nrow(partition_summary), 1:nrow(partition_summary)))
   )
-  
+
   plot_data.2 <- data.frame(
-    x1 = na.omit(partition_summary)$next_gamma,
-    y1 = na.omit(partition_summary)$next_num_communities
+    x1 = stats::na.omit(partition_summary)$next_gamma,
+    y1 = stats::na.omit(partition_summary)$next_num_communities
   )
-  
+
   x2 <- c();  y2 <- c(); ends <- c()
   for (x in rownames(partition_summary)){
     p <- partition_summary[x,]
@@ -108,16 +113,15 @@ get_CHAMP_map <- function( network,
       } else { ends <- append(ends, "last") }
     }
   }
-  
+
   plot_data.3 <- data.frame( x2 = x2, y2 = y2, group = sort(c(1:length(x2), 1:length(x2))))
-  
-  palette <- sample(colors()[c(1:151, 362:657)], lengths(partition_summary)[1], replace=T)
-  ggfig <- ggplot2::ggplot(data = plot_data.1) 
-  ggfig <- ggfig +
-    ggplot2::geom_line(ggplot2::aes(x = x, y = y, group = group, color=palette[color]), linewidth=2) +
-    ggplot2::geom_point(ggplot2::aes(x = x, y = y, color=palette[color]), shape=4, size=2, stroke=2) +
-    ggplot2::geom_point(data = plot_data.2, ggplot2::aes(x = x1, y = y1), size=2, stroke=1) +
-    ggplot2::geom_line(data=plot_data.3, ggplot2::aes(x = x2, y = y2, group = group), 
+
+  palette <- sample(grDevices::colors()[c(1:151, 362:657)], lengths(partition_summary)[1], replace=T)
+  ggfig <- ggplot2::ggplot(data = plot_data.1) +
+    ggplot2::geom_line(ggplot2::aes(x = .data$x, y = .data$y, group = .data$group, color=palette[plot_data.1$color]), linewidth=2) +
+    ggplot2::geom_point(ggplot2::aes(x = .data$x, y = .data$y, color=palette[plot_data.1$color]), shape=4, size=2, stroke=2) +
+    ggplot2::geom_point(data = plot_data.2, ggplot2::aes(x = plot_data.2$x1, y = plot_data.2$y1), size=2, stroke=1) +
+    ggplot2::geom_line(data=plot_data.3, ggplot2::aes(x = plot_data.3$x2, y = plot_data.3$y2, group = plot_data.3$group),
               linewidth=1, color="darkgray",
               arrow = ggplot2::arrow(length = ggplot2::unit(0.5, "cm"), ends = ends)) +
     ggplot2::guides(color = "none") +
@@ -128,7 +132,7 @@ get_CHAMP_map <- function( network,
     ggplot2::theme(axis.text = ggplot2::element_text(size = 8)) +
     ggplot2::annotation_custom(grid::textGrob(plotlabel, x=0.05, y=0.9, hjust=0))
   print(ggfig)
-  
+
   #print(partition_summary)
   partitions$CHAMPsummary <- partition_summary
   partitions$CHAMPmap <- ggfig
@@ -138,7 +142,7 @@ get_CHAMP_map <- function( network,
 
 ###################################
 
-# Parameters: 
+# Parameters:
 # - partition: a partition from which to compute the resolution parameter
 # - network: the network on which the partition is placed
 derive_res_parameter <- function(partition, network) {
@@ -149,21 +153,21 @@ derive_res_parameter <- function(partition, network) {
     m.in <- 0
     k2.c <- 0
     for (i in 1:partition$nb_clusters){
-      partition_graph <- igraph::induced_subgraph(network, 
+      partition_graph <- igraph::induced_subgraph(network,
                                                   igraph::V(network)[partition$membership == i])
       #m.in <- m.in + sum(igraph::E(partition_graph)$weight)
       m.in <- m.in + sum(igraph::strength(partition_graph))/2
       k2.c <- k2.c + ( sum(igraph::strength(network)[partition$membership == i]) )**2
     }
     m.out <- m - m.in
-    
+
     theta.in <- 2*m.in / (k2.c/(2*m))
     theta.out <- 2*m.out / (2*m - k2.c/(2*m))
-    
+
     parameter <- (theta.in - theta.out) / (log(theta.in) - log(theta.out))
     return (parameter)
   } else {
     return (NULL)
   }
-  
+
 }

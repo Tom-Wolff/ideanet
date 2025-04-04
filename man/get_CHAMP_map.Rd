@@ -15,6 +15,7 @@ get_CHAMP_map(network, partitions, plotlabel = NULL)
 }
 \value{
 \code{get_CHAMP_map} returns the input list of partitions with the \code{$CHAMPsummary} updated to indicate the iterative map, that is, information about the next partition that each partition points to in the map, along with the generated \code{$CHAMPmap} plot of the partitions in the CHAMP set (by their numbers of communities) versus gamma.
+x @import igraphdata
 }
 \description{
 \code{get_CHAMP_map} calculates the iterative map defined by Newman's equivalence between modularity optimization and inference on the degree-corrected planted partition stochastic block model on a \cite{CHAMP} set of partitions. That is, given an input set of partitions of nodes in a network into communities, calculated by \cite{get_partitions} or by other means and coerced into that format, \code{CHAMP} identifies which input partition is optimal at each value of the resolution parameter, gamma, and then \code{get_CHAMP_map} calculates the iterative map of this set onto itself. Importantly, a fixed point of this map, where a partition points to itself, indicates that partition is self-consistent in the sense of this equivalence between modularity and planted partition models. As with \code{CHAMP}, the \code{get_CHAMP_map} code is deterministic and fast given a specified input set of partitions; that is, all of the computational complexity and pseudo-stochastic heuristic nature of community detection is in identifying a good input set in \cite{get_partitions}.
@@ -28,12 +29,14 @@ The iterative map on the CHAMP set was developed and studied in Gibson, Ryan A.,
 See also \url{https://github.com/wweir827/CHAMP} and \url{https://github.com/ragibson/ModularityPruning}.
 }
 \examples{
-# Use get_partitions, CHAMP, and get_CHAMP_map to generate multiple partitions of the Zachary karate club and identify the domains of optimality in the resolution parameter for different partitions
-library(igraphdata)
-data(karate)
+# Use get_partitions, CHAMP, and get_CHAMP_map to generate
+# multiple partitions of the Zachary karate club and identify
+# the domains of optimality in the resolution parameter for
+# different partitions
+data(karate, package = "igraphdata")
 partitions <- get_partitions(karate, n_runs = 2500)
-partitions <- CHAMP(karate,partitions,plottitle="Weighted Karate Club")
-partitions <- get_CHAMP_map(karate,partitions,plotlabel="Weighted Karate Club")
+partitions <- CHAMP(karate, partitions, plottitle = "Weighted Karate Club")
+partitions <- get_CHAMP_map(karate, partitions, plotlabel = "Weighted Karate Club")
 }
 \author{
 Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein

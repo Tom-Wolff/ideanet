@@ -1430,6 +1430,9 @@ eigen_igraph <- function(g, directed,
     # If the network is a directed network
     if (directed == TRUE) {
 
+      # Create adjacency matrix from `g`
+      eigen_adj <- igraph::as_adjacency_matrix(g, attr = "weight")
+
       # Make transpose of subgraph adjmat
       eigen_adj_t <- Matrix::t(eigen_adj)
       ### Make igraph object from transpose

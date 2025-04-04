@@ -10,15 +10,16 @@
 #' @param add_comm_detect Boolean to decide whether to also call the clustering algorithms included in \code{comm_detect} (default = T). Alternatively, the output of \code{comm_detect} can be provided directly here.
 #'
 #' @returns \code{get_partitions} returns a list of unique partitions appropriate for subsequent input to \code{CHAMP}.
+#' @import igraphdata
 #'
 #' @author Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein
 #'
 #' @export
 #'
 #' @examples
-#' # Use get_partitions to generate multiple partitions of the Zachary karate club at different resolution parameters
-#' library(igraphdata)
-#' data(karate)
+#' # Use get_partitions to generate multiple partitions of the
+#' # Zachary karate club at different resolution parameters
+#' data(karate, package = "igraphdata")
 #' partitions <- get_partitions(karate, n_runs = 2500)
 
 ###################################
@@ -50,9 +51,9 @@ get_partitions <- function( network,
   # of gamma values between the min (>=0) and max (>=1) value. If there is only one value in
   # gamma_range, treat it as the max value and set the min to zero.
   if (length(gamma_range)==1) {
-    gamma = runif(n_runs,0,gamma_range)
+    gamma = stats::runif(n_runs,0,gamma_range)
   } else if (length(gamma_range)==2) {
-    gamma = runif(n_runs,max(min(gamma_range),0),max(gamma_range,1))
+    gamma = stats::runif(n_runs,max(min(gamma_range),0),max(gamma_range,1))
   } else {gamma = gamma_range}
   #print(gamma)
 
@@ -82,9 +83,9 @@ get_partitions <- function( network,
   # add_comm_detect is True, or directly using provided comm_detect() output
   if (is.logical(add_comm_detect)) {
     if (add_comm_detect == T) {
-      pdf(file = NULL) #Redirecting the graphical output of comm_detect()
+      grDevices::pdf(file = NULL) #Redirecting the graphical output of comm_detect()
       add_comm_detect <- comm_detect(network)
-      dev.off()
+      grDevices::dev.off()
     }
   }
   if (min(c("memberships", "summaries", "score_comparison") %in%

@@ -33,9 +33,9 @@ get_partitions(
 The \code{get_partitions} function is a wrapper to gather a collection of community detection partitions using igraph's \code{cluster_leiden} for maximizing modularity at various resolution parameter values, along with the routines called by the \code{comm_detect} function, to gather different partitions for subsequent input to the \code{CHAMP} code for post-processing partitions to identify domains of modularity optimization.
 }
 \examples{
-# Use get_partitions to generate multiple partitions of the Zachary karate club at different resolution parameters
-library(igraphdata)
-data(karate)
+# Use get_partitions to generate multiple partitions of the
+# Zachary karate club at different resolution parameters
+data(karate, package = "igraphdata")
 partitions <- get_partitions(karate, n_runs = 2500)
 }
 \author{
