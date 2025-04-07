@@ -5,13 +5,16 @@
 #' @param data_type A character value indicating the type of relational data being entered into \code{netwrite}. Available options are \code{edgelist}, \code{adjacency_matrix}, and \code{adjacency_list}.
 #' @param adjacency_matrix If \code{data_type} is set to \code{adjacency_matrix}, a matrix object containing the adjacency matrix for the network being processed.
 #' @param adjacency_list If \code{data_type} is set to \code{adjacency_list}, a data frame containing the adjacency list for the network being processed.
+#' @param edgelist A data frame including all ties in the network. If this argument is specified, \code{i_elements}, \code{j_elements}, \code{edge_netid} (if applicable), \code{weights} (if applicable), and \code{type} (if applicable), must be specified as single character values indicating the names of their respective columns.
+#' @param edge_netid If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the specific network to which a particular tie in the edgelist belongs, or a single character value indicating the name of the column in \code{edgelist} containing network identifiers.
+#' @param i_elements If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the senders of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.
+#' @param j_elements If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the receivers of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.
+#' @param weights If \code{data_type} is set to \code{"edgelist"}, a numeric vector indicating the weight of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing tie weights. \code{netwrite} requires that all edge weights be positive values.
+#' @param type If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the types of relationships represented in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing tie types. If \code{type} is specified, \code{netwrite} will treat network(s) as multi-relational and produce additional outputs reflecting the different types of ties appearing in the data.
 #' @param nodelist Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If the latter, a value for \code{node_id} must be specified.
-#' @param node_id If a data frame is entered for the \code{nodelist} arugment, \code{node_id} should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
-#' @param i_elements If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the sender of ties in the edgelist.
-#' @param j_elements If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the receiver of ties in the edgelist.
+#' @param node_id If a data frame is entered for the \code{nodelist} argument, \code{node_id} should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
+#' @param node_netid If a data frame is entered for the \code{nodelist} argument, \code{node_netid} should be a character value indicating the name of the column in the node-level data frame containing unique network identifiers. This argument should be specified if a value is given for \code{edge_netid}.
 #' @param fix_nodelist If \code{data_type} is set to \code{"edgelist"} and user inputs a vector or data frame into \code{nodelist}, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, \code{fix_nodelist} is set to \code{FALSE} to identify potential inconsistencies between the nodelist and edgelist to the user.
-#' @param weights A numeric vector indicating the weight of ties in the edgelist. \code{netwrite} requires that all edge weights be positive values.
-#' @param type A numeric or character vector indicating the types of relationships represented in the edgelist. If \code{type} contains this vector, \code{netwrite} will treat the data as a multi-relational network and produce additional outputs reflecting the different types of ties occurring in the network.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
 #' @param missing_code A numeric value indicating "missing" values in an edgelist. Such "missing" values are sometimes included to identify the presence of isolated nodes in an edgelist when a corresponding nodelist is unavailable.
 #' @param weight_type A character value indicating whether edge weights should be treated as frequencies or distances. Available options are \code{"frequency"}, indicating that higher values represent stronger ties, and \code{"distance"}, indicating that higher values represent weaker ties. Note: some underlying functions assume that edges represent distances. If \code{weight_type} is set to \code{"frequency"}, these functions will use the reciprocal of \code{weights} as distance values in calculation.
@@ -39,6 +42,8 @@
 #' If \code{output} contains \code{"largest_bi_component"}, \code{netwrite} will return an igraph object of the largest bicomponent in the network represented in the original data. If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing the largest bicomponent for each unique relation type as well as the overall network.
 #'
 #' If \code{output} contains \code{"largest_bi_component"}, \code{netwrite} will return an igraph object of the largest main component in the network represented in the original data. If a vector is entered into the \code{type} argument, \code{netwrite} also produces a list containing the largest main component for each unique relation type as well as the overall network.
+#'
+#' If users are working with data containing multiple independent networks, \code{netwrite} will return a list containing the above outputs for each network in their data, provided that users have passed a vector of network identifiers to the \code{edge_netid} argument. Each network's output will be labeled according to its corresponding value in \code{edge_netid}.
 #'
 #' @export
 #'
@@ -79,15 +84,9 @@
 #'                      net_name = "triad_igraph")
 
 
-
-##########################################################
-#   PERFORMING MULTI-RELATIONAL FUNCTIONS IF SPECIFIED   #
-##########################################################
-
-# This is `netwrite` proper, as users encounter it. `netwrite` proper is effectively
-# a wrapper for `basic_netwrite` that detects whether there's a multirelational
-# edgelist present for which `basic_netwrite` needs to be applied to each relation type's
-# respective subgraph
+#################################################
+#    U S E R - F A C I N G   F U N C T I O N    #
+#################################################
 
 netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      adjacency_list=FALSE,
@@ -96,8 +95,16 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      # how the original node ID variable should be named
                      # in output
                      node_id = NULL,
+                     # `node_netid` takes a character argument specifying
+                     # which column in the nodelist contains the network identifier
+                     node_netid = NULL,
+
+                     edgelist = FALSE,
                      i_elements=FALSE,
                      j_elements=FALSE,
+                     # `edge_netid` takes the column from the edgelist containing
+                     # network identifiers
+                     edge_netid = NULL,
                      # In the rare event that an edgelist contains node IDs that are
                      # not in the nodelist, `fix_nodelist` will add these node IDs to the
                      # nodelist used in network processing
@@ -118,6 +125,224 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 "system_level_measures",
                                 "system_measure_plot"),
                      message = TRUE) {
+
+  # browser()
+
+  # `netwrite` doesn't play nicely with tibbles, so if `nodelist` or `edgelist`
+  # are tibbles we'll need to convert them to data.frames
+
+  if ("tbl" %in% class(edgelist)) {
+    edgelist <- as.data.frame(edgelist)
+  }
+
+  if ("tbl" %in% class(nodelist)) {
+    nodelist <- as.data.frame(nodelist)
+  }
+
+
+  if (data_type == "edgelist") {
+
+    # Check if edgelist-related arguments are names of columns rather than vectors
+    # If this is the case, extract vectors
+    if (length(i_elements) == 1 & is.character(i_elements)) {
+      if ("data.frame" %in% class(edgelist)) {
+        i_elements <- edgelist[, i_elements]
+      } else {
+        stop("Edgelist data frame not given.")
+      }
+    }
+
+    if (length(j_elements) == 1 & is.character(j_elements)) {
+      if ("data.frame" %in% class(edgelist)) {
+        j_elements <- edgelist[, j_elements]
+      } else {
+        stop("Edgelist data frame not given.")
+      }
+    }
+
+    if (length(weights) == 1 & is.character(weights)) {
+      if ("data.frame" %in% class(edgelist)) {
+        weights <- edgelist[, weights]
+      } else {
+        stop("Edgelist data frame not given.")
+      }
+    }
+
+    if (length(type) == 1 & is.character(type)) {
+      if ("data.frame" %in% class(edgelist)) {
+        type <- edgelist[, type]
+      } else {
+        stop("Edgelist data frame not given.")
+      }
+    }
+
+    if (length(edge_netid) == 1 & is.character(edge_netid)) {
+      if ("data.frame" %in% class(edgelist)) {
+        edge_netid <- edgelist[, edge_netid]
+      } else {
+        stop("Edgelist data frame not given.")
+      }
+    }
+
+    # Create temporary edgelist to pass to sub-functions
+    temp_el <- data.frame(i_elements = i_elements,
+                          j_elements = j_elements)
+
+    if (!is.null(weights)) {
+      temp_el$weights = weights
+    } else {
+      temp_el$weights <- 1
+    }
+
+    if (!is.null(type)) {
+      temp_el$type = type
+    } else {
+      temp_el$type <- NA
+    }
+
+    if (!is.null(edge_netid)) {
+
+      # If network identifiers are numerics, make into a character
+      if (is.numeric(edge_netid)) {
+        edge_netid <- paste("network", edge_netid, sep = "")
+      }
+
+      temp_el$edge_netid = edge_netid
+    } else {
+      temp_el$edge_netid <- NA
+    }
+
+
+    if (!is.null(node_netid) ) {
+      if (is.numeric(nodelist[, node_netid])) {
+        nodelist[, node_netid] <- paste("network", nodelist[, node_netid], sep = "")
+      }
+    }
+
+
+
+  }
+
+  if (!is.null(edge_netid)) {
+
+    # Create list for storing each context's output
+    context_list <- list()
+
+    # Get unique netid values
+    netid_vals <- unique(edge_netid)
+
+    # For each unique network ID, extract edgelist and, if applicable, nodelist
+    for (i in 1:length(netid_vals)) {
+
+      base::message(paste("Processing network ", netid_vals[[i]], sep = ""))
+
+      # FIX THIS, NEED TO CONSTRUCT THE EDGELIST HERE AT THE TOP
+      these_edges <- temp_el[edge_netid == netid_vals[[i]],]
+      these_nodes <- FALSE
+
+      if ("data.frame" %in% class(nodelist)) {
+        these_nodes <- nodelist[nodelist[, node_netid] == netid_vals[[i]], ]
+      }
+
+      if (min(these_edges$weights) == 1 & max(these_edges$weights) == 1) {
+        these_weights <- NULL
+      } else {
+        these_weights <- these_edges$weights
+      }
+
+      if (sum(is.na(these_edges$type)) == nrow(these_edges)) {
+        these_types <- NULL
+      } else {
+        these_types <- these_edges$type
+      }
+
+
+      context_list[[i]] <- multi_netwrite(nodelist = these_nodes,
+                                          node_id = node_id,
+                                          i_elements = these_edges$i_elements,
+                                          j_elements = these_edges$j_elements,
+                                          fix_nodelist = fix_nodelist,
+                                          weights = these_weights,
+                                          type = these_types,
+                                          remove_loops = remove_loops,
+                                          missing_code = missing_code,
+                                          weight_type = weight_type,
+                                          directed = directed,
+                                          net_name = as.character(netid_vals[[i]]),
+                                          shiny = shiny,
+                                          output = output,
+                                          message = message)
+
+    }
+
+    names(context_list) <- netid_vals
+    return(context_list)
+
+
+  } else {
+
+    return(multi_netwrite(data_type = data_type,
+                          adjacency_matrix = adjacency_matrix,
+                          adjacency_list = adjacency_list,
+                          nodelist = nodelist,
+                          node_id = node_id,
+                          i_elements = i_elements,
+                          j_elements = j_elements,
+                          fix_nodelist = fix_nodelist,
+                          weights = weights,
+                          type = type,
+                          remove_loops = remove_loops,
+                          missing_code = missing_code,
+                          weight_type = weight_type,
+                          directed = directed,
+                          net_name = net_name,
+                          shiny = shiny,
+                          output = output,
+                          message = message))
+
+  }
+
+}
+
+
+##########################################################
+#   PERFORMING MULTI-RELATIONAL FUNCTIONS IF SPECIFIED   #
+##########################################################
+
+# This is `netwrite` proper, as users encounter it. `netwrite` proper is effectively
+# a wrapper for `basic_netwrite` that detects whether there's a multirelational
+# edgelist present for which `basic_netwrite` needs to be applied to each relation type's
+# respective subgraph
+
+multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
+                           adjacency_list=FALSE,
+                           nodelist=FALSE,
+                           # `node_id` takes a character argument specifying
+                           # how the original node ID variable should be named
+                           # in output
+                           node_id = NULL,
+                           i_elements=FALSE,
+                           j_elements=FALSE,
+                           # In the rare event that an edgelist contains node IDs that are
+                           # not in the nodelist, `fix_nodelist` will add these node IDs to the
+                           # nodelist used in network processing
+                           fix_nodelist = TRUE,
+                           # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
+                           weights=NULL, type=NULL,
+                           remove_loops = FALSE,
+                           missing_code=99999,
+                           weight_type='frequency', directed=FALSE,
+                           net_name='network',
+                           shiny = FALSE,
+                           output = c("graph",
+                                      "largest_bi_component",
+                                      "largest_component",
+                                      "node_measure_plot",
+                                      "nodelist",
+                                      "edgelist",
+                                      "system_level_measures",
+                                      "system_measure_plot"),
+                           message = TRUE) {
 
   # browser()
   # netwrite_start <- Sys.time()
@@ -191,16 +416,6 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # rename to `"original_name"`
     original_nodelist_names[which(original_nodelist_names == "name")] <- "original_name"
     colnames(original_nodelist) <- original_nodelist_names
-
-    # Trying this-- if `node_id` is set to `"name"` or `"id"`, change its value to
-    # `"original_name"` or `"original_id"`, respectively
-    if (node_id == "id") {
-      node_id <- "original_id"
-    }
-
-    if (node_id == "name") {
-      node_id <- "original_name"
-    }
 
     # When we iterate over each relation type, we only want to input
     # the vector of node IDs rather than the full nodelist dataframe
@@ -321,6 +536,26 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       if (message == FALSE) {
         netwrite_output <- suppressWarnings(
           basic_netwrite(data_type = data_type,
+                         adjacency_matrix = adjacency_matrix,
+                         adjacency_list = adjacency_list,
+                         nodelist = original_nodelist,
+                         node_id = node_id,
+                         i_elements = i_elements,
+                         j_elements = j_elements,
+                         weights = weights,
+                         type = type,
+                         remove_loops = remove_loops,
+                         missing_code = missing_code,
+                         weight_type = weight_type,
+                         directed = directed,
+                         net_name = net_name,
+                         shiny = shiny,
+                         output = output,
+                         message = message)
+        )
+      } else {
+
+        netwrite_output <- basic_netwrite(data_type = data_type,
                                           adjacency_matrix = adjacency_matrix,
                                           adjacency_list = adjacency_list,
                                           nodelist = original_nodelist,
@@ -337,49 +572,29 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                           shiny = shiny,
                                           output = output,
                                           message = message)
-        )
-      } else {
-
-      netwrite_output <- basic_netwrite(data_type = data_type,
-                                        adjacency_matrix = adjacency_matrix,
-                                        adjacency_list = adjacency_list,
-                                        nodelist = original_nodelist,
-                                        node_id = node_id,
-                                        i_elements = i_elements,
-                                        j_elements = j_elements,
-                                        weights = weights,
-                                        type = type,
-                                        remove_loops = remove_loops,
-                                        missing_code = missing_code,
-                                        weight_type = weight_type,
-                                        directed = directed,
-                                        net_name = net_name,
-                                        shiny = shiny,
-                                        output = output,
-                                        message = message)
       }
 
     } else {
 
       if (message == FALSE) {
         netwrite_output <- suppressWarnings(
-                             basic_netwrite(data_type = data_type,
-                                            adjacency_matrix = adjacency_matrix,
-                                            adjacency_list = adjacency_list,
-                                            nodelist = just_ids,
-                                            node_id = node_id,
-                                            i_elements = i_elements,
-                                            j_elements = j_elements,
-                                            weights = weights,
-                                            type = type,
-                                            remove_loops = remove_loops,
-                                            missing_code = missing_code,
-                                            weight_type = weight_type,
-                                            directed = directed,
-                                            net_name = net_name,
-                                            shiny = shiny,
-                                            output = output,
-                                            message = message)
+          basic_netwrite(data_type = data_type,
+                         adjacency_matrix = adjacency_matrix,
+                         adjacency_list = adjacency_list,
+                         nodelist = just_ids,
+                         node_id = node_id,
+                         i_elements = i_elements,
+                         j_elements = j_elements,
+                         weights = weights,
+                         type = type,
+                         remove_loops = remove_loops,
+                         missing_code = missing_code,
+                         weight_type = weight_type,
+                         directed = directed,
+                         net_name = net_name,
+                         shiny = shiny,
+                         output = output,
+                         message = message)
         )
       } else {
         netwrite_output <- basic_netwrite(data_type = data_type,
@@ -1391,7 +1606,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # EDGELIST
   } else {
 
-
     # Creating Canonical Node and Edgelists
     if (is.null(weights) == TRUE){
       edgelist <-as.matrix(cbind(i_elements, j_elements))
@@ -1592,10 +1806,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       global_clustering_coefficient <- gcc(g)
       # gcc_time <- Sys.time()
       if (weight_type == "frequency") {
-          average_path_length <- igraph::mean_distance(g, directed=as.logical(directed),
-                                                       weights = 1/igraph::E(g)$weight)
+        average_path_length <- igraph::mean_distance(g, directed=as.logical(directed),
+                                                     weights = 1/igraph::E(g)$weight)
       } else {
-          average_path_length <- igraph::mean_distance(g, directed=as.logical(directed))
+        average_path_length <- igraph::mean_distance(g, directed=as.logical(directed))
       }
       # avg_path_time <- Sys.time()
 
@@ -2502,9 +2716,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                      ncol = 2)
 
     p_1 <- cowplot::plot_grid(top_row, center,
-                                      bottom_row,
-                                      nrow = 3, ncol = 1,
-                                      rel_heights = c(1, 5, 1)) +
+                              bottom_row,
+                              nrow = 3, ncol = 1,
+                              rel_heights = c(1, 5, 1)) +
       ggplot2::labs(title = "System-Level Measures") +
       ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
                                                         size = 28,
@@ -2540,38 +2754,38 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     wdeg_setup <- node_gg_setup(index_df = weighted_degree_measures, nodes = nodes)
 
     if (nrow(weighted_degree_measures) == 1) {
-          node_gg_list[[1]] <- wdeg_setup$coords %>%
-            ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
-                                         y = wdeg_setup$coords$y_axis)) +
-            ggplot2::geom_line() +
-            ggplot2::theme_minimal() +
-            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-            ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
-            ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
-            ggplot2::labs(y = "\nDensity\n",
-                          x = NULL,
-                          color = NULL,
-                          caption = "Weighted Degree\n") +
-            ggplot2::theme(legend.position = c(.8, .8),
-                           legend.background = ggplot2::element_rect(colour="white", fill="white"),
-                           plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+      node_gg_list[[1]] <- wdeg_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
+                                     y = wdeg_setup$coords$y_axis)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+                      x = NULL,
+                      color = NULL,
+                      caption = "Weighted Degree\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
-          node_gg_list[[1]] <- wdeg_setup$coords %>%
-            ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
-                                         y = wdeg_setup$coords$y_axis,
-                                 color = wdeg_setup$coords$measure)) +
-            ggplot2::geom_line() +
-            ggplot2::theme_minimal() +
-            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-            ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
-            ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
-            ggplot2::labs(y = "\nDensity\n",
-                           x = NULL,
-                           color = NULL,
-                           caption = "Weighted Degree\n") +
-            ggplot2::theme(legend.position = c(.8, .8),
-                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
-                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+      node_gg_list[[1]] <- wdeg_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
+                                     y = wdeg_setup$coords$y_axis,
+                                     color = wdeg_setup$coords$measure)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+                      x = NULL,
+                      color = NULL,
+                      caption = "Weighted Degree\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
 
@@ -2585,38 +2799,38 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     deg_setup <- node_gg_setup(index_df = degree_measures, nodes = nodes)
 
     if (nrow(degree_measures) == 1) {
-          node_gg_list[[2]] <- deg_setup$coords %>%
-            ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
-                                         y = deg_setup$coords$y_axis)) +
-            ggplot2::geom_line() +
-            ggplot2::theme_minimal() +
-            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-            ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
-            ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
-            ggplot2::labs(y = "\nDensity\n",
-                          x = NULL,
-                          color = NULL,
-                          caption = "Degree\n") +
-            ggplot2::theme(legend.position = c(.8, .8),
-                           legend.background = ggplot2::element_rect(colour="white", fill="white"),
-                           plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+      node_gg_list[[2]] <- deg_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
+                                     y = deg_setup$coords$y_axis)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+                      x = NULL,
+                      color = NULL,
+                      caption = "Degree\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
-          node_gg_list[[2]] <- deg_setup$coords %>%
-            ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
-                                         y = deg_setup$coords$y_axis,
-                                         color = deg_setup$coords$measure)) +
-            ggplot2::geom_line() +
-            ggplot2::theme_minimal() +
-            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-            ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
-            ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
-            ggplot2::labs(y = "\nDensity\n",
-                 x = NULL,
-                 color = NULL,
-                 caption = "Degree\n") +
-            ggplot2::theme(legend.position = c(.8, .8),
-                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
-                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+      node_gg_list[[2]] <- deg_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
+                                     y = deg_setup$coords$y_axis,
+                                     color = deg_setup$coords$measure)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+                      x = NULL,
+                      color = NULL,
+                      caption = "Degree\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
     # Closeness
@@ -2644,22 +2858,22 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
-          node_gg_list[[3]] <- closeness_setup$coords %>%
-            ggplot2::ggplot(ggplot2::aes(x = closeness_setup$coords$x_axis,
-                                         y = closeness_setup$coords$y_axis,
-                                         color = closeness_setup$coords$measure)) +
-            ggplot2::geom_line() +
-            ggplot2::theme_minimal() +
-            ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-            ggplot2::scale_x_continuous(breaks = closeness_setup$x_breaks) +
-            ggplot2::scale_y_continuous(breaks = closeness_setup$y_breaks) +
-            ggplot2::labs(y = "\nDensity\n",
-                 x = NULL,
-                 color = NULL,
-                 caption = "Closeness\n") +
-            ggplot2::theme(legend.position = c(.8, .8),
-                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
-                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+      node_gg_list[[3]] <- closeness_setup$coords %>%
+        ggplot2::ggplot(ggplot2::aes(x = closeness_setup$coords$x_axis,
+                                     y = closeness_setup$coords$y_axis,
+                                     color = closeness_setup$coords$measure)) +
+        ggplot2::geom_line() +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        ggplot2::scale_x_continuous(breaks = closeness_setup$x_breaks) +
+        ggplot2::scale_y_continuous(breaks = closeness_setup$y_breaks) +
+        ggplot2::labs(y = "\nDensity\n",
+                      x = NULL,
+                      color = NULL,
+                      caption = "Closeness\n") +
+        ggplot2::theme(legend.position = c(.8, .8),
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
 
@@ -2687,12 +2901,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         ggplot2::scale_x_continuous(breaks = bet_setup$x_breaks) +
         ggplot2::scale_y_continuous(breaks = bet_setup$y_breaks) +
         ggplot2::labs(y = "\nDensity\n",
-             x = NULL,
-             color = NULL,
-             caption = "Betweenness\n") +
+                      x = NULL,
+                      color = NULL,
+                      caption = "Betweenness\n") +
         ggplot2::theme(legend.position = c(.8, .8),
-              legend.background = ggplot2::element_rect(colour="white", fill="white"),
-              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
       node_gg_list[[4]] <- bet_setup$coords %>%
         ggplot2::ggplot(ggplot2::aes(x = bet_setup$coords$x_axis,
@@ -2704,12 +2918,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         ggplot2::scale_x_continuous(breaks = bet_setup$x_breaks) +
         ggplot2::scale_y_continuous(breaks = bet_setup$y_breaks) +
         ggplot2::labs(y = "\nDensity\n",
-             x = NULL,
-             color = NULL,
-             caption = "Betweenness\n") +
+                      x = NULL,
+                      color = NULL,
+                      caption = "Betweenness\n") +
         ggplot2::theme(legend.position = c(.8, .8),
-              legend.background = ggplot2::element_rect(colour="white", fill="white"),
-              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
 
@@ -2734,12 +2948,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       ggplot2::scale_x_continuous(breaks = bon_setup$x_breaks) +
       ggplot2::scale_y_continuous(breaks = bon_setup$y_breaks) +
       ggplot2::labs(y = "\nDensity\n",
-           x = NULL,
-           color = NULL,
-           caption = "Bonacich\n") +
+                    x = NULL,
+                    color = NULL,
+                    caption = "Bonacich\n") +
       ggplot2::theme(legend.position = c(.8, .8),
-            legend.background = ggplot2::element_rect(colour="white", fill="white"),
-            plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+                     legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                     plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
 
     # Eigenvector
     eigen_measures <- columns[grepl("eigen", columns)]
@@ -2764,12 +2978,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         ggplot2::scale_x_continuous(breaks = eigen_setup$x_breaks) +
         ggplot2::scale_y_continuous(breaks = eigen_setup$y_breaks) +
         ggplot2::labs(y = "\nDensity\n",
-             x = NULL,
-             color = NULL,
-             caption = "Eigenvector\n") +
+                      x = NULL,
+                      color = NULL,
+                      caption = "Eigenvector\n") +
         ggplot2::theme(legend.position = c(.8, .8),
-              legend.background = ggplot2::element_rect(colour="white", fill="white"),
-              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
       node_gg_list[[6]] <- eigen_setup$coords %>%
         ggplot2::ggplot(ggplot2::aes(x = eigen_setup$coords$x_axis,
@@ -2781,12 +2995,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         ggplot2::scale_x_continuous(breaks = eigen_setup$x_breaks) +
         ggplot2::scale_y_continuous(breaks = eigen_setup$y_breaks) +
         ggplot2::labs(y = "\nDensity\n",
-             x = NULL,
-             color = NULL,
-             caption = "Eigenvector\n") +
+                      x = NULL,
+                      color = NULL,
+                      caption = "Eigenvector\n") +
         ggplot2::theme(legend.position = c(.8, .8),
-              legend.background = ggplot2::element_rect(colour="white", fill="white"),
-              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
     # Burt Measures
@@ -2807,12 +3021,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       ggplot2::scale_x_continuous(breaks = burt_setup$x_breaks) +
       ggplot2::scale_y_continuous(breaks = burt_setup$y_breaks) +
       ggplot2::labs(y = "\nDensity\n",
-           x = NULL,
-           color = NULL,
-           caption = "Burt Measures\n") +
+                    x = NULL,
+                    color = NULL,
+                    caption = "Burt Measures\n") +
       ggplot2::theme(legend.position = c(.8, .8),
-            legend.background = ggplot2::element_rect(colour="white", fill="white"),
-            plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+                     legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                     plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
 
 
     # Reachability Measures
@@ -2838,29 +3052,29 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         ggplot2::scale_x_continuous(breaks = reach_setup$x_breaks) +
         ggplot2::scale_y_continuous(breaks = reach_setup$y_breaks) +
         ggplot2::labs(y = "\nDensity\n",
-             x = NULL,
-             color = NULL,
-             caption = "Reachability\n") +
+                      x = NULL,
+                      color = NULL,
+                      caption = "Reachability\n") +
         ggplot2::theme(legend.position = c(.8, .8),
-              legend.background = ggplot2::element_rect(colour="white", fill="white"),
-              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
       node_gg_list[[8]] <- reach_setup$coords %>%
         ggplot2::ggplot(ggplot2::aes(x = reach_setup$coords$x_axis,
-                   y = reach_setup$coords$y_axis,
-                   color = reach_setup$coords$measure)) +
+                                     y = reach_setup$coords$y_axis,
+                                     color = reach_setup$coords$measure)) +
         ggplot2::geom_line() +
         ggplot2::theme_minimal() +
         ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
         ggplot2::scale_x_continuous(breaks = reach_setup$x_breaks) +
         ggplot2::scale_y_continuous(breaks = reach_setup$y_breaks) +
         ggplot2::labs(y = "\nDensity\n",
-             x = NULL,
-             color = NULL,
-             caption = "Reachability\n") +
+                      x = NULL,
+                      color = NULL,
+                      caption = "Reachability\n") +
         ggplot2::theme(legend.position = c(.8, .8),
-              legend.background = ggplot2::element_rect(colour="white", fill="white"),
-              plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
     p_2 <- cowplot::plot_grid(plotlist = node_gg_list, nrow = 3, ncol = 3) +
