@@ -62,7 +62,6 @@ nw_flor <- netwrite(nodelist = florentine_nodes,
 *In the interest of simplicity, we will not visualize sociograms directly in this vignette. However, if you are interested in looking at the general structure of the networks used here, we provide code for doing so and encourage you to paste it in your R console:*
 
 ```{r flor_viz, eval = FALSE}
-par(mar=c(0,0,0.8,0))
 igraph::plot.igraph(nw_flor$florentine)
 ```
 
@@ -142,7 +141,6 @@ igraph::membership(partitions$partitions[[6]])
 ```
 
 ```{r parition6_viz, eval = FALSE}
-par(mar=c(0,0,0,0))
 igraph::plot.igraph(nw_flor$florentine,mark.groups = partitions$partitions[[6]])
 ```
 
@@ -193,7 +191,6 @@ karate <- igraph::delete_edge_attr(karate, "weight")
 ```
 
 ```{r karate_viz, eval = FALSE}
-par(mar=c(0,0,0.8,0))
 igraph::plot.igraph(karate, main="Zachary's Karate Club")
 ```
 
@@ -228,7 +225,6 @@ igraph::membership(partitions$partitions[[8]])
 ```
 
 ```{r partition8viz, eval = FALSE}
-par(mar=c(0,0,0,0))
 igraph::plot.igraph(karate,mark.groups = partitions$partitions[[8]])
 ```
 
@@ -260,7 +256,6 @@ We now perform the three steps of this framework for the weighted version of the
 data(karate,package="igraphdata")
 ```
 ```{r karate_viz2, eval = FALSE}
-par(mar=c(0,0,0.8,0))
 igraph::plot.igraph(karate, main="Zachary's Karate Club (weighted)")
 ```
 ```{r karate_partitions2}
@@ -286,10 +281,8 @@ Second, note that in this example we now have two fixed points in the map; that 
 
 ```{r karate2_partitionviz, eval = FALSE}
 karatelayout <- igraph::layout_with_fr(karate)
-par(mar=c(0,0,0,0))
 igraph::plot.igraph(karate, layout = karatelayout,
                     mark.groups = partitions$partitions[[4]])
-par(mar=c(0,0,0,0))
 igraph::plot.igraph(karate, layout = karatelayout,
                     mark.groups = partitions$partitions[[6]])
 ```
@@ -310,7 +303,6 @@ football
 ```
 
 ```{r football_viz, eval = FALSE}
-par(mar=c(0,0,0.8,0))
 igraph::plot.igraph(football, main="Div-IA College Football, Fall 2000")
 ```
 
@@ -347,7 +339,6 @@ To finish this example, we look more closely at these communities we found to de
 ```{r football_partitions_viz, eval = FALSE}
 colrs <- c("#543005", "#8C510A", "#BF812D", "#DFC27D", "#F6E8C3", "#C7EAE5", "#80CDC1", "#35978F", "#01665E", "#003C30")
 igraph::V(football)$color <- colrs[igraph::V(football)$value+1]
-par(mar=c(0,0,0,0))
 igraph::plot.igraph(football,mark.groups = partitions$partitions[[36]],
                     vertex.label=NA, vertex.size=5)
 ```

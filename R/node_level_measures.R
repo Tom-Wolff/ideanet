@@ -75,7 +75,7 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
     reachability <- reachable_igraph(g, directed = as.logical(directed))
     # reach_time <- Sys.time()
 
-    if (ncol(bonpow) == 6) {
+    if (ncol(bonpow) >= 6) {
 
       bonpow_in <- bonpow[[1]]
       bonpow_out <- bonpow[[3]]
@@ -912,7 +912,7 @@ bonacich <- function(matrix, directed, bpct = .75) {
 bonacich_igraph <- function(g, directed, bpct = .75,
                             message = TRUE) {
 
- # browser()
+  # browser()
 
   # Store complete nodelist for merging later on
   nodelist <- data.frame(id = igraph::V(g)$name)
@@ -936,78 +936,180 @@ bonacich_igraph <- function(g, directed, bpct = .75,
     igraph::E(g)$weight <- 1
   }
 
-  bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE, attr = "weight")
+  # Check if network consists of more than one (weak) component. If it does,
+  # calculate Bonacich centrality within isolated components:
+  igraph::V(g)$component <- igraph::components(g, mode = "weak")$membership
 
-  # We need to ensure that the adjacency matrix used in calculating eigenvectors/values
-  # is not singular. The following checks for this. If the adjacency matrix is found
-  # to be singular, network will be treated as undirected when calculating EVs
-  if (directed == TRUE) {
-    # Get generalized inverse of matrix
-    # inv_adj <- MASS::ginv(bon_adjmat)
+  if (length(unique(igraph::V(g)$component)) > 1) {
 
-    # singular_check <- round(sum(diag(inv_adj %*% bon_adjmat)))
+    warning("(Bonacich power centrality)  Network consists of 2+ unconnected components. Bonacich power centrality scores will be calculated for nodes based on their position within their respective weak components, provided components contain at least 5 nodes. Nodes in components consisting of fewer than five nodes will be assigned NA values in final output.\n")
 
-    ## new check
+    unique_components <- as.numeric(names(table(igraph::V(g)$component))[table(igraph::V(g)$component) >= 5])
 
-    is_singular <- abs(Matrix::det(bon_adjmat)) < 1e-8 ## tolerance
+    ### Create dataframe for storing Bonacich scores
+    bon_scores <- data.frame()
 
+    for (i in 1:length(unique_components)) {
 
-    #if (singular_check < nrow(nodelist)) {
-    if (isTRUE(is_singular)) {
-      if (message == TRUE){
-        warning("(Bonacich power centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
+      # Make subgraph of component
+      subgraph <- igraph::delete_vertices(g, v = igraph::V(g)$component != unique_components[i])
+
+      bon_adjmat <- igraph::as_adjacency_matrix(subgraph, type = "both", names = TRUE, attr = "weight")
+
+      # We need to ensure that the adjacency matrix used in calculating eigenvectors/values
+      # is not singular. The following checks for this. If the adjacency matrix is found
+      # to be singular, network will be treated as undirected when calculating EVs
+      if (directed == TRUE) {
+
+        comp_directed <- TRUE
+        is_singular <- abs(Matrix::det(bon_adjmat)) < 1e-8 ## tolerance
+
+        if (isTRUE(is_singular)) {
+          if (message == TRUE){
+            warning("(Bonacich power centrality) Adjacency matrix for this component is singular. Network will be treated as undirected in order to calculate measures.\n")
+          }
+          comp_directed <- FALSE
+          subgraph <- igraph::as.undirected(subgraph)
+          # Make `bon_adjmat` undirected
+          # bon_adjmat <- as.matrix(igraph::get.adjacency(g, type = "both", names = TRUE))
+          # bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE)
+        }
       }
-      directed <- FALSE
-      g <- igraph::as.undirected(g)
-      # Make `bon_adjmat` undirected
-      # bon_adjmat <- as.matrix(igraph::get.adjacency(g, type = "both", names = TRUE))
-      # bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE)
-      bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE, attr = "weight")
+
+      bon_adjmat <- igraph::get.adjacency(subgraph, type = "both", names = TRUE, attr = "weight")
+
+      # When we have a directed network, there are three power centrality scores we can get:
+      # An "indegree" one based on the original adjacency matrix, and "outdegree" one based on the
+      # transpose of the original adjacency matrix, and a third one based on a symmetrized version
+      # of the adjacency matrix. The following conditional flow generates all three measures
+      # if netwrite is working with a directed network:
+      if (isTRUE(comp_directed)) {
+        # Create symmetrized (undirected) version of network
+        undir_net <- igraph::as.undirected(subgraph)
+
+        # Convert undirected network into adjacency matrix
+        # bon_sym_mat <- as.matrix(igraph::get.adjacency(undir_net, type = "both", names = TRUE))
+        bon_sym_mat <- igraph::get.adjacency(undir_net, type = "both", names = TRUE, attr = "weight")
+
+        # We now have everyting we need to get the three versions of Bonacich power centrality
+        # First let's get the indegree version
+        bonacich_in <- bonacich(matrix = bon_adjmat, bpct = bpct, directed = TRUE)
+
+        # Update column names
+        colnames(bonacich_in) <- paste(colnames(bonacich_in), "_in", sep = "")
+
+        # Next we get the outdegree version (note that we're transposing `bon_adjmat` in the `matrix` argument)
+        bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct, directed = TRUE)
+
+        # Update column names
+        colnames(bonacich_out) <- paste(colnames(bonacich_out), "_out", sep = "")
+
+        # Finally, we get the undirected version from the symmetrized adjacency matrix
+        bonacich_sym <- bonacich(matrix = bon_sym_mat, bpct = bpct, directed = FALSE)
+
+        # Update column names
+        colnames(bonacich_sym) <- paste(colnames(bonacich_sym), "_sym", sep = "")
+
+        # Combine into single data frame
+        these_scores <- cbind(bonacich_in, bonacich_out, bonacich_sym)
+      } else {
+        # If the network is undirected, proceed to get Bonacich power centrality scores on
+        # just the base adjacency matrix
+        these_scores <- bonacich(bon_adjmat, bpct = bpct, directed = FALSE)
+      }
+
+      # Add ID variable for merging back into nodelist
+      these_scores$id <- igraph::V(subgraph)$name
+      these_scores$component <- unique_components[i]
+
+      bon_scores <- dplyr::bind_rows(bon_scores, these_scores)
+
     }
+
+
+  } else {
+
+    bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE, attr = "weight")
+
+    # We need to ensure that the adjacency matrix used in calculating eigenvectors/values
+    # is not singular. The following checks for this. If the adjacency matrix is found
+    # to be singular, network will be treated as undirected when calculating EVs
+    if (directed == TRUE) {
+      # Get generalized inverse of matrix
+      # inv_adj <- MASS::ginv(bon_adjmat)
+
+      # singular_check <- round(sum(diag(inv_adj %*% bon_adjmat)))
+
+      ## new check
+
+      is_singular <- abs(Matrix::det(bon_adjmat)) < 1e-8 ## tolerance
+
+
+      #if (singular_check < nrow(nodelist)) {
+      if (isTRUE(is_singular)) {
+        if (message == TRUE){
+          warning("(Bonacich power centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures.\n")
+        }
+        directed <- FALSE
+        g <- igraph::as.undirected(g)
+        # Make `bon_adjmat` undirected
+        # bon_adjmat <- as.matrix(igraph::get.adjacency(g, type = "both", names = TRUE))
+        # bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE)
+      }
+    }
+
+    # Check if network consists of 2+ isolated components. If true, only calculate
+    # on largest isolated component.
+    # STRONG OR WEAK COMPONENT?
+    g_components <- igraph::components(g)
+
+
+    bon_adjmat <- igraph::get.adjacency(g, type = "both", names = TRUE, attr = "weight")
+
+    # When we have a directed network, there are three power centrality scores we can get:
+    # An "indegree" one based on the original adjacency matrix, and "outdegree" one based on the
+    # transpose of the original adjacency matrix, and a third one based on a symmetrized version
+    # of the adjacency matrix. The following conditional flow generates all three measures
+    # if netwrite is working with a directed network:
+    if (directed == TRUE) {
+      # Create symmetrized (undirected) version of network
+      undir_net <- igraph::as.undirected(g)
+
+      # Convert undirected network into adjacency matrix
+      # bon_sym_mat <- as.matrix(igraph::get.adjacency(undir_net, type = "both", names = TRUE))
+      bon_sym_mat <- igraph::get.adjacency(undir_net, type = "both", names = TRUE, attr = "weight")
+
+      # We now have everyting we need to get the three versions of Bonacich power centrality
+      # First let's get the indegree version
+      bonacich_in <- bonacich(matrix = bon_adjmat, bpct = bpct, directed = directed)
+
+      # Update column names
+      colnames(bonacich_in) <- paste(colnames(bonacich_in), "_in", sep = "")
+
+      # Next we get the outdegree version (note that we're transposing `bon_adjmat` in the `matrix` argument)
+      bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct, directed = directed)
+
+      # Update column names
+      colnames(bonacich_out) <- paste(colnames(bonacich_out), "_out", sep = "")
+
+      # Finally, we get the undirected version from the symmetrized adjacency matrix
+      bonacich_sym <- bonacich(matrix = bon_sym_mat, bpct = bpct, directed = directed)
+
+      # Update column names
+      colnames(bonacich_sym) <- paste(colnames(bonacich_sym), "_sym", sep = "")
+
+      # Combine into single data frame
+      bon_scores <- cbind(bonacich_in, bonacich_out, bonacich_sym)
+    }else{
+      # If the network is undirected, proceed to get Bonacich power centrality scores on
+      # just the base adjacency matrix
+      bon_scores <- bonacich(bon_adjmat, bpct = bpct, directed = directed)
+    }
+
+    # Add ID variable for merging back into nodelist
+    bon_scores$id <- igraph::V(g)$name
+
   }
-
-  # When we have a directed network, there are three power centrality scores we can get:
-  # An "indegree" one based on the original adjacency matrix, and "outdegree" one based on the
-  # transpose of the original adjacency matrix, and a third one based on a symmetrized version
-  # of the adjacency matrix. The following conditional flow generates all three measures
-  # if netwrite is working with a directed network:
-  if (directed == TRUE) {
-    # Create symmetrized (undirected) version of network
-    undir_net <- igraph::as.undirected(g)
-
-    # Convert undirected network into adjacency matrix
-    # bon_sym_mat <- as.matrix(igraph::get.adjacency(undir_net, type = "both", names = TRUE))
-    bon_sym_mat <- igraph::get.adjacency(undir_net, type = "both", names = TRUE, attr = "weight")
-
-    # We now have everyting we need to get the three versions of Bonacich power centrality
-    # First let's get the indegree version
-    bonacich_in <- bonacich(matrix = bon_adjmat, bpct = bpct, directed = directed)
-
-    # Update column names
-    colnames(bonacich_in) <- paste(colnames(bonacich_in), "_in", sep = "")
-
-    # Next we get the outdegree version (note that we're transposing `bon_adjmat` in the `matrix` argument)
-    bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct, directed = directed)
-
-    # Update column names
-    colnames(bonacich_out) <- paste(colnames(bonacich_out), "_out", sep = "")
-
-    # Finally, we get the undirected version from the symmetrized adjacency matrix
-    bonacich_sym <- bonacich(matrix = bon_sym_mat, bpct = bpct, directed = directed)
-
-    # Update column names
-    colnames(bonacich_sym) <- paste(colnames(bonacich_sym), "_sym", sep = "")
-
-    # Combine into single data frame
-    bon_scores <- cbind(bonacich_in, bonacich_out, bonacich_sym)
-  }else{
-    # If the network is undirected, proceed to get Bonacich power centrality scores on
-    # just the base adjacency matrix
-    bon_scores <- bonacich(bon_adjmat, bpct = bpct, directed = directed)
-  }
-
-  # Add ID variable for merging back into nodelist
-  bon_scores$id <- igraph::V(g)$name
 
   # Merge scores back into nodelist
   nodelist <- dplyr::left_join(nodelist, bon_scores, by = "id")
@@ -1322,11 +1424,11 @@ eigen_igraph <- function(g, directed,
   }
 
   # Assign component membership as a vertex attribute
-  igraph::V(g)$component <- igraph::components(g)$membership
+  igraph::V(g)$component <- igraph::components(g, mode = "weak")$membership
 
   # Calculate Eigenvector centrality for each component
   # Unique component ids
-  unique_components <- unique(igraph::V(g)$component)
+  unique_components <- as.numeric(names(table(igraph::V(g)$component))[table(igraph::V(g)$component) >= 5])
 
   # We need to ensure that the adjacency matrix used in calculating eigenvectors/values
   # is not singular. The following checks for this. If the adjacency matrix is found
@@ -1351,7 +1453,7 @@ eigen_igraph <- function(g, directed,
   if (length(unique_components) > 1) {
     # Outputting message to the user
     if (message == TRUE){
-      warning("(Eigenvector centrality) Network consists of 2+ unconnected components. Eigenvector centrality scores will be calculated for nodes based on their position within their respective components. Nodes in components consisting of a single dyad will be assigned NA values in final output.\n")
+      warning("(Eigenvector centrality) Network consists of 2+ unconnected components. Eigenvector centrality scores will be calculated for nodes based on their position within their respective weak components, provided components contain at least 5 nodes. Nodes in components consisting of fewer than five nodes will be assigned NA values in final output.\n")
     }
     # Initialize data frame for storing eigen centrality measures
     eigen_scores <- data.frame()
@@ -1361,7 +1463,7 @@ eigen_igraph <- function(g, directed,
       # For each component...
       for (i in 1:length(unique_components)) {
         # Make subgraph of component
-        subgraph <- igraph::delete.vertices(g, v = igraph::V(g)$component != i)
+        subgraph <- igraph::delete.vertices(g, v = igraph::V(g)$component != unique_components[i])
 
         # Make transpose of subgraph adjmat
         sub_adj_t <- Matrix::t(sub_adj)
@@ -1383,8 +1485,8 @@ eigen_igraph <- function(g, directed,
         # Combine into single dataframe
         subgraph_scores <- cbind(eigen_in, eigen_out, eigen_sym)
 
-        # Add component indicator
-        subgraph_scores$component <- i
+        # # Add component indicator
+        # subgraph_scores$component <- unique_components[i]
 
         # Add ID variable
         subgraph_scores$id <- igraph::V(subgraph)$name
@@ -1401,7 +1503,7 @@ eigen_igraph <- function(g, directed,
       # For each component...
       for (i in 1:length(unique_components)) {
         # Make subgraph of component
-        subgraph <- igraph::delete.vertices(g, v = igraph::V(g)$component != i)
+        subgraph <- igraph::delete.vertices(g, v = igraph::V(g)$component != unique_components[i])
 
         # Convert subgraph of component into an adjacency matrix
         sub_adj <- igraph::as_adjacency_matrix(subgraph, type = "both", attr = "weight")
@@ -1414,8 +1516,8 @@ eigen_igraph <- function(g, directed,
         # Get eigenvector centrality measures
         subgraph_scores <- data.frame(eigen_centrality = igraph::eigen_centrality(subgraph, directed = FALSE)$vector)
 
-        # Add component indicator
-        subgraph_scores$component <- i
+        # # Add component indicator
+        # subgraph_scores$component <- unique_components[i]
 
         # Add ID variable
         subgraph_scores$id <- igraph::V(subgraph)$name
@@ -1493,7 +1595,7 @@ eigen_igraph <- function(g, directed,
 component_memberships <- function(g) {
 
   # Get weak component membership
-  weak_clusters <- igraph::clusters(g, mode = "weak")
+  weak_clusters <- igraph::components(g, mode = "weak")
 
   # Get dataframe of weak component assignments
   weak_membership <- data.frame(id = names(weak_clusters$membership),
@@ -1522,7 +1624,7 @@ component_memberships <- function(g) {
 
 
   # Get strong component membership
-  strong_clusters <- igraph::clusters(g, mode = "strong")
+  strong_clusters <- igraph::components(g, mode = "strong")
 
   # Get dataframe of strong component assignments
   strong_membership <- data.frame(id = names(strong_clusters$membership),
