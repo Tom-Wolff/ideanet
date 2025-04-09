@@ -1280,7 +1280,11 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       nodes <- as.data.frame(1:length(igraph::V(g)))
       colnames(nodes) <- "id"
       nodes$id <- nodes$id - 1
-      nodes$label <- igraph::V(g)$name
+      if (!is.null(nodes$label)) {
+          nodes$label <- igraph::V(g)$name
+      } else {
+          nodes$label <- nodes$id
+      }
 
       # To keep things consistent across code, we're going to reassign node names
       # to a `label` vertex attribute in `igraph` and replace the `name` attribute
