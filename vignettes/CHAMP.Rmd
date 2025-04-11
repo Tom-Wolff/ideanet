@@ -77,7 +77,7 @@ The whole idea of CHAMP is that it post-processes community structure partitions
 -   `n_runs`: number of times that the Leiden algorithm will be executed at different $\gamma$ values. Defaults to 100.
 -   `n_iterations`: the number of optimization runs passed to `cluster_leiden`. Defaults to 2.
 -   `seed`: set a seed for reproducible partitions.
--   `add_comm_detect`: Boolean to decide whether to also call the clustering algorithms included in \code{comm_detect} (default = T). Alternatively, the output of \code{comm_detect} can be provided directly here.
+-   `add_comm_detect`: Boolean to decide whether to also call the clustering algorithms included in \code{comm_detect} (default = `TRUE`). Alternatively, the output of \code{comm_detect} can be provided directly here.
 
 ```{r flor_partitions}
 partitions <- get_partitions(nw_flor$florentine, n_runs = 2500, seed = 4781)

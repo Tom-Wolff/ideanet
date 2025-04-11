@@ -74,6 +74,7 @@ Imports:
     readxl,
     reshape2,
     rlang,
+    RSpectra,
     shiny,
     sna,
     stringr,
