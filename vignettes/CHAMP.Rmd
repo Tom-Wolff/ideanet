@@ -117,7 +117,7 @@ Next, we run the `CHAMP` algorithm on the resulting partitions, and plot results
 -   `partitions`: partitions object generated from `get_partitions`.
 -   `plottitle`: optionally, a title for the output plot. `Null` by default.
 
-```{r flor_CHAMP}
+```{r flor_CHAMP, warning=FALSE}
 flor_partitions <- CHAMP(nw_flor$florentine, flor_partitions, plottitle = "Florentine (combined)")
 ```
 
@@ -159,7 +159,7 @@ The `get_CHAMP_map` function uses the equivalence of modularity optimization wit
 -   `partitions`: partitions object generated from `get_partitions`.
 -   `plottitle`: optionally, a title for the output plot. `Null` by default.
 
-```{r flor_CHAMPmap}
+```{r flor_CHAMPmap, warning=FALSE}
 flor_partitions <- get_CHAMP_map(nw_flor$florentine, flor_partitions, plotlabel = "Florentine (combined)")
 ```
 
@@ -203,7 +203,7 @@ kc_partitions <- get_partitions(karate, n_runs = 2500, seed = 3478)
 
 ### Step 2: CHAMP
 
-```{r karateCHAMP}
+```{r karateCHAMP, warning=FALSE}
 kc_partitions <- CHAMP(karate, kc_partitions, plottitle = "Zachary's Karate Club (unweighted)")
 ```
 
@@ -230,7 +230,7 @@ igraph::plot.igraph(karate,mark.groups = kc_partitions$partitions[[8]])
 
 ### Step 3: Compute the SBM-equivalence iterative map on the CHAMP set
 
-```{r}
+```{r, warning=FALSE}
 kc_partitions <- get_CHAMP_map(karate, kc_partitions, plotlabel = "Zachary's Karate Club (unweighted)")
 ```
 
@@ -258,7 +258,7 @@ data(karate,package="igraphdata")
 ```{r karate_viz2, eval = FALSE}
 igraph::plot.igraph(karate, main="Zachary's Karate Club (weighted)")
 ```
-```{r karate_partitions2}
+```{r karate_partitions2, warning=FALSE}
 kcw_partitions <- get_partitions(karate, n_runs = 2500, seed = 3478)
 kcw_partitions <- CHAMP(karate,kcw_partitions,plottitle="Zachary's Karate Club (weighted)")
 kcw_partitions <- get_CHAMP_map(karate,kcw_partitions,plotlabel="Zachary's Karate Club (weighted)")
@@ -307,7 +307,7 @@ football
 igraph::plot.igraph(football, main="Div-IA College Football, Fall 2000")
 ```
 
-```{r}
+```{r, warning=FALSE}
 football_partitions <- get_partitions(football, n_runs = 1000, seed = 115)
 football_partitions <- CHAMP(football,football_partitions,plottitle="Div-IA College Football, Fall 2000")
 football_partitions <- get_CHAMP_map(football,football_partitions,plotlabel="Div-IA College Football, Fall 2000")
@@ -322,7 +322,7 @@ knitr::kable(football_partitions$CHAMPsummary)
 
 It is important to note that, in the above use of the default parameters on this example, the fixed point of the iterative map on the CHAMP set is the partition that is optimal at the largest values of $\gamma$ in the default range considered. This is a sign to us that we might want to consider even larger values of $\gamma$, which we can easily do by changing `gamma_range` from its default in the call to `get_partitions` as follows. Note that this changes the resulting set of `football_partitions` obtained, which then get passed to `CHAMP` and `get_CHAMP_maps`.
 
-```{r}
+```{r, warning=FALSE}
 football_partitions <- get_partitions(football, n_runs = 2000, gamma_range = c(0,7), seed = 115)
 football_partitions <- CHAMP(football,football_partitions,plottitle="Div-IA College Football, Fall 2000")
 football_partitions <- get_CHAMP_map(football,football_partitions,plotlabel="Div-IA College Football, Fall 2000")
