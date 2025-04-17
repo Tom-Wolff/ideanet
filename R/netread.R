@@ -36,6 +36,12 @@ netread <- function(path = NULL,
                     i_elements = NULL,
                     j_elements = NULL) {
 
+
+# If `path` is `NULL`, set to simple blank character object
+if (is.null(path)) {
+  path <- ""
+}
+
   # CSV
   if (filetype == "csv" | (!is.null(path) & stringr::str_detect(path, "csv$"))) {
 
@@ -540,8 +546,20 @@ netread_excel <- function(path,
 netread_igraph <- function(object,
                            net_name = "network") {
 
+
   # Create output list
   output_list <- list()
+
+  # If nodes in igraph object don't have a name or ID vertex attribute,
+  # create one
+  if (is.null(igraph::V(object)$id)) {
+    igraph::V(object)$id <- 1:length(igraph::V(object))
+  }
+
+  if (is.null(igraph::V(object)$name)) {
+    igraph::V(object)$name <- igraph::V(object)$id
+  }
+
 
   igraph_extract <- igraph::as_data_frame(object, what = "both")
   edges <- igraph_extract$edges %>% dplyr::rename(i_elements = .data$from,
