@@ -293,7 +293,37 @@ ui <- shiny::fluidPage(
             shinycssloaders::withSpinner(
               plotOutput('role_viz')
             )
-          ))
+          )),
+        shiny::tabPanel(
+          "CHAMP",
+          shiny::sidebarPanel(
+            tags$p(HTML("<u>CHAMP Algorithm Options</u>")),
+            shiny::numericInput("champ_n_runs", "Number of runs", value = 1000, min = 100, max = 5000),
+            shiny::numericInput("champ_gamma_min", "Minimum gamma value", value = 0, min = 0, max = 10),
+            shiny::numericInput("champ_gamma_max", "Maximum gamma value", value = 3, min = 1, max = 10),
+            shiny::numericInput("champ_seed", "Random seed (for reproducibility)", value = 12345),
+            shiny::actionButton("run_champ", "Run CHAMP Algorithm",
+                                style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+            tags$hr(),
+            tags$p(HTML("<u>CHAMP Map Options</u>")),
+            shiny::uiOutput("champ_map_label_input"),
+            shinycssloaders::withSpinner(
+              shiny::uiOutput('run_champ_map')
+            )
+          ),
+          shiny::mainPanel(
+            style = "overflow-x: auto;",
+            shinycssloaders::withSpinner(
+              shiny::plotOutput('champ_plot', height = "400px")
+            ),
+            shiny::HTML("<br>"),
+            shinycssloaders::withSpinner(
+              shiny::plotOutput('champ_map_plot', height = "400px")
+            ),
+            shiny::HTML("<br>"),
+            shiny::dataTableOutput('champ_summary_table')
+          )
+        )
       ))
   )
 )
@@ -773,7 +803,6 @@ nodes_used <- shiny::reactive({
     shiny::selectInput(inputId = "community_input", label = "Node Coloring", choices = append(append("None", input$node_factor_col),vals[!vals %in% "id"]), selected = "None", multiple = FALSE)
   })
 
-
   # Create network to handle community attributes
   net6 <- shiny::reactive({
     net <- net2()
@@ -1178,7 +1207,7 @@ nodes_used <- shiny::reactive({
         # shiny::need(try(!is.null(net0())), 'Error computing network statistics. Check edge in and out columns to make sure you have uploaded the right data.')
         shiny::need(input$edge_in_col != "Empty", 'Make sure you have selected an edge in column!'),
         shiny::need(input$edge_out_col != "Empty", 'Make sure you have selected an edge out column!'),
-        shiny::need(nodes_done(), 'Make sure you have selected a node id column!'),
+        shiny::need(!input$nodes_exist || nodes_done(), 'Make sure you have selected a node id column!'),
         shiny::need(try(!is.null(net0())), 'Error computing network statistics. Check edge in and out columns to make sure you have uploaded the right data.'),
       )
       visNetwork::visNetworkOutput('network', height = input$plot_scalar, width = input$plot_scalar) %>% shinycssloaders::withSpinner(type = 5)
@@ -1758,6 +1787,81 @@ nodes_used <- shiny::reactive({
     ran_toggle_role_detect$x <- 1
   })
 
+  #### CHAMP ----
+
+  champ_results <- shiny::reactiveVal(NULL)
+  ran_toggle_champ <- shiny::reactiveVal(0)
+
+  output$champ_map_label_input <- shiny::renderUI({
+    shiny::req(ran_toggle_champ() == 1)
+    shiny::textInput("champ_map_label", "Plot label (optional)", value = "")
+  })
+
+  output$run_champ_map <- shiny::renderUI({
+    shiny::req(ran_toggle_champ() == 1)
+    shiny::actionButton("run_champ_map", "Run CHAMP Map",
+                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+  })
+
+  shiny::observeEvent(input$run_champ, {
+    shiny::req(input$raw_edges)
+    shiny::req(input$edge_in_col != "Empty")
+    shiny::req(input$edge_out_col != "Empty")
+
+    withProgress(message = 'Running CHAMP algorithm...', value = 0, {
+
+      incProgress(0.1, detail = "Generating partitions...")
+      partitions <- get_partitions(
+        network = net5(),
+        gamma_range = c(input$champ_gamma_min, input$champ_gamma_max),
+        n_runs = input$champ_n_runs,
+        seed = input$champ_seed
+      )
+
+      incProgress(0.7, detail = "Running CHAMP analysis...")
+      partitions <- CHAMP(
+        network = net5(),
+        partitions = partitions,
+        plottitle = "CHAMP Analysis"
+      )
+
+      champ_results(partitions)
+      ran_toggle_champ(1)
+    })
+  })
+
+  shiny::observeEvent(input$run_champ_map, {
+    shiny::req(ran_toggle_champ() == 1)
+
+    withProgress(message = 'Running CHAMP Map...', value = 0, {
+      incProgress(0.5, detail = "Generating map...")
+
+      partitions <- get_CHAMP_map(
+        network = net5(),
+        partitions = champ_results(),
+        plotlabel = input$champ_map_label
+      )
+
+      champ_results(partitions)
+    })
+  })
+
+  output$champ_plot <- shiny::renderPlot({
+    shiny::req(ran_toggle_champ() == 1)
+    champ_results()$CHAMPfigure
+  })
+
+  output$champ_map_plot <- shiny::renderPlot({
+    shiny::req(ran_toggle_champ() == 1)
+    if (!is.null(champ_results()$CHAMPmap)) {
+      champ_results()$CHAMPmap
+    }
+  })
+
+  output$champ_summary_table <- DT::renderDataTable({
+    shiny::req(ran_toggle_champ() == 1)
+    champ_results()$CHAMPsummary
+  })
 
 
 }
