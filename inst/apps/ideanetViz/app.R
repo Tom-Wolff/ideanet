@@ -790,6 +790,19 @@ nodes_used <- shiny::reactive({
 
   #### Handle output community detection ----
   output$community_detection <- shiny::renderUI({
+
+    champ_cols <- grep("^champ_partition_", colnames(nodelist3()), value = TRUE)
+    if (length(champ_cols) > 0) {
+      champ_labels <- c()
+      for (col in champ_cols) {
+        partition_num <- gsub("champ_partition_", "", col)
+        label <- paste0("CHAMP Partition ", partition_num)
+        champ_labels[col] <- label
+      }
+    } else {
+      champ_labels <- NULL
+    }
+
     if (ran_toggle_role_detect$x==1) {
       vals <- nodelist3() %>%
         dplyr::select(ends_with('membership'),'best_fit') %>%
@@ -800,7 +813,10 @@ nodes_used <- shiny::reactive({
         dplyr::select(ends_with('membership')) %>%
         dplyr::select(-c("strong_membership", -"weak_membership")) %>%
         colnames()}
-    shiny::selectInput(inputId = "community_input", label = "Node Coloring", choices = append(append("None", input$node_factor_col),vals[!vals %in% "id"]), selected = "None", multiple = FALSE)
+
+    all_choices = c("None", input$node_factor_col, vals[!vals %in% "id"], champ_labels)
+
+    shiny::selectInput(inputId = "community_input", label = "Node Coloring", choices = all_choices, selected = "None", multiple = FALSE)
   })
 
   # Create network to handle community attributes
@@ -1862,6 +1878,17 @@ nodes_used <- shiny::reactive({
     shiny::req(ran_toggle_champ() == 1)
     champ_results()$CHAMPsummary
   })
+
+  addPartitionNumberToNodes <- function(partitions) {
+    for (i in 1:nrow(partitions$CHAMPsummary)) {
+      partition_num <- partitions$CHAMPsummary$partition_num[i]
+
+      membership_vector <- igraph::membership(partitions$partitions[[partition_num]])
+
+      col_name <- paste0("champ_partition_", partition_num)
+      node_measures[[col_name]] <- membership_vector
+    }
+  }
 
 
 }
