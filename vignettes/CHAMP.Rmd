@@ -147,6 +147,8 @@ igraph::plot.igraph(nw_flor$florentine,mark.groups = flor_partitions$partitions[
 
 Running `CHAMP` selects out only the partitions that are optimal at some $\gamma$ and, in so doing, allows the user to see which partitions are optimal over wider ranges of the resolution parameter. In particular, we expect that there might be multiple partitions of interest, and that `CHAMP` will help the user focus their attention down onto a smaller number of possible candidate partitions that have large ranges of optimality in $\gamma$.
 
+We emphasize that `CHAMP` is deterministic given an input set of partitions, identifying which of those partitions is optimal at some $\gamma$; but the set of partitions obtained in the `get_partitions` step depends on the random seed, the number of runs, and the parameters passed to `cluster_leiden`. In practice it loosely appears that the partitions that `CHAMP` finds to be optimal over wider ranges of the resolution parameter are more easily obtained by fewer runs in `get_partitions`; but it may be interesting in future work to explore some of these computational details including how many runs in `get_partitions` it takes to obtain relatively robust `CHAMP` results.
+
 ### Step 3: Compute the SBM-equivalence iterative map on the CHAMP set
 
 In the current example, with only 6 partitions remaining in "the CHAMP set", and only some of those with larger ranges of optimality, a user might reasonably stop here with these results and proceed to study the resulting communities in greater detail. But in many applications, there may still be many somewhere-optimal partitions in the CHAMP set with comparable gamma range and/or segment length, and the user may be looking for a way to further focus their attention onto a smaller number of partitions. 
@@ -261,6 +263,8 @@ igraph::plot.igraph(karate, main="Zachary's Karate Club (weighted)")
 ```{r karate_partitions2, warning=FALSE}
 kcw_partitions <- get_partitions(karate, n_runs = 2500, seed = 3478)
 kcw_partitions <- CHAMP(karate,kcw_partitions,plottitle="Zachary's Karate Club (weighted)")
+```
+```{r karate_map2, warning=TRUE}
 kcw_partitions <- get_CHAMP_map(karate,kcw_partitions,plotlabel="Zachary's Karate Club (weighted)")
 ```
 
