@@ -715,6 +715,15 @@ nodes_used <- shiny::reactive({
       nodes <- nodes %>%
         dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id")
     }
+    if (ran_toggle_champ_map() == 1) {
+      print("shiny partition test")
+      print(head(champ_results()$shiny_partitions))
+      print(class(nodes$id))
+      print(class(champ_results()$shiny_partitions$id))
+      nodes <- nodes %>%
+        dplyr::left_join(champ_results()$shiny_partitions, by = "id")
+      print(colnames(nodes))
+    }
     as.data.frame(nodes)
   })
 
@@ -791,30 +800,50 @@ nodes_used <- shiny::reactive({
   #### Handle output community detection ----
   output$community_detection <- shiny::renderUI({
 
-    champ_cols <- grep("^champ_partition_", colnames(nodelist3()), value = TRUE)
-    if (length(champ_cols) > 0) {
-      champ_labels <- c()
-      for (col in champ_cols) {
-        partition_num <- gsub("champ_partition_", "", col)
-        label <- paste0("CHAMP Partition ", partition_num)
-        champ_labels[col] <- label
-      }
-    } else {
-      champ_labels <- NULL
-    }
+    # champ_cols <- grep("^champ_partition_", colnames(nodelist3()), value = TRUE)
+    # if (length(champ_cols) > 0) {
+    #   champ_labels <- c()
+    #   for (col in champ_cols) {
+    #     partition_num <- gsub("champ_partition_", "", col)
+    #     label <- paste0("CHAMP Partition ", partition_num)
+    #     champ_labels[col] <- label
+    #   }
+    # } else {
+    #   champ_labels <- NULL
+    # }
 
-    if (ran_toggle_role_detect$x==1) {
+    if (ran_toggle_role_detect$x==1 & ran_toggle_champ_map() == 0) {
       vals <- nodelist3() %>%
-        dplyr::select(ends_with('membership'),'best_fit') %>%
+        dplyr::select(dplyr::ends_with('membership'),
+                      'cp_cluster',
+                      'lc_cluster',
+                      'best_fit') %>%
+        dplyr::select(-c("strong_membership", "weak_membership")) %>%
+        colnames()
+    } else if (ran_toggle_role_detect$x==0 & ran_toggle_champ_map() == 1) {
+      vals <- nodelist3() %>%
+        dplyr::select(dplyr::ends_with('membership'),
+                      'cp_cluster',
+                      'lc_cluster',
+                      dplyr::starts_with('champ')) %>%
+        dplyr::select(-c("strong_membership", "weak_membership")) %>%
+        colnames()
+    } else if (ran_toggle_role_detect$x==1 & ran_toggle_champ_map() == 1) {
+      vals <- nodelist3() %>%
+        dplyr::select(dplyr::ends_with('membership'),
+                      'cp_cluster',
+                      'lc_cluster',
+                      dplyr::starts_with('champ'),
+                      'best_fit') %>%
         dplyr::select(-c("strong_membership", "weak_membership")) %>%
         colnames()
     } else {
       vals <- nodelist3() %>%
-        dplyr::select(ends_with('membership')) %>%
+        dplyr::select(dplyr::ends_with('membership')) %>%
         dplyr::select(-c("strong_membership", -"weak_membership")) %>%
         colnames()}
 
-    all_choices = c("None", input$node_factor_col, vals[!vals %in% "id"], champ_labels)
+    all_choices = c("None", input$node_factor_col, vals[!vals %in% "id"])
 
     shiny::selectInput(inputId = "community_input", label = "Node Coloring", choices = all_choices, selected = "None", multiple = FALSE)
   })
@@ -1807,6 +1836,7 @@ nodes_used <- shiny::reactive({
 
   champ_results <- shiny::reactiveVal(NULL)
   ran_toggle_champ <- shiny::reactiveVal(0)
+  ran_toggle_champ_map <- shiny::reactiveVal(0)
 
   output$champ_map_label_input <- shiny::renderUI({
     shiny::req(ran_toggle_champ() == 1)
@@ -1855,10 +1885,12 @@ nodes_used <- shiny::reactive({
       partitions <- get_CHAMP_map(
         network = net5(),
         partitions = champ_results(),
-        plotlabel = input$champ_map_label
+        plotlabel = input$champ_map_label,
+        shiny = TRUE
       )
 
       champ_results(partitions)
+      ran_toggle_champ_map(1)
     })
   })
 
@@ -1879,16 +1911,16 @@ nodes_used <- shiny::reactive({
     champ_results()$CHAMPsummary
   })
 
-  addPartitionNumberToNodes <- function(partitions) {
-    for (i in 1:nrow(partitions$CHAMPsummary)) {
-      partition_num <- partitions$CHAMPsummary$partition_num[i]
-
-      membership_vector <- igraph::membership(partitions$partitions[[partition_num]])
-
-      col_name <- paste0("champ_partition_", partition_num)
-      node_measures[[col_name]] <- membership_vector
-    }
-  }
+  # addPartitionNumberToNodes <- function(partitions) {
+  #   for (i in 1:nrow(partitions$CHAMPsummary)) {
+  #     partition_num <- partitions$CHAMPsummary$partition_num[i]
+  #
+  #     membership_vector <- igraph::membership(partitions$partitions[[partition_num]])
+  #
+  #     col_name <- paste0("champ_partition_", partition_num)
+  #     node_measures[[col_name]] <- membership_vector
+  #   }
+  # }
 
 
 }
