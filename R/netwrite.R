@@ -3007,6 +3007,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
+   # browser()
+
     # Burt Measures
     burt_measures <- columns[grepl("burt", columns)]
     burt_measures <- cbind(rep("burt", length(burt_measures)), burt_measures)
@@ -3137,6 +3139,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 # Function for preparing node-level measure plots
 
 node_gg_setup <- function(index_df, nodes) {
+
+  # browser()
+
   measures <- index_df[,2]
 
   # Eliminating NA Values
@@ -3144,6 +3149,11 @@ node_gg_setup <- function(index_df, nodes) {
   for(j in seq_along(measures)){
     plot_measure <- nodes[,measures[[j]]]
     plot_measure <- plot_measure[!is.na(plot_measure)]
+        # If all values are NAs, just store a vector of `-9999` so the plotting
+        # doesn't crash
+        if (length(plot_measure) == 0) {
+          plot_measure <- rep(-9999, length(nodes[,measures[[j]]]))
+        }
     sub_measures[[j]] <- plot_measure
   }
 
@@ -3188,6 +3198,16 @@ node_gg_setup <- function(index_df, nodes) {
   # Plotting Degree
   for(j in seq_along(sub_measures)){
     plot_measure <- sub_measures[[j]]
+        # If all values in `plot_measure` are set the de facto `NA` value
+        # of `-9999`, do not plot this measure and present users with a warning
+        if (all(plot_measure == -9999)) {
+          base::warning(paste("Measure ",
+                              measures[[j]],
+                              " consists only of NA values. This measure will not be displayed in the node-level summary visualization.",
+                              sep = ""))
+          next
+        }
+
     y_axis <- stats::density(plot_measure)$y
     x_axis <- stats::density(plot_measure)$x
     coordinates <- cbind(as.data.frame(x_axis), y_axis)

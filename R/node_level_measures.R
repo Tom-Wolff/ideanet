@@ -563,6 +563,7 @@ reachable_igraph <- function(g, directed){
 
 burt_ch <- function(g) {
 
+
   # If network lacks weight attribute, set weights to 1
   if (is.null(igraph::edge_attr(g, "weight"))) {
     igraph::E(g)$weight <- 1
@@ -570,8 +571,10 @@ burt_ch <- function(g) {
 
   adj <- igraph::as_adjacency_matrix(g, attr = "weight")
 
-  # See if this is a weighted matrix
-  weighted <- max(adj, na.rm = TRUE) > 1
+  # See if this is a weighted network based on the values
+  # in `g`'s `weight` attribute
+  ### weighted <- FALSE %in% (igraph::E(g)$weight %in% c(0, 1))
+  weighted <- stats::sd(igraph::E(g)$weight) != 0
 
   # Symmetrize the matrix
   adj <- adj + Matrix::t(adj)
