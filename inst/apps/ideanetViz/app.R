@@ -716,13 +716,10 @@ nodes_used <- shiny::reactive({
         dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id")
     }
     if (ran_toggle_champ_map() == 1) {
-      print("shiny partition test")
-      print(head(champ_results()$shiny_partitions))
-      print(class(nodes$id))
-      print(class(champ_results()$shiny_partitions$id))
+      print(input$direction_toggle)
       nodes <- nodes %>%
         dplyr::left_join(champ_results()$shiny_partitions, by = "id")
-      print(colnames(nodes))
+
     }
     as.data.frame(nodes)
   })
@@ -1853,6 +1850,8 @@ nodes_used <- shiny::reactive({
     shiny::req(input$raw_edges)
     shiny::req(input$edge_in_col != "Empty")
     shiny::req(input$edge_out_col != "Empty")
+    # Require undirected network
+    shiny::req(isFALSE(input$direction_toggle))
 
     withProgress(message = 'Running CHAMP algorithm...', value = 0, {
 
@@ -1894,7 +1893,11 @@ nodes_used <- shiny::reactive({
     })
   })
 
+# THIS WILL DISPLAY WARNING ABOUT DIRECTED NETS IF FAILS
   output$champ_plot <- shiny::renderPlot({
+    shiny::validate(
+      shiny::need(isFALSE(input$direction_toggle), "CHAMP is only supported for undirected networks.\nIf you would like to apply CHAMP to this network, you may want to set it as an undirected network in the Process tab.")
+    )
     shiny::req(ran_toggle_champ() == 1)
     champ_results()$CHAMPfigure
   })
