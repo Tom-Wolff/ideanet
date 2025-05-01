@@ -563,6 +563,7 @@ reachable_igraph <- function(g, directed){
 
 burt_ch <- function(g) {
 
+  # browser()
 
   # If network lacks weight attribute, set weights to 1
   if (is.null(igraph::edge_attr(g, "weight"))) {
@@ -575,6 +576,7 @@ burt_ch <- function(g) {
   # in `g`'s `weight` attribute
   ### weighted <- FALSE %in% (igraph::E(g)$weight %in% c(0, 1))
   weighted <- stats::sd(igraph::E(g)$weight) != 0
+  if (is.na(weighted)) {weighted <- FALSE}
 
   # Symmetrize the matrix
   adj <- adj + Matrix::t(adj)
