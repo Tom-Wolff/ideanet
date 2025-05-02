@@ -138,14 +138,16 @@ ui <- shiny::fluidPage(
       #legend {
         background-color:transparent;
       }")),
-          column(8,
+          shiny::fluidRow(
+          column(width = 10,
                  shiny::uiOutput("network_ui")
           ),
-          column(4,
+          column(width =2,
                  shiny::conditionalPanel(
                    condition = "input.palette_choice != 'Uniform'",
                    shiny::plotOutput("legend")),
                  id = "legendcol"
+          )
           )
         )
       )),
@@ -1135,6 +1137,11 @@ server <- function(input, output, session) {
             net <- igraph::delete_edge_attr(net,'color')
           }
         }}
+      # Keeping default node color if we don't want to color nodes
+      # but want to color edges
+      if (input$community_input == "None") {
+        net <- igraph::delete_vertex_attr(net, 'color')
+      }
 
       net.visn <- visNetwork::toVisNetworkData(net)
 
@@ -1153,7 +1160,8 @@ server <- function(input, output, session) {
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
             visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
                                    nodesIdSelection = T) %>%
-            visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+            visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
+                                 color = "darkgrey") %>%
             visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date()))  %>%
             visNetwork::visGroups()
         } else {
@@ -1162,7 +1170,8 @@ server <- function(input, output, session) {
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
             visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
                                    nodesIdSelection = T) %>%
-            visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+            visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
+                                 color = "darkgrey") %>%
             visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
             visNetwork::visGroups()
         }} else {
@@ -1172,7 +1181,8 @@ server <- function(input, output, session) {
               visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
               visNetwork::visInteraction(dragNodes = FALSE,
                                          dragView = FALSE) %>%
-              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
+                                   color = "darkgrey") %>%
               visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
               visNetwork::visGroups()
           } else {
@@ -1181,7 +1191,8 @@ server <- function(input, output, session) {
               visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
               visNetwork::visInteraction(dragNodes = FALSE,
                                          dragView = FALSE) %>%
-              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
+                                   color = "darkgrey") %>%
               visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
               visNetwork::visGroups()
           }}
@@ -1201,32 +1212,89 @@ server <- function(input, output, session) {
       #### igraph::V(net)$color <- color_matcher()$colrs[match(igraph::V(net)$communities, color_matcher()$groups)]
       node_legend_df <- unique(data.frame(group = igraph::V(color_net)$communities,
                                           color = igraph::V(color_net)$color))
+      node_legend_df$num <- 1:nrow(node_legend_df)
     } else {
       # This bit of code from above just kept here for reference, shouldn't be un-commented-out
       #### igraph::V(net)$color <- color_matcher()$colrs[match(igraph::V(net)$group, color_matcher()$groups)]
       node_legend_df <- unique(data.frame(group = igraph::V(color_net)$group,
                                           color = igraph::V(color_net)$color))
+      node_legend_df$num <- 1:nrow(node_legend_df)
     }
 
     node_legend_df <- dplyr::arrange(node_legend_df, group)
 
-    # # links group values to group identifier
-    # group_index <- data.frame(group = unique(igraph::V(net1)$group),
-    #                           group_id = 1:length(unique(igraph::V(net1)$group)))
-    #
-    # # not too sure about this - how to get color theme that user selected?
-    # # color_palette = color_generator_edges$palette
-    # # group_index$color = palette(num.color = nrow(group_index))
-    #
-    # color_assign <- color_assign %>% dplyr::left_join(group_index, by = "group")
-    plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
-    # figure out how to populate with right values
-    # Only display/populate if a color palette is actually chosen
-    if (input$palette_input != 'Uniform') {
-      legend("topleft", legend = node_legend_df$group, pch=16, pt.cex=3, cex=1.5, bty='n',
-             col = node_legend_df$color)
-      mtext("Legend", at=0.2, cex=2)
+    # # # links group values to group identifier
+    # # group_index <- data.frame(group = unique(igraph::V(net1)$group),
+    # #                           group_id = 1:length(unique(igraph::V(net1)$group)))
+    # #
+    # # # not too sure about this - how to get color theme that user selected?
+    # # # color_palette = color_generator_edges$palette
+    # # # group_index$color = palette(num.color = nrow(group_index))
+    # #
+    # # color_assign <- color_assign %>% dplyr::left_join(group_index, by = "group")
+    # plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
+    # # figure out how to populate with right values
+    # # Only display/populate if a color palette is actually chosen
+    # if (input$palette_input != 'Uniform') {
+    #   legend("topleft", legend = node_legend_df$group, pch=16, pt.cex=3, cex=1.5, bty='n',
+    #          col = node_legend_df$color)
+    #   mtext("Legend", at=0.2, cex=2)
+    # }
+
+    # Store color vector
+    color_vec <- node_legend_df$color
+
+    # Create ggplot object with legend
+    legend_gg <- node_legend_df %>%
+      ggplot2::ggplot(ggplot2::aes(x = group, y = num,
+                                   color = as.factor(group))) +
+      ggplot2::geom_point() +
+      ggplot2::scale_color_manual(values = color_vec) +
+      ggplot2::theme(legend.title = ggplot2::element_blank())
+
+    if (input$community_input == "None") {
+      legend_only <- NULL
+    } else {
+      # Extract legend from ggplot
+      legend_only <- cowplot::get_legend(legend_gg)
     }
+
+
+
+    # EDGE COLOR LEGEND
+    edge_color <- igraph::E(color_net)$color
+    edge_type <- igraph::E(color_net)$type
+
+    if (!is.null(edge_color) & isTRUE(input$toggle_relational_coloring)) {
+      edge_legend_df <- unique(data.frame(color = edge_color,
+                                          type = edge_type))
+      edge_legend_df$num <- 1:nrow(edge_legend_df)
+
+      edge_legend_gg <- edge_legend_df %>%
+        ggplot2::ggplot(ggplot2::aes(x = type, y = num,
+                                     color = as.factor(type))) +
+        ggplot2::geom_line() +
+        ggplot2::scale_color_manual(values = edge_legend_df$color) +
+        ggplot2::theme(legend.title = ggplot2::element_blank())
+
+      edge_legend_only <- cowplot::get_legend(edge_legend_gg)
+
+    } else {
+      edge_legend_only <- NULL
+    }
+
+
+    if (!is.null(legend_only) & is.null(edge_legend_only)) {
+      # Plot legend
+      cowplot::plot_grid(legend_only)
+    } else if (is.null(legend_only) & !is.null(edge_legend_only)) {
+      cowplot::plot_grid(edge_legend_only)
+    } else {
+      cowplot::plot_grid(plotlist = list(legend_only, edge_legend_only),
+                         ncol = 1)
+    }
+
+
   })
 
   output$network_ui <-
