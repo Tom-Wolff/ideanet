@@ -136,7 +136,8 @@ ui <- shiny::fluidPage(
             shiny::uiOutput('toggle_relational_coloring')
           ),
           shiny::uiOutput('interactive'),
-          shiny::uiOutput('edge_weight_method')
+          shiny::uiOutput('edge_weight_method'),
+          shiny::br()
           #shiny::uiOutput('edge_weight_scalar'),
         ),
         shiny::mainPanel(
@@ -364,6 +365,7 @@ server <- function(input, output, session) {
   }
   library(magrittr)
 
+
   ### Upload Node  and Edge Data ----
 
   # Create a placeholder for Node Data; if it isn't uploaded, stored
@@ -408,7 +410,7 @@ server <- function(input, output, session) {
               raw_el <- raw_el[,2:ncol(raw_el)]
               rownames(raw_el) <- raw_names
             }
-        raw_el
+        data <- raw_el
 
         # Reading Excel
       } else {
@@ -422,7 +424,7 @@ server <- function(input, output, session) {
                 raw_el <- raw_el[,2:ncol(raw_el)]
                 rownames(raw_el) <- raw_names
               }
-          raw_el
+          data <- raw_el
 
         } else {
           raw_el <- readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header)
@@ -435,20 +437,21 @@ server <- function(input, output, session) {
                 raw_el <- raw_el[,2:ncol(raw_el)]
                 rownames(raw_el) <- raw_names
               }
-          raw_el
+          data <- raw_el
         }
       }
       # If "Adjacency Matrix" is selected
     } else {
 
 
-      as.data.frame(netread(path = input$raw_edges$datapath,
+      data <- as.data.frame(netread(path = input$raw_edges$datapath,
                             filetype = input$select_file_type_edges,
                             col_names = input$edge_header,
                             row_names = input$edge_names,
                             format = "adjacency_matrix")$edgelist)
 
     }
+    return(data)
   })
 
   edge_data <- shiny::reactive({
@@ -533,7 +536,7 @@ server <- function(input, output, session) {
   })
 
   node_data <- shiny::reactive({
-    shiny::req(input$raw_nodes)
+    # shiny::req(input$raw_nodes)
 
     raw_nodes <- raw_node_data()
 
@@ -739,13 +742,13 @@ server <- function(input, output, session) {
 
   #Edge Processing Options
   output$edge_in <- shiny::renderUI({
-    shiny::selectInput(inputId = "edge_in_col", label = "Column with sender IDs*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
+    shiny::selectInput(inputId = "edge_in_col", label = "Column with sender IDs*", choices = append("Empty",colnames(edge_data1())), selected = 'N/A', multiple = FALSE)
   })
   output$edge_out <- shiny::renderUI({
-    shiny::selectInput(inputId = "edge_out_col", label = "Column with the alter IDs*", choices = append("Empty",colnames(edge_data())), selected = 'N/A', multiple = FALSE)
+    shiny::selectInput(inputId = "edge_out_col", label = "Column with the alter IDs*", choices = append("Empty",colnames(edge_data1())), selected = 'N/A', multiple = FALSE)
   })
   output$edge_weight <- shiny::renderUI({
-    shiny::selectInput(inputId = "edge_weight_col", label = "Column with edge weights", choices = append("Empty",colnames(edge_data())), selected = NULL, multiple = FALSE)
+    shiny::selectInput(inputId = "edge_weight_col", label = "Column with edge weights", choices = append("Empty",colnames(edge_data1())), selected = NULL, multiple = FALSE)
   })
 
   output$multi_relational_toggle <- shiny::renderUI({
@@ -753,7 +756,7 @@ server <- function(input, output, session) {
   })
 
   output$relational_column <- shiny::renderUI({
-    shiny::selectInput('relational_column', label = "Column with relation type", choices = append("Empty",colnames(edge_data())), selected = 'Empty', multiple = FALSE)
+    shiny::selectInput('relational_column', label = "Column with relation type", choices = append("Empty",colnames(edge_data1())), selected = 'Empty', multiple = FALSE)
   })
 
   # EDGE CONTEXT TOGGLE
@@ -811,6 +814,7 @@ server <- function(input, output, session) {
     }
   })
 
+  print("Trying netwrite")
 
   #### Create network 0 to run IDEANet ----
   net0 <- shiny::reactive({
@@ -872,6 +876,8 @@ server <- function(input, output, session) {
     })
   })
 
+  ran_netwrite <- shiny::reactiveValues(last_ran = Sys.time())
+
   #### Add node attributes ----
 
   # Joining all node_data to ideanet to preserve ordering
@@ -916,7 +922,12 @@ server <- function(input, output, session) {
     #comm_members_net$id <- as.character(comm_members_net$id)
     nodes <- nodes %>%
       dplyr::left_join(memberships, by = "id")
+
+    print(ran_netwrite$last_ran)
+
     if (ran_toggle_role_detect$x==1) {
+
+      if (ran_toggle_role_detect$last_ran > ran_netwrite$last_ran) {
 
       if (ran_toggle_role_detect$last_ran > ran_toggle_role_detect$prev_ran) {
           # Merge in best fit from CONCOR, if available
@@ -932,7 +943,8 @@ server <- function(input, output, session) {
           }
       }
 
-      print(head(nodes))
+      }
+
 
     }
     if (ran_toggle_champ_map() == 1) {
@@ -1045,9 +1057,11 @@ server <- function(input, output, session) {
         colnames()
     } else {
       vals <- nodelist3() %>%
-        dplyr::select(dplyr::ends_with('membership')) %>%
+        dplyr::select(dplyr::ends_with('membership'),'cp_cluster',
+                      'lc_cluster') %>%
         dplyr::select(-c("strong_membership", -"weak_membership")) %>%
-        colnames()}
+        colnames()
+      }
 
     all_choices = c("None", input$node_factor_col, vals[!vals %in% "id"])
 
@@ -1086,7 +1100,6 @@ server <- function(input, output, session) {
     }
     else {
       1
-      # length(unique(igraph::V(net6())$group))
     }
   })
 
@@ -1352,7 +1365,7 @@ server <- function(input, output, session) {
 
       shiny::withProgress(message = "Visualizing network...", value = 0.9, {
 
-      net <- net5
+      net <- net5()
 
       if (input$multi_context_toggle) {
         shiny::req(input$edge_context_value)
@@ -1361,11 +1374,13 @@ server <- function(input, output, session) {
         ])
       }
 
-      if (input$node_context_toggle) {
+      if (!is.null(input$node_context_toggle)) {
+        if (input$node_context_toggle) {
         shiny::req(input$node_context_value)
         net <- igraph::delete.vertices(net, igraph::V(net)[
           !igraph::V(net)$node_context_column %in% input$node_context_value
         ])
+        }
       }
 
       if (input$multi_relational_toggle == TRUE) {
@@ -1403,8 +1418,8 @@ server <- function(input, output, session) {
           net.visn$edges$value <- net.visn$edges$uni_weight
           visNetwork::visNetwork(net.visn$nodes, net.visn$edges, width = "100%") %>%
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-            visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
-                                   nodesIdSelection = T) %>%
+            visNetwork::visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE),
+                                   nodesIdSelection = TRUE) %>%
             visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
                                  color = "darkgrey") %>%
             visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date()))  %>%
@@ -1413,8 +1428,8 @@ server <- function(input, output, session) {
           net.visn$edges$value <- net.visn$edges$weight
           visNetwork::visNetwork(net.visn$nodes, net.visn$edges) %>%
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-            visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
-                                   nodesIdSelection = T) %>%
+            visNetwork::visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE),
+                                   nodesIdSelection = TRUE) %>%
             visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
                                  color = "darkgrey") %>%
             visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
@@ -1574,6 +1589,17 @@ server <- function(input, output, session) {
 
   output$measure_chooser <- shiny::renderUI({
     shiny::selectInput(inputId = "measure_chooser", label = "Choose Summary Level", choices = c("System", "Node"), selected = "System", multiple = FALSE)
+  })
+
+  output$relation_selector <- shiny::renderUI({
+    shiny::validate(
+      shiny::need(input$raw_edges, 'Upload Edge Data!')
+    )
+
+    if (input$multi_relational_toggle == TRUE && !is.null(input$relational_column) && input$relational_column != "Empty") {
+      relations <- unique(edge_data()[[input$relational_column]])
+      shiny::selectInput('relation_selector', 'Select Relation Type', choices = relations, selected = relations[1])
+    }
   })
 
   ### Visualize summary statistics ----
@@ -1874,14 +1900,26 @@ server <- function(input, output, session) {
   ran_toggle_qap <- shiny::reactiveValues(x=0)
 
   shiny::observeEvent(input$run_QAP_setup, {
-    net <- net5()
+      shiny::validate(
+        shiny::need(!is.null(chosen_var()), "Error: Please select at least one variable."),
+        shiny::need(!is.null(chosen_methods()), "Error: Please select at least one method.")
+      )
 
     # foreach::foreach(i=1:length(chosen_var())) %do% {
     #   net <- igraph::set_vertex_attr(net,chosen_var()[i],value=nodelist3() %>% dplyr::pull(parse_expr(chosen_var()[i])))
     # }
 
     shiny::withProgress(message = "Running QAP setup...", value = 0.8, {
-        list2env(qap_setup(net,chosen_var(),chosen_methods()), .GlobalEnv)
+      tryCatch({
+        net <- net5()
+        # Call the qap_setup function
+        result <- qap_setup(net, chosen_var(), chosen_methods())
+        list2env(result, .GlobalEnv)
+        ran_toggle_qap$x <- 1
+      }, error = function(e) {
+        shiny::showNotification("An error occurred while running QAP setup. Please check your inputs.", type = "error")
+        print(e$message)
+      })
     })
     ran_toggle_qap$x <- 1
   })
