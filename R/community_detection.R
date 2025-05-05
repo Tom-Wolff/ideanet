@@ -358,6 +358,14 @@ comm_detect <- function(g, modres=1,
   # This is probably where we want to add the two additional methods Gabe programmed
 
   ## Clique Percolation ##
+  if (n > 5000 & slow_routines == FALSE) {
+
+    cf1_membership <-  data.frame(id = memberships$id,
+                                  cp_cluster = NA)
+  } else if (shiny_skip == TRUE) {
+    cf1_membership <-  data.frame(id = memberships$id,
+                                 cp_cluster = NA)
+  } else {
   cf1 <- CliquePercolation::cpAlgorithm(W = g_sym, k = 3, method = "unweighted") # Running as unweighted
   clust <- cf1$list.of.communities.labels # extract cluster assignments
   #### In some cases, such as when given a star graph, `CliquePercolation` won't detect any communities.
@@ -371,6 +379,7 @@ comm_detect <- function(g, modres=1,
     warning("Clique Percolation did not detect any distinct communities. All nodes will be assigned to the same single community (1).")
     cf1_membership <- data.frame(id = memberships$id,
                                  cp_cluster = 1)
+  }
   }
 
   ## Link comm ##
@@ -430,6 +439,10 @@ comm_detect <- function(g, modres=1,
                                          #modularity = max(edge_betweenness$modularity))
                                          modularity = NA)
 
+    cf1_stats <- data.frame(method = "cp",
+                            num_communities = NA,
+                            modularity = NA)
+
     lc_stats <- data.frame(method = "lc",
                            num_communities = NA,
                            modularity = NA)
@@ -443,6 +456,10 @@ comm_detect <- function(g, modres=1,
                                          #modularity = max(edge_betweenness$modularity))
                                          modularity = NA)
 
+    cf1_stats <- data.frame(method = "cp",
+                            num_communities = NA,
+                            modularity = NA)
+
     lc_stats <- data.frame(method = "lc",
                            num_communities = NA,
                            modularity = NA)
@@ -454,6 +471,10 @@ comm_detect <- function(g, modres=1,
                                          #modularity = edge_betweenness$modularity)
                                          #modularity = max(edge_betweenness$modularity))
                                          modularity = igraph::modularity(g_undir, edge_betweenness$membership, weights = igraph::E(g_undir)$weight))
+
+    cf1_stats <- data.frame(method = "cp",
+                            num_communities = length(unique(memberships$cp_cluster)),
+                            modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster), weights = igraph::E(g_undir)$weight))
 
     lc_stats <- data.frame(method = "lc",
                            num_communities = length(unique(memberships$lc_cluster)),
@@ -558,10 +579,6 @@ comm_detect <- function(g, modres=1,
   igraph::V(g)$cf1 <- memberships$cp_cluster
   igraph::V(g)$lc <- memberships$lc_cluster
 
-
-  cf1_stats <- data.frame(method = "cp",
-                          num_communities = length(unique(memberships$cp_cluster)),
-                          modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster), weights = igraph::E(g_undir)$weight))
 
 
   community_summaries <- rbind(edge_betweenness_stats,
