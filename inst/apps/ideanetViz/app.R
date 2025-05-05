@@ -365,6 +365,9 @@ server <- function(input, output, session) {
   }
   library(magrittr)
 
+  # Initialize `ran_netwrite`
+  ran_netwrite <- shiny::reactiveValues(last_ran = Sys.time())
+
 
   ### Upload Node  and Edge Data ----
 
@@ -871,12 +874,11 @@ server <- function(input, output, session) {
       ), .GlobalEnv)
 
       print('Processed netwrite without nodes')
+      ran_netwrite$last_ran <- Sys.time()
       return(init_net)
     }
     })
   })
-
-  ran_netwrite <- shiny::reactiveValues(last_ran = Sys.time())
 
   #### Add node attributes ----
 
@@ -923,8 +925,7 @@ server <- function(input, output, session) {
     nodes <- nodes %>%
       dplyr::left_join(memberships, by = "id")
 
-    print(ran_netwrite$last_ran)
-
+    # Merge in role analysis output
     if (ran_toggle_role_detect$x==1) {
 
       if (ran_toggle_role_detect$last_ran > ran_netwrite$last_ran) {
@@ -943,15 +944,19 @@ server <- function(input, output, session) {
           }
       }
 
+      } else {
+        nodes <- nodes[, !stringr::str_detect(colnames(nodes), "best_fit$")]
       }
-
-
     }
+    # Merge in CHAMP fixed points
     if (ran_toggle_champ_map() == 1) {
-      print(input$direction_toggle)
-      nodes <- nodes %>%
-        dplyr::left_join(champ_results()$shiny_partitions, by = "id")
-
+      if (ran_champ_map$last_ran > ran_netwrite$last_ran) {
+          print(input$direction_toggle)
+          nodes <- nodes %>%
+            dplyr::left_join(champ_results()$shiny_partitions, by = "id")
+      } else {
+        nodes <- nodes[, !stringr::str_detect(colnames(nodes), "^champ")]
+      }
     }
     as.data.frame(nodes)
                         })
@@ -2251,6 +2256,7 @@ server <- function(input, output, session) {
   champ_results <- shiny::reactiveVal(NULL)
   ran_toggle_champ <- shiny::reactiveVal(0)
   ran_toggle_champ_map <- shiny::reactiveVal(0)
+  ran_champ_map <- shiny::reactiveValues(last_ran = Sys.time())
 
   output$champ_map_label_input <- shiny::renderUI({
     shiny::req(ran_toggle_champ() == 1)
@@ -2305,6 +2311,7 @@ server <- function(input, output, session) {
         shiny = TRUE
       )
 
+      ran_champ_map$last_ran <- Sys.time()
       champ_results(partitions)
       ran_toggle_champ_map(1)
     })
