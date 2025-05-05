@@ -136,8 +136,7 @@ ui <- shiny::fluidPage(
             shiny::uiOutput('toggle_relational_coloring')
           ),
           shiny::uiOutput('interactive'),
-          shiny::uiOutput('edge_weight_method'),
-          shiny::br()
+          shiny::uiOutput('edge_weight_method')
           #shiny::uiOutput('edge_weight_scalar'),
         ),
         shiny::mainPanel(
@@ -313,7 +312,6 @@ ui <- shiny::fluidPage(
 
 #Create server
 server <- function(input, output, session) {
-
   if(exists('edge_data')) {
     rm(edge_data)
   }
@@ -401,70 +399,50 @@ server <- function(input, output, session) {
   #     # }
 
   edge_data1 <- shiny::reactive({
-    shiny::req(input$raw_edges)
 
-    selected_type <- input$select_file_type_edges
-    file_path <- input$raw_edges$datapath
-    file_ext <- tools::file_ext(file_path)  # Extract file extension
-    expected_extensions <- if (selected_type == "csv") c("csv") else c("xls", "xlsx")
-    if (!(file_ext %in% expected_extensions)) {
-      shiny::showNotification("Error: Uploaded file does not match the selected file format!", type = "error")
-      return(NULL)
-    }
+    shiny::req(input$raw_edges)
 
     # If "Edgelist" is selected
     if (input$edge_format == "Edgelist") {
       # Reading CSV
       if (input$select_file_type_edges == "csv") {
         # network edgelist
-        data <- read.csv(input$raw_edges$datapath, header = input$edge_header)
+        read.csv(input$raw_edges$datapath, header = input$edge_header)
         # Reading Excel
       } else {
         if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
-          data <- as.data.frame(readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header))
+          as.data.frame(readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header))
         } else {
-          data <- as.data.frame(readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header))
+          as.data.frame(readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header))
         }
+
+        # I THINK THIS IS WHERE EDGE CONTEXT FILTERING OCCURS
+
+
       }
       # If "Adjacency Matrix" is selected
     } else {
-      data <- as.data.frame(netread(path = input$raw_edges$datapath,
+
+
+      as.data.frame(netread(path = input$raw_edges$datapath,
                             filetype = input$select_file_type_edges,
                             col_names = input$edge_header,
                             row_names = input$edge_names,
                             format = "adjacency_matrix")$edgelist)
+
     }
-    return(data)
-  })
+    })
 
+    edge_data <- shiny::reactive({
+      edge_data <- edge_data1()
+      shiny::req(edge_data)
 
-  edge_data <- shiny::reactive({
-    edge_data <- edge_data1()  # Load raw edge data
-    shiny::req(edge_data)
-
-    if (!is.null(input$edge_context_column) && input$edge_context_column != "Empty" &&
-        !is.null(input$edge_context_value) && input$edge_context_value != "Empty") {
-      edge_data <- edge_data[edge_data[[input$edge_context_column]] == input$edge_context_value, ]
-    }
-
-    if (!is.null(input$node_id_col) && input$node_id_col != "Empty" &&
-        !is.null(input$edge_in_col) && !is.null(input$edge_out_col)) {
-
-      if (!is.null(node_data()) && nrow(node_data()) > 0) {
-        valid_node_ids <- unique(node_data()[[input$node_id_col]])
-
-        if (!is.null(valid_node_ids) && length(valid_node_ids) > 0) {
-          edge_data <- edge_data[
-            edge_data[[input$edge_in_col]] %in% valid_node_ids &
-              edge_data[[input$edge_out_col]] %in% valid_node_ids,
-          ]
-        }
+      if (shiny::isTruthy(input$edge_context_value) && input$edge_context_value != "Empty") {
+        edge_data[edge_data[[input$edge_context_column]] == input$edge_context_value, ]
+      } else {
+        edge_data
       }
-    }
-
-    return(edge_data)
-  })
-
+    })
 
 
     # MAKE EDGE DATA 2, WHERE FILTERING ON CONTEXT OCCURS
@@ -496,10 +474,21 @@ server <- function(input, output, session) {
     # as.data.frame(network_edgelist)
 
   raw_node_data <- shiny::reactive({
+    # path_edges = input$raw_edges$datapath
+    # path_nodes = input$raw_nodes$datapath
+    # as.data.frame(network_nodelist)
+    print(exists("raw_nodes"))
     test <- input$raw_nodes$datapath
+    print(test)
+
+    # If `raw_nodes` path is defined...
     if (is.character(test)) {
-      if (input$select_file_type_edges == "csv") {
+
+      # Reading CSV
+      raw_nodes <- if (input$select_file_type_edges == "csv") {
+        # network edgelist
         read.csv(input$raw_nodes$datapath, header = input$edge_header)
+        # Reading Excel
       } else {
         if(stringr::str_detect(input$raw_nodes$datapath, "xlsx$")) {
           as.data.frame(readxl::read_xlsx(path = input$raw_nodes$datapath, col_names = input$edge_header))
@@ -512,34 +501,23 @@ server <- function(input, output, session) {
     }
   })
 
-  # store node columns
-  node_columns <- shiny::reactive({
-    raw_nodes <- raw_node_data()
-    if(!is.null(raw_nodes)) {
-      colnames(raw_nodes)
-    } else {
-      NULL
-    }
-  })
-
+  # Reactive for filtering node data
   node_data <- shiny::reactive({
-    shiny::req(input$raw_nodes)
-
     raw_nodes <- raw_node_data()
 
-    # Ensure the file is not empty
-    if (!is.null(raw_nodes) && nrow(raw_nodes) > 0) {
-      if (shiny::isTruthy(input$node_context_value) && input$node_context_value != "Empty") {
-        raw_nodes <- raw_nodes[raw_nodes[[input$node_context_col]] == input$node_context_value, ]
-      }
-      if (!is.null(input$node_id_col) && input$node_id_col != "Empty" && input$node_id_col %in% colnames(raw_nodes)) {
-        raw_nodes <- raw_nodes[!duplicated(raw_nodes[[input$node_id_col]]), ]
-      }
-    } else {
-      return(NULL)
+    if (is.null(raw_nodes)) {
+      print("raw_node_data() is NULL, returning empty data frame")
+      return(data.frame())
     }
 
-    return(raw_nodes)
+    if (shiny::isTruthy(input$node_context_value) && input$node_context_value != "Empty") {
+      print(paste("Filtering nodes by", input$node_context_col, "=", input$node_context_value))
+      filtered_nodes <- raw_nodes[raw_nodes[[input$node_context_col]] == input$node_context_value, ]
+      return(filtered_nodes)
+    }
+
+    print("No filtering applied, returning raw node data")
+    raw_nodes
   })
 
 
@@ -554,34 +532,15 @@ server <- function(input, output, session) {
     node_data()
   })
 
-  #Store node ids
-  unique_node_ids <- shiny::reactiveVal()
-
- observe({
-   filtered_nodes <- node_data()
-
-   if (is.null(filtered_nodes)) {
-     unique_node_ids(NULL)
-     return()
-   }
-
-   if (!is.null(input$node_id_col) &&
-       input$node_id_col != "Empty") {
-     unique_ids <- unique(filtered_nodes[[input$node_id_col]])
-     unique_node_ids(unique_ids)
-     print(paste("length of unique node IDs:", print(length(unique_ids))))
-   }
- })
 
   #Display Edge Data
- output$edge_raw_upload <- shiny::renderDataTable({
-   shiny::validate(
-     shiny::need(!is.null(edge_data1()), 'Upload Edge Data!')
-   )
-   print("display test")
-   print(edge_data1())
-   edge_data1()
- })
+  output$edge_raw_upload <- shiny::renderDataTable({
+    shiny::validate(
+      shiny::need(input$raw_edges, 'Upload Edge Data!'),
+    )
+    edge_data1()
+  })
+
 
   ### Process edge and node data ----
   # Redisplay Datatables
@@ -592,10 +551,12 @@ server <- function(input, output, session) {
     node_data()
   })
   output$edge_processed <- shiny::renderDataTable({
-    req(edge_data1())
+    # shiny::validate(
+    #   shiny::need(input$raw_edges, 'Upload Edge Data!'),
+    # )
     edge_data()
-  })
 
+  })
 
   # NODE DISPLAY TAB
 
@@ -627,51 +588,70 @@ server <- function(input, output, session) {
                                      )
                      ), target = "Process Edge Data ")
   })
+
   #Node Processing Options
 
+  # Basic node processing options
   output$node_ids <- shiny::renderUI({
-    shiny::req(node_columns())
-    shiny::selectInput(inputId = "node_id_col", label = "Column with node ids*", choices = append("Empty", node_columns()),
-                       selected = if(!is.null(input$node_id_col) && input$node_id_col != "Empty") input$node_id_col else "N/A",
-                       multiple = FALSE
+    raw_nodes <- isolate(raw_node_data())
+    shiny::req(raw_nodes)
+
+    shiny::selectInput(
+      inputId = "node_id_col",
+      label = "Column with node IDs*",
+      choices = append("Empty", colnames(raw_nodes)),
+      selected = isolate(dropdown_state$node_id_col),
+      multiple = FALSE
     )
-
   })
+
   output$node_labels <- shiny::renderUI({
+    raw_nodes <- isolate(raw_node_data())
+    shiny::req(raw_nodes)
 
-    shiny::selectInput(inputId = "node_label_col", label = "Column with node labels", choices = append("Empty",colnames(node_data())), selected = "Empty", multiple = FALSE)
-
+    shiny::selectInput(
+      inputId = "node_label_col",
+      label = "Column with node labels",
+      choices = append("Empty", colnames(raw_nodes)),
+      selected = isolate(dropdown_state$node_label_col),
+      multiple = FALSE
+    )
   })
+
   output$node_factor <- shiny::renderUI({
+    raw_nodes <- isolate(raw_node_data())
+    shiny::req(raw_nodes)
 
-    shiny::selectInput(inputId = "node_factor_col", label = "Column with groups", choices = append("Empty",colnames(node_data())), selected = NULL, multiple = TRUE)
-
+    shiny::selectInput(
+      inputId = "node_factor_col",
+      label = "Column with groups",
+      choices = append("Empty", colnames(raw_nodes)),
+      selected = isolate(dropdown_state$node_factor_col),  # Preserve state
+      multiple = TRUE
+    )
   })
+
   output$node_numeric <- shiny::renderUI({
+    raw_nodes <- isolate(raw_node_data())
+    shiny::req(raw_nodes)
 
-    shiny::selectInput(inputId = "node_numeric_col", label = "Column with node sizes", choices = append("Empty",colnames(node_data())), multiple = FALSE)
-
+    shiny::selectInput(
+      inputId = "node_numeric_col",
+      label = "Column with node sizes",
+      choices = append("Empty",colnames(node_data())),
+      selected = isolate(dropdown_state$node_numeric_col),
+      multiple = FALSE)
   })
 
-# NODE CONTEXT TOGGLE
-  output$node_context_toggle <- shiny::renderUI({
+  # Multiple contexts toggle
+    output$node_context_toggle <- shiny::renderUI({
     shiny::checkboxInput("node_context_toggle", tags$b("Check if the data contain multiple networks"), FALSE)
-  })
-
-  observeEvent(input$node_context_toggle, {
-    if (input$node_context_toggle) {
-      if (is.null(input$node_id_col) || input$node_id_col == "Empty" ||
-          is.null(input$edge_in_col) || input$edge_in_col == "Empty" ||
-          is.null(input$edge_out_col) || input$edge_out_col == "Empty") {
-            showNotification("Please select the ID column.", type = "error")
-            updateCheckboxInput(session, "node_context_toggle", value = FALSE)
-      }
-    }
   })
 
   output$node_context_col <- shiny::renderUI({
     raw_nodes <- raw_node_data()
     shiny::req(raw_nodes)
+    previous_selection <- isolate(dropdown_state$network_value)
     shiny::selectInput(inputId = "node_context_col", label = "Column with network IDs", choices = append("Empty", colnames(raw_nodes)), multiple = FALSE)
 
   })
@@ -679,10 +659,47 @@ server <- function(input, output, session) {
   output$node_context_value <- shiny::renderUI({
     raw_nodes <- raw_node_data()
     shiny::req(input$node_context_col != "Empty")
+    previous_selection <- isolate(dropdown_state$network_value)
     unique_values <- unique(raw_nodes[[input$node_context_col]])
-    shiny::selectInput(inputId = "node_context_value", label = "Which network to use?", choices = append("Empty", unique_values), selected = "Empty", multiple = FALSE)
+    shiny::selectInput(
+      inputId = "node_context_value", label = "Which network to use?", choices = append("Empty", unique_values),
+      selected = if (!is.null(previous_selection) && previous_selection %in% unique_values) previous_selection else "Empty",
+      multiple = FALSE
+    )
   })
 
+  ### This section stops menus from resetting
+
+  dropdown_state <- shiny::reactiveValues(
+    node_id_col = NULL,
+    node_label_col = NULL,
+    node_factor_col = NULL,
+    node_numeric_col = NULL,
+  )
+
+  observeEvent(input$node_id_col, {
+    if (input$node_id_col != "Empty") {
+      dropdown_state$node_id_col <- input$node_id_col
+    }
+  })
+
+  observeEvent(input$node_label_col, {
+    if (input$node_label_col != "Empty") {
+      dropdown_state$node_label_col <- input$node_label_col
+    }
+  })
+
+  observeEvent(input$node_factor_col, {
+    dropdown_state$node_factor_col <- input$node_factor_col
+  })
+
+  observeEvent(input$node_numeric_col, {
+    if (input$node_numeric_col != "Empty") {
+      dropdown_state$node_numeric_col <- input$node_numeric_col
+    }
+  })
+
+  ###
 
   nodes_used <- shiny::reactive({
     print('here nodes used')
@@ -712,24 +729,12 @@ server <- function(input, output, session) {
     }
   })
 
-  observeEvent(input$node_context_value, {
-    shiny::req(input$node_context_value, node_data(), edge_data(), input$edge_in_col, input$edge_out_col)
-
-    if (nodes_done()) {
-      nodes <- node_data()
-      edges <- edge_data()
-
-      if (!is.null(nodes) && !is.null(edges) && input$node_id_col != "Empty") {
-        filtered_node_ids <- nodes[[input$node_id_col]]
-        edges <- edges[
-          edges[[input$edge_in_col]] %in% filtered_node_ids &
-            edges[[input$edge_out_col]] %in% filtered_node_ids,
-        ]
-      }
-    }
+  output$node_table <- shiny::renderTable({
+    node_data()
   })
 
   #Edge Processing Options
+
   output$edge_in <- shiny::renderUI({
     shiny::selectInput(inputId = "edge_in_col", label = "Column with sender IDs*", choices = append("Empty",colnames(edge_data1())), selected = 'N/A', multiple = FALSE)
   })
@@ -750,16 +755,6 @@ server <- function(input, output, session) {
 
   # EDGE CONTEXT TOGGLE
 
-  observeEvent(input$multi_context_toggle, {
-    if (input$multi_context_toggle) {
-      if (is.null(input$edge_in_col) || input$edge_in_col == "Empty" ||
-          is.null(input$edge_out_col) || input$edge_out_col == "Empty") {
-            showNotification("Please select ID columns.", type = "error")
-            updateCheckboxInput(session, "multi_context_toggle", value = FALSE)
-      }
-    }
-  })
-
   output$multi_context_toggle <- shiny::renderUI({
     shiny::checkboxInput("multi_context_toggle", tags$b("Check if the data contain multiple networks"), FALSE)
   })
@@ -773,6 +768,7 @@ server <- function(input, output, session) {
     shiny::req(input$edge_context_column != "Empty")
     unique_values <- unique(edge_data[[input$edge_context_column]])
     shiny::selectInput(inputId = "edge_context_value", label = "Which network to use?", choices = append("Empty", unique_values), selected = "Empty", multiple = FALSE)
+
   })
 
 
@@ -806,57 +802,50 @@ server <- function(input, output, session) {
 
   #### Create network 0 to run IDEANet ----
   net0 <- shiny::reactive({
+  type_ret <- c()
+
+  # Determine edge type column
+  if (is.null(input$relational_column) || input$relational_column == "Empty") {
     type_ret <- NULL
-    if (!is.null(input$relational_column) && input$relational_column != "Empty") {
-      type_ret <- edge_data()[, input$relational_column]
-    }
-
-    # Use only filtered edges and nodes
-    filtered_edges_data <- edge_data()
-    filtered_nodes_data <- node_data()
-
-    if (!is.null(input$raw_nodes) && shiny::isTruthy(input$node_id_col) && input$node_id_col != "Empty") {
-      print('Started netwrite with filtered nodes and edges')
-
+  } else {
+    type_ret <- edge_data()[, input$relational_column]
+  }
+  # Check for nodelist and node ID column
+  if (!is.null(input$raw_nodes) & shiny::isTruthy(input$node_id_col)) {
+    if (input$node_id_col != "Empty") {
+      print('started netwrite 1')
       list2env(netwrite(
-        data_type = c('edgelist'),
-        adjacency_matrix = FALSE,
-        adjacency_list = FALSE,
-        nodelist = filtered_nodes_data,  # Use filtered nodes
+        data_type = c('edgelist'), adjacency_matrix = FALSE,
+        adjacency_list = FALSE, nodelist = node_data(),
         node_id = input$node_id_col,
-        i_elements = filtered_edges_data[, input$edge_in_col],
-        j_elements = filtered_edges_data[, input$edge_out_col],
+        i_elements = edge_data()[, input$edge_in_col],
+        j_elements = edge_data()[, input$edge_out_col],
         weights = initial_edge(),
         type = type_ret,
-        missing_code = 99999,
-        weight_type = 'frequency',
+        missing_code = 99999, weight_type = 'frequency',
         directed = input$direction_toggle,
         net_name = 'init_net',
         shiny = TRUE
       ), .GlobalEnv)
-
-      print('Processed netwrite with filtered data')
+      print('processed netwrite')
       return(init_net)
-    } else {
-      print('Started netwrite without nodes')
-
-      list2env(netwrite(
-        data_type = c('edgelist'),
-        adjacency_matrix = FALSE,
-        adjacency_list = FALSE,
-        i_elements = filtered_edges_data[, input$edge_in_col],
-        j_elements = filtered_edges_data[, input$edge_out_col],
-        weights = initial_edge(),
-        type = type_ret,
-        missing_code = 99999,
-        weight_type = 'frequency',
-        directed = input$direction_toggle,
-        net_name = 'init_net',
-        shiny = TRUE
-      ), .GlobalEnv)
-
-      print('Processed netwrite without nodes')
-      return(init_net)
+    }
+  } else {
+    print('started netwrite 2')
+    list2env(netwrite(
+      data_type = c('edgelist'), adjacency_matrix = FALSE,
+      adjacency_list = FALSE,
+      i_elements = edge_data()[, input$edge_in_col],
+      j_elements = edge_data()[, input$edge_out_col],
+      weights = initial_edge(),
+      type = type_ret,
+      missing_code = 99999, weight_type = 'frequency',
+      directed = input$direction_toggle,
+      net_name = 'init_net',
+      shiny = TRUE
+    ), .GlobalEnv)
+    print('processed netwrite')
+    return(init_net)
     }
   })
 
@@ -868,31 +857,62 @@ server <- function(input, output, session) {
 
   ### MAKE SURE TO ADD CHECK FOR PROCESSING BACK IN!!!!
 
-
-
   # join node data with nodelist
   nodelist2 <- shiny::reactive({
+  print("started nodelist2")
 
-    if (!is.null(node_data())) {
-      node_data3 <- node_data()
-      node_data3[,input$node_id_col] <- as.character(node_data3[,input$node_id_col])
-      node_measures <- node_measures %>% dplyr::mutate(id = as.character(id))
-      node_measures <- node_measures %>%
-        dplyr::left_join(node_data3)
-      node_measures %>% dplyr::mutate(id = as.double(id))
+  # Use node data if available
+  if (!is.null(node_data()) && shiny::isTruthy(input$node_id_col)) {
+    print("Processing node_data() in nodelist2")
+    node_data3 <- node_data()
+
+    # Ensure input$node_id_col exists in node_data and rename it to 'id'
+    if (input$node_id_col %in% colnames(node_data3)) {
+      node_data3 <- node_data3 %>%
+        dplyr::rename(id = !!input$node_id_col)
     } else {
-      node_measures
+      stop("Error: Selected node_id_col does not exist in node_data.")
     }
-  })
+
+    # Filter node_data3 to match IDs in the edgelist
+    edge_ids <- unique(c(edge_data()[, input$edge_in_col], edge_data()[, input$edge_out_col]))
+    node_data3 <- node_data3 %>% dplyr::filter(id %in% edge_ids)
+
+    # Ensure node_measures has an 'id' column
+    if (!exists("node_measures") || is.null(node_measures)) {
+      print("Creating node_measures with id column")
+      node_measures <<- data.frame(id = node_data3$id)
+    }
+
+    # Join node_measures with node_data3
+    node_measures <- node_measures %>%
+      dplyr::mutate(id = as.double(id)) %>%
+      dplyr::left_join(node_data3, by = "id")
+
+    print("completed nodelist2")
+    return(node_measures %>% dplyr::mutate(id = as.double(id)))
+  }
+
+  # Fallback: Ensure node_measures exists with an 'id' column
+  if (!exists("node_measures") || is.null(node_measures)) {
+    print("No node_data() available, returning empty node_measures")
+    return(data.frame(id = character(0)))
+  }
+
+  print("No filtering applied, returning node_measures")
+  return(node_measures)
+})
+
+
 
   #Run Community detection
   nodelist3 <- shiny::reactive({
+    print("started nodelist3")
     shiny::validate(
       shiny::need(input$raw_edges, 'Upload Edge Data!'),
     )
 
     net <- net0()
-
     nodes <- nodelist2()
     print('started community detection')
     list2env(comm_detect(net, shiny  = TRUE),
@@ -903,19 +923,8 @@ server <- function(input, output, session) {
     #comm_members_net$id <- as.character(comm_members_net$id)
     nodes <- nodes %>%
       dplyr::left_join(memberships, by = "id")
-    if (ran_toggle_role_detect$x==1) {
-      # if (input$select_role_type == "concor") {
-      #   nodes <- nodes %>%
-      #     dplyr::left_join(concor_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
-      #     dplyr::mutate(concor_best_fit = best_fit) %>%
-      #     dplyr::select(-best_fit)
-      # } else {
-      #   nodes <- nodes %>%
-      #     dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
-      #     dplyr::mutate(cluster_best_fit = best_fit) %>%
-      #     dplyr::select(-best_fit)
-      # }
 
+    if (ran_toggle_role_detect$x==1) {
       if (exists("concor_assignments") & exists("cluster_assignments")) {
         nodes <- nodes %>%
           dplyr::left_join(concor_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
@@ -935,7 +944,7 @@ server <- function(input, output, session) {
           dplyr::mutate(concor_best_fit = best_fit) %>%
           dplyr::select(-best_fit)
       }
-
+    print("finished joins")
 
     }
     as.data.frame(nodes)
@@ -1320,21 +1329,6 @@ server <- function(input, output, session) {
   net8 <-
     shiny::reactive({
       net <- net5()
-
-      if (input$multi_context_toggle) {
-        shiny::req(input$edge_context_value)
-        net <- igraph::delete.edges(net, igraph::E(net)[
-          !igraph::E(net)$edge_context_column %in% input$edge_context_value
-        ])
-      }
-
-      if (input$node_context_toggle) {
-        shiny::req(input$node_context_value)
-        net <- igraph::delete.vertices(net, igraph::V(net)[
-          !igraph::V(net)$node_context_column %in% input$node_context_value
-        ])
-      }
-
       if (input$multi_relational_toggle == TRUE) {
         if (input$filter_relation_type != 'None') {
           net <- igraph::delete.edges(net, igraph::E(net)[igraph::E(net)$type == input$filter_relation_type])
@@ -1344,10 +1338,6 @@ server <- function(input, output, session) {
             net <- igraph::delete_edge_attr(net,'color')
           }
         }}
-
-      if (length(igraph::E(net)) == 0 || length(igraph::V(net)) == 0) {
-        stop("The graph is empty after filtering. Check your context or data.")
-      }
 
       net.visn <- visNetwork::toVisNetworkData(net)
 
@@ -1473,17 +1463,6 @@ server <- function(input, output, session) {
     shiny::selectInput(inputId = "measure_chooser", label = "Choose Summary Level", choices = c("System", "Node"), selected = "System", multiple = FALSE)
   })
 
-  output$relation_selector <- shiny::renderUI({
-    shiny::validate(
-      shiny::need(input$raw_edges, 'Upload Edge Data!')
-    )
-
-    if (input$multi_relational_toggle == TRUE && !is.null(input$relational_column) && input$relational_column != "Empty") {
-      relations <- unique(edge_data()[[input$relational_column]])
-      shiny::selectInput('relation_selector', 'Select Relation Type', choices = relations, selected = relations[1])
-    }
-  })
-
   ### Visualize summary statistics ----
 
   output$system_level_chooser <- shiny::renderUI({
@@ -1495,7 +1474,7 @@ server <- function(input, output, session) {
       # shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
     )
     if (input$multi_relational_toggle == TRUE) {
-      shiny::uiOutput("relation_selector")
+      shiny::selectInput('system_level_chooser', 'Choose which relation you want to visualize', choices = names(system_measure_plot), selected = NULL)
     }
   })
 
@@ -1508,7 +1487,7 @@ server <- function(input, output, session) {
       shiny::need(nodes_done(), 'Select node id column!')
     )
     if (input$multi_relational_toggle == TRUE) {
-      shiny::uiOutput("relation_selector")
+      shiny::selectInput('node_level_chooser', 'Choose which relation you want to visualize', choices = names(node_measure_plot), selected = NULL)
     }
   })
 
@@ -1523,14 +1502,13 @@ server <- function(input, output, session) {
       )
 
       # Multirelational
-      if (input$multi_relational_toggle == TRUE) {
-        selected_relation <- input$relation_selector
-
+      if(input$multi_relational_toggle == TRUE) {
         if (input$measure_chooser == "System") {
-          plot(system_measure_plot[[selected_relation]])
+          plot(system_measure_plot[[match(input$system_level_chooser,names(system_measure_plot))]])
         } else {
-          plot(node_measure_plot[[selected_relation]])
+          plot(node_measure_plot[[match(input$node_level_chooser,names(node_measure_plot))]])
         }
+        # Single Relation
       } else {
         if (input$measure_chooser == "System") {
           plot(system_measure_plot)
@@ -1538,6 +1516,7 @@ server <- function(input, output, session) {
           plot(node_measure_plot)
         }
       }
+
     })
 
   ### Visualize nodemeasures ----
