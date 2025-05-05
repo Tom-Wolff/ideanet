@@ -617,14 +617,20 @@ relation_cors <- function(role_centrality,
 # Collapsing smaller clusters into parent clusters
 ####################################################################
 
-cluster_collapse <- function(min_partition_size,
+cluster_collapse <- function(method,
+                             min_partition_size,
                              max_mod,
                              cut_df) {
 
+  # browser()
 
-  max_mod_val <- max_mod[,3] + 1
-
-  this_cut <- cut_df[,1:max_mod_val]
+  if (method == "cluster") {
+    max_mod_val <- max_mod[,3] + 1
+    this_cut <- cut_df[,1:max_mod_val]
+  } else {
+    max_mod_val <- paste("block", max_mod[,3], sep = "_")
+    this_cut <- cut_df[, 1:which(colnames(cut_df) == max_mod_val)]
+  }
 
   for (i in 2:ncol(this_cut)) {
 
@@ -636,7 +642,21 @@ cluster_collapse <- function(min_partition_size,
     dplyr::group_by(.data$cluster) %>%
     dplyr::mutate(cluster_size = dplyr::n())
 
-  for (i in (max_mod_val-1):3) {
+
+  if (method == "cluster") {
+    start_val <- max_mod_val-1
+    stop_val <- 3
+  } else {
+    start_val <- which(colnames(cut_df) == max_mod_val)
+    stop_val <- 2
+  }
+
+  if (start_val == stop_val) {
+    warning(paste("Smallest number of partitions selected produces the highest modularity score. Cannot collapse partitions into groups of at least ",
+                  min_partition_size, " nodes.", sep = ""))
+  }
+
+  for (i in start_val:stop_val) {
 
 
     test$alt_cluster <- this_cut[,i]

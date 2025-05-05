@@ -350,7 +350,11 @@ degree_centralization <- function(g, directed = directed) {
 
 closeness_centralization <- function(g, directed = directed, weight_type) {
 
-  # browser()
+  # `closeness_igraph` calls upon a `weight` attribute in `g`. On the off-chance
+  # that `g` lacks this attribute, go ahead and replace it with `1` values
+  if (is.null(igraph::E(g)$weight)) {
+    igraph::E(g)$weight <- 1
+  }
 
   # DIRECTED NETS
   if (directed == TRUE) {

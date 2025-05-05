@@ -251,3 +251,21 @@
 #' @source Original Data, Collected by Danielle Montagne, Joseph Quinn, Liann Tucker, and Tom Wolff.
 "ngq_aa"
 
+
+#' American College Football
+#'
+#' Network of American football games between Division IA colleges during regular season Fall 2000.
+#'
+#'
+#' @format
+#' An `igraph` object containing 613 edges between 115 vertices (nodes). Vertices contain three attributes:
+#' \describe{
+#'   \item{id}{Unique identification number.}
+#'   \item{label}{Name of college team represented by vertex.}
+#'   \item{value}{A numberic indicator of football conference affiliation.}
+#'   ...
+#' }
+#' @source Included by permission of M. Girvan and M. E. J. Newman (\href{https://websites.umich.edu/~mejn/netdata/}{Website})
+#' @references M. Girvan and M. E. J. Newman. 2002. "Community structure in social and biological networks." \emph{Proc. Natl. Acad. Sci. USA} 99:7821-7826.
+"football"
+

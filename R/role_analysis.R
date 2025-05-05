@@ -496,7 +496,8 @@ cluster_method <- function(graph, # igraph object generated from netwrite
   # into larger clusters
   if (!is.na(min_partition_size)) {
 
-    cut_df$best_fit <- cluster_collapse(min_partition_size = min_partition_size,
+    cut_df$best_fit <- cluster_collapse(method = "cluster",
+                                        min_partition_size = min_partition_size,
                                         max_mod = max_mod,
                                         cut_df = cut_df)
   } else {
@@ -941,7 +942,8 @@ concor_method <- function(graph,
   #### Need to test/debug
   if (!is.na(min_partition_size)) {
 
-    assignment_df$best_fit <- cluster_collapse(min_partition_size = min_partition_size,
+    assignment_df$best_fit <- cluster_collapse(method = "concor",
+                                               min_partition_size = min_partition_size,
                                                max_mod = max_mod,
                                                cut_df = assignment_df)
   } else {

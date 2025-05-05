@@ -138,14 +138,16 @@ ui <- shiny::fluidPage(
       #legend {
         background-color:transparent;
       }")),
-          column(8,
+          shiny::fluidRow(
+          column(width = 10,
                  shiny::uiOutput("network_ui")
           ),
-          column(4,
+          column(width =2,
                  shiny::conditionalPanel(
                    condition = "input.palette_choice != 'Uniform'",
                    shiny::plotOutput("legend")),
                  id = "legendcol"
+          )
           )
         )
       )),
@@ -293,7 +295,37 @@ ui <- shiny::fluidPage(
             shinycssloaders::withSpinner(
               plotOutput('role_viz')
             )
-          ))
+          )),
+        shiny::tabPanel(
+          "CHAMP",
+          shiny::sidebarPanel(
+            tags$p(HTML("<u>CHAMP Algorithm Options</u>")),
+            shiny::numericInput("champ_n_runs", "Number of runs", value = 1000, min = 100, max = 5000),
+            shiny::numericInput("champ_gamma_min", "Minimum gamma value", value = 0, min = 0, max = 10),
+            shiny::numericInput("champ_gamma_max", "Maximum gamma value", value = 3, min = 1, max = 10),
+            shiny::numericInput("champ_seed", "Random seed (for reproducibility)", value = 12345),
+            shiny::actionButton("run_champ", "Run CHAMP Algorithm",
+                                style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+            tags$hr(),
+            tags$p(HTML("<u>CHAMP Map Options</u>")),
+            shiny::uiOutput("champ_map_label_input"),
+            shinycssloaders::withSpinner(
+              shiny::uiOutput('run_champ_map')
+            )
+          ),
+          shiny::mainPanel(
+            style = "overflow-x: auto;",
+            shinycssloaders::withSpinner(
+              shiny::plotOutput('champ_plot', height = "400px")
+            ),
+            shiny::HTML("<br>"),
+            shinycssloaders::withSpinner(
+              shiny::plotOutput('champ_map_plot', height = "400px")
+            ),
+            shiny::HTML("<br>"),
+            shiny::dataTableOutput('champ_summary_table')
+          )
+        )
       ))
   )
 )
@@ -348,13 +380,41 @@ server <- function(input, output, session) {
       # Reading CSV
       if (input$select_file_type_edges == "csv") {
         # network edgelist
-        read.csv(input$raw_edges$datapath, header = input$edge_header)
+        raw_el <- read.csv(input$raw_edges$datapath, header = input$edge_header)
+            # If edgelist has a first column of row identifiers, handle this
+            if (isTRUE(input$edge_names)) {
+              raw_names <- raw_el[,1]
+              raw_el <- raw_el[,2:ncol(raw_el)]
+              rownames(raw_el) <- raw_names
+            }
+        raw_el
+
         # Reading Excel
       } else {
         if(stringr::str_detect(input$raw_edges$datapath, "xlsx$")) {
-          as.data.frame(readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header))
+          raw_el <- readxl::read_xlsx(path = input$raw_edges$datapath, col_names = input$edge_header)
+          # Un-tibble
+          raw_el <- as.data.frame(raw_el)
+              # If edgelist has a first column of row identifiers, handle this
+              if (isTRUE(input$edge_names)) {
+                raw_names <- raw_el[,1]
+                raw_el <- raw_el[,2:ncol(raw_el)]
+                rownames(raw_el) <- raw_names
+              }
+          raw_el
+
         } else {
-          as.data.frame(readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header))
+          raw_el <- readxl::read_xls(path = input$raw_edges$datapath, col_names = input$edge_header)
+          # Un-tibble
+          raw_el <- as.data.frame(raw_el)
+              # If edgelist has a first column of row identifiers, handle this
+              if (isTRUE(input$edge_names)) {
+                raw_names <- raw_el[,1]
+                print(raw_names)
+                raw_el <- raw_el[,2:ncol(raw_el)]
+                rownames(raw_el) <- raw_names
+              }
+          raw_el
         }
       }
       # If "Adjacency Matrix" is selected
@@ -407,14 +467,39 @@ server <- function(input, output, session) {
     if (is.character(test)) {
       # Reading CSV
       if (input$select_file_type_edges == "csv") {
-        # network edgelist
-        read.csv(input$raw_nodes$datapath, header = input$edge_header)
+        # network nodelist
+        raw_nl <- read.csv(input$raw_nodes$datapath, header = input$edge_header)
+            # If nodelist has a first column of row identifiers, handle this
+            if (isTRUE(input$edge_names)) {
+              nl_names <- raw_nl[,1]
+              raw_nl <- raw_nl[,2:ncol(raw_nl)]
+              rownames(raw_nl) <- nl_names
+            }
+        raw_nl
+
         # Reading Excel
       } else {
         if(stringr::str_detect(input$raw_nodes$datapath, "xlsx$")) {
-          as.data.frame(readxl::read_xlsx(path = input$raw_nodes$datapath, col_names = input$edge_header))
+          raw_nl <- readxl::read_xlsx(path = input$raw_nodes$datapath, col_names = input$edge_header)
+          # Un-tibble
+          raw_nl <- as.data.frame(raw_nl)
+              # If nodelist has a first column of row identifiers, handle this
+              if (isTRUE(input$edge_names)) {
+                nl_names <- raw_nl[,1]
+                raw_nl <- raw_nl[,2:ncol(raw_nl)]
+                rownames(raw_nl) <- nl_names
+              }
+          raw_nl
         } else {
-          as.data.frame(readxl::read_xls(path = input$raw_nodes$datapath, col_names = input$edge_header))
+          raw_nl <- readxl::read_xls(path = input$raw_nodes$datapath, col_names = input$edge_header)
+          raw_nl <- as.data.frame(raw_nl)
+              # If nodelist has a first column of row identifiers, handle this
+              if (isTRUE(input$edge_names)) {
+                nl_names <- raw_nl[,1]
+                raw_nl <- raw_nl[,2:ncol(raw_nl)]
+                rownames(raw_nl) <- nl_names
+              }
+          raw_nl
         }
       }
       # Otherwise store as `NULL`
@@ -502,7 +587,7 @@ server <- function(input, output, session) {
 
 
 
-nodes_used <- shiny::reactive({
+  nodes_used <- shiny::reactive({
     print('here nodes used')
     if(!is.null(node_data())) {
       temp <- FALSE
@@ -582,6 +667,9 @@ nodes_used <- shiny::reactive({
 
   #### Create network 0 to run IDEANet ----
   net0 <- shiny::reactive({
+
+    shiny::withProgress(message = "Running netwrite...", value = 0, {
+
     type_ret <- c()
     if (is.null(input$relational_column)) {
       type_ret = NULL
@@ -637,6 +725,7 @@ nodes_used <- shiny::reactive({
       print('processed netwrite')
       init_net
     }
+    })
   })
 
   #### Add node attributes ----
@@ -669,8 +758,10 @@ nodes_used <- shiny::reactive({
       shiny::need(input$raw_edges, 'Upload Edge Data!'),
     )
 
-    net <- net0()
+    shiny::withProgress(message = "Running community detection...",
+                        value = 0.5, {
 
+    net <- net0()
     nodes <- nodelist2()
     print('started community detection')
     list2env(comm_detect(net, shiny  = TRUE),
@@ -682,41 +773,32 @@ nodes_used <- shiny::reactive({
     nodes <- nodes %>%
       dplyr::left_join(memberships, by = "id")
     if (ran_toggle_role_detect$x==1) {
-      # if (input$select_role_type == "concor") {
-      #   nodes <- nodes %>%
-      #     dplyr::left_join(concor_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
-      #     dplyr::mutate(concor_best_fit = best_fit) %>%
-      #     dplyr::select(-best_fit)
-      # } else {
-      #   nodes <- nodes %>%
-      #     dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
-      #     dplyr::mutate(cluster_best_fit = best_fit) %>%
-      #     dplyr::select(-best_fit)
-      # }
 
-      if (exists("concor_assignments") & exists("cluster_assignments")) {
-        nodes <- nodes %>%
-          dplyr::left_join(concor_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
-          dplyr::mutate(concor_best_fit = best_fit) %>%
-          dplyr::select(-best_fit) %>%
-          dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
-          dplyr::mutate(cluster_best_fit = best_fit) %>%
-          dplyr::select(-best_fit)
-      } else if (exists("cluster_assignments") & !exists("concor_assignments")) {
-        nodes <- nodes %>%
-          dplyr::left_join(cluster_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
-          dplyr::mutate(cluster_best_fit = best_fit) %>%
-          dplyr::select(-best_fit)
-      } else if (!exists("cluster_assignments") & exists("concor_assignments")) {
-        nodes <- nodes %>%
-          dplyr::left_join(concor_assignments %>% dplyr::select('best_fit','id'), by = "id") %>%
-          dplyr::mutate(concor_best_fit = best_fit) %>%
-          dplyr::select(-best_fit)
+      if (ran_toggle_role_detect$last_ran > ran_toggle_role_detect$prev_ran) {
+          # Merge in best fit from CONCOR, if available
+          if (exists("concor_assignments", .GlobalEnv)) {
+            nodes <- nodes %>%
+              dplyr::left_join(concor_assignments %>% dplyr::select(concor_best_fit = 'best_fit', 'id'), by = "id")
+          }
+
+          # Merge in best fit from clustering method, if available
+          if (exists("cluster_assignments", .GlobalEnv)) {
+            nodes <- nodes %>%
+              dplyr::left_join(cluster_assignments %>% dplyr::select(cluster_best_fit = 'best_fit','id'), by = "id")
+          }
       }
 
+      print(head(nodes))
+
+    }
+    if (ran_toggle_champ_map() == 1) {
+      print(input$direction_toggle)
+      nodes <- nodes %>%
+        dplyr::left_join(champ_results()$shiny_partitions, by = "id")
 
     }
     as.data.frame(nodes)
+                        })
   })
 
   #Add labels in network 1
@@ -791,17 +873,41 @@ nodes_used <- shiny::reactive({
 
   #### Handle output community detection ----
   output$community_detection <- shiny::renderUI({
-    if (ran_toggle_role_detect$x==1) {
+
+    if (ran_toggle_role_detect$x==1 & ran_toggle_champ_map() == 0) {
       vals <- nodelist3() %>%
-        dplyr::select(dplyr::ends_with('membership'), dplyr::ends_with('best_fit')) %>%
+        dplyr::select(dplyr::ends_with('membership'),
+                      'cp_cluster',
+                      'lc_cluster',
+                      dplyr::ends_with('best_fit')) %>%
+        dplyr::select(-c("strong_membership", "weak_membership")) %>%
+        colnames()
+    } else if (ran_toggle_role_detect$x==0 & ran_toggle_champ_map() == 1) {
+      vals <- nodelist3() %>%
+        dplyr::select(dplyr::ends_with('membership'),
+                      'cp_cluster',
+                      'lc_cluster',
+                      dplyr::starts_with('champ')) %>%
+        dplyr::select(-c("strong_membership", "weak_membership")) %>%
+        colnames()
+    } else if (ran_toggle_role_detect$x==1 & ran_toggle_champ_map() == 1) {
+      vals <- nodelist3() %>%
+        dplyr::select(dplyr::ends_with('membership'),
+                      'cp_cluster',
+                      'lc_cluster',
+                      dplyr::starts_with('champ'),
+                      dplyr::ends_with('best_fit')) %>%
         dplyr::select(-c("strong_membership", "weak_membership")) %>%
         colnames()
     } else {
       vals <- nodelist3() %>%
-        dplyr::select(ends_with('membership')) %>%
+        dplyr::select(dplyr::ends_with('membership')) %>%
         dplyr::select(-c("strong_membership", -"weak_membership")) %>%
         colnames()}
-    shiny::selectInput(inputId = "community_input", label = "Node Coloring", choices = append(append("None", input$node_factor_col),vals[!vals %in% "id"]), selected = "None", multiple = FALSE)
+
+    all_choices = c("None", input$node_factor_col, vals[!vals %in% "id"])
+
+    shiny::selectInput(inputId = "community_input", label = "Node Coloring", choices = all_choices, selected = "None", multiple = FALSE)
   })
 
 
@@ -835,7 +941,8 @@ nodes_used <- shiny::reactive({
       length(unique(igraph::V(net6())$communities))
     }
     else {
-      length(unique(igraph::V(net6())$group))
+      1
+      # length(unique(igraph::V(net6())$group))
     }
   })
 
@@ -887,7 +994,7 @@ nodes_used <- shiny::reactive({
     data.frame(groups, colrs)
   })
 
-  #NOTE: actual application to the network condained in edge coloring
+  #NOTE: actual application to the network contained in edge coloring
 
   #### Set edge colors (type of edge relational) ----
   #Get number of necessary colors based on input
@@ -1095,8 +1202,12 @@ nodes_used <- shiny::reactive({
     shiny::checkboxInput(inputId = "toggle_relational_coloring", label = "Toggle Multi-relational Coloring", value = TRUE)
   })
 
+
   net8 <-
     shiny::reactive({
+
+      shiny::withProgress(message = "Visualizing network...", value = 0.9, {
+
       net <- net5()
       if (input$multi_relational_toggle == TRUE) {
         if (input$filter_relation_type != 'None') {
@@ -1107,15 +1218,21 @@ nodes_used <- shiny::reactive({
             net <- igraph::delete_edge_attr(net,'color')
           }
         }}
+      # Keeping default node color if we don't want to color nodes
+      # but want to color edges
+      if (input$community_input == "None") {
+        if (input$palette_input == "Uniform") {
+          igraph::V(net)$color <- "#95a7f2"
+        } else {
+          # net <- igraph::delete_vertex_attr(net, 'color')
+        }
+      }
 
       net.visn <- visNetwork::toVisNetworkData(net)
 
       #set node labels manually because for SOME REASON it chooses to misbehave
       net.visn$nodes$label <- igraph::V(net)$label
-
       net.visn$nodes$label <- igraph::V(net)$label
-
-      print(net.visn$nodes$label)
 
 
       if (input$interactive_switch) {
@@ -1123,18 +1240,20 @@ nodes_used <- shiny::reactive({
           net.visn$edges$value <- net.visn$edges$uni_weight
           visNetwork::visNetwork(net.visn$nodes, net.visn$edges, width = "100%") %>%
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-            visNetwork::visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE),
-                                   nodesIdSelection = TRUE) %>%
-            visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+            visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
+                                   nodesIdSelection = T) %>%
+            visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
+                                 color = "darkgrey") %>%
             visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date()))  %>%
             visNetwork::visGroups()
         } else {
           net.visn$edges$value <- net.visn$edges$weight
           visNetwork::visNetwork(net.visn$nodes, net.visn$edges) %>%
             visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
-            visNetwork::visOptions(highlightNearest = list(enabled = TRUE, hover = TRUE),
-                                   nodesIdSelection = TRUE) %>%
-            visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+            visNetwork::visOptions(highlightNearest = list(enabled = T, hover = T),
+                                   nodesIdSelection = T) %>%
+            visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
+                                 color = "darkgrey") %>%
             visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
             visNetwork::visGroups()
         }} else {
@@ -1144,7 +1263,8 @@ nodes_used <- shiny::reactive({
               visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
               visNetwork::visInteraction(dragNodes = FALSE,
                                          dragView = FALSE) %>%
-              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
+                                   color = "darkgrey") %>%
               visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
               visNetwork::visGroups()
           } else {
@@ -1153,13 +1273,17 @@ nodes_used <- shiny::reactive({
               visNetwork::visIgraphLayout(layout = input$layout_choice, randomSeed = seed_number$seed) %>%
               visNetwork::visInteraction(dragNodes = FALSE,
                                          dragView = FALSE) %>%
-              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2))) %>%
+              visNetwork::visEdges(arrows =list(to = list(enabled = input$direction_toggle, scaleFactor = 2)),
+                                   color = "darkgrey") %>%
               visNetwork::visExport(type = input$image_type, name = paste0(input$layout_choice, seed_number$seed,Sys.Date())) %>%
               visNetwork::visGroups()
           }}
     })
+  })
 
   output$network <- visNetwork::renderVisNetwork(net8())
+
+
 
   output$legend <- shiny::renderPlot({
     #### Create legend here
@@ -1173,32 +1297,89 @@ nodes_used <- shiny::reactive({
       #### igraph::V(net)$color <- color_matcher()$colrs[match(igraph::V(net)$communities, color_matcher()$groups)]
       node_legend_df <- unique(data.frame(group = igraph::V(color_net)$communities,
                                           color = igraph::V(color_net)$color))
+      node_legend_df$num <- 1:nrow(node_legend_df)
     } else {
       # This bit of code from above just kept here for reference, shouldn't be un-commented-out
       #### igraph::V(net)$color <- color_matcher()$colrs[match(igraph::V(net)$group, color_matcher()$groups)]
       node_legend_df <- unique(data.frame(group = igraph::V(color_net)$group,
                                           color = igraph::V(color_net)$color))
+      node_legend_df$num <- 1:nrow(node_legend_df)
     }
 
     node_legend_df <- dplyr::arrange(node_legend_df, group)
 
-    # # links group values to group identifier
-    # group_index <- data.frame(group = unique(igraph::V(net1)$group),
-    #                           group_id = 1:length(unique(igraph::V(net1)$group)))
-    #
-    # # not too sure about this - how to get color theme that user selected?
-    # # color_palette = color_generator_edges$palette
-    # # group_index$color = palette(num.color = nrow(group_index))
-    #
-    # color_assign <- color_assign %>% dplyr::left_join(group_index, by = "group")
-    plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
-    # figure out how to populate with right values
-    # Only display/populate if a color palette is actually chosen
-    if (input$palette_input != 'Uniform') {
-      legend("topleft", legend = node_legend_df$group, pch=16, pt.cex=3, cex=1.5, bty='n',
-             col = node_legend_df$color)
-      mtext("Legend", at=0.2, cex=2)
+    # # # links group values to group identifier
+    # # group_index <- data.frame(group = unique(igraph::V(net1)$group),
+    # #                           group_id = 1:length(unique(igraph::V(net1)$group)))
+    # #
+    # # # not too sure about this - how to get color theme that user selected?
+    # # # color_palette = color_generator_edges$palette
+    # # # group_index$color = palette(num.color = nrow(group_index))
+    # #
+    # # color_assign <- color_assign %>% dplyr::left_join(group_index, by = "group")
+    # plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
+    # # figure out how to populate with right values
+    # # Only display/populate if a color palette is actually chosen
+    # if (input$palette_input != 'Uniform') {
+    #   legend("topleft", legend = node_legend_df$group, pch=16, pt.cex=3, cex=1.5, bty='n',
+    #          col = node_legend_df$color)
+    #   mtext("Legend", at=0.2, cex=2)
+    # }
+
+    # Store color vector
+    color_vec <- node_legend_df$color
+
+    # Create ggplot object with legend
+    legend_gg <- node_legend_df %>%
+      ggplot2::ggplot(ggplot2::aes(x = group, y = num,
+                                   color = as.factor(group))) +
+      ggplot2::geom_point() +
+      ggplot2::scale_color_manual(values = color_vec) +
+      ggplot2::theme(legend.title = ggplot2::element_blank())
+
+    if (input$community_input == "None") {
+      legend_only <- NULL
+    } else {
+      # Extract legend from ggplot
+      legend_only <- cowplot::get_legend(legend_gg)
     }
+
+
+
+    # EDGE COLOR LEGEND
+    edge_color <- igraph::E(color_net)$color
+    edge_type <- igraph::E(color_net)$type
+
+    if (!is.null(edge_color) & isTRUE(input$toggle_relational_coloring)) {
+      edge_legend_df <- unique(data.frame(color = edge_color,
+                                          type = edge_type))
+      edge_legend_df$num <- 1:nrow(edge_legend_df)
+
+      edge_legend_gg <- edge_legend_df %>%
+        ggplot2::ggplot(ggplot2::aes(x = type, y = num,
+                                     color = as.factor(type))) +
+        ggplot2::geom_line() +
+        ggplot2::scale_color_manual(values = edge_legend_df$color) +
+        ggplot2::theme(legend.title = ggplot2::element_blank())
+
+      edge_legend_only <- cowplot::get_legend(edge_legend_gg)
+
+    } else {
+      edge_legend_only <- NULL
+    }
+
+
+    if (!is.null(legend_only) & is.null(edge_legend_only)) {
+      # Plot legend
+      cowplot::plot_grid(legend_only)
+    } else if (is.null(legend_only) & !is.null(edge_legend_only)) {
+      cowplot::plot_grid(edge_legend_only)
+    } else {
+      cowplot::plot_grid(plotlist = list(legend_only, edge_legend_only),
+                         ncol = 1)
+    }
+
+
   })
 
   output$network_ui <-
@@ -1209,7 +1390,7 @@ nodes_used <- shiny::reactive({
         # shiny::need(try(!is.null(net0())), 'Error computing network statistics. Check edge in and out columns to make sure you have uploaded the right data.')
         shiny::need(input$edge_in_col != "Empty", 'Make sure you have selected an edge in column!'),
         shiny::need(input$edge_out_col != "Empty", 'Make sure you have selected an edge out column!'),
-        shiny::need(nodes_done(), 'Make sure you have selected a node id column!'),
+        shiny::need(!input$nodes_exist || nodes_done(), 'Make sure you have selected a node id column!'),
         shiny::need(try(!is.null(net0())), 'Error computing network statistics. Check edge in and out columns to make sure you have uploaded the right data.'),
       )
       visNetwork::visNetworkOutput('network', height = input$plot_scalar, width = input$plot_scalar) %>% shinycssloaders::withSpinner(type = 5)
@@ -1241,7 +1422,7 @@ nodes_used <- shiny::reactive({
       shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
       shiny::need(nodes_done(), 'Select node id column!')
       # shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
-      )
+    )
     if (input$multi_relational_toggle == TRUE) {
       shiny::selectInput('system_level_chooser', 'Choose which relation you want to visualize', choices = names(system_measure_plot), selected = NULL)
     }
@@ -1254,7 +1435,7 @@ nodes_used <- shiny::reactive({
       # shiny::need(input$edge_out_col != "Empty", 'Select edge out column!')
       shiny::need(input$edge_out_col != "Empty", 'Select edge out column!'),
       shiny::need(nodes_done(), 'Select node id column!')
-      )
+    )
     if (input$multi_relational_toggle == TRUE) {
       shiny::selectInput('node_level_chooser', 'Choose which relation you want to visualize', choices = names(node_measure_plot), selected = NULL)
     }
@@ -1402,7 +1583,7 @@ nodes_used <- shiny::reactive({
             ggplot2::geom_col(fill = "#0073C2FF", color = "#FFFFFF") +
             ggplot2::labs(title = paste("Distribution of", input$data_table_vis_var), x = input$data_table_vis_var, y = "N")
         } else {
-          dat <- hist(nodelist3()[,input$data_table_vis_var], plot = FALSE)
+          dat <- hist(nodelist3()[,input$data_table_vis_var], plot = F)
           dat <- data.frame(x = dat$mids, y = dat$counts)
           ggplot2::ggplot(dat, ggplot2::aes(x = x, y = y)) +
             ggplot2::geom_col(fill = "#0073C2FF", color = "#FFFFFF") +
@@ -1530,26 +1711,21 @@ nodes_used <- shiny::reactive({
   ran_toggle_qap <- shiny::reactiveValues(x=0)
 
   shiny::observeEvent(input$run_QAP_setup, {
-    shiny::validate(
-      shiny::need(!is.null(chosen_var()), "Error: Please select at least one variable."),
-      shiny::need(!is.null(chosen_methods()), "Error: Please select at least one method.")
-    )
+    net <- net5()
 
-     tryCatch({
-      net <- net5()
-      # Call the qap_setup function
-      result <- qap_setup(net, chosen_var(), chosen_methods())
-      list2env(result, .GlobalEnv)
-      ran_toggle_qap$x <- 1
-    }, error = function(e) {
-      shiny::showNotification("An error occurred while running QAP setup. Please check your inputs.", type = "error")
-      print(e$message)
+    # foreach::foreach(i=1:length(chosen_var())) %do% {
+    #   net <- igraph::set_vertex_attr(net,chosen_var()[i],value=nodelist3() %>% dplyr::pull(parse_expr(chosen_var()[i])))
+    # }
+
+    shiny::withProgress(message = "Running QAP setup...", value = 0.8, {
+        list2env(qap_setup(net,chosen_var(),chosen_methods()), .GlobalEnv)
     })
+    ran_toggle_qap$x <- 1
   })
 
   #Run QAP MODEL
   output$qap_run_choices <- shiny::renderUI({
-    print("qap_run_choices")
+    # print("qap_run_choices")
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
@@ -1557,7 +1733,7 @@ nodes_used <- shiny::reactive({
   })
 
   output$qap_run_dependent <- shiny::renderUI({
-    print("qap_run_dependent")
+    # print("qap_run_dependent")
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
@@ -1566,7 +1742,7 @@ nodes_used <- shiny::reactive({
 
 
   output$run_QAP_model <- shiny::renderUI({
-    print("run_QAP_model")
+    # print("run_QAP_model")
     shiny::validate(
       shiny::need(ran_toggle_qap$x != 0, 'Run QAP Setup'),
     )
@@ -1601,19 +1777,21 @@ nodes_used <- shiny::reactive({
     shiny::validate(
       shiny::need(graph, message = "Need to Run QAP Setup"),
     )
-    print("AT QAP RUN STEP")
-    print(input$qap_run_choices)
-    print(input$qap_run_dependent)
+    # print("AT QAP RUN STEP")
+    # print(input$qap_run_choices)
+    # print(input$qap_run_dependent)
     if (input$qap_run_dependent == "Tie Exists") {
       dep_var <- NULL
     } else {
       dep_var <- input$qap_run_dependent
     }
-    print(input$qap_run_choices)
+    # print(input$qap_run_choices)
+    shiny::withProgress(message = "Running QAP...", value = 0.8, {
     list2env(qap_run(net = graph, variables = input$qap_run_choices,
                      dependent = dep_var, directed = input$direction_toggle),
              .GlobalEnv)
     covs_df$estimate <- round(covs_df$estimate, digits = 3)
+    })
     covs_df
   })
 
@@ -1631,7 +1809,7 @@ nodes_used <- shiny::reactive({
   #     dep_var <- input$qap_run_dependent
   #   }
   #   qap_run(net = qap_results[[1]], variables = input$qap_run_choices,
-  #           dependent = dep_var, directed = TRUE)
+  #           dependent = dep_var, directed = T)
   #   qap_df <- model_results[[1]]
   #   print(model_results[[1]])
   # })
@@ -1664,7 +1842,9 @@ nodes_used <- shiny::reactive({
 
   #### Role Detection ----
 
-  ran_toggle_role_detect <- shiny::reactiveValues(x=0)
+  ran_toggle_role_detect <- shiny::reactiveValues(x=0,
+                                                  prev_ran = Sys.time(),
+                                                  last_ran = Sys.time())
 
   output$role_det_min <- shiny::renderUI({
     shiny::sliderInput(inputId = "role_det_min", label = "Choose Minimum # of Clusters", min = 2, max = nrow(nodelist3()), round = TRUE, step = 1, value = 4)
@@ -1719,94 +1899,112 @@ nodes_used <- shiny::reactive({
       shiny::need(ran_toggle_role_detect$x == 1, "Input Role Detection Parameters and Run!")
     )
     if(input$select_role_viz == "cluster_modularity") {
-      if (exists("cluster_modularity")) {
-        grDevices::replayPlot(cluster_modularity)
-      }
+      shiny::validate(
+        shiny::need(exists('cluster_modularity', .GlobalEnv), "Please run clustering method first!")
+      )
+      grDevices::replayPlot(cluster_modularity)
     }
     else if(input$select_role_viz == 'cluster_dendrogram') {
-      if (exists("cluster_dendrogram")) {
+      shiny::validate(
+        shiny::need(exists('cluster_dendrogram', .GlobalEnv), "Please run clustering method first!")
+      )
       grDevices::replayPlot(cluster_dendrogram)
-      }
     }
     else if(input$select_role_viz == 'cluster_relations_sociogram') {
-      if (exists('cluster_relations_sociogram')) {
+      shiny::validate(
+        shiny::need(exists('cluster_relations_sociogram', .GlobalEnv), "Please run clustering method first!")
+      )
       grDevices::replayPlot(cluster_relations_sociogram$summary_graph)
-      }
     }
     else if(input$select_role_viz == 'cluster_sociogram') {
-      if (exists('cluster_sociogram')) {
+      shiny::validate(
+        shiny::need(exists('cluster_sociogram', .GlobalEnv), "Please run clustering method first!")
+      )
       grDevices::replayPlot(cluster_sociogram)
-      }
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_chisq') {
-      if (exists('cluster_relations_heatmaps')) {
+      shiny::validate(
+        shiny::need(exists('cluster_relations_heatmaps', .GlobalEnv), "Please run clustering method first!")
+      )
       plot(cluster_relations_heatmaps$chisq)
-      }
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_density') {
-      if (exists('cluster_relations_heatmaps')) {
+      shiny::validate(
+        shiny::need(exists('cluster_relations_heatmaps', .GlobalEnv), "Please run clustering method first!")
+      )
       plot(cluster_relations_heatmaps$density)
-      }
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_density_std') {
-      if (exists('cluster_relations_heatmaps')) {
+      shiny::validate(
+        shiny::need(exists('cluster_relations_heatmaps', .GlobalEnv), "Please run clustering method first!")
+      )
       plot(cluster_relations_heatmaps$density_std)
-      }
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_density_centered') {
-      if (exists('cluster_relations_heatmaps')) {
+      shiny::validate(
+        shiny::need(exists('cluster_relations_heatmaps', .GlobalEnv), "Please run clustering method first!")
+      )
       plot(cluster_relations_heatmaps$density_centered)
-      }
     }
     else if(input$select_role_viz == 'cluster_summaries_cent') {
-      if (exists('cluster_summaries_cent')) {
+      shiny::validate(
+        shiny::need(exists('cluster_summaries_cent', .GlobalEnv), "Please run clustering method first!")
+      )
       plot(cluster_summaries_cent$summary_graph)
-      }
     }
     else if(input$select_role_viz == 'cluster_summaries_triad') {
-      if (exists('cluster_summaries_triad')) {
+      shiny::validate(
+        shiny::need(exists('cluster_summaries_triad', .GlobalEnv), "Please run clustering method first!")
+      )
       plot(cluster_summaries_triad$summary_graph)
-      }
     }
     else if(input$select_role_viz == 'concor_block_tree') {
-      if (exists('concor_block_tree')) {
+      shiny::validate(
+        shiny::need(exists('concor_block_tree', .GlobalEnv), "Please run CONCOR method first!")
+      )
       grDevices::replayPlot(concor_block_tree)
-      }
     }
     if(input$select_role_viz == "concor_modularity") {
-      if (exists("concor_modularity")) {
+      shiny::validate(
+        shiny::need(exists('concor_modularity', .GlobalEnv), "Please run CONCOR method first!")
+      )
       grDevices::replayPlot(concor_modularity)
-      }
     }
     else if(input$select_role_viz == 'concor_relations_sociogram') {
-      if (exists('concor_relations_sociogram')) {
+      shiny::validate(
+        shiny::need(exists('concor_relations_sociogram', .GlobalEnv), "Please run CONCOR method first!")
+      )
       grDevices::replayPlot(concor_relations_sociogram$summary_graph)
-      }
     }
     else if(input$select_role_viz == 'concor_sociogram') {
-      if (exists('concor_sociogram')) {
+      shiny::validate(
+        shiny::need(exists('concor_sociogram', .GlobalEnv), "Please run CONCOR method first!")
+      )
       grDevices::replayPlot(concor_sociogram)
-      }
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_chisq') {
-      if (exists('concor_relations_heatmaps')) {
+      shiny::validate(
+        shiny::need(exists('concor_relations_heatmaps', .GlobalEnv), "Please run CONCOR method first!")
+      )
       plot(concor_relations_heatmaps$chisq)
-      }
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_density') {
-      if (exists('concor_relations_heatmaps')) {
+      shiny::validate(
+        shiny::need(exists('concor_relations_heatmaps', .GlobalEnv), "Please run CONCOR method first!")
+      )
       plot(concor_relations_heatmaps$density)
-      }
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_density_std') {
-      if (exists('concor_relations_heatmaps')) {
+      shiny::validate(
+        shiny::need(exists('concor_relations_heatmaps', .GlobalEnv), "Please run CONCOR method first!")
+      )
       plot(concor_relations_heatmaps$density_std)
-      }
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_density_centered') {
-      if (exists('concor_relations_heatmaps')) {
+      shiny::validate(
+        shiny::need(exists('concor_relations_heatmaps', .GlobalEnv), "Please run CONCOR method first!")
+      )
       plot(concor_relations_heatmaps$density_centered)
-      }
     }
   })
 
@@ -1820,6 +2018,7 @@ nodes_used <- shiny::reactive({
   })
 
   shiny::observeEvent(input$run_role_detect, {
+    shiny::withProgress(message = "Running role detection...", value = 0.8, {
     list2env(role_analysis(init_net,
                            nodes = node_measures,
                            directed = input$direction_toggle,
@@ -1829,7 +2028,106 @@ nodes_used <- shiny::reactive({
                            min_partition_size = as.integer(input$min_cluster_size),
                            viz = TRUE),
              .GlobalEnv)
+    })
     ran_toggle_role_detect$x <- 1
+    if (ran_toggle_role_detect$prev_ran == ran_toggle_role_detect$last_ran) {
+      ran_toggle_role_detect$last_ran <- Sys.time()
+    } else {
+      ran_toggle_role_detect$prev_ran <- ran_toggle_role_detect$last_ran
+      ran_toggle_role_detect$last_ran <- Sys.time()
+    }
+    # if (input$select_role_type == "concor") {
+    #   ran_toggle_role_detect$concor <- TRUE
+    #   ran_toggle_role_detect$cluster <- FALSE
+    # } else {
+    #   ran_toggle_role_detect$concor <- FALSE
+    #   ran_toggle_role_detect$cluster <- TRUE
+    # }
+  })
+
+  #### CHAMP ----
+
+  champ_results <- shiny::reactiveVal(NULL)
+  ran_toggle_champ <- shiny::reactiveVal(0)
+  ran_toggle_champ_map <- shiny::reactiveVal(0)
+
+  output$champ_map_label_input <- shiny::renderUI({
+    shiny::req(ran_toggle_champ() == 1)
+    shiny::textInput("champ_map_label", "Plot label (optional)", value = "")
+  })
+
+  output$run_champ_map <- shiny::renderUI({
+    shiny::req(ran_toggle_champ() == 1)
+    shiny::actionButton("run_champ_map", "Run CHAMP Map",
+                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+  })
+
+  shiny::observeEvent(input$run_champ, {
+    shiny::req(input$raw_edges)
+    shiny::req(input$edge_in_col != "Empty")
+    shiny::req(input$edge_out_col != "Empty")
+    # Require undirected network
+    shiny::req(isFALSE(input$direction_toggle))
+
+    shiny::withProgress(message = 'Running CHAMP algorithm...', value = 0, {
+
+      incProgress(0.1, detail = "Generating partitions...")
+      partitions <- get_partitions(
+        network = net5(),
+        gamma_range = c(input$champ_gamma_min, input$champ_gamma_max),
+        n_runs = input$champ_n_runs,
+        seed = input$champ_seed
+      )
+
+      incProgress(0.7, detail = "Running CHAMP analysis...")
+      partitions <- CHAMP(
+        network = net5(),
+        partitions = partitions,
+        plottitle = "CHAMP Analysis"
+      )
+
+      champ_results(partitions)
+      ran_toggle_champ(1)
+    })
+  })
+
+  shiny::observeEvent(input$run_champ_map, {
+    shiny::req(ran_toggle_champ() == 1)
+
+    shiny::withProgress(message = 'Running CHAMP Map...', value = 0, {
+      incProgress(0.5, detail = "Generating map...")
+
+      partitions <- get_CHAMP_map(
+        network = net5(),
+        partitions = champ_results(),
+        plotlabel = input$champ_map_label,
+        shiny = TRUE
+      )
+
+      champ_results(partitions)
+      ran_toggle_champ_map(1)
+    })
+  })
+
+  # THIS WILL DISPLAY WARNING ABOUT DIRECTED NETS IF FAILS
+  output$champ_plot <- shiny::renderPlot({
+    shiny::validate(
+      shiny::need(isFALSE(input$direction_toggle), "CHAMP is only supported for undirected networks.\nIf you would like to apply CHAMP to this network, you may want to set it as an undirected network in the Process tab.")
+    )
+    shiny::req(ran_toggle_champ() == 1)
+    champ_results()$CHAMPfigure
+  })
+
+  output$champ_map_plot <- shiny::renderPlot({
+    shiny::req(ran_toggle_champ() == 1)
+    if (!is.null(champ_results()$CHAMPmap)) {
+      champ_results()$CHAMPmap
+    }
+  })
+
+  output$champ_summary_table <- DT::renderDataTable({
+    shiny::req(ran_toggle_champ() == 1)
+    champ_results()$CHAMPsummary
   })
 
 
