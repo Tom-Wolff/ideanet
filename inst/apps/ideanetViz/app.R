@@ -39,7 +39,7 @@ ui <- shiny::fluidPage(
               'raw_edges', "Upload Edge Data", multiple = FALSE,
               buttonLabel = "Browse...", placeholder = "No file selected"
             ),
-            shiny::checkboxInput('nodes_exist', tags$b("Does the dataset have a nodelist?"),FALSE),
+            shiny::uiOutput('nodes_exist'),
             shiny::conditionalPanel(
               condition = 'input.nodes_exist',
               shiny::fileInput(
@@ -52,17 +52,13 @@ ui <- shiny::fluidPage(
           ),
           shiny::mainPanel(
             shiny::tabsetPanel(
+              id = "uploadtabs",
               type = "tabs",
               shiny::tabPanel(
                 "Edge Data",
                 style = "overflow-x: auto;",
                 shiny::dataTableOutput('edge_raw_upload')
               ),
-              shiny::tabPanel(
-                "Node Data",
-                style = "overflow-x: auto;",
-                shiny::dataTableOutput('node_raw_upload')
-              )
             )
           )
         )
@@ -482,6 +478,27 @@ server <- function(input, output, session) {
     }
 
     return(edge_data)
+  })
+
+  output$nodes_exist <- shiny::renderUI({
+    shiny::checkboxInput('nodes_exist', tags$b("Does the dataset have a nodelist?"),FALSE)
+  })
+
+  observeEvent(input$nodes_exist, {
+    if(input$nodes_exist) {
+      shiny::insertTab(
+        inputId = "uploadtabs",
+        shiny::tabPanel(
+          "Node Data",
+          style = "overflow-x: auto;",
+          shiny::dataTableOutput('node_raw_upload')
+        ),
+        target = "Edge Data",
+        position = "after"
+      )
+    } else {
+        shiny::removeTab(inputId = "uploadtabs", target = "Node Data")
+    }
   })
 
   raw_node_data <- shiny::reactive({
