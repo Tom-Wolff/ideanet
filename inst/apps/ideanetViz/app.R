@@ -97,6 +97,7 @@ ui <- shiny::fluidPage(
             tags$p(shiny::span("Questions with an asterisk are required.", style = "color:red")),
             tags$p(shiny::HTML("<b>Process</b> the edge data by assigning the columns to their function.")),
             tags$p(shiny::HTML("If the graph is undirected, the order of sender and alter ID columns doesn't matter.")),
+            tags$p(shiny::HTML("<b>Warning:</b> Re-processing data will erase outputs created by <i>CHAMP</i> or <i>Role Detection</i> in the <i>Advanced Analysis Modules</i> tab. Adjusting your network will require you to re-run these analyses.")),
           ),
           shiny::mainPanel(
             style = "overflow-x: auto;",
@@ -871,6 +872,9 @@ server <- function(input, output, session) {
       ), .GlobalEnv)
 
       print('Processed netwrite with filtered data')
+      ran_netwrite$last_ran <- Sys.time()
+      ran_toggle_role_detect$x <- 0
+      ran_toggle_champ(0)
       return(init_net)
     } else {
       print('Started netwrite without nodes')
@@ -892,6 +896,8 @@ server <- function(input, output, session) {
 
       print('Processed netwrite without nodes')
       ran_netwrite$last_ran <- Sys.time()
+      ran_toggle_role_detect$x <- 0
+      ran_toggle_champ(0)
       return(init_net)
     }
     })
