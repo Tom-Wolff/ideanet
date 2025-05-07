@@ -2129,111 +2129,111 @@ server <- function(input, output, session) {
     )
     if(input$select_role_viz == "cluster_modularity") {
       shiny::validate(
-        shiny::need(exists('cluster_modularity', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_modularity' %in% names(role_output()), "Please run clustering method first!")
       )
-      grDevices::replayPlot(cluster_modularity)
+      grDevices::replayPlot(role_output()$cluster_modularity)
     }
     else if(input$select_role_viz == 'cluster_dendrogram') {
       shiny::validate(
-        shiny::need(exists('cluster_dendrogram', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_dendrogram' %in% names(role_output()), "Please run clustering method first!")
       )
-      grDevices::replayPlot(cluster_dendrogram)
+      grDevices::replayPlot(role_output()$cluster_dendrogram)
     }
     else if(input$select_role_viz == 'cluster_relations_sociogram') {
       shiny::validate(
-        shiny::need(exists('cluster_relations_sociogram', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_relations_sociogram' %in% names(role_output()), "Please run clustering method first!")
       )
-      grDevices::replayPlot(cluster_relations_sociogram$summary_graph)
+      grDevices::replayPlot(role_output()$cluster_relations_sociogram$summary_graph)
     }
     else if(input$select_role_viz == 'cluster_sociogram') {
       shiny::validate(
-        shiny::need(exists('cluster_sociogram', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_sociogram' %in% names(role_output()), "Please run clustering method first!")
       )
-      grDevices::replayPlot(cluster_sociogram)
+      grDevices::replayPlot(role_output()$cluster_sociogram)
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_chisq') {
       shiny::validate(
-        shiny::need(exists('cluster_relations_heatmaps', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_relations_heatmaps' %in% names(role_output()), "Please run clustering method first!")
       )
-      plot(cluster_relations_heatmaps$chisq)
+      plot(role_output()$cluster_relations_heatmaps$chisq)
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_density') {
       shiny::validate(
-        shiny::need(exists('cluster_relations_heatmaps', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_relations_heatmaps' %in% names(role_output()), "Please run clustering method first!")
       )
-      plot(cluster_relations_heatmaps$density)
+      plot(role_output()$cluster_relations_heatmaps$density)
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_density_std') {
       shiny::validate(
-        shiny::need(exists('cluster_relations_heatmaps', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_relations_heatmaps' %in% names(role_output()), "Please run clustering method first!")
       )
-      plot(cluster_relations_heatmaps$density_std)
+      plot(role_output()$cluster_relations_heatmaps$density_std)
     }
     else if(input$select_role_viz == 'cluster_relations_heatmaps_density_centered') {
       shiny::validate(
-        shiny::need(exists('cluster_relations_heatmaps', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_relations_heatmaps' %in% names(role_output()), "Please run clustering method first!")
       )
-      plot(cluster_relations_heatmaps$density_centered)
+      plot(role_output()$cluster_relations_heatmaps$density_centered)
     }
     else if(input$select_role_viz == 'cluster_summaries_cent') {
       shiny::validate(
-        shiny::need(exists('cluster_summaries_cent', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_summaries_cent' %in% names(role_output()), "Please run clustering method first!")
       )
-      plot(cluster_summaries_cent$summary_graph)
+      plot(role_output()$cluster_summaries_cent$summary_graph)
     }
     else if(input$select_role_viz == 'cluster_summaries_triad') {
       shiny::validate(
-        shiny::need(exists('cluster_summaries_triad', .GlobalEnv), "Please run clustering method first!")
+        shiny::need('cluster_summaries_triad' %in% names(role_output()), "Please run clustering method first!")
       )
-      plot(cluster_summaries_triad$summary_graph)
+      plot(role_output()$cluster_summaries_triad$summary_graph)
     }
     else if(input$select_role_viz == 'concor_block_tree') {
       shiny::validate(
-        shiny::need(exists('concor_block_tree', .GlobalEnv), "Please run CONCOR method first!")
+        shiny::need('concor_block_tree' %in% names(role_output()), "Please run CONCOR method first!")
       )
-      grDevices::replayPlot(concor_block_tree)
+      grDevices::replayPlot(role_output()$concor_block_tree)
     }
     if(input$select_role_viz == "concor_modularity") {
       shiny::validate(
-        shiny::need(exists('concor_modularity', .GlobalEnv), "Please run CONCOR method first!")
+        shiny::need('concor_modularity' %in% names(role_output()), "Please run CONCOR method first!")
       )
-      grDevices::replayPlot(concor_modularity)
+      grDevices::replayPlot(role_output()$concor_modularity)
     }
     else if(input$select_role_viz == 'concor_relations_sociogram') {
       shiny::validate(
-        shiny::need(exists('concor_relations_sociogram', .GlobalEnv), "Please run CONCOR method first!")
+        shiny::need('concor_relations_sociogram' %in% names(role_output()), "Please run CONCOR method first!")
       )
-      grDevices::replayPlot(concor_relations_sociogram$summary_graph)
+      grDevices::replayPlot(role_output()$concor_relations_sociogram$summary_graph)
     }
     else if(input$select_role_viz == 'concor_sociogram') {
       shiny::validate(
-        shiny::need(exists('concor_sociogram', .GlobalEnv), "Please run CONCOR method first!")
+        shiny::need('concor_sociogram' %in% names(role_output()), "Please run CONCOR method first!")
       )
-      grDevices::replayPlot(concor_sociogram)
+      grDevices::replayPlot(role_output()$concor_sociogram)
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_chisq') {
       shiny::validate(
-        shiny::need(exists('concor_relations_heatmaps', .GlobalEnv), "Please run CONCOR method first!")
+        shiny::need('concor_relations_heatmaps' %in% names(role_output()), "Please run CONCOR method first!")
       )
-      plot(concor_relations_heatmaps$chisq)
+      plot(role_output()$concor_relations_heatmaps$chisq)
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_density') {
       shiny::validate(
-        shiny::need(exists('concor_relations_heatmaps', .GlobalEnv), "Please run CONCOR method first!")
+        shiny::need('concor_relations_heatmaps' %in% names(role_output()), "Please run CONCOR method first!")
       )
-      plot(concor_relations_heatmaps$density)
+      plot(role_output()$concor_relations_heatmaps$density)
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_density_std') {
       shiny::validate(
-        shiny::need(exists('concor_relations_heatmaps', .GlobalEnv), "Please run CONCOR method first!")
+        shiny::need('concor_relations_heatmaps' %in% names(role_output()), "Please run CONCOR method first!")
       )
-      plot(concor_relations_heatmaps$density_std)
+      plot(role_output()$concor_relations_heatmaps$density_std)
     }
     else if(input$select_role_viz == 'concor_relations_heatmaps_density_centered') {
       shiny::validate(
-        shiny::need(exists('concor_relations_heatmaps', .GlobalEnv), "Please run CONCOR method first!")
+        shiny::need('concor_relations_heatmaps' %in% names(role_output()), "Please run CONCOR method first!")
       )
-      plot(concor_relations_heatmaps$density_centered)
+      plot(role_output()$concor_relations_heatmaps$density_centered)
     }
   })
 
@@ -2248,15 +2248,16 @@ server <- function(input, output, session) {
 
   shiny::observeEvent(input$run_role_detect, {
     shiny::withProgress(message = "Running role detection...", value = 0.8, {
-    list2env(role_analysis(init_net,
-                           nodes = node_measures,
-                           directed = input$direction_toggle,
-                           method = input$select_role_type,
-                           min_partitions = input$role_det_min,
-                           max_partitions = input$role_det_max,
-                           min_partition_size = as.integer(input$min_cluster_size),
-                           viz = TRUE),
-             .GlobalEnv)
+      role_output <- shiny::reactive({
+        role_analysis(init_net,
+                      nodes = node_measures,
+                      directed = input$direction_toggle,
+                      method = input$select_role_type,
+                      min_partitions = input$role_det_min,
+                      max_partitions = input$role_det_max,
+                      min_partition_size = as.integer(input$min_cluster_size),
+                      viz = TRUE)})
+
     })
     ran_toggle_role_detect$x <- 1
     if (ran_toggle_role_detect$prev_ran == ran_toggle_role_detect$last_ran) {
