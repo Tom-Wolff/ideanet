@@ -80,10 +80,10 @@ The whole idea of CHAMP is that it post-processes community structure partitions
 -   `add_comm_detect`: Boolean to decide whether to also call the clustering algorithms included in \code{comm_detect} (default = `TRUE`). Alternatively, the output of \code{comm_detect} can be provided directly here.
 
 ```{r flor_partitions}
-flor_partitions <- get_partitions(nw_flor$florentine, n_runs = 2500, seed = 4781)
+flor_partitions <- get_partitions(nw_flor$florentine, n_runs = 500, seed = 4781)
 ```
 
-Note that setting `n_runs = 2500` is an insanely overkill number of times to call Leiden for this small network, and indeed we see the resulting report that we only obtain 22 unique partitions. But this call also probably only took a couple seconds at most (depending on your hardware), and since the quality of the deterministic calculations that follow in the next two steps relies on finding good partitions in `get_partitions`, it is generally good practice to be willing to spend a few compute cycles in this step. 
+Note that setting `n_runs = 500` is an insanely overkill number of times to call Leiden for this small network, and indeed we see the resulting report that we only obtain 22 unique partitions. But this call also probably only took a couple seconds at most (depending on your hardware), and since the quality of the deterministic calculations that follow in the next two steps relies on finding good partitions in `get_partitions`, it is generally good practice to be willing to spend a few compute cycles in this step. 
 
 The `partitions` list returned by `get_partitions` (assigned to `flor_partitions` here) includes the counts of the numbers of times that each unique partition was obtained by these pseudo-heuristic algorithms.
 ```{r partition_counts}
@@ -91,13 +91,13 @@ unlist(flor_partitions$count)
 sum(unlist(flor_partitions$count))
 ```
 
-You can see in the above that some partitions — like the 2nd, 6th and 10th in the list — were obtained hundreds of times, while a few were only found once. You can also see that there are a total of 2513 results (`n_runs = 2500` calls to `cluster_leiden` at different resolution parameters plus the 13 clustering results obtained in `comm_detect`) that led to these 22 unique partitions. You can directly query different partitions inside the list as follows.
+You can see in the above that some partitions show up many times — like the 2nd, 7th and 11th in the list — while a few were only found once. You can also see that there are a total of 513 results (`n_runs = 500` calls to `cluster_leiden` at different resolution parameters plus the 13 clustering results obtained in `comm_detect`) that led to these 22 unique partitions. You can directly query different partitions inside the list as follows.
 ```{r partition_query}
-flor_partitions$partitions[[6]]
-flor_partitions$partitions[[9]]
+flor_partitions$partitions[[2]]
+flor_partitions$partitions[[10]]
 ```
 
-You can see that the information about each of these partitions includes a label about which clustering routine identified the partition. In particular, you can see that the 9th partition is labeled sbm_membership, indicating which routine called by `comm_detect` found this, while the 6th partition was obtained from one of the `cluster_leiden` calls. Of course, as we saw above, the 6th partition was obtained hundreds of times, and we do not distinguish here whether any of those copies of this partition were found by one of the routines in `comm_detect`; that is, the "leiden" label here merely means that at least one of the copies of this partition was found by `cluster_leiden`. In contrast, the sbm_membership label on the 9th partition means it was not found by any of our many `cluster_leiden` calls at different resolution parameter values. 
+You can see that the information about each of these partitions includes a label about which clustering routine identified the partition. In particular, you can see that the 10th partition is labeled sbm_membership, indicating which routine called by `comm_detect` found this, while the 2nd partition was obtained from one of the `cluster_leiden` calls. Of course, as we saw above, the 2nd partition was obtained many times, and we do not distinguish here whether any of those copies of this partition were found by one of the routines in `comm_detect`; that is, the "leiden" label here merely means that at least one of the copies of this partition was found by `cluster_leiden`. In contrast, the sbm_membership label on the 10th partition means it was not found by any of our many `cluster_leiden` calls at different resolution parameter values. 
 
 You might also reasonably wonder about what resolution parameter values were involved in finding some of these partitions. The range of these `gamma` values is included in the list.
 ```{r gamma_range}
@@ -121,7 +121,7 @@ Next, we run the `CHAMP` algorithm on the resulting partitions, and plot results
 flor_partitions <- CHAMP(nw_flor$florentine, flor_partitions, plottitle = "Florentine (combined)")
 ```
 
-In the above plot generated by `CHAMP`, each of the 22 unique partitions returned by `get_partitions` is represented by a line giving its values of $Q(\gamma)$, the modularity of the partition as a function of resolution parameter $\gamma$. `CHAMP` then identifies which of these lines ever appear on the upper envelope of $Q(\gamma)$, that is, which of the corresponding partitions are somewhere optimal in the space of $\gamma$ values. Notably, `CHAMP` only finds 6 somewhere-optimal partitions here. The plot annotates the line segments with numbers indexing which of the input partitions are optimal (relative to the input set) along that line segment, as well as the $\gamma$ values where lines intersect on the upper envelope (that is, where which partition is optimal changes). As a technical sidebar, we note that our `CHAMP` implementation here only considers partitions that are optimal with $Q(\gamma)>0$, cutting off the line segment for partition 10 at the point where it crosses $Q=0$ and ignoring higher resolution parameter values.
+In the above plot generated by `CHAMP`, each of the 22 unique partitions returned by `get_partitions` is represented by a line giving its values of $Q(\gamma)$, the modularity of the partition as a function of resolution parameter $\gamma$. `CHAMP` then identifies which of these lines ever appear on the upper envelope of $Q(\gamma)$, that is, which of the corresponding partitions are somewhere optimal in the space of $\gamma$ values. Notably, `CHAMP` only finds 6 somewhere-optimal partitions here. The plot annotates the line segments with numbers indexing which of the input partitions are optimal (relative to the input set) along that line segment, as well as the $\gamma$ values where lines intersect on the upper envelope (that is, where which partition is optimal changes). As a technical sidebar, we note that our `CHAMP` implementation here only considers partitions that are optimal with $Q(\gamma)>0$, cutting off the line segment for partition 11 at the point where it crosses $Q=0$ and ignoring higher resolution parameter values.
 
 `CHAMP` updates the `partitions` list with the generated `CHAMPfigure` plot shown above and a `CHAMPsummary` that provides essential information about the 13 somewhere-optimal partitions found here.
 
@@ -133,15 +133,15 @@ print(flor_partitions$CHAMPsummary)
 knitr::kable(flor_partitions$CHAMPsummary)
 ```
 
-In particular, the `flor_partitions$CHAMPsummary$partition_num` column and the associated numerical annotations on the figure correspond to the list of partitions in `flor_partitions$partitions`. For example, the partition that straddles the default $\gamma=1$ resolution parameter here, which also happens to have a large `gamma_range` and `segment_length` (the length of the corresponding line segment on the upper envelope of Q v. $\gamma$ in the figure) is the 5-community partition with `partition_num` 6 here. Having thus highlighted this partition, we can directly examine it more closely.
+In particular, the `flor_partitions$CHAMPsummary$partition_num` column and the associated numerical annotations on the figure correspond to the list of partitions in `flor_partitions$partitions`. For example, the partition that straddles the default $\gamma=1$ resolution parameter here, which also happens to have a large `gamma_range` and `segment_length` (the length of the corresponding line segment on the upper envelope of Q v. $\gamma$ in the figure) is the 5-community partition with `partition_num` 7 here. Having thus highlighted this partition, we can directly examine it more closely.
 
 ```{r partition6}
-flor_partitions$partitions[[6]]
-igraph::membership(flor_partitions$partitions[[6]])
+flor_partitions$partitions[[7]]
+igraph::membership(flor_partitions$partitions[[7]])
 ```
 
 ```{r parition6_viz, eval = FALSE}
-igraph::plot.igraph(nw_flor$florentine,mark.groups = flor_partitions$partitions[[6]])
+igraph::plot.igraph(nw_flor$florentine,mark.groups = flor_partitions$partitions[[7]])
 ```
 
 
@@ -175,11 +175,11 @@ print(flor_partitions$CHAMPsummary)
 knitr::kable(flor_partitions$CHAMPsummary)
 ```
 
-Looking at the above figure and table, at the bottom of the table we see that the 6-community partition with `partition_num` 10 maps to the estimated $\gamma$ value listed under `next_gamma`, where the 5-community partition is optimal (that is, the bottom row of the table lists next_partition_num 6 and `next_num_communities` 5). Specifically, note that the `next_gamma` value listed for `partition_num` 2 is between the `starting_gamma` and `ending_gamma` values for `partition_num` 6, and the `next_gamma` for this partition then maps to itself. That is, `partition_num` 6 is a fixed point of the iterative map on the CHAMP set. Similarly, `partition_num` 5 and `partition_num` 11 both also map to that same 5-community `partition_num` 6 fixed point. In contrast, we see that `partition_num` 2, with 3 communities, is also a fixed point, mapping to itself. Note that the "fixed point" message output from `get_CHAMP_map` identifies both `partition_num` 2 and `partition_num` 6 as the two partitions that each point to themselves.
+Looking at the above figure and table, at the bottom of the table we see that the 6-community partition with `partition_num` 11 maps to the estimated $\gamma$ values listed under `next_gamma`, where the 5-community partition is optimal (that is, the bottom row of the table lists next_partition_num 7 and `next_num_communities` 5). Meanwhile, note that the `next_gamma` value listed for `partition_num` 5 is between the `starting_gamma` and `ending_gamma` values for `partition_num` 7, and the `next_gamma` for this partition then maps to itself. That is, `partition_num` 7 is a fixed point of the iterative map on the CHAMP set. In contrast, we see that `partition_num` 2, with 3 communities, is also a fixed point, mapping to itself. Note that the "fixed point" message output from `get_CHAMP_map` identifies both `partition_num` 2 and `partition_num` 7 as the two partitions that each point to themselves.
 
 As an aside, note the NA values in the row corresponding to the 2-community partition. This partition is unlike the others here in that it doesn't map to anywhere, because this 2-community partition is a trivial solution in that it simply identifies the 2 components of the graph (disconnected from one another) without any further community structure within those components, and in the absence of any further community structure it has no associated resolution. This trivial partition where all nodes in each connected component are together in a community cannot be mapped to any other partition (hence the NA values). However, it is theoretically possible in the pipeline for other partitions to map to $\gamma$ values where this trivial partition is optimal (but it does not happen in the present examples).
 
-As the only fixed points of the map on the CHAMP set, `partition_num` 2 and `partition_num` 6 are of special interest to us here. The fact that `partition_num` 6 happens to be the same as the optimal partition at the default resolution parameter $\gamma=1$ is a special feature of this simple example network — in other examples, the fixed points of the CHAMP map may occur at other resolution parameter values.
+As the only fixed points of the map on the CHAMP set, `partition_num` 2 and `partition_num` 7 are of special interest to us here. The fact that `partition_num` 7 happens to be the same as the optimal partition at the default resolution parameter $\gamma=1$ is a special feature of this simple example network — in other examples, the fixed points of the CHAMP map may occur at other resolution parameter values.
 
 Again, there may be other good partitions in different senses that are not highlighted by these procedures, but we expect there are many cases where this framework — gathering partitions, running `CHAMP`, and picking out the fixed point of the iterative map on the CHAMP set — easily and efficiently highlights partitions of interest.
 
@@ -200,7 +200,7 @@ igraph::plot.igraph(karate, main="Zachary's Karate Club")
 ### Step 1: Collect Partitions
 
 ```{r karate_partitions}
-kc_partitions <- get_partitions(karate, n_runs = 2500, seed = 3478)
+kc_partitions <- get_partitions(karate, n_runs = 500, seed = 3478)
 ```
 
 ### Step 2: CHAMP
@@ -261,7 +261,7 @@ data(karate,package="igraphdata")
 igraph::plot.igraph(karate, main="Zachary's Karate Club (weighted)")
 ```
 ```{r karate_partitions2, warning=FALSE}
-kcw_partitions <- get_partitions(karate, n_runs = 2500, seed = 3478)
+kcw_partitions <- get_partitions(karate, n_runs = 500, seed = 3478)
 kcw_partitions <- CHAMP(karate,kcw_partitions,plottitle="Zachary's Karate Club (weighted)")
 ```
 ```{r karate_map2, warning=TRUE}
@@ -312,7 +312,7 @@ igraph::plot.igraph(football, main="Div-IA College Football, Fall 2000")
 ```
 
 ```{r, warning=FALSE}
-football_partitions <- get_partitions(football, n_runs = 1000, seed = 115)
+football_partitions <- get_partitions(football, n_runs = 500, seed = 115)
 football_partitions <- CHAMP(football,football_partitions,plottitle="Div-IA College Football, Fall 2000")
 football_partitions <- get_CHAMP_map(football,football_partitions,plotlabel="Div-IA College Football, Fall 2000")
 ```
@@ -327,7 +327,7 @@ knitr::kable(football_partitions$CHAMPsummary)
 It is important to note that, in the above use of the default parameters on this example, the fixed point of the iterative map on the CHAMP set is the partition that is optimal at the largest values of $\gamma$ in the default range considered. This is a sign to us that we might want to consider even larger values of $\gamma$, which we can easily do by changing `gamma_range` from its default in the call to `get_partitions` as follows. Note that this changes the resulting set of `football_partitions` obtained, which then get passed to `CHAMP` and `get_CHAMP_maps`.
 
 ```{r, warning=FALSE}
-football_partitions <- get_partitions(football, n_runs = 2000, gamma_range = c(0,7), seed = 115)
+football_partitions <- get_partitions(football, n_runs = 500, gamma_range = c(0,7), seed = 115)
 football_partitions <- CHAMP(football,football_partitions,plottitle="Div-IA College Football, Fall 2000")
 football_partitions <- get_CHAMP_map(football,football_partitions,plotlabel="Div-IA College Football, Fall 2000")
 print(football_partitions$CHAMPsummary)
