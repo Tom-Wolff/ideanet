@@ -44,7 +44,7 @@ If you use these functions in your work, please cite
 
 3.  [the Gibson & Mucha (2022) CHAMP maps paper](https://doi.org/10.1038/s41598-022-20142-6).
 
-Note that our current R implementation of this pipeline does not handle multilayer networks. The Python implementation at <https://github.com/ragibson/ModularityPruning> combines the multilayer capabilities of CHAMP with the generalization of Newman's equivalence to multilayer networks derived by Pamfil et al. (2019). An R implementation of this multilayer framework is in development. We also assume that networks are undirected, though possibly weighted (but see the warning discussed in Example 3 below).
+Note that our current R implementation of this pipeline does not handle multilayer networks. The Python implementation at <https://github.com/ragibson/ModularityPruning> combines the multilayer capabilities of CHAMP with the generalization of Newman's equivalence to multilayer networks derived by Pamfil et al. (2019). An R implementation of this multilayer framework is in development. We also assume that networks are undirected, though possibly weighted (but see the note at the end of Example 2 below).
 
 ## Example 1: Families in Renaissance-era Florence
 
@@ -255,59 +255,33 @@ Looking at the above figure and table, we can see that the only partition that m
 
 Importantly, this 4-community partition obtained as a fixed point of the iterative map on the CHAMP set is not the same as the result in Newman (2016), which is a 2-community partition because Newman's approach takes the number of communities as a specified input, and he understandably selects 2 communities for this example network because of its story. We stress that there is no single way to cluster data that is best in all cases, and that it is important to consider different possibilities. If one is only interested in solutions with 2 communities, then a modification of the current approach would be to only consider algorithms that are specified to give 2 communities, or to only keep the 2-community solutions that come out of `get_partitions`. For further discussion of these details, see Gibson & Mucha (2022).
 
-## Example 3: Zachary's Karate Club, with weights
+### Weighted graphs?
 
-We now perform the three steps of this framework for the weighted version of the karate club, to emphasize that weights matter and to highlight an important warning message for the third step of the framework (`get_CHAMP_map`).
+We could perform the three steps of this framework for the weighted version of the karate club. Indeed, it is interesting to do so to emphasize that weights matter and to highlight an important warning message for the third step of the framework (`get_CHAMP_map`).
 
 ```{r karate_prep2}
 data(karate,package="igraphdata")
 ```
 
 ```{r karate_viz2, eval = FALSE}
+data(karate,package="igraphdata")
 igraph::plot.igraph(karate, main="Zachary's Karate Club (weighted)")
-```
-
-```{r karate_partitions2, warning = FALSE}
 kcw_partitions <- get_partitions(karate, n_runs = 500, seed = 3478)
 kcw_partitions <- CHAMP(karate,kcw_partitions,
                         plottitle="Zachary's Karate Club (weighted)")
-```
-
-```{r karate_map2, warning = TRUE}
 kcw_partitions <- get_CHAMP_map(karate,kcw_partitions,
                                 plotlabel="Zachary's Karate Club (weighted)")
 ```
 
-```{r karate_CHAMPsummary3, eval = FALSE}
-print(kcw_partitions$CHAMPsummary)
-```
+If you run the above code, you will receive a warning
 
-```{r karate_CHAMPsummary3_kable, echo = FALSE}
-knitr::kable(kcw_partitions$CHAMPsummary)
-```
+> Warning: The theory underlying get_CHAMP_map() is for unweighted networks. The formulae have been naturally generalized to weighted networks, but these have not been well studied.
 
-We emphasize two important differences between this example on the weighted karate club versus the first example on its unweighted version.
+`CHAMP` is fully valid for both weighted and unweighted networks. But the theoretical equivalence uncovered by Newman (2016) to define the iterative map used in `get_CHAMP_map` was developed for unweighted networks. While the resulting formulae that define the iterative map have a very natural generalization to weighted networks, this generalization has not to our knowledge been well studied, neither theoretically nor in practice. Nevertheless, we expect that it may still be useful in many situations for highlighting different partitions. In particular, just as the original definition of modularity for unweighted networks has a natural generalization to weighted edges through thinking about discretized multiedges, the iterative map might possibly have a reasonable multiedge interpretation. At a minimum, the dimensionless formulae for the "in" and "out" propensities and for the estimated $\gamma$ value defined in the theory all have natural generalizations computed in terms of edge weights with strength in place of degree and total edge weights in place of edge counts. Nevertheless, we again stress that this has not to our knowledge been well studied, and users are appropriately warned.
 
-First, note the warning message that the theory underlying `get_CHAMP_map` is for unweighted networks. `CHAMP` is fully valid for both weighted and unweighted networks. But the theoretical equivalence uncovered by Newman (2016) to define the iterative map used in `get_CHAMP_map` was developed for unweighted networks. While the resulting formulae that define the iterative map have a very natural generalization to weighted networks, this generalization has not to our knowledge been well studied, neither theoretically nor in practice. Nevertheless, we expect that it may still be useful in many situations for highlighting different partitions. In particular, just as the original definition of modularity for unweighted networks has a natural generalization to weighted edges through thinking about discretized multiedges, the iterative map might possibly have a reasonable multiedge interpretation. At a minimum, the dimensionless formulae for the "in" and "out" propensities and for the estimated $\gamma$ value defined in the theory all have natural generalizations computed in terms of edge weights with strength in place of degree and total edge weights in place of edge counts. Nevertheless, we again stress that this has not to our knowledge been well studied, and users are appropriately warned.
+As an aside, we also note that the above code to process the weighted karate network finds two fixed points in the map that are self-consistent in the generalized formulae of the modularity-SBM equivalence (whereas the unweighted version only yielded one fixed point partition).
 
-Second, note that in this example we now have two fixed points in the map; that is, there are two different partitions (`partition_num` 5 and 7) that are self-consistent in the generalized formulae of the modularity-SBM equivalence. We can then look at and directly compare these two different partitions.
-
-```{r karate2_partitionviz, eval = FALSE}
-karatelayout <- igraph::layout_with_fr(karate)
-igraph::plot.igraph(karate, layout = karatelayout,
-                    mark.groups = kcw_partitions$partitions[[5]])
-igraph::plot.igraph(karate, layout = karatelayout,
-                    mark.groups = kcw_partitions$partitions[[7]])
-```
-
-```{r karate2_partition_table}
-table(igraph::membership(kcw_partitions$partitions[[5]]),
-      igraph::membership(kcw_partitions$partitions[[7]]))
-```
-
-As seen in the plots and the table comparing their memberships, the 3-community partition here is the 4-community partition with two of the communities merged into one.
-
-## Example 4: NCAA College Football Network
+## Example 3: NCAA College Football Network
 
 A favorite example for demonstrating the need for a resolution parameter is the network of the (then-so-called) Division I-A college football games from the Fall 2000 season. This example was introduced by Girvan and Newman (2002). The GML file for this example can be downloaded (along with a bunch of other interesting examples) from Mark Newman’s “Network data” web page at <http://www-personal.umich.edu/~mejn/netdata/>. We have directly included this `football` data in `ideanet` with permission from Girvan and Newman.
 
