@@ -32,6 +32,8 @@ If you use these functions in your work, please cite
 
 3.  [the Gibson & Mucha (2022) CHAMP maps paper](https://doi.org/10.1038/s41598-022-20142-6).
 
+In addition to this vignette, we recommend you look at the [CHAMP_karate vignette](CHAMP_karate.html), which demonstrates this pipeline on the karate club network.
+
 ## Example: NCAA College Football Network
 
 A favorite example for demonstrating the need for a resolution parameter is the network of the (then-so-called) Division I-A college football games from the Fall 2000 season. This example was introduced by Girvan and Newman (2002). The GML file for this example can be downloaded (along with a bunch of other interesting examples) from Mark Newman’s “Network data” web page at <http://www-personal.umich.edu/~mejn/netdata/>. We have directly included this `football` data in `ideanet` with permission from Girvan and Newman.
