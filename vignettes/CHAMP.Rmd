@@ -46,7 +46,7 @@ If you use these functions in your work, please cite
 
 Note that our current R implementation of this pipeline does not handle multilayer networks. The Python implementation at <https://github.com/ragibson/ModularityPruning> combines the multilayer capabilities of CHAMP with the generalization of Newman's equivalence to multilayer networks derived by Pamfil et al. (2019). An R implementation of this multilayer framework is in development. We also assume that networks are undirected, though possibly weighted (but see the note at the end of Example 2 below).
 
-**In addition to this vignette, we highly recommend you look at the `CHAMP_football` vignette, which goes into an even deeper dive on the network of Division I-A college football games from the Fall 2000 season, demonstrating how this pipeline helps uncover the conference structure.**
+**In addition to this vignette, we highly recommend you look at the [CHAMP_football vignette](CHAMP_football.html), which goes into an even deeper dive on the network of Division I-A college football games from the Fall 2000 season, demonstrating how this pipeline helps uncover the conference structure.**
 
 ## Example 1: Families in Renaissance-era Florence
 

@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 library(ideanet)
 ```
 
-**This vignette takes a deeper dive into using the framework of CHAMP and maps on the CHAMP set to find communities aligned with the conference structure in the network of Division I-A college football games from the Fall 2000 season. If you haven't already done so, you will want to look at the `CHAMP` vignette to understand the commands used here.**
+**This vignette takes a deeper dive into using the framework of CHAMP and maps on the CHAMP set to find communities aligned with the conference structure in the network of Division I-A college football games from the Fall 2000 season. If you haven't already done so, you will want to first look at the [CHAMP vignette](CHAMP.html) to understand the commands used here.**
 
 These functions, as part of the broader IDEANet project, are supported by the National Science Foundation as part of the Human Networks and Data Science - Infrastructure program (BCS-2024271 and BCS-2140024).
 
