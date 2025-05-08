@@ -2,7 +2,7 @@
 title: "Selecting Community Detection Resolution Parameters with CHAMP Maps: the karate club network"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Selecting Community Detection Resolution Parameters with CHAMP Maps}
+  %\VignetteIndexEntry{Selecting Community Detection Resolution Parameters with CHAMP Maps: the karate club network}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
