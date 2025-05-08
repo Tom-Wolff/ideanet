@@ -50,7 +50,7 @@ Note that our current R implementation of this pipeline does not handle multilay
 
 We demonstrate the 3 main steps of the pipeline with the florentine network `igraph` object that combines both types of relations between families in Florence, as built in the `netwrite` vignette.
 
-```{r nw_flor, warning=FALSE, message=FALSE}
+```{r nw_flor, warning = FALSE, message = FALSE}
 nw_flor <- netwrite(nodelist = florentine_nodes,
                     node_id = "id",
                     i_elements = florentine_edges$source,
@@ -120,7 +120,7 @@ Next, we run the `CHAMP` algorithm on the resulting partitions, and plot results
 -   `partitions`: partitions object generated from `get_partitions`.
 -   `plottitle`: optionally, a title for the output plot. `Null` by default.
 
-```{r flor_CHAMP, warning=FALSE}
+```{r flor_CHAMP, warning = FALSE}
 flor_partitions <- CHAMP(nw_flor$florentine, flor_partitions, 
                          plottitle = "Florentine (combined)")
 ```
@@ -164,7 +164,7 @@ The `get_CHAMP_map` function uses the equivalence of modularity optimization wit
 -   `partitions`: partitions object generated from `get_partitions`.
 -   `plottitle`: optionally, a title for the output plot. `Null` by default.
 
-```{r flor_CHAMPmap, warning=FALSE}
+```{r flor_CHAMPmap, warning = FALSE}
 flor_partitions <- get_CHAMP_map(nw_flor$florentine, flor_partitions, 
                                  plotlabel = "Florentine (combined)")
 ```
@@ -208,7 +208,7 @@ kc_partitions <- get_partitions(karate, n_runs = 500, seed = 3478)
 
 ### Step 2: CHAMP
 
-```{r karateCHAMP, warning=FALSE}
+```{r karateCHAMP, warning = FALSE}
 kc_partitions <- CHAMP(karate, kc_partitions, 
                        plottitle = "Zachary's Karate Club (unweighted)")
 ```
@@ -236,7 +236,7 @@ igraph::plot.igraph(karate,mark.groups = kc_partitions$partitions[[6]])
 
 ### Step 3: Compute the SBM-equivalence iterative map on the CHAMP set
 
-```{r, warning=FALSE}
+```{r, warning = FALSE}
 kc_partitions <- get_CHAMP_map(karate, kc_partitions, 
                                plotlabel = "Zachary's Karate Club (unweighted)")
 ```
@@ -267,13 +267,13 @@ data(karate,package="igraphdata")
 igraph::plot.igraph(karate, main="Zachary's Karate Club (weighted)")
 ```
 
-```{r karate_partitions2, warning=FALSE}
+```{r karate_partitions2, warning = FALSE}
 kcw_partitions <- get_partitions(karate, n_runs = 500, seed = 3478)
 kcw_partitions <- CHAMP(karate,kcw_partitions,
                         plottitle="Zachary's Karate Club (weighted)")
 ```
 
-```{r karate_map2, warning=TRUE}
+```{r karate_map2, warning = TRUE}
 kcw_partitions <- get_CHAMP_map(karate,kcw_partitions,
                                 plotlabel="Zachary's Karate Club (weighted)")
 ```
@@ -319,7 +319,9 @@ football
 igraph::plot.igraph(football, main="Div-IA College Football, Fall 2000")
 ```
 
-```{r, warning=FALSE}
+We can now run the three steps of this framework on the football data as follows.
+
+```{r, warning = FALSE, eval = FALSE}
 football_partitions <- get_partitions(football, n_runs = 500, seed = 115)
 football_partitions <- CHAMP(football, football_partitions,
                              plottitle="Div-IA College Football, Fall 2000")
@@ -327,17 +329,9 @@ football_partitions <- get_CHAMP_map(football, football_partitions,
                                      plotlabel="Div-IA College Football, Fall 2000")
 ```
 
-```{r football_CHAMPsummary, eval = FALSE}
-print(football_partitions$CHAMPsummary)
-```
+But if we were to run the commands using default parameters like above, we would find that the fixed point of the iterative map on the CHAMP set is the partition that is optimal at the largest values of $\gamma$ in the default range considered. (You can see this either by running the above manually, or you will see it in what follows now.) This is a sign to us that we might want to consider even larger values of $\gamma$, which we can easily do by changing `gamma_range` from its default in the call to `get_partitions` as follows. Note that this changes the resulting set of `football_partitions` obtained, which then get passed to `CHAMP` and `get_CHAMP_maps`.
 
-```{r football_CHAMPsummary_kable, echo = FALSE}
-knitr::kable(football_partitions$CHAMPsummary)
-```
-
-It is important to note that, in the above use of the default parameters on this example, the fixed point of the iterative map on the CHAMP set is the partition that is optimal at the largest values of $\gamma$ in the default range considered. This is a sign to us that we might want to consider even larger values of $\gamma$, which we can easily do by changing `gamma_range` from its default in the call to `get_partitions` as follows. Note that this changes the resulting set of `football_partitions` obtained, which then get passed to `CHAMP` and `get_CHAMP_maps`.
-
-```{r, warning=FALSE}
+```{r, warning = FALSE}
 football_partitions <- get_partitions(football, n_runs = 500, 
                                       gamma_range = c(0,7), seed = 115)
 football_partitions <- CHAMP(football, football_partitions,
