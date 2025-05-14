@@ -388,6 +388,11 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     if (node_id == "id") {
       node_id <- "original_id"
     }
+    if (node_id == "name") {
+      node_id <- "original_name"
+    }
+
+
 
   }
 
