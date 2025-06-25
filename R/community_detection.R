@@ -123,7 +123,7 @@ comm_detect <- function(g, modres=1,
   n <- igraph::vcount(g_undir)
   w_dens <- sum(igraph::E(g_undir)$weight)*2/(n*(n-1))
 
-  # If size of network exceeds 5,000, skip SBM, linkcomm, edge betweenness, and leading eigen
+  # If size of network exceeds 5,000, skip SBM, edge betweenness, and leading eigen
   if (n > 5000 & slow_routines == FALSE) {
     message("Detecting network consisting of more than 5000 nodes. Edge betweenness, leading eigenvector, link communities, and stochastic blockmodel routines will be skipped to ensure quick processing. If you would like to proceed with these methods included, set `slow_routines = TRUE`.")
   }
@@ -382,43 +382,12 @@ comm_detect <- function(g, modres=1,
   }
   }
 
-  ## Link comm ##
-  if (n > 5000 & slow_routines == FALSE) {
 
-    lc_membership <-  data.frame(id = memberships$id,
-                                 lc_cluster = NA)
-  } else if (shiny_skip == TRUE) {
-    lc_membership <-  data.frame(id = memberships$id,
-                                 lc_cluster = NA)
-  } else {
-    #gmat <- as.matrix((get.adjacency(network))) # LC does not require it
-    linkcomm_el <- igraph::as_data_frame(g_undir, what = "edges") %>% dplyr::select(.data$from, .data$to)
-    #### In some cases, such as when given a star graph, `linkcomm` won't detect any communities.
-    #### if this is the case, just create the `lc_membership` dataframe manually and assign all nodes
-    #### to the same community (or `NA`s depending on our team's ultimate preference)
-    lc <- tryCatch(linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = FALSE, verbose = FALSE, plot = FALSE),
-                   error = function(e) {return(NULL)})# Defaulting to false for now)
-    if (!is.null(lc)) {
-      # browser()
-      # lc <- linkcomm::getLinkCommunities(linkcomm_el, hcmethod = "average", directed = FALSE, verbose = FALSE, plot = FALSE) # Defaulting to false for now
-      clust <- split(as.numeric(lc$nodeclusters$node), lc$nodeclusters$cluster) # Turn into list of vectors
-      clust <- clust[order(as.numeric(names(clust)))] # Make sure its ordered
-      lc_membership <- multigroup_assign(g_sym, clust)
-      colnames(lc_membership) <- c("lc_cluster", "id")
-    } else {
-      warning("linkcomm did not detect any distinct communities. All nodes will be assigned to the same single community (1).")
-      lc_membership <- data.frame(id = memberships$id,
-                                  lc_cluster = 1)
-    }
-
-  }
-
-  lc_membership$id <- as.character(lc_membership$id)
   cf1_membership$id <- as.character(cf1_membership$id)
 
   # Add into overall memberships dataframe
   memberships <- dplyr::left_join(memberships, cf1_membership, by = "id")
-  memberships <- dplyr::left_join(memberships, lc_membership, by = "id")
+
 
   # Need to make network-level dataset recording number of communities and modularity scores
   # We'll make it a long dataset for starters, assuming that we're only working with one network at a time
@@ -443,9 +412,6 @@ comm_detect <- function(g, modres=1,
                             num_communities = NA,
                             modularity = NA)
 
-    lc_stats <- data.frame(method = "lc",
-                           num_communities = NA,
-                           modularity = NA)
 
 
   } else if (shiny_skip == TRUE) {
@@ -460,9 +426,6 @@ comm_detect <- function(g, modres=1,
                             num_communities = NA,
                             modularity = NA)
 
-    lc_stats <- data.frame(method = "lc",
-                           num_communities = NA,
-                           modularity = NA)
 
   } else {
 
@@ -475,10 +438,6 @@ comm_detect <- function(g, modres=1,
     cf1_stats <- data.frame(method = "cp",
                             num_communities = length(unique(memberships$cp_cluster)),
                             modularity = igraph::modularity(g_undir, membership = (memberships$cp_cluster), weights = igraph::E(g_undir)$weight))
-
-    lc_stats <- data.frame(method = "lc",
-                           num_communities = length(unique(memberships$lc_cluster)),
-                           modularity = igraph::modularity(g_undir, membership = (memberships$lc_cluster), weights = igraph::E(g_undir)$weight))
 
   }
 
@@ -577,7 +536,6 @@ comm_detect <- function(g, modres=1,
   walktrap_stats <- walktrap_stats[which(walktrap_stats$modularity == max(walktrap_stats$modularity)),]
 
   igraph::V(g)$cf1 <- memberships$cp_cluster
-  igraph::V(g)$lc <- memberships$lc_cluster
 
 
 
@@ -592,8 +550,7 @@ comm_detect <- function(g, modres=1,
                                # optimal_stats,
                                spinglass_stats,
                                walktrap_stats,
-                               cf1_stats,
-                               lc_stats)
+                               cf1_stats)
 
   # Some functions give multiple modularity scores depending on different cutoff points. Need to ask Jim which one to keep.
   # Is it just the maximum?
@@ -659,7 +616,7 @@ comm_detect <- function(g, modres=1,
                                    "leiden_cpm_membership", "walktrap_membership",
                                    "leading_eigen_membership",
                                    "spinglass_membership", "sbm_membership",
-                                   "cp_cluster", "lc_cluster")]
+                                   "cp_cluster")]
 
     start_col <- 2
     sub_val <- 1
@@ -673,7 +630,7 @@ comm_detect <- function(g, modres=1,
                                    "leiden_cpm_membership", "walktrap_membership",
                                    "leading_eigen_membership",
                                    "spinglass_membership", "sbm_membership",
-                                   "cp_cluster", "lc_cluster")]
+                                   "cp_cluster")]
 
     start_col <- 3
     sub_val <- 2
@@ -704,14 +661,14 @@ comm_detect <- function(g, modres=1,
                                 "leiden_cpm", "walktrap",
                                 "leading_eigen",
                                 "spinglass", "sbm",
-                                "cp", "lc")
+                                "cp")
   colnames(compare_scores) <- c("edge_betweenness",
                                 "fast_greedy","infomap",
                                 "label_prop", "leiden_mod",
                                 "leiden_cpm", "walktrap",
                                 "leading_eigen",
                                 "spinglass", "sbm",
-                                "cp", "lc")
+                                "cp")
   diag(compare_scores) <- NA
 
   compare_scores[is.nan(compare_scores)] <- NA
@@ -851,18 +808,11 @@ comm_detect <- function(g, modres=1,
                       layout = fr)
      cp_grob <- cowplot::as_grob(cp_plot)
 
-     lc_plot <- ~plot(g,
-                      vertex.size = 5,
-                      edge.arrow.size = .01,
-                      vertex.label = NA,
-                      vertex.color = memberships[,"lc_cluster"],
-                      layout = fr)
-     lc_grob <- cowplot::as_grob(lc_plot)
 
 
-     communityplot3 <- cowplot::plot_grid(walktrap_grob, sbm_grob, cp_grob, lc_grob, nrow = 2,
+     communityplot3 <- cowplot::plot_grid(walktrap_grob, sbm_grob, cp_grob, nrow = 2,
                                           scale = 1.3,
-                                          labels = c("Walktrap", "Stochastic Blockmodel", "Clique Percolation", "Linkcomm"),
+                                          labels = c("Walktrap", "Stochastic Blockmodel", "Clique Percolation"),
                                           hjust = c(-1.5, -.35, -.5, -1.3)
      )
 
@@ -946,7 +896,7 @@ spectral_sbm <- function(Adj, ##adjacency matrix
 }
 
 # Function that assigns nodes with multiple communities to a single community to which they are most connected to.
-# If there is a tie, then the community is chosen at random (applies to CP and LC methods).
+# If there is a tie, then the community is chosen at random (applies to CP methods).
 
 multigroup_assign <- function(gmat, clust){
 

@@ -1062,7 +1062,7 @@ server <- function(input, output, session) {
       vals <- nodelist3() %>%
         dplyr::select(dplyr::ends_with('membership'),
                       'cp_cluster',
-                      'lc_cluster',
+
                       dplyr::ends_with('best_fit')) %>%
         dplyr::select(-c("strong_membership", "weak_membership")) %>%
         colnames()
@@ -1070,7 +1070,7 @@ server <- function(input, output, session) {
       vals <- nodelist3() %>%
         dplyr::select(dplyr::ends_with('membership'),
                       'cp_cluster',
-                      'lc_cluster',
+
                       dplyr::starts_with('champ')) %>%
         dplyr::select(-c("strong_membership", "weak_membership")) %>%
         colnames()
@@ -1078,15 +1078,14 @@ server <- function(input, output, session) {
       vals <- nodelist3() %>%
         dplyr::select(dplyr::ends_with('membership'),
                       'cp_cluster',
-                      'lc_cluster',
+
                       dplyr::starts_with('champ'),
                       dplyr::ends_with('best_fit')) %>%
         dplyr::select(-c("strong_membership", "weak_membership")) %>%
         colnames()
     } else {
       vals <- nodelist3() %>%
-        dplyr::select(dplyr::ends_with('membership'),'cp_cluster',
-                      'lc_cluster') %>%
+        dplyr::select(dplyr::ends_with('membership'),'cp_cluster') %>%
         dplyr::select(-c("strong_membership", -"weak_membership")) %>%
         colnames()
       }
