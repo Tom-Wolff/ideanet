@@ -49,7 +49,6 @@
 comm_detect <- function(g, modres=1,
                         slow_routines = FALSE,
                         shiny = FALSE) {
-
   # browser()
 
   # The `slow_routines` threshold of 5,000 nodes is usually too time-intensive
