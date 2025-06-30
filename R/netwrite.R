@@ -139,6 +139,15 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     nodelist <- as.data.frame(nodelist)
   }
 
+# Some measures in the system level measures data frame calculated from the
+  # distribution of centrality scores at the node level. If users don't choose
+  # to create an output built on node-level measures, however, we should exclude
+  # system-level measures that depend on centrality scores. When this occurs
+  # we display a warning to the user:
+  if (!("nodelist" %in% output | "node_measure_plot" %in% output) & "system_level_measures" %in% output) {
+    base::warning("Outputs related to node-level measures not selected for inclusion in `netwrite` output. System-level measures based on node-level centrality scores (e.g. centralization, Herfindahl index) will be excluded from system-level measures output.")
+  }
+
 
   if (data_type == "edgelist") {
 
@@ -765,14 +774,15 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                              # For processing multi-relational nets, we'll want to collect all the
                              # possible output objects from `basic_netwrite` at first, then filter out
                              # based on the original outputs specified in the `netwrite` call
-                             output = c("graph",
-                                        "largest_bi_component",
-                                        "largest_component",
-                                        "node_measure_plot",
-                                        "nodelist",
-                                        "edgelist",
-                                        "system_level_measures",
-                                        "system_measure_plot"),
+                             # output = c("graph",
+                             #            "largest_bi_component",
+                             #            "largest_component",
+                             #            "node_measure_plot",
+                             #            "nodelist",
+                             #            "edgelist",
+                             #            "system_level_measures",
+                             #            "system_measure_plot"),
+                             output = output,
                              message = message)
             )
           } else {
@@ -795,14 +805,15 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                             # For processing multi-relational nets, we'll want to collect all the
                                             # possible output objects from `basic_netwrite` at first, then filter out
                                             # based on the original outputs specified in the `netwrite` call
-                                            output = c("graph",
-                                                       "largest_bi_component",
-                                                       "largest_component",
-                                                       "node_measure_plot",
-                                                       "nodelist",
-                                                       "edgelist",
-                                                       "system_level_measures",
-                                                       "system_measure_plot"),
+                                            # output = c("graph",
+                                            #            "largest_bi_component",
+                                            #            "largest_component",
+                                            #            "node_measure_plot",
+                                            #            "nodelist",
+                                            #            "edgelist",
+                                            #            "system_level_measures",
+                                            #            "system_measure_plot"),
+                                            output = output,
                                             message = message)
           }
 
@@ -826,14 +837,15 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                              weight_type = weight_type, directed=directed,
                              net_name = "this_igraph",
                              shiny = TRUE,
-                             output = c("graph",
-                                        "largest_bi_component",
-                                        "largest_component",
-                                        "node_measure_plot",
-                                        "nodelist",
-                                        "edgelist",
-                                        "system_level_measures",
-                                        "system_measure_plot"),
+                             # output = c("graph",
+                             #            "largest_bi_component",
+                             #            "largest_component",
+                             #            "node_measure_plot",
+                             #            "nodelist",
+                             #            "edgelist",
+                             #            "system_level_measures",
+                             #            "system_measure_plot"),
+                             output = output,
                              message = message)
             )
           } else {
@@ -851,14 +863,15 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                             weight_type = weight_type, directed=directed,
                                             net_name = "this_igraph",
                                             shiny = TRUE,
-                                            output = c("graph",
-                                                       "largest_bi_component",
-                                                       "largest_component",
-                                                       "node_measure_plot",
-                                                       "nodelist",
-                                                       "edgelist",
-                                                       "system_level_measures",
-                                                       "system_measure_plot"),
+                                            # output = c("graph",
+                                            #            "largest_bi_component",
+                                            #            "largest_component",
+                                            #            "node_measure_plot",
+                                            #            "nodelist",
+                                            #            "edgelist",
+                                            #            "system_level_measures",
+                                            #            "system_measure_plot"),
+                                            output = output,
                                             message = message)
           }
         }
@@ -892,14 +905,15 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                              weight_type = weight_type, directed=directed,
                              net_name = "this_igraph",
                              shiny = TRUE,
-                             output = c("graph",
-                                        "largest_bi_component",
-                                        "largest_component",
-                                        "node_measure_plot",
-                                        "nodelist",
-                                        "edgelist",
-                                        "system_level_measures",
-                                        "system_measure_plot"),
+                             # output = c("graph",
+                             #            "largest_bi_component",
+                             #            "largest_component",
+                             #            "node_measure_plot",
+                             #            "nodelist",
+                             #            "edgelist",
+                             #            "system_level_measures",
+                             #            "system_measure_plot"),
+                             output = output,
                              message = message)
             )
           } else {
@@ -917,14 +931,15 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                             weight_type = weight_type, directed=directed,
                                             net_name = "this_igraph",
                                             shiny = TRUE,
-                                            output = c("graph",
-                                                       "largest_bi_component",
-                                                       "largest_component",
-                                                       "node_measure_plot",
-                                                       "nodelist",
-                                                       "edgelist",
-                                                       "system_level_measures",
-                                                       "system_measure_plot"),
+                                            # output = c("graph",
+                                            #            "largest_bi_component",
+                                            #            "largest_component",
+                                            #            "node_measure_plot",
+                                            #            "nodelist",
+                                            #            "edgelist",
+                                            #            "system_level_measures",
+                                            #            "system_measure_plot"),
+                                            output = output,
                                             message = message)
           }
 
@@ -946,14 +961,15 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                              weight_type = weight_type, directed=directed,
                              net_name = "this_igraph",
                              shiny = TRUE,
-                             output = c("graph",
-                                        "largest_bi_component",
-                                        "largest_component",
-                                        "node_measure_plot",
-                                        "nodelist",
-                                        "edgelist",
-                                        "system_level_measures",
-                                        "system_measure_plot"),
+                             # output = c("graph",
+                             #            "largest_bi_component",
+                             #            "largest_component",
+                             #            "node_measure_plot",
+                             #            "nodelist",
+                             #            "edgelist",
+                             #            "system_level_measures",
+                             #            "system_measure_plot"),
+                             output = output,
                              message = message)
             )
           } else {
@@ -971,58 +987,73 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                             weight_type = weight_type, directed=directed,
                                             net_name = "this_igraph",
                                             shiny = TRUE,
-                                            output = c("graph",
-                                                       "largest_bi_component",
-                                                       "largest_component",
-                                                       "node_measure_plot",
-                                                       "nodelist",
-                                                       "edgelist",
-                                                       "system_level_measures",
-                                                       "system_measure_plot"),
+                                            # output = c("graph",
+                                            #            "largest_bi_component",
+                                            #            "largest_component",
+                                            #            "node_measure_plot",
+                                            #            "nodelist",
+                                            #            "edgelist",
+                                            #            "system_level_measures",
+                                            #            "system_measure_plot"),
+                                            output = output,
                                             message = message)
           }
         }
       }
 
-      # Store netwrite outputs into respective lists
+      # Store netwrite outputs into respective lists, if they've been generated
 
       # igraph object list
-      graphs_list[[i]] <- this_netwrite$this_igraph
-      # suppressWarnings(rm(this_igraph))
+      if ("graph" %in% output) {
+        graphs_list[[i]] <- this_netwrite$this_igraph
+      }
+
 
       # Largest bicomponent list
-      bicomponent_list[[i]] <- this_netwrite$largest_bi_component
-      # suppressWarnings(rm(largest_bi_component))
+      if ("largest_bi_component" %in% output) {
+        bicomponent_list[[i]] <- this_netwrite$largest_bi_component
+      }
+
 
       # Largest component list
-      lcomponent_list[[i]] <- this_netwrite$largest_component
-      # suppressWarnings(rm(largest_component))
+      if ("largest_component" %in% output) {
+        lcomponent_list[[i]] <- this_netwrite$largest_component
+      }
 
       # Node measure plot list
-      nplot_list[[i]] <- this_netwrite$node_measure_plot
-      # suppressWarnings(rm(node_measure_plot))
+      if ("node_measure_plot" %in% output) {
+        nplot_list[[i]] <- this_netwrite$node_measure_plot
+      }
+
 
       # Node measures list
       ### To ensure successful merging downstream,
       ### convert `attr` to character before adding
       ### `node_measures_list`
-      this_netwrite$node_measures[,2] <- as.character(this_netwrite$node_measures[,2])
-      node_measures_list[[i]] <- this_netwrite$node_measures
-      # suppressWarnings(rm(node_measures))
+      if ("nodelist" %in% output) {
+        this_netwrite$node_measures[,2] <- as.character(this_netwrite$node_measures[,2])
+        node_measures_list[[i]] <- this_netwrite$node_measures
+      }
 
       # List of final processes edgelists
-      f_edges_list[[i]] <- this_netwrite$edgelist
-      # suppressWarnings(rm(edgelist))
+      if ("edgelist" %in% output) {
+        f_edges_list[[i]] <- this_netwrite$edgelist
+      }
+
+
 
       # System-level measures summaries list
-      ### Rename the `measures` column to the edge type
-      colnames(this_netwrite$system_level_measures) <- c("measure_labels", "description", names(edges_list)[[i]])
-      s_measures_list[[i]] <- this_netwrite$system_level_measures
-      # suppressWarnings(rm(system_level_measures))
+      if ("system_level_measures" %in% output) {
+        ### Rename the `measures` column to the edge type
+        colnames(this_netwrite$system_level_measures) <- c("measure_labels", "description", names(edges_list)[[i]])
+        s_measures_list[[i]] <- this_netwrite$system_level_measures
+      }
 
       # System-level plot list
-      splot_list[[i]] <- this_netwrite$system_measure_plot
-      # suppressWarnings(rm(system_measure_plot))
+      if ("system_measure_plot" %in% output) {
+        splot_list[[i]] <- this_netwrite$system_measure_plot
+      }
+
 
     } # End for Loop
 
@@ -1084,6 +1115,10 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # to rename the columns in each element of `node_measures_list` and
     # then merge these elements.
 
+    # browser()
+
+    if ("nodelist" %in% final_output) {
+
     for (i in 2:length(node_measures_list)) {
 
 
@@ -1113,7 +1148,7 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     }
 
-    if ("nodelist" %in% final_output) {
+
       netwrite_output$node_measures <- node_measures
     }
 
@@ -1788,6 +1823,11 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         colnames(nodes) <- nodelist_names
       }
 
+    } else if (!("nodelist" %in% output | "node_measure_plot" %in% output) & "system_measure_plot" %in% output) {
+      # We still need degree distribution for the system-level plot. Calculate
+      # this if missing
+      custom_degree <- total_degree(g, directed = directed)
+      nodes$total_degree <- custom_degree$total_degree_all
     }
 
     # node_level_time <- Sys.time()
@@ -2554,6 +2594,23 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 measures = singular)
 
       system_level_measures <- rbind(system_level_measures, singular_df)
+    }
+
+    # If nodelist isn't in output, remove all standard deviation, centralization,
+    # and Herfindahl scores and display warning
+    if (!("nodelist" %in% output | "node_measure_plot" %in% output)) {
+
+      keep_rows <- !(stringr::str_detect(system_level_measures$measure_labels, "^Herfindahl") +
+                     stringr::str_detect(system_level_measures$measure_labels, "^Standard Deviation") +
+                     stringr::str_detect(system_level_measures$measure_labels, "Centralization"))
+
+      ### Degree centralization is still calculated, so might as well keep
+      keep_rows[stringr::str_detect(system_level_measures$measure_labels, "^Degree Centralization")] <- TRUE
+
+
+
+      system_level_measures <- system_level_measures[keep_rows, ]
+
     }
 
 
