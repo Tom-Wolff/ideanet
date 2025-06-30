@@ -1229,10 +1229,11 @@ ego_netwrite <- function(egos,
       # Create placeholder variable for this edge type
       this_sizes <- alters_output
       this_sizes$this_var <- this_sizes[, paste("type", alter_types[[i]], sep = "_")]
+      # browser()
       # Get network sizes from alters dataframe
       this_sizes <- this_sizes %>%
         dplyr::group_by(.data$ego_id) %>%
-        dplyr::summarize(network_size = sum(.data$this_var)) %>%
+        dplyr::summarize(network_size = sum(.data$this_var, na.rm = TRUE)) %>%
         dplyr::ungroup() %>%
         dplyr::mutate(network_size2 = .data$network_size,
                       network_size = ifelse(is.na(.data$network_size), 0, .data$network_size),

@@ -98,6 +98,19 @@ nc_read <- function(
             this_alter$node_type <- node_type
             this_alter$data_file <- paste(path, alter_files[[i]], sep = "/")
         }
+
+        # Handling missing value indicator in census tract data
+        missing_census1 <- apply(this_alter, MARGIN = 2, FUN = function(x){"outside-selectable-areas" %in% x})
+        missing_census2 <- apply(this_alter, MARGIN = 2, FUN = function(x){sum(stringr::str_detect(x, "Census Tract")) > 0})
+        missing_census <- missing_census1 + missing_census2
+        if (TRUE %in% missing_census) {
+          census_vars <- which(missing_census == TRUE)
+          for (j in 1:length(census_vars)) {
+            this_alter[,census_vars[j]] <- stringr::str_replace_all(this_alter[,census_vars[j]], "^Census Tract ", "")
+            this_alter[,census_vars[j]] <- as.numeric(ifelse(this_alter[,census_vars[j]] == "outside-selectable-areas", NA, this_alter[,census_vars[j]]))
+          }
+        }
+
         alters <- dplyr::bind_rows(alters, this_alter)
       }
     }
