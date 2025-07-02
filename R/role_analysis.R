@@ -134,6 +134,7 @@ role_analysis <- function(graph, # igraph object generated from netwrite
 ) {
 
 
+
   if (method == "cluster") {
 
     role_output <- cluster_method(graph = graph,
@@ -204,6 +205,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
                            dendro_names = FALSE
 ) {
 
+  # browser()
 
   # If not manually specified by user, limit application of dplyr-based triad counting to networks
   # with 500 nodes or fewer
@@ -464,6 +466,8 @@ cluster_method <- function(graph, # igraph object generated from netwrite
 
   }
 
+  # Replace NA diagonal with zero for future igraph compatibility
+  diag(dist_mat) <- 0
 
   dist_igraph <- igraph::graph_from_adjacency_matrix(dist_mat,
                                                      mode = "undirected",
@@ -902,6 +906,9 @@ concor_method <- function(graph,
   #   cor_mat[i, (scale(cor_mat[i,])[,1] < 2)] <- 0
   #
   # }
+
+  # Set diagonal of correlation matrix to zero
+  diag(cor_mat) <- 0
 
   ## 4. Make igraph object
   cor_igraph <- igraph::graph_from_adjacency_matrix(cor_mat,

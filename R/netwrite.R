@@ -370,6 +370,13 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
   }
 
+  # To support upcoming igraph update, replace all NA values with zero
+  if (is.matrix(adjacency_matrix)) {
+    if (NA %in% adjacency_matrix) {
+      adjacency_matrix[is.na(adjacency_matrix)] <- 0
+      warning("NA value(s) detected in adjacency matrix. In order to continue, all NA value(s) will be replaced with 0.")
+    }
+  }
 
 
   # Since we can't seem to create an environment that will go outside the function, we'll have to
