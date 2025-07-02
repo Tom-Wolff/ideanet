@@ -365,7 +365,7 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   }
   ### Need to add a similar check for values in adjacency matrix if used:
   if (is.matrix(adjacency_matrix)) {
-    if (min(adjacency_matrix) < 0) {
+    if (min(adjacency_matrix, na.rm = TRUE) < 0) {
       stop("Detected edge weight values of 0 or lower. netwrite only supports processing of positive edge weights.")
     }
   }
