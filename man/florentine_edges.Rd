@@ -15,7 +15,7 @@ A data frame with 35 rows and 4 columns:
 }
 }
 \source{
-John Padgett (\href{http://www.casos.cs.cmu.edu/computational_tools/datasets/external/padgett/index2.html}{Website})
+John Padgett
 }
 \usage{
 florentine_edges

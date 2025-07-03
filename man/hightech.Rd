@@ -15,7 +15,7 @@ A data frame with 312 rows and 4 columns:
 }
 }
 \source{
-Carnegie Mellon University (\href{http://casos.cs.cmu.edu/computational_tools/datasets/external/Hi-tech/index2.html}{Website})
+Carnegie Mellon University
 }
 \usage{
 hightech

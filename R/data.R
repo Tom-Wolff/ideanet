@@ -94,7 +94,7 @@
 #'   \item{family}{Name of family corresponding to node}
 #'   ...
 #' }
-#' @source John Padgett (\href{http://www.casos.cs.cmu.edu/computational_tools/datasets/external/padgett/index2.html}{Website})
+#' @source John Padgett
 #' @references Ronald L. Breiger and Philippa E Pattison. 1986. "Cumulated social roles: The duality of persons and their algebras." \emph{Social Networks} 8(13):215-256.
 "florentine_nodes"
 
@@ -116,7 +116,7 @@
 #'   \item{type}{Relation type}
 #'   ...
 #' }
-#' @source John Padgett (\href{http://www.casos.cs.cmu.edu/computational_tools/datasets/external/padgett/index2.html}{Website})
+#' @source John Padgett
 #' @references Ronald L. Breiger and Philippa E Pattison. 1986. "Cumulated social roles: The duality of persons and their algebras." \emph{Social Networks} 8(13):215-256.
 "florentine_edges"
 
@@ -148,7 +148,7 @@
 #'   \item{layer}{Relation type}
 #'   ...
 #' }
-#' @source Carnegie Mellon University (\href{http://casos.cs.cmu.edu/computational_tools/datasets/external/Hi-tech/index2.html}{Website})
+#' @source Carnegie Mellon University
 #' @references David Krackhardt. 1987. "Cognitive social structures". \emph{Social Networks} 9(2):104-134. https://doi.org/10.1016/0378-8733(87)90009-8
 "hightech"
 
