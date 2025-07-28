@@ -356,6 +356,29 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   # browser()
   # netwrite_start <- Sys.time()
 
+  # To support upcoming igraph update, replace all NA values with zero (for edgelists)
+  ### Perform check for each of the four arguments used to create edgelists
+  ### i_elements
+  if (NA %in% i_elements) {
+    stop("NA value(s) detected in edgelist elements (i_elements). In order to continue, please recode all NA values in edgelist elements as you deem appropraite")
+  }
+  ### j_elements
+  if (NA %in% j_elements) {
+    stop("NA value(s) detected in edgelist elements (j_elements). In order to continue, please recode all NA values in edgelist elements as you deem appropraite")
+  }
+  ### weights
+  if (!is.null(weights)) {
+    if (NA %in% weights) {
+      stop("NA value(s) detected in edgelist elements (weights). In order to continue, please recode all NA values in edgelist elements as you deem appropraite")
+    }
+  }
+  ### type
+  if (!is.null(type)) {
+    if (NA %in% type) {
+      stop("NA value(s) detected in edgelist elements (type). In order to continue, please recode all NA values in edgelist elements as you deem appropraite")
+    }
+  }
+
   # If a vector of edge weights are passed, check to see that all weights exceed
   # zero, otherwise return an error
   if (!is.null(weights)) {
@@ -377,6 +400,9 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       warning("NA value(s) detected in adjacency matrix. In order to continue, all NA value(s) will be replaced with 0.")
     }
   }
+
+
+
 
 
   # Since we can't seem to create an environment that will go outside the function, we'll have to
@@ -2012,6 +2038,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     #### First, need to remove isolates from graph for select measures
     g_no_iso <- igraph::delete.vertices(g, v = (igraph::degree(g, mode = "all") == 0))
 
+    # browser()
+
     if (directed == TRUE) {
 
       ### Betweenness
@@ -2046,8 +2074,14 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       sd_bet <- stats::sd(nodes$betweenness, na.rm = TRUE)
       sd_bet_bin <- stats::sd(nodes$binarized_betweenness, na.rm = TRUE)
       ##### Herfindahl Index for betweenness
-      herf_bet <- herfindahl(nodes$betweenness)
-      herf_bet_bin <- herfindahl(nodes$binarized_betweenness)
+      herf_bet <- herfindahl(measure = nodes$betweenness)
+      herf_bet_bin <- herfindahl(measure = nodes$binarized_betweenness)
+      ##### Gini Coefficient for Betweenness
+      gini_bet <- gini(measure = nodes$betweenness)
+      gini_bet_bin <- gini(measure = nodes$binarized_betweenness)
+      ##### Theil Index  for Betweenness
+      theil_bet <- theil(measure = nodes$betweenness)
+      theil_bet_bin <- theil(measure = nodes$binarized_betweenness)
 
 
       ### Degree
@@ -2075,6 +2109,14 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       herf_indegree <- herfindahl(nodes$in_degree)
       herf_outdegree <- herfindahl(nodes$out_degree)
       herf_total_degree <- herfindahl(nodes$total_degree)
+      ##### Gini Coefficient for Degree
+      gini_indegree <- gini(nodes$in_degree)
+      gini_outdegree <- gini(nodes$out_degree)
+      gini_total_degree <- gini(nodes$total_degree)
+      ##### Theil Index  for Degree
+      theil_indegree <- theil(measure = nodes$in_degree)
+      theil_outdegree <- theil(measure = nodes$out_degree)
+      theil_total_degree <- theil(measure = nodes$total_degree)
 
 
       ### Closeness
@@ -2100,9 +2142,18 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       sd_closeness_out <- stats::sd(nodes$closeness_out, na.rm = TRUE)
       sd_closeness_un <- stats::sd(nodes$closeness_undirected, na.rm = TRUE)
       #####. Herfindahl Index for Closeness
-      herf_close_in <- herfindahl(nodes$closeness_in)
-      herf_close_out <- herfindahl(nodes$closeness_out)
-      herf_close_un <- herfindahl(nodes$closeness_undirected)
+      herf_close_in <- herfindahl(measure = nodes$closeness_in)
+      herf_close_out <- herfindahl(measure = nodes$closeness_out)
+      herf_close_un <- herfindahl(measure = nodes$closeness_undirected)
+      ##### Gini Coefficient for Closeness
+      gini_close_in <- gini(measure = nodes$closeness_in)
+      gini_close_out <- gini(measure = nodes$closeness_out)
+      gini_close_un <- gini(measure = nodes$closeness_undirected)
+      ##### Theil Index for Closeness
+      theil_close_in <- theil(measure = nodes$closeness_in)
+      theil_close_out <- theil(measure = nodes$closeness_out)
+      theil_close_un <- theil(measure = nodes$closeness_undirected)
+
 
       ### Eigen
       # cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
@@ -2117,9 +2168,18 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       cent_eigen_dir <- eigen_centr$directed
 
       ##### Standard deviation for eigen
-      sd_eigen <- stats::sd(nodes$eigen_centrality, na.rm = TRUE)
+      sd_eigen <- sd_component(measure = nodes$eigen_centrality,
+                               components = nodes$weak_membership)$sd
       ##### Herfindahl Index for Eigen
-      herf_eigen <- herfindahl(nodes$eigen_centrality)
+      herf_eigen <- herfindahl(measure = nodes$eigen_centrality,
+                               components = nodes$weak_membership)$herfindahl
+      ##### Gini Coefficient for Eigen
+      gini_eigen <- gini(measure = nodes$eigen_centrality,
+                         components = nodes$weak_membership)$gini
+      ##### Theil Index for Eigen
+      theil_eigen <- theil(measure = nodes$eigen_centrality,
+                           components = nodes$weak_membership)$theil
+
 
     } else {
 
@@ -2144,8 +2204,14 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       sd_bet <- stats::sd(nodes$betweenness, na.rm = TRUE)
       sd_bet_bin <- stats::sd(nodes$binarized_betweenness, na.rm = TRUE)
       ##### Herfindahl Index for betweenness
-      herf_bet <- herfindahl(nodes$betweenness)
-      herf_bet_bin <- herfindahl(nodes$binarized_betweenness)
+      herf_bet <- herfindahl(measure = nodes$betweenness)
+      herf_bet_bin <- herfindahl(measure = nodes$binarized_betweenness)
+      ##### Gini Coefficient for Betweenness
+      gini_bet <- gini(measure = nodes$betweenness)
+      gini_bet_bin <- gini(measure = nodes$binarized_betweenness)
+      ##### Theil Index  for Betweenness
+      theil_bet <- theil(measure = nodes$betweenness)
+      theil_bet_bin <- theil(measure = nodes$binarized_betweenness)
 
 
       ### Degree
@@ -2167,6 +2233,14 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       herf_indegree <- NA
       herf_outdegree <- NA
       herf_total_degree <- herfindahl(nodes$total_degree)
+      ##### Gini Coefficient for Degree
+      gini_indegree <- NA
+      gini_outdegree <- NA
+      gini_total_degree <- gini(nodes$total_degree)
+      ##### Theil Index  for Degree
+      theil_indegree <- NA
+      theil_outdegree <- NA
+      theil_total_degree <- theil(nodes$total_degree)
 
       ### Closeness
       # cent_close_undir <- igraph::centralization.closeness(g_no_iso,
@@ -2184,7 +2258,15 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #####. Herfindahl Index for Closeness
       herf_close_in <- NA
       herf_close_out <- NA
-      herf_close_un <- herfindahl(nodes$closeness)
+      herf_close_un <- herfindahl(measure = nodes$closeness)
+      ##### Gini Coefficient for Closeness
+      gini_close_in <- NA
+      gini_close_out <- NA
+      gini_close_un <- gini(measure = nodes$closeness)
+      ##### Theil Index for Closeness
+      theil_close_in <- NA
+      theil_close_out <- NA
+      theil_close_un <- theil(measure = nodes$closeness)
 
       ### Eigen
       # cent_eigen_undir <- igraph::centralization.evcent(g_no_iso,
@@ -2196,9 +2278,17 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       cent_eigen_dir <- NA
 
       ##### Standard deviation for eigen
-      sd_eigen <- stats::sd(nodes$eigen_centrality, na.rm = TRUE)
+      sd_eigen <- sd_component(measure = nodes$eigen_centrality,
+                               components = nodes$weak_membership)$sd
       ##### Herfindahl Index for Eigen
-      herf_eigen <- herfindahl(nodes$eigen_centrality)
+      herf_eigen <- herfindahl(measure = nodes$eigen_centrality,
+                               components = nodes$weak_membership)$herfindahl
+      ##### Gini Coefficient for Eigen
+      gini_eigen <- gini(measure = nodes$eigen_centrality,
+                         components = nodes$weak_membership)$gini
+      ##### Theil Index for Eigen
+      theil_eigen <- theil(measure = nodes$eigen_centrality,
+                           components = nodes$weak_membership)$theil
 
     }
 
@@ -2260,15 +2350,27 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         "Betweenness Centralization (Directed)", "Betweenness Centralization (Directed, Binarized)",
                         "Standard Deviation, Betweenness", "Standard Deviation, Binarized Betweeness",
                         "Herfindahl Index, Betweenness", "Herfindahl Index, Binarized Betweeness",
+                        "Gini Coefficient, Betweenness", "Gini Coefficient, Binarized Betweenness",
+                        "Theil Index, Betweenness", "Theil Index, Binarized Betweeness",
+
+
                         "Degree Centralization (Undirected)", "Degree Centralization (In)", "Degree Centralization (Out)",
                         "Standard Deviation, Total Degree", "Standard Deviation, Indegree", "Standard Deviation, Outdegree",
                         "Herfindahl Index, Total Degree", "Herfindahl Index, Indegree", "Herfindahl Index, Outdegree",
+                        "Gini Coefficient, Total Degree", "Gini Coefficient, Indegree", "Gini Coefficient, Outdegree",
+                        "Theil Index, Total Degree", "Theil Index, Indegree", "Theil Index, Outdegree",
+
                         "Closeness Centralization (Undirected)", "Closeness Centralization (In)", "Closeness Centralization (Out)",
                         "Standard Deviation, Closeness (Undirected)", "Standard Deviation, Closeness (Indegree)", "Standard Deviation, Closeness (Outdegree)",
                         "Herfindahl Index, Closeness (Undirected)", "Herfindahl Index, Closeness (Indegree)", "Herfindahl Index, Closeness (Outdegree)",
+                        "Gini Coefficient, Closeness (Undirected)", "Gini Coefficient, Closeness (Indegree)", "Gini Coefficient, Closeness (Outdegree)",
+                        "Theil Index, Closeness (Undirected)", "Theil Index, Closeness (Indegree)", "Theil Index, Closeness (Outdegree)",
+
                         "Eigenvector Centralization (Undirected)", "Eigenvector Centralization (Directed)",
                         "Standard Deviation, Eigenvector Centrality",
                         "Herfindahl Index, Eigenvector Centrality",
+                        "Gini Coefficient, Eigenvector Centrality",
+                        "Theil Index, Eigenvector Centrality",
 
                         "K-Core Cohesion"
     )
@@ -2349,6 +2451,12 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               ##### Herf Betweenness
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by betweenness centrality scores (edge weights are binarized)",
+                              ##### Gini Betweenness
+                              "Measure of inequality in betweenness centrality scores (0 represents perfect equality, 1 represents perfect inequality)",
+                              "Measure of inequality in betweenness centrality scores (edge weights are binarized; 0 represents perfect equality, 1 represents perfect inequality)",
+                              ##### Theil Betweenness
+                              "Measure of inequality in betweenness centrality scores (Score not normalized)",
+                              "Measure of inequality in betweenness centrality scores (Score not normalized)",
 
                               # Degree
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Undirected edges used when calculating degree)",
@@ -2362,6 +2470,14 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Undirected edges used when calculating degree)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Incoming edges used when calculating degree)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by degree centrality scores (Outgoing edges used when calculating degree)",
+                              ##### Gini Degree
+                              "Measure of inequality in degree centrality scores (Undirected edges used when calculating degree; 0 represents perfect equality, 1 represents perfect inequality)",
+                              "Measure of inequality in degree centrality scores (Incoming edges used when calculating degree; 0 represents perfect equality, 1 represents perfect inequality)",
+                              "Measure of inequality in degree centrality scores (Outgoing edges used when calculating degree; 0 represents perfect equality, 1 represents perfect inequality)",
+                              ##### Theil Degree
+                              "Measure of inequality in degree centrality scores (Undirected edges used when calculating degree; score not normalized)",
+                              "Measure of inequality in degree centrality scores (Incoming edges used when calculating degree; score not normalized)",
+                              "Measure of inequality in degree centrality scores (Outgoing edges used when calculating degree; score not normalized)",
 
                               # Closeness
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Undirected edges used when calculating closeness)",
@@ -2375,6 +2491,14 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Undirected edges used when calculating closeness)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Incoming edges used when calculating closeness)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by closeness centrality scores (Outgoing edges used when calculating closeness)",
+                              ##### Gini Closeness
+                              "Measure of inequality in closeness centrality scores (Undirected edges used when calculating closeness; 0 represents perfect equality, 1 represents perfect inequality)",
+                              "Measure of inequality in closeness centrality scores (Incoming edges used when calculating closeness; 0 represents perfect equality, 1 represents perfect inequality)",
+                              "Measure of inequality in closeness centrality scores (Outgoing edges used when calculating closeness; 0 represents perfect equality, 1 represents perfect inequality)",
+                              ##### Theil Closeness
+                              "Measure of inequality in closeness centrality scores (Undirected edges used when calculating closeness; score not normalized)",
+                              "Measure of inequality in closeness centrality scores (Incoming edges used when calculating closeness; score not normalized)",
+                              "Measure of inequality in closeness centrality scores (Outgoing edges used when calculating closeness; score not normalized)",
 
                               # Eigenvector centrality
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Undirected edges used when calculating eigenvector centrality)",
@@ -2383,6 +2507,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "Standard deviation of eigenvector centrality scores",
                               ##### Herf Eigen
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores",
+                              ##### Gini Eigen
+                              "Measure of inequality in eigenvector centrality scores (0 represents perfect equality, 1 represents perfect inequality)",
+                              ##### Theil Eigen
+                              "Measure of inequality in eigenvector centrality scores (Score not normalized)",
 
                               # K-core Cohesion
                               "The average across all pairs of the maximum k-core to which each pair is a joint member (Measures the average level of shared contacts)"
@@ -2437,15 +2565,29 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(cent_bet_dir), as.character(cent_bet_dir_bin),
                   as.character(sd_bet), as.character(sd_bet_bin),
                   as.character(herf_bet), as.character(herf_bet_bin),
+                  as.character(gini_bet), as.character(gini_bet_bin),
+                  as.character(theil_bet), as.character(theil_bet_bin),
+
+
                   as.character(cent_deg_undir), as.character(cent_deg_in), as.character(cent_deg_out),
                   as.character(sd_total_degree), as.character(sd_indegree), as.character(sd_outdegree),
                   as.character(herf_total_degree), as.character(herf_indegree), as.character(herf_outdegree),
+                  as.character(gini_total_degree), as.character(gini_indegree), as.character(gini_outdegree),
+                  as.character(theil_total_degree), as.character(theil_indegree), as.character(theil_outdegree),
+
+
                   as.character(cent_close_undir), as.character(cent_close_in), as.character(cent_close_out),
                   as.character(sd_closeness_un), as.character(sd_closeness_in), as.character(sd_closeness_out),
                   as.character(herf_close_un), as.character(herf_close_in), as.character(herf_close_out),
+                  as.character(gini_close_un), as.character(gini_close_in), as.character(gini_close_out),
+                  as.character(theil_close_un), as.character(theil_close_in), as.character(theil_close_out),
+
                   as.character(cent_eigen_undir), as.character(cent_eigen_dir),
                   as.character(sd_eigen),
                   as.character(herf_eigen),
+                  as.character(gini_eigen),
+                  as.character(theil_eigen),
+
                   as.character(k_core_cohesion))
 
 

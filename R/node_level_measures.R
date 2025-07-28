@@ -1840,7 +1840,8 @@ eigen_igraph <- function(g, directed,
 
   if (length(unique(igraph::V(g)$component)) > 1) {
 
-    warning("(Eigenvector centrality) Adjacency matrix for network is singular. Network will be treated as undirected in order to calculate measures\n")
+    # Was this supposed to be updated to mention multi-component handling? I think so
+    warning("(Eigenvector centrality) Network consists of multiple isolated components. Eigenvector centrality will be calculated for nodes in components with at least five nodes, and will be calculated within-component.\n")
 
     multi_component <- TRUE
     unique_components <- as.numeric(names(table(igraph::V(g)$component))[table(igraph::V(g)$component) >= 5])
