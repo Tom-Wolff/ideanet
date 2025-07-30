@@ -1032,7 +1032,7 @@ multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
 
 k_cohesion <- function(graph) {
 
-  browser()
+  # browser()
 
   # 1. Convert to undirected
   # Give warning that graph will be converted to undirected
@@ -1095,12 +1095,12 @@ k_cohesion <- function(graph) {
 
   # 7. Get number of zeroes (absent edges)
   #### Number of possible edges in graph
-  num_possible <- (num_nodes*(num_nodes-1))/2
+  num_possible <- (num_nodes*(num_nodes-1))
   #### Number of zeroes we'll need for calculation
   #### (`num_possible` - num_edges)
   # num_zeros <- num_possible - nrow(k_edges)
   ### Now calculate cohesion measure
-  k_cohesion <- sum(k_edges$core3, rep(0, num_zeros))/num_possible
+  k_cohesion <- sum(joint_kcore)/num_possible
 
   return(k_cohesion)
 
