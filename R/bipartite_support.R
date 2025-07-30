@@ -185,6 +185,13 @@ make_bipartite_list <- function(data_type,
       bi_el$weight <- 1
     }
 
+    if (is.na(missing_code)) {
+      bi_el <- bi_el %>%
+        dplyr::mutate(mode1 = ifelse(is.na(mode1), "NA", mode1),
+                      mode2 = ifelse(is.na(mode2), "NA", mode2))
+      missing_code <- "NA"
+    }
+
     # Filter out any missing codes
     bi_el <- bi_el %>%
       dplyr::filter(mode1 != missing_code) %>%
@@ -855,7 +862,7 @@ bi_betweenness <- function(bipartite_list,
       this_df <- nonnorm_betweenness %>%
         dplyr::left_join(divisors, by = "mode") %>%
         dplyr::mutate(norm_betweenness = (betweenness/bi_max)*100) %>%
-        select(id, betweenness, norm_betweenness)
+        dplyr::select(id, betweenness, norm_betweenness)
 
       colnames(this_df) <- c("id",
                                     paste("betweenness", unique_types[i], sep = "_"),
@@ -908,7 +915,7 @@ bi_betweenness <- function(bipartite_list,
   betweenness_df <- nonnorm_betweenness %>%
     dplyr::left_join(divisors, by = "mode") %>%
     dplyr::mutate(norm_betweenness = (betweenness/bi_max)*100) %>%
-    select(id, betweenness, norm_betweenness)
+    dplyr::select(id, betweenness, norm_betweenness)
 
   }
 
@@ -1064,12 +1071,122 @@ bi_netwrite <- function(data_type = data_type,
   ### If there are multiple edge types, get bipartite-level measures for each type
   ##### Density
   twomode_density <- bi_density(bipartite_list = bipartite_list,
-                                directed = directed)
+                                directed = directed) %>%
+    dplyr::mutate(mode = NA,
+                  measure = "density",
+                  var = ifelse(var == "density", "density_aggregate", var)) %>%
+    dplyr::rename(val = value)
+
+  ############# Split eigen from rest of node-level measures for SD, Gini, and
+  ############# Theil calculation
+  not_eigen <- nodes %>%
+    dplyr::select(mode,
+                  dplyr::starts_with("degree"),
+                  dplyr::starts_with("weighted_degree"),
+                  dplyr::starts_with("norm_degree"),
+                  dplyr::starts_with("closeness"),
+                  dplyr::starts_with("betweenness"))
+  ############ Eigen isn't calculated by mode, so you don't have to summarize by mode
+  eigen_measures <- nodes %>%
+    dplyr::select(dplyr::starts_with("eigen"),
+                  dplyr::starts_with("weak"))
   ##### SD on centrality measures (by mode)
+  sd_df1 <- not_eigen %>%
+    dplyr::group_by(mode) %>%
+    dplyr::summarize_all(sd, na.rm = TRUE) %>%
+    tidyr::pivot_longer(!mode, names_to = "var", values_to = "val") %>%
+    dplyr::mutate(measure = "sd")
+  ############# Loop for dealing with component aspect of eigen measures
+  sd_vals2 <- c()
+  sd_vars <- c()
+  for (i in 1:(ncol(eigen_measures)/2)) {
+    this_measure <- eigen_measures[,i]
+    this_component <- eigen_measures[,i+(ncol(eigen_measures)/2)]
+
+    sd_vars[i] <- colnames(eigen_measures)[i]
+    sd_vals2[i] <- sd_component(measure = this_measure,
+                                components = this_component)$sd
+  }
+  sd_df2 <- data.frame(mode = NA,
+                       measure = "sd",
+                       var = sd_vars,
+                       val = sd_vals2)
   ##### Gini on centrality measures (by mode)
-  ##### Theil on centrality measures (by mode)
+  gini_df1 <- not_eigen %>%
+    dplyr::group_by(mode) %>%
+    dplyr::summarize_all(gini) %>%
+    tidyr::pivot_longer(!mode, names_to = "var", values_to = "val") %>%
+    dplyr::mutate(measure = "gini")
+
+  gini_vars <- c()
+  gini_vals2 <- c()
+  for (i in 1:(ncol(eigen_measures)/2)) {
+    this_measure <- eigen_measures[,i]
+    this_component <- eigen_measures[,i+(ncol(eigen_measures)/2)]
+
+    gini_vars[i] <- colnames(eigen_measures)[i]
+    gini_vals2[i] <- gini(measure = this_measure,
+                          components = this_component)$gini
+  }
+  gini_df2 <- data.frame(mode = NA,
+                         measure = "gini",
+                         var = gini_vars,
+                         val = gini_vals2)
+  ##### Theil on centrality measures sd_vals2 <- c()
+  theil_df1 <- not_eigen %>%
+    dplyr::group_by(mode) %>%
+    dplyr::summarize_all(theil) %>%
+    tidyr::pivot_longer(!mode, names_to = "var", values_to = "val") %>%
+    dplyr::mutate(measure = "theil")
+
+  theil_vars <- c()
+  theil_vals2 <- c()
+  for (i in 1:(ncol(eigen_measures)/2)) {
+    this_measure <- eigen_measures[,i]
+    this_component <- eigen_measures[,i+(ncol(eigen_measures)/2)]
+
+    theil_vars[i] <- colnames(eigen_measures)[i]
+    theil_vals2[i] <- theil(measure = this_measure,
+                          components = this_component)$theil
+  }
+  theil_df2 <- data.frame(mode = NA,
+                         measure = "theil",
+                         var = theil_vars,
+                         val = theil_vals2)
+
+
+  system_measures <- dplyr::bind_rows(twomode_density,
+                                      sd_df1, sd_df2,
+                                      gini_df1, gini_df2,
+                                      theil_df1, theil_df2) %>%
+    dplyr::mutate(cent_measure = dplyr::case_when(stringr::str_detect(var, "^degree") ~ "Degree",
+                                           stringr::str_detect(var, "^weighted_degree") ~ "Weighted Degree",
+                                           stringr::str_detect(var, "^norm_degree") ~ "Normalized Degree",
+                                           stringr::str_detect(var, "^closeness") ~ "Closeness",
+                                           stringr::str_detect(var, "^betweenness") ~ "Betweenness",
+                                           stringr::str_detect(var, "^eigen_centrality") ~ "Eigenvector",
+                                           TRUE ~ NA)) %>%
+    dplyr::mutate(var = stringr::str_replace(var, "^degree_", "")) %>%
+    dplyr::mutate(var = stringr::str_replace(var, "^weighted_degree_", "")) %>%
+    dplyr::mutate(var = stringr::str_replace(var, "^norm_degree_", "")) %>%
+    dplyr::mutate(var = stringr::str_replace(var, "^closeness_", "")) %>%
+    dplyr::mutate(var = stringr::str_replace(var, "^betweenness_", "")) %>%
+    dplyr::mutate(var = stringr::str_replace(var, "^eigen_centrality_", "")) %>%
+    dplyr::mutate(var = stringr::str_replace(var, "^density_", "")) %>%
+    dplyr::select(measure, cent_measure, mode, dplyr::everything()) %>%
+    tidyr::pivot_wider(names_from = var,
+                       values_from = val)
+
+
+
+
 
   # Create one-mode edgelists for each mode
+
+  ##### GET JIM/PETER'S TAKE ON THIS-- IGRAPH'S PROJECTION FUNCTION IS CONVENIENT
+  ##### BUT IF WE HAVE MULTIPLE RELATION TYPES OR WEIGHTED TIES I THINK MY FUNCTION
+  ##### IS MORE CONVENIENT. SO WHAT SHOULD WE DO?
+
 
   # Pass one=mode edgelists through netwrite
 
