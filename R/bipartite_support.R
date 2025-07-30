@@ -1068,6 +1068,10 @@ bi_netwrite <- function(data_type = data_type,
 
 
   # SYSTEM-LEVEL MEASURES
+
+  # ASK JIM AND PETER WHICH OF THE ORIGINAL LIST MAKE SENSE FOR THE BIPARTITE
+  # GRAPH
+
   ### If there are multiple edge types, get bipartite-level measures for each type
   ##### Density
   twomode_density <- bi_density(bipartite_list = bipartite_list,
@@ -1164,7 +1168,7 @@ bi_netwrite <- function(data_type = data_type,
                                            stringr::str_detect(var, "^norm_degree") ~ "Normalized Degree",
                                            stringr::str_detect(var, "^closeness") ~ "Closeness",
                                            stringr::str_detect(var, "^betweenness") ~ "Betweenness",
-                                           stringr::str_detect(var, "^eigen_centrality") ~ "Eigenvector",
+                                           stringr::str_detect(var, "^eigen_centrality") ~ "Eigenvector Centrality",
                                            TRUE ~ NA)) %>%
     dplyr::mutate(var = stringr::str_replace(var, "^degree_", "")) %>%
     dplyr::mutate(var = stringr::str_replace(var, "^weighted_degree_", "")) %>%
@@ -1175,7 +1179,22 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::mutate(var = stringr::str_replace(var, "^density_", "")) %>%
     dplyr::select(measure, cent_measure, mode, dplyr::everything()) %>%
     tidyr::pivot_wider(names_from = var,
-                       values_from = val)
+                       values_from = val) %>%
+    dplyr::mutate(mode = dplyr::case_when(mode == 1 ~ "(Mode 1)",
+                                   mode == 2 ~ "(Mode 2)",
+                                   TRUE ~ ""),
+                  measure_labels = dplyr::case_when(measure == "density" ~ "Density",
+                                                    measure == "sd" ~ paste("Standard Deviation,", cent_measure, mode, sep = " "),
+                                                    measure == "gini" ~ paste("Gini Coefficient,", cent_measure, mode, sep = " "),
+                                                    measure == "theil" ~ paste("Theil Index,", cent_measure, mode, sep = " "),
+                                             TRUE ~ NA),
+                  measure_descriptions = dplyr::case_when(measure == "density" ~ "The proportion of possible ties in the network that actually exist",
+                                                          measure == "sd" ~ paste("Standard deviation of", stringr::str_to_lower(cent_measure), "scores", sep = " "),
+                                                          measure == "gini" ~ paste("Measure of inequality in", stringr::str_to_lower(cent_measure), "scores  (0 represents perfect equality, 1 represents perfect inequality)", sep = " "),
+                                                          measure == "theil" ~ paste("Measure of inequality in", stringr::str_to_lower(cent_measure), "scores (Score not normalized)", sep = " "),
+                                                          TRUE ~ NA)) %>%
+    dplyr::select(-measure, -cent_measure, -mode) %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
 
 
