@@ -1032,6 +1032,8 @@ multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
 
 k_cohesion <- function(graph) {
 
+  browser()
+
   # 1. Convert to undirected
   # Give warning that graph will be converted to undirected
   if (igraph::is_directed(graph) == TRUE) {
@@ -1041,34 +1043,62 @@ k_cohesion <- function(graph) {
 
   # 2. Simplify graph (remove multiple edges)
   graph <- igraph::simplify(graph, remove.multiple = TRUE, remove.loops = TRUE)
+  num_nodes <- length(igraph::V(graph))
 
-  # 3. Get k-coreness value for all nodes
-  v1_cores <- data.frame(V1 = names(igraph::coreness(graph)),
-                         core1 = igraph::coreness(graph))
-  v2_cores <- data.frame(V2 = names(igraph::coreness(graph)),
-                         core2 = igraph::coreness(graph))
+  # Getting joint dyad-level coreness scores (from GPT, modified to remove some bugs)
+  # Initialize result matrix
+  joint_kcore <- matrix(0, nrow = num_nodes, ncol = num_nodes)
 
-  # 4. Get edgelist
-  k_edges <- as.data.frame(igraph::get.edgelist(graph, names = TRUE))
-  k_edges$V1 <- as.character(k_edges$V1)
-  k_edges$V2 <- as.character(k_edges$V2)
+  # Loop over all possible k-core levels
+  max_k <- max(igraph::coreness(graph))
 
-  # 5. Merge node-level coreness values into edgelist
-  k_edges <- k_edges %>%
-    dplyr::left_join(v1_cores, by = "V1") %>%
-    dplyr::left_join(v2_cores, by = "V2") %>%
-    # 6. Assign lower nodel-level coreness value as edge-level
-    # coreness value
-    dplyr::mutate(core3 = dplyr::case_when(core1 <= core2 ~ core1,
-                                           TRUE ~ core2))
+  for (k in 1:max_k) {
+    gk <- igraph::induced_subgraph(graph, which(igraph::coreness(graph) >= k))
+    comps <- igraph::components(gk)$membership
+    # get original node indices, but add 1 to account for zero-indexing. Otherwise
+    # all dyads involving node "0" won't get updated in the `joint_kcore` matrix
+    gk_nodes <- as.integer(igraph::V(gk)$name %||% igraph::V(gk)) + 1
+
+    # For each component, assign that k to all node pairs in the same comp
+    dt <- data.frame(node = gk_nodes, comp = comps)
+    for (comp_id in unique(dt$comp)) {
+      members <- dt[dt$comp == comp_id, "node"]
+      if (length(members) >= 2) {
+        pairs <- t(combn(members, 2))
+        joint_kcore[pairs] <- pmax(joint_kcore[pairs], k)
+        joint_kcore[pairs[,2:1]] <- joint_kcore[pairs]  # symmetric
+      }
+    }
+  }
+
+
+
+  # # 3. Get k-coreness value for all nodes
+  # v1_cores <- data.frame(V1 = names(igraph::coreness(graph)),
+  #                        core1 = igraph::coreness(graph))
+  # v2_cores <- data.frame(V2 = names(igraph::coreness(graph)),
+  #                        core2 = igraph::coreness(graph))
+  #
+  # # 4. Get edgelist
+  # k_edges <- as.data.frame(igraph::get.edgelist(graph, names = TRUE))
+  # k_edges$V1 <- as.character(k_edges$V1)
+  # k_edges$V2 <- as.character(k_edges$V2)
+  #
+  # # 5. Merge node-level coreness values into edgelist
+  # k_edges <- k_edges %>%
+  #   dplyr::left_join(v1_cores, by = "V1") %>%
+  #   dplyr::left_join(v2_cores, by = "V2") %>%
+  #   # 6. Assign lower nodel-level coreness value as edge-level
+  #   # coreness value
+  #   dplyr::mutate(core3 = dplyr::case_when(core1 <= core2 ~ core1,
+  #                                          TRUE ~ core2))
 
   # 7. Get number of zeroes (absent edges)
-  num_nodes <- length(igraph::V(graph))
   #### Number of possible edges in graph
   num_possible <- (num_nodes*(num_nodes-1))/2
   #### Number of zeroes we'll need for calculation
   #### (`num_possible` - num_edges)
-  num_zeros <- num_possible - length(k_edges)
+  # num_zeros <- num_possible - nrow(k_edges)
   ### Now calculate cohesion measure
   k_cohesion <- sum(k_edges$core3, rep(0, num_zeros))/num_possible
 
