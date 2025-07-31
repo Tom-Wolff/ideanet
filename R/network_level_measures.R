@@ -1105,3 +1105,37 @@ k_cohesion <- function(graph) {
   return(k_cohesion)
 
 }
+
+###########################################################
+#    A V E R A G E   E D G E   C O N N E C T I V I T Y    #
+###########################################################
+
+# From Jim, adjusted slightly to match conventions of other functions in the
+# package
+graph_avg_ec_adaptive <- function(graph, samplesize = 5000, seed = NULL) {
+
+  # browser()
+
+  if (!is.null(seed)) { set.seed(seed) }
+
+  n <- igraph::vcount(graph)
+  total_pairs <- choose(n, 2)  # number of unordered node pairs
+
+  if (total_pairs <= samplesize) {
+    # Do full enumeration
+    pairs <- utils::combn(n, 2)
+    ec_vals <- apply(pairs, 2, function(p) igraph::edge_connectivity(graph, p[1], p[2]))
+    avg_ec <- mean(ec_vals)
+  } else {
+    # Do random sampling
+    pathsum <- 0
+    for (p in 1:samplesize) {
+      pair <- sample(n, 2)
+      pathsum <- pathsum + igraph::edge_connectivity(graph, pair[1], pair[2])
+    }
+    avg_ec <- pathsum / samplesize
+  }
+
+  return(avg_ec)
+}
+

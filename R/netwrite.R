@@ -2300,6 +2300,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # kcore_time <- Sys.time()
 
+    # Average Edge Connectivity
+    avg_ec <- graph_avg_ec_adaptive(graph)
+
 
     measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties',
                         'Number of Tie Types',
@@ -2372,7 +2375,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         "Gini Coefficient, Eigenvector Centrality",
                         "Theil Index, Eigenvector Centrality",
 
-                        "K-Core Cohesion"
+                        "K-Core Cohesion", "Average Edge Connectivity"
     )
 
     measure_descriptions <- c("Type of graph (either directed or undirected)",
@@ -2513,7 +2516,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "Measure of inequality in eigenvector centrality scores (Score not normalized)",
 
                               # K-core Cohesion
-                              "The average across all pairs of the maximum k-core to which each pair is a joint member (Measures the average level of shared contacts)"
+                              "The average across all pairs of the maximum k-core to which each pair is a joint member (Measures the average level of shared contacts)",
+
+                              # Average Edge Connectivity
+                              "The average number of edge-disjoint paths connecting pairs in the network"
     )
 
     measures <- c(graph_type, weighted_graph, as.character(num_nodes), as.character(num_ties), as.character(num_types),
@@ -2588,7 +2594,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(gini_eigen),
                   as.character(theil_eigen),
 
-                  as.character(k_core_cohesion))
+                  as.character(k_core_cohesion),
+                  as.character(avg_ec))
 
 
     system_level_measures <- cbind(as.data.frame(measure_labels), measure_descriptions, measures)
