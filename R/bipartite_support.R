@@ -115,7 +115,8 @@ make_bipartite_list <- function(data_type,
   ### Object for storing nodelist and edgelist
   bipartite_list <- list(nodelist = NULL,
                          edgelist = NULL,
-                         adjmat = NULL)
+                         adjmat = NULL,
+                         igraph_objects = NULL)
 
   if (data_type == "adjacency_matrix") {
     bipartite_list$adjmat <- adjacency_matrix
@@ -1012,6 +1013,20 @@ bi_eigen <- function(bipartite_list, directed) {
 
 }
 
+#########################################################################################
+#    C O M P O N E N T   M E M B E R S H I P S   F O R   M U L T I P L E   T Y P E S    #
+#########################################################################################
+
+membership_breakdown <- function(x, mode = "weak") {
+  component_breakdown <- igraph::components(x, mode = mode)
+  largest_component_ids <- which(component_breakdown$csize == max(component_breakdown$csize))
+  membership_df <- data.frame(id = names(component_breakdown$membership),
+                              mode_membership = component_breakdown$membership,
+                              in_largest_mode = component_breakdown$membership %in% largest_component_ids)
+
+  colnames(membership_df) <- stringr::str_replace(colnames(membership_df), "mode", mode)
+  return(membership_df)
+}
 
 
 ################################################################################
@@ -1044,10 +1059,30 @@ bi_netwrite <- function(data_type = data_type,
                                         type = type,
                                         missing_code = missing_code)
 
-  bipartite_list$edgelist
-
   # Now make bipartite igraph object
-  regular_graph <- bi_igraph(bipartite_list)
+  if (is.null(type)) {
+    bipartite_list$igraph_objects <- bi_igraph(bipartite_list)
+  } else {
+
+    igraph_objects <- list()
+    igraph_objects[[1]] <- bi_igraph(bipartite_list)
+
+      unique_types <- unique(bipartite_list$edgelist$type)
+
+      for (i in 1:length(unique_types)) {
+        this_list <- bipartite_list
+        this_type <- unique_types[i]
+        this_el <- bipartite_list$edgelist %>%
+          dplyr::filter(type == this_type)
+        this_list$edgelist <- this_el
+
+        # Create igraph object, needed to get distance matrix
+        igraph_objects[[i+1]] <- bi_igraph(this_list)
+      }
+      names(igraph_objects) <- c("aggregate", unique_types)
+      bipartite_list$igraph_objects <- igraph_objects
+  }
+
 
 
   # NODE-LEVEL MEASURES
@@ -1063,14 +1098,150 @@ bi_netwrite <- function(data_type = data_type,
                   dplyr::starts_with("norm_degree"),
                   dplyr::starts_with("closeness"),
                   dplyr::starts_with("betweenness"),
-                  dplyr::starts_with("eigen"),
-                  dplyr::starts_with("weak"))
+                  dplyr::starts_with("eigen"))
+
+  # Weak Component Membership
+  weak_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "weak")
+
+  for (i in 1:length(weak_memberships_list)) {
+    this_type <- names(weak_memberships_list)[[i]]
+    colnames(weak_memberships_list[[i]])[2:3] <- paste(colnames(weak_memberships_list[[i]])[2:3], this_type, sep = "_")
+
+    if (i == 1) {
+      weak_memberships_df <- weak_memberships_list[[i]]
+    } else {
+      weak_memberships_df <- dplyr::left_join(weak_memberships_df, weak_memberships_list[[i]], by = "id")
+    }
+  }
+
+  # Strong Component Membership
+  strong_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "strong")
+
+  for (i in 1:length(strong_memberships_list)) {
+    this_type <- names(strong_memberships_list)[[i]]
+    colnames(strong_memberships_list[[i]])[2:3] <- paste(colnames(strong_memberships_list[[i]])[2:3], this_type, sep = "_")
+
+    if (i == 1) {
+      strong_memberships_df <- strong_memberships_list[[i]]
+    } else {
+      strong_memberships_df <- dplyr::left_join(strong_memberships_df, strong_memberships_list[[i]], by = "id")
+    }
+  }
+
+  # Bicomponent Membership
+
+  bicomponent_list <- largest_bicomponent_igraph(x)
+  data.frame(id = names(bicomponent_list$largest_bicomponent_ids),
+             in_largest_bicomponent = TRUE)
+
+
+
+
+
+
+
+
+
 
 
   # SYSTEM-LEVEL MEASURES
 
   # ASK JIM AND PETER WHICH OF THE ORIGINAL LIST MAKE SENSE FOR THE BIPARTITE
   # GRAPH
+
+  ##### Type of graph
+  type_of_graph <- data.frame(measure_labels = "Type of Graph",
+                              measure_descriptions = "Type of graph (either directed or undirected)",
+                              value = ifelse(isTRUE(directed), "Directed", "Undirected"))
+  ##### Weighted
+  weighted_graph <- data.frame(measure_labels = "Weighted",
+                               measure_descriptions = "Whether or not edges in the graph have weights",
+                               value = ifelse(is.null(weights), "No", "Yes"))
+  ##### Number of Nodes
+  nodecounts <- data.frame(measure_labels = c("Number of Nodes (Mode 1)", "Number of Nodes (Mode 2)"),
+                           measure_descriptions = c("The number of nodes in the graph belonging to Mode 1",
+                                                    "The number of nodes in the graph belonging to Mode 2"),
+                               value = c(as.character(sum(bipartite_list$nodelist$mode == 1)),
+                                         as.character(sum(bipartite_list$nodelist$mode == 2))))
+  ##### Number of Ties
+  if (is.null(type)) {
+    edgecounts <- data.frame(measure_labels = "Number of Ties",
+                             measure_descriptions = "The number of ties in the graph",
+                             value = nrow(bipartite_list$edgelist))
+  } else {
+    edgecounts <- bipartite_list$edgelist %>%
+      dplyr::group_by(type) %>%
+      dplyr::summarize(value = dplyr::n()) %>%
+      tidyr::pivot_wider(names_from = type,
+                         values_from = value) %>%
+      dplyr::mutate(aggregate = rowSums(., na.rm = TRUE),
+                    measure_labels = "Number of Ties",
+                    measure_descriptions = "The number of ties in the graph") %>%
+      dplyr::select(measure_labels, measure_descriptions, aggregate, dplyr::everything())
+
+    for (i in 1:ncol(edgecounts)) {edgecounts[,i] <- as.character(edgecounts[,i])}
+  }
+
+  ##### Number of Tie Types
+  if (is.null(type)) {
+    num_types <- data.frame(measure_labels = "Number of Tie Types",
+                             measure_descriptions = "The number of types of tie in the graph (if multi-relational)",
+                             value = "NA")
+  } else {
+    num_types = data.frame(measure_labels = "Number of Tie Types",
+                           measure_descriptions = "The number of types of tie in the graph (if multi-relational)",
+                           value = as.character(length(unique(type))))
+  }
+
+  ##### Number of Isolates
+  if (is.null(type)) {
+    num_iso <- data.frame(measure_labels = "Number of isolates",
+                            measure_descriptions = "The number of nodes in the network without any ties to other nodes",
+                            value = as.character(sum(igraph::degree(regular_graph) == 0)))
+  } else {
+
+    isolate_counts <- unlist(lapply(bipartite_list$igraph_objects, function(x) sum(igraph::degree(x) == 0)))
+
+    num_iso <- as.data.frame(t(isolate_counts)) %>%
+      dplyr::mutate(measure_labels = "Number of isolates",
+                    measure_descriptions = "The number of nodes in the network without any ties to other nodes") %>%
+      dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  }
+
+
+  ##### Number of Weak Components
+  num_weak <- nodes %>%
+    dplyr::select(dplyr::contains("weak_membership")) %>%
+    dplyr::summarize_all(max)
+  colnames(num_weak) <- stringr::str_replace(colnames(num_weak), "weak_membership_", "")
+
+  num_weak <- num_weak %>%
+    dplyr::mutate(measure_labels = "Number of Weak Components",
+                  measure_descriptions = "The number of weak components in the graph") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  ##### Size of Largest Weak Component
+  size_largest_weak <- dplyr::bind_rows(lapply(bipartite_list$igraph_objects, function(x){igraph::components(x, mode = "weak")$csize[[1]]})) %>%
+    dplyr::mutate(measure_labels = "Size of Largest Weak Component",
+                  measure_descriptions = "The number of nodes in the largest weak component of the graph") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  ##### Number of Largest Weak Components
+
+  ##### Number of Strong Components, and Other Weak Component Measurements
+  num_strong <- nodes %>%
+    dplyr::select(dplyr::contains("strong_membership")) %>%
+    dplyr::summarize_all(max)
+  colnames(num_strong) <- stringr::str_replace(colnames(num_strong), "strong_membership_", "")
+
+  num_strong <- num_strong %>%
+    dplyr::mutate(measure_labels = "Number of Strong Components",
+                  measure_descriptions = "The number of strong components in the graph") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+
+
 
   ### If there are multiple edge types, get bipartite-level measures for each type
   ##### Density
@@ -1115,6 +1286,11 @@ bi_netwrite <- function(data_type = data_type,
                        measure = "sd",
                        var = sd_vars,
                        val = sd_vals2)
+
+  # NEED TO ADD HERFINDAHL
+
+
+
   ##### Gini on centrality measures (by mode)
   gini_df1 <- not_eigen %>%
     dplyr::group_by(mode) %>%
