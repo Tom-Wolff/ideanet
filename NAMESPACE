@@ -3,6 +3,7 @@
 export("%>%")
 export(CHAMP)
 export(comm_detect)
+export(edge_correlations)
 export(ego_homophily)
 export(ego_netwrite)
 export(ego_reshape)
