@@ -1018,6 +1018,14 @@ bi_eigen <- function(bipartite_list, directed) {
 #########################################################################################
 
 membership_breakdown <- function(x, mode = "weak") {
+  if (mode == "bicomponent") {
+
+    component_breakdown <- largest_bicomponent_igraph(x)
+    membership_df <- data.frame(id = names(component_breakdown$largest_bicomponent_ids),
+                                in_largest_bicomponent = TRUE)
+
+  } else {
+
   component_breakdown <- igraph::components(x, mode = mode)
   largest_component_ids <- which(component_breakdown$csize == max(component_breakdown$csize))
   membership_df <- data.frame(id = names(component_breakdown$membership),
@@ -1025,6 +1033,9 @@ membership_breakdown <- function(x, mode = "weak") {
                               in_largest_mode = component_breakdown$membership %in% largest_component_ids)
 
   colnames(membership_df) <- stringr::str_replace(colnames(membership_df), "mode", mode)
+
+  }
+
   return(membership_df)
 }
 
@@ -1114,6 +1125,9 @@ bi_netwrite <- function(data_type = data_type,
     }
   }
 
+  nodes <- nodes %>%
+    dplyr::left_join(weak_memberships_df, by = "id")
+
   # Strong Component Membership
   strong_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "strong")
 
@@ -1128,13 +1142,25 @@ bi_netwrite <- function(data_type = data_type,
     }
   }
 
+  nodes <- nodes %>%
+    dplyr::left_join(strong_memberships_df, by = "id")
+
   # Bicomponent Membership
+  bicomponent_membership_list <- suppressWarnings(lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "bicomponent"))
 
-  bicomponent_list <- largest_bicomponent_igraph(x)
-  data.frame(id = names(bicomponent_list$largest_bicomponent_ids),
-             in_largest_bicomponent = TRUE)
+  for (i in 1:length(bicomponent_membership_list)) {
+    this_type <- names(bicomponent_membership_list)[[i]]
+    colnames(bicomponent_membership_list[[i]])[2] <- paste(colnames(bicomponent_membership_list[[i]])[2], this_type, sep = "_")
 
+    if (i == 1) {
+      bicomponent_memberships_df <- bicomponent_membership_list[[i]]
+    } else {
+      bicomponent_memberships_df <- dplyr::full_join(bicomponent_memberships_df, bicomponent_membership_list[[i]], by = "id")
+    }
+  }
 
+  nodes <- nodes %>%
+    dplyr::left_join(bicomponent_memberships_df, by = "id")
 
 
 
@@ -1209,6 +1235,15 @@ bi_netwrite <- function(data_type = data_type,
 
   }
 
+  ### If there are multiple edge types, get bipartite-level measures for each type
+  ##### Density
+  twomode_density <- bi_density(bipartite_list = bipartite_list,
+                                directed = directed) %>%
+    dplyr::mutate(mode = NA,
+                  measure = "density",
+                  var = ifelse(var == "density", "density_aggregate", var)) %>%
+    dplyr::rename(val = value)
+
 
   ##### Number of Weak Components
   num_weak <- nodes %>%
@@ -1227,7 +1262,17 @@ bi_netwrite <- function(data_type = data_type,
                   measure_descriptions = "The number of nodes in the largest weak component of the graph") %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
-  ##### Number of Largest Weak Components
+  ##### Proportion in Largest Weak Component
+  prop_weak <- nodes %>%
+    dplyr::select(dplyr::contains("in_largest_weak")) %>%
+    dplyr::summarize_all(mean)
+  colnames(prop_weak) <- stringr::str_replace(colnames(prop_weak), "in_largest_weak_", "")
+
+  prop_weak <- prop_weak %>%
+    dplyr::mutate(measure_labels = "Proportion in the Largest Weak Component",
+                  measure_descriptions = "The proportion of nodes in the largest weak component of the graph") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
 
   ##### Number of Strong Components, and Other Weak Component Measurements
   num_strong <- nodes %>%
@@ -1240,17 +1285,75 @@ bi_netwrite <- function(data_type = data_type,
                   measure_descriptions = "The number of strong components in the graph") %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
+  ##### Size of Largest Strong Component
+  size_largest_strong <- dplyr::bind_rows(lapply(bipartite_list$igraph_objects, function(x){igraph::components(x, mode = "strong")$csize[[1]]})) %>%
+    dplyr::mutate(measure_labels = "Size of Largest Strong Component",
+                  measure_descriptions = "The number of nodes in the largest strong component of the graph") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  ##### Proportion in Largest Strong Component
+  prop_strong <- nodes %>%
+    dplyr::select(dplyr::contains("in_largest_strong")) %>%
+    dplyr::summarize_all(mean)
+  colnames(prop_strong) <- stringr::str_replace(colnames(prop_strong), "in_largest_strong_", "")
+
+  prop_strong <- prop_strong %>%
+    dplyr::mutate(measure_labels = "Proportion in the Largest Strong Component",
+                  measure_descriptions = "The proportion of nodes in the largest strong component of the graph") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  ##### Number of Largest Bicomponents
+  num_bicomponents <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){largest_bicomponent_igraph(x)$bicomponent_summary$num_bicomponents}))) %>%
+                      dplyr::mutate(measure_labels = "Number of Largest Bicomponents",
+                                    measure_descriptions = "The number of maximally-sized bicomponents in the graph") %>%
+                      dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  ##### Size of Largest Bicomponents
+  size_largest_bi <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){largest_bicomponent_igraph(x)$bicomponent_summary$size_bicomponent}))) %>%
+    dplyr::mutate(measure_labels = "Size of Largest Bicomponent(s)",
+                  measure_descriptions = "The number of nodes in the largest bicomponent(s) of the graph") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  ##### Proportion in the Largest Bicomponents
+  prop_largest_bi <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){largest_bicomponent_igraph(x)$bicomponent_summary$prop_bicomponent}))) %>%
+    dplyr::mutate(measure_labels = "Proportion in the Largest Bicomponent(s)",
+                  measure_descriptions = "The proportion of nodes in the largest bicomponent(s) of the graph") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
 
+  ##### Degree Assortativity
+  deg_assort_total <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){degree_assortativity(x, directed = directed)$total}))) %>%
+    dplyr::mutate(measure_labels = "Degree Assortativity (Total)",
+                  measure_descriptions = "Edgewise correlation of total degree") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
-  ### If there are multiple edge types, get bipartite-level measures for each type
-  ##### Density
-  twomode_density <- bi_density(bipartite_list = bipartite_list,
-                                directed = directed) %>%
-    dplyr::mutate(mode = NA,
-                  measure = "density",
-                  var = ifelse(var == "density", "density_aggregate", var)) %>%
-    dplyr::rename(val = value)
+  deg_assort_in <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){degree_assortativity(x, directed = directed)$indegree}))) %>%
+    dplyr::mutate(measure_labels = "Degree Assortativity (Indegree)",
+                  measure_descriptions = "Edgewise correlation of total indegree") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  deg_assort_out <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){degree_assortativity(x, directed = directed)$outdegree}))) %>%
+    dplyr::mutate(measure_labels = "Degree Assortativity (Outdegree)",
+                  measure_descriptions = "Edgewise correlation of total outdegree") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  ##### Reciprocity Rate
+  reciprocity_rate <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){igraph::reciprocity(x, ignore.loops = TRUE, mode='ratio')}))) %>%
+    dplyr::mutate(measure_labels = "Reciprocity Rate",
+                  measure_descriptions = "The proportion of directed ties that are reciprocated") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  ##### Average Geodesic
+  avg_geodesic <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){igraph::mean_distance(x, directed = directed)}))) %>%
+    dplyr::mutate(measure_labels = "Average Geodesic",
+                  measure_descriptions = "The average shortest path length") %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+
+  ##### Multi-Level Edge Correlation
+test <- multiplex_edge_corr_igraph(bipartite_list$edgelist, directed = as.logical(directed),
+                           weight_type = weight_type, type = type)
+
+
 
   ############# Split eigen from rest of node-level measures for SD, Gini, and
   ############# Theil calculation

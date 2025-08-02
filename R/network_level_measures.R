@@ -892,6 +892,9 @@ average_geodesic <- function(g) {
 #############################################################
 
 multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
+
+  browser()
+
   if('type' %in% colnames(edgelist)){
     # Creating edgelist to manipulate internally
     edges <- as.data.frame(edgelist[,])
