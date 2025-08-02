@@ -893,8 +893,6 @@ average_geodesic <- function(g) {
 
 multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
 
-  browser()
-
   if('type' %in% colnames(edgelist)){
     # Creating edgelist to manipulate internally
     edges <- as.data.frame(edgelist[,])
@@ -1007,8 +1005,10 @@ multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
       }
 
       # Calculating the Correlation for Unique Combination of Types
+      browser()
       pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
-      for(i in nrow(pairs)) {
+      for(i in 1:nrow(pairs)) {
+        print(i)
         column_set <- pairs[i,]
         tie_set <- ties[,column_set]
         multiplex_edge_correlation <- paste0('Edge Correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2))
