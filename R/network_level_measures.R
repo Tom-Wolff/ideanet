@@ -1005,13 +1005,17 @@ multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
       }
 
       # Calculating the Correlation for Unique Combination of Types
-      browser()
       pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
       for(i in 1:nrow(pairs)) {
-        print(i)
         column_set <- pairs[i,]
         tie_set <- ties[,column_set]
-        multiplex_edge_correlation <- paste0('Edge Correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2))
+        if (i == 1) {
+          multiplex_edge_correlation <- paste0('Edge Correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2))
+        } else {
+          multiplex_edge_correlation <- paste(multiplex_edge_correlation,
+                                              paste0('correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2)),
+                                              sep = "; ")
+        }
         rm(column_set, tie_set)
       }
       rm(pairs, types, subnets, ties)

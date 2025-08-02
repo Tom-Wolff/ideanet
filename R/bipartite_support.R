@@ -367,55 +367,55 @@ projection_el <- function(bipartite_list,
 }
 
 
-### Use Cases:
-####### 1. Edge weights vary
-weighted_list <- bipartite_list
-weighted_list$edgelist$weight <- sample(c(-5, -4, -3, -2, -1,
-                                    1, 2, 3, 4, 5),
-                                  nrow(weighted_list$edgelist),
-                                  replace = TRUE)
-
-if (var(weighted_list$edgelist$weight) != 0) {
-
-  proj1 <- projection_el(bipartite_list = weighted_list,
-                         mode = 1,
-                         within_fun = mean,
-                         agg_fun = sum,
-                         directed = FALSE)
-
-  proj2 <- projection_el(bipartite_list = weighted_list,
-                         mode = 2,
-                         within_fun = mean,
-                         agg_fun = sum,
-                         directed = FALSE)
-
-}
-
-####### 2. Aggregating Multiple Edge Types at Once
-types_list <- bipartite_list
-new_edgelist <- bipartite_list$edgelist
-new2 <- new_edgelist[sample(1:nrow(new_edgelist), 40, replace = FALSE),]
-new2$type <- 2
-new3 <- new_edgelist[sample(1:nrow(new_edgelist), 40, replace = FALSE),]
-new3$type <- 3
-new_edgelist <- dplyr::bind_rows(new_edgelist,
-                                 new2, new3)
-types_list$edgelist <- new_edgelist
-
-if (length(unique(types_list$edgelist$type)) > 1) {
-  proj1 <- projection_el(bipartite_list = types_list,
-                         mode = 1,
-                         within_fun = mean,
-                         agg_fun = sum,
-                         directed = FALSE)
-
-  proj2 <- projection_el(bipartite_list = types_list,
-                         mode = 2,
-                         within_fun = mean,
-                         agg_fun = sum,
-                         directed = FALSE)
-
-}
+# ### Use Cases:
+# ####### 1. Edge weights vary
+# weighted_list <- bipartite_list
+# weighted_list$edgelist$weight <- sample(c(-5, -4, -3, -2, -1,
+#                                     1, 2, 3, 4, 5),
+#                                   nrow(weighted_list$edgelist),
+#                                   replace = TRUE)
+#
+# if (var(weighted_list$edgelist$weight) != 0) {
+#
+#   proj1 <- projection_el(bipartite_list = weighted_list,
+#                          mode = 1,
+#                          within_fun = mean,
+#                          agg_fun = sum,
+#                          directed = FALSE)
+#
+#   proj2 <- projection_el(bipartite_list = weighted_list,
+#                          mode = 2,
+#                          within_fun = mean,
+#                          agg_fun = sum,
+#                          directed = FALSE)
+#
+# }
+#
+# ####### 2. Aggregating Multiple Edge Types at Once
+# types_list <- bipartite_list
+# new_edgelist <- bipartite_list$edgelist
+# new2 <- new_edgelist[sample(1:nrow(new_edgelist), 40, replace = FALSE),]
+# new2$type <- 2
+# new3 <- new_edgelist[sample(1:nrow(new_edgelist), 40, replace = FALSE),]
+# new3$type <- 3
+# new_edgelist <- dplyr::bind_rows(new_edgelist,
+#                                  new2, new3)
+# types_list$edgelist <- new_edgelist
+#
+# if (length(unique(types_list$edgelist$type)) > 1) {
+#   proj1 <- projection_el(bipartite_list = types_list,
+#                          mode = 1,
+#                          within_fun = mean,
+#                          agg_fun = sum,
+#                          directed = FALSE)
+#
+#   proj2 <- projection_el(bipartite_list = types_list,
+#                          mode = 2,
+#                          within_fun = mean,
+#                          agg_fun = sum,
+#                          directed = FALSE)
+#
+# }
 
 ####### After generating these projection edgelists, you would then pass them
 ####### through standard `netwrite` to generate measures for each one-mode projection
@@ -626,9 +626,51 @@ bi_degree <- function(bipartite_list) {
     dplyr::rename(id = mode2) %>%
     dplyr::mutate(id = as.character(id))
 
+  # Mode 1 Aggregate Graph Degree Counts
+  if (length(unique(bipartite_list$edgelist$type)) > 1) {
+    mode1_ag_degree <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::mutate(weight = sum(weight)) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup() %>%
+      dplyr::group_by(mode1) %>%
+      dplyr::summarize(degree = dplyr::n(),
+                       weighted_degree = sum(weight)) %>%
+      dplyr::ungroup() %>%
+      dplyr::rename(id = mode1) %>%
+      dplyr::mutate(id = as.character(id),
+                    type = "aggregate")
+
+    # Mode 2 Aggregate Graph Degree Counts
+    mode2_ag_degree <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::mutate(weight = sum(weight)) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup() %>%
+      dplyr::group_by(mode2) %>%
+      dplyr::summarize(degree = dplyr::n(),
+                       weighted_degree = sum(weight)) %>%
+      dplyr::ungroup() %>%
+      dplyr::rename(id = mode2) %>%
+      dplyr::mutate(id = as.character(id),
+                    type = "aggregate")
+  }
+
+
+
+
+
+
   # Combine
-  degree_el <- dplyr::bind_rows(mode1_degree, mode2_degree) %>%
+  degree_el <- dplyr::bind_rows(mode1_degree, mode2_degree)
+
+  if (length(unique(degree_el$type)) > 1) {
+    degree_el <- dplyr::bind_rows(degree_el, mode1_ag_degree, mode2_ag_degree)
+  }
+
+  degree_el <- degree_el %>%
     dplyr::left_join(bipartite_list$nodelist, by = "id")
+
 
   # Get number of nodes in each mode, which is the divisor in the normalized
   # degree calculation
@@ -665,6 +707,23 @@ bi_degree <- function(bipartite_list) {
 #### Bipartite closeness and normalized closeness (from Borgatti & Everett 1997)
 bi_closeness <- function(bipartite_list,
                          weight_type) {
+
+  # browser()
+
+  # If multiple edge types, create an aggregate edge type
+  if (length(unique(bipartite_list$edgelist$type)) > 1) {
+
+    # Create aggregate ties in edgelist
+    ag_el <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::summarize(weight = sum(weight)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(type = "aggregate")
+
+    bipartite_list$edgelist <- dplyr::bind_rows(bipartite_list$edgelist,
+                                                ag_el)
+
+  }
 
   # If weight type is "frequency", need to modify weight values
   # so they're interpreted as distances
@@ -808,6 +867,21 @@ bi_betweenness <- function(bipartite_list,
                            weight_type) {
 
   # browser()
+
+  # If multiple edge types, create an aggregate edge type
+  if (length(unique(bipartite_list$edgelist$type)) > 1) {
+
+    # Create aggregate ties in edgelist
+    ag_el <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::summarize(weight = sum(weight)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(type = "aggregate")
+
+    bipartite_list$edgelist <- dplyr::bind_rows(bipartite_list$edgelist,
+                                                ag_el)
+
+  }
 
   # If weight type is "frequency", need to modify weight values
   # so they're interpreted as distances
@@ -963,6 +1037,21 @@ bi_betweenness <- function(bipartite_list,
 
 bi_eigen <- function(bipartite_list, directed) {
 
+  # If multiple edge types, create an aggregate edge type
+  if (length(unique(bipartite_list$edgelist$type)) > 1) {
+
+    # Create aggregate ties in edgelist
+    ag_el <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::summarize(weight = sum(weight)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(type = "aggregate")
+
+    bipartite_list$edgelist <- dplyr::bind_rows(bipartite_list$edgelist,
+                                                ag_el)
+
+  }
+
   # browser()
 
   # IF MULTIPLE EDGE TYPES
@@ -1039,6 +1128,97 @@ membership_breakdown <- function(x, mode = "weak") {
   return(membership_df)
 }
 
+#####################################################################
+#    A P P L Y I N G   P A I R W I S E   R E A C H A B I L I T Y    #
+#####################################################################
+apply_pairwise <- function(g) {
+
+  if (directed == TRUE) {
+
+    g_undir <- igraph::as_undirected(g)
+
+    # Pairwise reachability (weak, undirected)
+    weak_clusters_un <- igraph::components(g_undir, mode = "weak")
+    pairwise_weak_un <- sum(weak_clusters_un$csize * (weak_clusters_un$csize-1)) / (length(igraph::V(g))*(length(igraph::V(g)) - 1))
+
+    weak_un_df <- data.frame(measure_labels = "Pairwise Reachability (Weak, Undirected)",
+                             measure_descriptions = "The proportion of nodes that share a weak component (undirected)",
+                             value = pairwise_weak_un)
+
+    # Pairwise reachability (strong, undirected)
+    strong_clusters_un <- igraph::components(g_undir, mode = "strong")
+    pairwise_strong_un <- sum(strong_clusters_un$csize * (strong_clusters_un$csize-1)) / (length(igraph::V(g))*(length(igraph::V(g)) - 1))
+
+    strong_un_df <- data.frame(measure_labels = "Pairwise Reachability (Strong, Undirected)",
+                             measure_descriptions = "The proportion of nodes that share a strong component (undirected)",
+                             value = pairwise_strong_un)
+
+    # Pairwise reachability (weak, directed)
+    weak_clusters_dir <- igraph::components(g, mode = "weak")
+    pairwise_weak_dir <- sum(weak_clusters_dir$csize * (weak_clusters_dir$csize-1)) / (length(igraph::V(g))*(length(igraph::V(g)) - 1))
+
+    weak_dir_df <- data.frame(measure_labels = "Pairwise Reachability (Weak, Directed)",
+                               measure_descriptions = "The proportion of nodes that share a weak component (directed)",
+                               value = pairwise_weak_dir)
+
+    # Pairwise reachability (strong, directed)
+    strong_clusters_dir <- igraph::components(g, mode = "strong")
+    pairwise_strong_dir <- sum(strong_clusters_dir$csize * (strong_clusters_dir$csize-1)) / (length(igraph::V(g))*(length(igraph::V(g)) - 1))
+
+    strong_dir_df <- data.frame(measure_labels = "Pairwise Reachability (Strong, Directed)",
+                              measure_descriptions = "The proportion of nodes that share a strong component (directed)",
+                              value = pairwise_strong_dir)
+
+    pairwise_df <- dplyr::bind_rows(weak_un_df,
+                                    strong_un_df,
+                                    weak_dir_df,
+                                    strong_dir_df)
+
+
+  } else {
+
+    # Pairwise reachability (weak, undirected)
+    weak_clusters_un <- igraph::components(g, mode = "weak")
+    pairwise_weak_un <- sum(weak_clusters_un$csize * (weak_clusters_un$csize-1)) / (length(igraph::V(g))*(length(igraph::V(g)) - 1))
+
+    weak_un_df <- data.frame(measure_labels = "Pairwise Reachability (Weak, Undirected)",
+                             measure_descriptions = "The proportion of nodes that share a weak component (undirected)",
+                             value = pairwise_weak_un)
+
+    # Pairwise reachability (strong, undirected)
+    strong_clusters_un <- igraph::components(g, mode = "strong")
+    pairwise_strong_un <- sum(strong_clusters_un$csize * (strong_clusters_un$csize-1)) / (length(igraph::V(g))*(length(igraph::V(g)) - 1))
+
+    strong_un_df <- data.frame(measure_labels = "Pairwise Reachability (Strong, Undirected)",
+                               measure_descriptions = "The proportion of nodes that share a strong component (undirected)",
+                               value = pairwise_strong_un)
+
+    # Pairwise reachability (weak, directed)
+    pairwise_weak_dir <- NA
+
+    weak_dir_df <- data.frame(measure_labels = "Pairwise Reachability (Weak, Directed)",
+                              measure_descriptions = "The proportion of nodes that share a weak component (directed)",
+                              value = pairwise_weak_dir)
+
+    # Pairwise reachability (strong, directed)
+    pairwise_strong_dir <- NA
+
+    strong_dir_df <- data.frame(measure_labels = "Pairwise Reachability (Strong, Directed)",
+                                measure_descriptions = "The proportion of nodes that share a strong component (directed)",
+                                value = pairwise_strong_dir)
+
+    pairwise_df <- dplyr::bind_rows(weak_un_df,
+                                    strong_un_df,
+                                    weak_dir_df,
+                                    strong_dir_df)
+
+
+  }
+
+}
+
+
+
 
 ################################################################################
 
@@ -1076,7 +1256,6 @@ bi_netwrite <- function(data_type = data_type,
   } else {
 
     igraph_objects <- list()
-    igraph_objects[[1]] <- bi_igraph(bipartite_list)
 
       unique_types <- unique(bipartite_list$edgelist$type)
 
@@ -1088,9 +1267,13 @@ bi_netwrite <- function(data_type = data_type,
         this_list$edgelist <- this_el
 
         # Create igraph object, needed to get distance matrix
-        igraph_objects[[i+1]] <- bi_igraph(this_list)
+        igraph_objects[[i]] <- bi_igraph(this_list)
       }
-      names(igraph_objects) <- c("aggregate", unique_types)
+
+      igraph_objects[[length(igraph_objects)+1]] <- bi_igraph(bipartite_list)
+      # CHANGE `aggregate` to `summary_graph` eventually to be consistent with
+      # base `netwrite`
+      names(igraph_objects) <- c(unique_types, "aggregate")
       bipartite_list$igraph_objects <- igraph_objects
   }
 
@@ -1350,8 +1533,41 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
   ##### Multi-Level Edge Correlation
-test <- multiplex_edge_corr_igraph(bipartite_list$edgelist, directed = as.logical(directed),
-                           weight_type = weight_type, type = type)
+  ######## First have to reformat edgelist
+  multi_node1 <- bipartite_list$nodelist %>%
+    dplyr::mutate(i_elements = as.character(id),
+                  i_id = 0:(dplyr::n()-1)) %>%
+    dplyr::select(i_elements, i_id)
+  multi_node2 <- multi_node1 %>%
+    dplyr::rename(j_elements = i_elements,
+                  j_id = i_id)
+
+  multi_el <- bipartite_list$edgelist %>%
+    dplyr::mutate(i_elements = as.character(mode1),
+                  j_elements = as.character(mode2),
+                  Obs_ID = 1:dplyr::n()) %>%
+    dplyr::select(Obs_ID, i_elements, j_elements, weight, type) %>%
+    dplyr::left_join(multi_node1, by = "i_elements") %>%
+    dplyr::left_join(multi_node2, by = "j_elements") %>%
+    dplyr::select(Obs_ID, i_elements, i_id, j_elements, j_id, weight, type)
+
+
+  multi_edgecorr <- data.frame(measure_labels = "Multi-Level Edge Correlation",
+                               measure_descriptions = "Multiplex networks edgewise correlation of relations",
+                               aggregate = multiplex_edge_corr_igraph(multi_el,
+                                                                      directed = as.logical(directed),
+                                                                      weight_type = weight_type,
+                                                                      type = type))
+
+  ##### Pairwise Reachability
+  pairwise_list <- lapply(bipartite_list$igraph_objects, apply_pairwise)
+
+  for (i in 1:length(pairwise_list)) {
+    pairwise_list[[i]]$var <- names(pairwise_list)[i]
+  }
+
+  pairwise_df <- dplyr::bind_rows(pairwise_list) %>%
+    tidyr::pivot_wider(names_from = var, values_from = value)
 
 
 
@@ -1391,6 +1607,27 @@ test <- multiplex_edge_corr_igraph(bipartite_list$edgelist, directed = as.logica
                        val = sd_vals2)
 
   # NEED TO ADD HERFINDAHL
+  herf_df1 <- not_eigen %>%
+    dplyr::group_by(mode) %>%
+    dplyr::summarize_all(herfindahl) %>%
+    tidyr::pivot_longer(!mode, names_to = "var", values_to = "val") %>%
+    dplyr::mutate(measure = "herf")
+
+  herf_vars <- c()
+  herf_vals2 <- c()
+
+  for (i in 1:(ncol(eigen_measures)/2)) {
+    this_measure <- eigen_measures[,i]
+    this_component <- eigen_measures[,i+(ncol(eigen_measures)/2)]
+
+    herf_vars[i] <- colnames(eigen_measures)[i]
+    herf_vals2[i] <- herfindahl(measure = this_measure,
+                          components = this_component)$herfindahl
+  }
+  herf_df2 <- data.frame(mode = NA,
+                         measure = "herf",
+                         var = herf_vars,
+                         val = herf_vals2)
 
 
 
@@ -1440,6 +1677,7 @@ test <- multiplex_edge_corr_igraph(bipartite_list$edgelist, directed = as.logica
 
   system_measures <- dplyr::bind_rows(twomode_density,
                                       sd_df1, sd_df2,
+                                      herf_df1, herf_df2,
                                       gini_df1, gini_df2,
                                       theil_df1, theil_df2) %>%
     dplyr::mutate(cent_measure = dplyr::case_when(stringr::str_detect(var, "^degree") ~ "Degree",
@@ -1466,11 +1704,13 @@ test <- multiplex_edge_corr_igraph(bipartite_list$edgelist, directed = as.logica
                                                     measure == "sd" ~ paste("Standard Deviation,", cent_measure, mode, sep = " "),
                                                     measure == "gini" ~ paste("Gini Coefficient,", cent_measure, mode, sep = " "),
                                                     measure == "theil" ~ paste("Theil Index,", cent_measure, mode, sep = " "),
+                                                    measure == "herf" ~ paste("Herfindahl Index,", cent_measure, mode, sep = " "),
                                              TRUE ~ NA),
                   measure_descriptions = dplyr::case_when(measure == "density" ~ "The proportion of possible ties in the network that actually exist",
                                                           measure == "sd" ~ paste("Standard deviation of", stringr::str_to_lower(cent_measure), "scores", sep = " "),
                                                           measure == "gini" ~ paste("Measure of inequality in", stringr::str_to_lower(cent_measure), "scores  (0 represents perfect equality, 1 represents perfect inequality)", sep = " "),
                                                           measure == "theil" ~ paste("Measure of inequality in", stringr::str_to_lower(cent_measure), "scores (Score not normalized)", sep = " "),
+                                                          measure == "herf" ~ paste("The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by", stringr::str_to_lower(cent_measure), "scores", sep = " "),
                                                           TRUE ~ NA)) %>%
     dplyr::select(-measure, -cent_measure, -mode) %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
@@ -1479,7 +1719,7 @@ test <- multiplex_edge_corr_igraph(bipartite_list$edgelist, directed = as.logica
 
 
 
-  # Create one-mode edgelists for each mode
+   # Create one-mode edgelists for each mode
 
   ##### GET JIM/PETER'S TAKE ON THIS-- IGRAPH'S PROJECTION FUNCTION IS CONVENIENT
   ##### BUT IF WE HAVE MULTIPLE RELATION TYPES OR WEIGHTED TIES I THINK MY FUNCTION
