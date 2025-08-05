@@ -24,11 +24,13 @@ adjacency_list = FALSE
 nodelist = NULL
 fix_nodelist = TRUE
 node_id = NULL
-i_elements <- el$CASEID
-j_elements <- el$alter
+i_elements <- el$person
+j_elements <- el$event
 bipartite <- NULL
 # mode_id = NULL
+# weights = NULL
 weights <- el$weight
+# type = NULL
 type <- el$var
 remove_loops = FALSE
 missing_code = NA
@@ -1239,7 +1241,9 @@ bi_netwrite <- function(data_type = data_type,
                         net_name = net_name,
                         shiny = shiny,
                         output = output,
-                        message = message) {
+                        message = message,
+                        within_fun = NULL,
+                        agg_fun = sum) {
 
   # Make nodelist/edgelist from inputted data
   bipartite_list <- make_bipartite_list(data_type = data_type,
@@ -1252,7 +1256,7 @@ bi_netwrite <- function(data_type = data_type,
 
   # Now make bipartite igraph object
   if (is.null(type)) {
-    bipartite_list$igraph_objects <- bi_igraph(bipartite_list)
+    bipartite_list$igraph_objects <- list(bi_igraph(bipartite_list))
   } else {
 
     igraph_objects <- list()
@@ -1298,8 +1302,11 @@ bi_netwrite <- function(data_type = data_type,
   weak_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "weak")
 
   for (i in 1:length(weak_memberships_list)) {
-    this_type <- names(weak_memberships_list)[[i]]
-    colnames(weak_memberships_list[[i]])[2:3] <- paste(colnames(weak_memberships_list[[i]])[2:3], this_type, sep = "_")
+
+    if (length(weak_memberships_list) > 1) {
+      this_type <- names(weak_memberships_list)[[i]]
+      colnames(weak_memberships_list[[i]])[2:3] <- paste(colnames(weak_memberships_list[[i]])[2:3], this_type, sep = "_")
+    }
 
     if (i == 1) {
       weak_memberships_df <- weak_memberships_list[[i]]
@@ -1315,9 +1322,10 @@ bi_netwrite <- function(data_type = data_type,
   strong_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "strong")
 
   for (i in 1:length(strong_memberships_list)) {
-    this_type <- names(strong_memberships_list)[[i]]
-    colnames(strong_memberships_list[[i]])[2:3] <- paste(colnames(strong_memberships_list[[i]])[2:3], this_type, sep = "_")
-
+      if (length(strong_memberships_list) > 1) {
+        this_type <- names(strong_memberships_list)[[i]]
+        colnames(strong_memberships_list[[i]])[2:3] <- paste(colnames(strong_memberships_list[[i]])[2:3], this_type, sep = "_")
+      }
     if (i == 1) {
       strong_memberships_df <- strong_memberships_list[[i]]
     } else {
@@ -1332,9 +1340,10 @@ bi_netwrite <- function(data_type = data_type,
   bicomponent_membership_list <- suppressWarnings(lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "bicomponent"))
 
   for (i in 1:length(bicomponent_membership_list)) {
-    this_type <- names(bicomponent_membership_list)[[i]]
-    colnames(bicomponent_membership_list[[i]])[2] <- paste(colnames(bicomponent_membership_list[[i]])[2], this_type, sep = "_")
-
+    if (length(bicomponent_membership_list) > 1) {
+        this_type <- names(bicomponent_membership_list)[[i]]
+        colnames(bicomponent_membership_list[[i]])[2] <- paste(colnames(bicomponent_membership_list[[i]])[2], this_type, sep = "_")
+        }
     if (i == 1) {
       bicomponent_memberships_df <- bicomponent_membership_list[[i]]
     } else {
@@ -1384,7 +1393,7 @@ bi_netwrite <- function(data_type = data_type,
   if (is.null(type)) {
     edgecounts <- data.frame(measure_labels = "Number of Ties",
                              measure_descriptions = "The number of ties in the graph",
-                             measures = nrow(bipartite_list$edgelist))
+                             measures = as.character(nrow(bipartite_list$edgelist)))
   } else {
     edgecounts <- bipartite_list$edgelist %>%
       dplyr::group_by(type) %>%
@@ -1414,7 +1423,7 @@ bi_netwrite <- function(data_type = data_type,
   if (is.null(type)) {
     num_iso <- data.frame(measure_labels = "Number of isolates",
                             measure_descriptions = "The number of nodes in the network without any ties to other nodes",
-                          measures = as.character(sum(igraph::degree(regular_graph) == 0)))
+                          measures = as.character(sum(igraph::degree(bipartite_list$igraph_objects[[1]]) == 0)))
   } else {
 
     isolate_counts <- unlist(lapply(bipartite_list$igraph_objects, function(x) sum(igraph::degree(x) == 0)))
@@ -1435,7 +1444,10 @@ bi_netwrite <- function(data_type = data_type,
                                 directed = directed) %>%
     dplyr::mutate(mode = NA,
                   measure = "density",
-                  var = ifelse(var == "density", "density_aggregate", var)) %>%
+                  var = ifelse(var == "density", "density_aggregate", var))
+
+  if (length(type) > 1) {
+    twomode_density <- twomode_density %>%
     dplyr::rename(val = value) %>%
     dplyr::mutate(val = as.character(val)) %>%
     dplyr::mutate(cent_measure = dplyr::case_when(stringr::str_detect(var, "^degree") ~ "Degree",
@@ -1454,13 +1466,37 @@ bi_netwrite <- function(data_type = data_type,
                   measure_descriptions = "The proportion of possible ties in the network that actually exist") %>%
     dplyr::select(-measure, -cent_measure, -mode) %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+  } else {
+    twomode_density <- twomode_density %>%
+      dplyr::mutate(val = as.character(val)) %>%
+      dplyr::mutate(cent_measure = dplyr::case_when(stringr::str_detect(var, "^degree") ~ "Degree",
+                                                    stringr::str_detect(var, "^weighted_degree") ~ "Weighted Degree",
+                                                    stringr::str_detect(var, "^norm_degree") ~ "Normalized Degree",
+                                                    stringr::str_detect(var, "^closeness") ~ "Closeness",
+                                                    stringr::str_detect(var, "^betweenness") ~ "Betweenness",
+                                                    stringr::str_detect(var, "^eigen_centrality") ~ "Eigenvector Centrality",
+                                                    TRUE ~ NA)) %>%
+      dplyr::mutate(var = stringr::str_replace(var, "^density_", "")) %>%
+      dplyr::select(measure, cent_measure, mode, dplyr::everything()) %>%
+      tidyr::pivot_wider(names_from = var,
+                         values_from = val) %>%
+      dplyr::mutate(measure_labels = "Density",
+
+                    measure_descriptions = "The proportion of possible ties in the network that actually exist") %>%
+      dplyr::select(-measure, -cent_measure, -mode) %>%
+      dplyr::select(measure_labels, measure_descriptions, measures = aggregate)
+    }
 
 
   ##### Number of Weak Components
   num_weak <- nodes %>%
     dplyr::select(dplyr::contains("weak_membership")) %>%
     dplyr::summarize_all(max)
-  colnames(num_weak) <- stringr::str_replace(colnames(num_weak), "weak_membership_", "")
+  if (length(type) > 1) {
+    colnames(num_weak) <- stringr::str_replace(colnames(num_weak), "weak_membership_", "")
+  } else {
+    colnames(num_weak) <- "measures"
+  }
   num_weak[1, ] <- as.character(num_weak)
 
   num_weak <- num_weak %>%
@@ -1468,19 +1504,30 @@ bi_netwrite <- function(data_type = data_type,
                   measure_descriptions = "The number of weak components in the graph") %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
+
   ##### Size of Largest Weak Component
-  size_largest_weak <- as.data.frame(dplyr::bind_rows(lapply(bipartite_list$igraph_objects, function(x){igraph::components(x, mode = "weak")$csize[[1]]}))) #%>%
+  if (length(type) > 1) {
+  size_largest_weak <- as.data.frame(dplyr::bind_rows(lapply(bipartite_list$igraph_objects, function(x){igraph::components(x, mode = "weak")$csize[[1]]})))
   size_largest_weak[1, ] <- as.character(size_largest_weak)
   size_largest_weak <- size_largest_weak %>%
     dplyr::mutate(measure_labels = "Size of Largest Weak Component",
                   measure_descriptions = "The number of nodes in the largest weak component of the graph") %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+  } else {
+    size_largest_weak <- data.frame(measure_labels = "Size of Largest Weak Component",
+                                    measure_descriptions = "The number of nodes in the largest weak component of the graph",
+                                    measures = as.character(unlist(lapply(bipartite_list$igraph_objects, function(x){igraph::components(x, mode = "weak")$csize[[1]]}))))
+  }
 
   ##### Proportion in Largest Weak Component
   prop_weak <- nodes %>%
     dplyr::select(dplyr::contains("in_largest_weak")) %>%
     dplyr::summarize_all(function(x){as.character(mean(x))})
-  colnames(prop_weak) <- stringr::str_replace(colnames(prop_weak), "in_largest_weak_", "")
+  if (length(type) > 1) {
+    colnames(prop_weak) <- stringr::str_replace(colnames(prop_weak), "in_largest_weak_", "")
+  } else {
+    colnames(prop_weak) <- "measures"
+  }
 
   prop_weak <- prop_weak %>%
     dplyr::mutate(measure_labels = "Proportion in the Largest Weak Component",
@@ -1492,7 +1539,11 @@ bi_netwrite <- function(data_type = data_type,
   num_strong <- nodes %>%
     dplyr::select(dplyr::contains("strong_membership")) %>%
     dplyr::summarize_all(function(x){as.character(max(x))})
-  colnames(num_strong) <- stringr::str_replace(colnames(num_strong), "strong_membership_", "")
+  if (length(type) > 1) {
+    colnames(num_strong) <- stringr::str_replace(colnames(num_strong), "strong_membership_", "")
+  } else {
+    colnames(num_strong) <- "measures"
+  }
 
   num_strong <- num_strong %>%
     dplyr::mutate(measure_labels = "Number of Strong Components",
@@ -1500,16 +1551,27 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
   ##### Size of Largest Strong Component
+  if (length(type) > 1) {
   size_largest_strong <- dplyr::bind_rows(lapply(bipartite_list$igraph_objects, function(x){as.character(igraph::components(x, mode = "strong")$csize[[1]])})) %>%
     dplyr::mutate(measure_labels = "Size of Largest Strong Component",
                   measure_descriptions = "The number of nodes in the largest strong component of the graph") %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+  } else {
+    size_largest_strong <- data.frame(measure_labels = "Size of Largest Strong Component",
+                                      measure_descriptions = "The number of nodes in the largest strong component of the graph",
+                                      measures = unlist(lapply(bipartite_list$igraph_objects, function(x){as.character(igraph::components(x, mode = "strong")$csize[[1]])}))
+                                      )
+  }
 
   ##### Proportion in Largest Strong Component
   prop_strong <- nodes %>%
     dplyr::select(dplyr::contains("in_largest_strong")) %>%
     dplyr::summarize_all(function(x){as.character(mean(x))})
-  colnames(prop_strong) <- stringr::str_replace(colnames(prop_strong), "in_largest_strong_", "")
+  if (length(type) > 1) {
+    colnames(prop_strong) <- stringr::str_replace(colnames(prop_strong), "in_largest_strong_", "")
+  } else {
+    colnames(prop_strong) <- "measures"
+  }
 
   prop_strong <- prop_strong %>%
     dplyr::mutate(measure_labels = "Proportion in the Largest Strong Component",
@@ -1517,41 +1579,77 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
   ##### Number of Largest Bicomponents
+  if (length(type) > 1) {
   num_bicomponents <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(largest_bicomponent_igraph(x)$bicomponent_summary$num_bicomponents)}))) %>%
                       dplyr::mutate(measure_labels = "Number of Largest Bicomponents",
                                     measure_descriptions = "The number of maximally-sized bicomponents in the graph") %>%
                       dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+  } else {
+    num_bicomponents <- data.frame(measure_labels = "Number of Largest Bicomponents",
+                                   measure_descriptions = "The number of maximally-sized bicomponents in the graph",
+                                   measures = unlist(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(largest_bicomponent_igraph(x)$bicomponent_summary$num_bicomponents)}))))
+  }
 
   ##### Size of Largest Bicomponents
+  if (length(type) > 1) {
   size_largest_bi <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(largest_bicomponent_igraph(x)$bicomponent_summary$size_bicomponent)}))) %>%
     dplyr::mutate(measure_labels = "Size of Largest Bicomponent(s)",
                   measure_descriptions = "The number of nodes in the largest bicomponent(s) of the graph") %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+  } else {
+    size_largest_bi <- data.frame(measure_labels = "Size of Largest Bicomponent(s)",
+                                  measure_descriptions = "The number of nodes in the largest bicomponent(s) of the graph",
+                                  measures = unlist(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(largest_bicomponent_igraph(x)$bicomponent_summary$size_bicomponent)}))))
+  }
 
   ##### Proportion in the Largest Bicomponents
+  if (length(type) > 1) {
   prop_largest_bi <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(largest_bicomponent_igraph(x)$bicomponent_summary$prop_bicomponent)}))) %>%
     dplyr::mutate(measure_labels = "Proportion in the Largest Bicomponent(s)",
                   measure_descriptions = "The proportion of nodes in the largest bicomponent(s) of the graph") %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+  } else {
+    prop_largest_bi <- data.frame(measure_labels = "Proportion in the Largest Bicomponent(s)",
+                                  measure_descriptions = "The proportion of nodes in the largest bicomponent(s) of the graph",
+                                  measures = unlist(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(largest_bicomponent_igraph(x)$bicomponent_summary$prop_bicomponent)}))))
+  }
 
 
   ##### Degree Assortativity
-  deg_assort_total <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(degree_assortativity(x, directed = directed)$total)}))) %>%
-    dplyr::mutate(measure_labels = "Degree Assortativity (Total)",
-                  measure_descriptions = "Edgewise correlation of total degree") %>%
-    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+  if (length(type) > 1) {
+    deg_assort_total <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(degree_assortativity(x, directed = directed)$total)}))) %>%
+      dplyr::mutate(measure_labels = "Degree Assortativity (Total)",
+                    measure_descriptions = "Edgewise correlation of total degree") %>%
+      dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
-  deg_assort_in <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(degree_assortativity(x, directed = directed)$indegree)}))) %>%
-    dplyr::mutate(measure_labels = "Degree Assortativity (Indegree)",
-                  measure_descriptions = "Edgewise correlation of total indegree") %>%
-    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+    deg_assort_in <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(degree_assortativity(x, directed = directed)$indegree)}))) %>%
+      dplyr::mutate(measure_labels = "Degree Assortativity (Indegree)",
+                    measure_descriptions = "Edgewise correlation of total indegree") %>%
+      dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
 
-  deg_assort_out <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(degree_assortativity(x, directed = directed)$outdegree)}))) %>%
-    dplyr::mutate(measure_labels = "Degree Assortativity (Outdegree)",
-                  measure_descriptions = "Edgewise correlation of total outdegree") %>%
-    dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+    deg_assort_out <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(degree_assortativity(x, directed = directed)$outdegree)}))) %>%
+      dplyr::mutate(measure_labels = "Degree Assortativity (Outdegree)",
+                    measure_descriptions = "Edgewise correlation of total outdegree") %>%
+      dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+  } else {
+    deg_assort_total <- data.frame(measure_labels = "Degree Assortativity (Total)",
+                    measure_descriptions = "Edgewise correlation of total degree",
+                    measures = unlist(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(degree_assortativity(x, directed = directed)$total)})))
+                 )
+
+    deg_assort_in <- data.frame(measure_labels = "Degree Assortativity (Indegree)",
+                    measure_descriptions = "Edgewise correlation of total indegree",
+                    measures = unlist(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(degree_assortativity(x, directed = directed)$indegree)})))
+                    )
+
+    deg_assort_out <- data.frame(measure_labels = "Degree Assortativity (Outdegree)",
+                    measure_descriptions = "Edgewise correlation of total outdegree",
+                 measures = unlist(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(degree_assortativity(x, directed = directed)$outdegree)})))
+                 )
+  }
 
   ##### Reciprocity Rate
+  if (length(type) > 1) {
   reciprocity_rate <- dplyr::bind_rows(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(igraph::reciprocity(x, ignore.loops = TRUE, mode='ratio'))}))) %>%
     dplyr::mutate(measure_labels = "Reciprocity Rate",
                   measure_descriptions = "The proportion of directed ties that are reciprocated") %>%
@@ -1562,8 +1660,21 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::mutate(measure_labels = "Average Geodesic",
                   measure_descriptions = "The average shortest path length") %>%
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything())
+  } else {
+    reciprocity_rate <-data.frame(measure_labels = "Reciprocity Rate",
+                                  measure_descriptions = "The proportion of directed ties that are reciprocated",
+                                  measures = unlist(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(igraph::reciprocity(x, ignore.loops = TRUE, mode='ratio'))})))
+                 )
+
+
+    avg_geodesic <- data.frame(measure_labels = "Average Geodesic",
+                               measure_descriptions = "The average shortest path length",
+                               measures = unlist(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(igraph::mean_distance(x, directed = directed))})))
+                 )
+  }
 
   ##### Multi-Level Edge Correlation
+  if (length(type) > 1) {
   ######## First have to reformat edgelist
   multi_node1 <- bipartite_list$nodelist %>%
     dplyr::mutate(i_elements = as.character(id),
@@ -1590,17 +1701,25 @@ bi_netwrite <- function(data_type = data_type,
                                                                       weight_type = weight_type,
                                                                       type = type))
 
+  } else {
+    multi_edgecorr <- data.frame(measure_labels = "Multi-Level Edge Correlation",
+                                 measure_descriptions = "Multiplex networks edgewise correlation of relations",
+                                 measures = NA)
+  }
+
   ##### Pairwise Reachability
   pairwise_list <- lapply(bipartite_list$igraph_objects, apply_pairwise)
 
-  for (i in 1:length(pairwise_list)) {
-    pairwise_list[[i]]$var <- names(pairwise_list)[i]
+  if (length(type) > 1) {
+      for (i in 1:length(pairwise_list)) {
+        pairwise_list[[i]]$var <- names(pairwise_list)[i]
+      }
+      pairwise_df <- dplyr::bind_rows(pairwise_list) %>%
+        tidyr::pivot_wider(names_from = var, values_from = value)
+  } else {
+    pairwise_df <- pairwise_list[[1]]
+    colnames(pairwise_df)[3] <- "measures"
   }
-
-  pairwise_df <- dplyr::bind_rows(pairwise_list) %>%
-    tidyr::pivot_wider(names_from = var, values_from = value)
-
-
 
   ############# Split eigen from rest of node-level measures for SD, Gini, and
   ############# Theil calculation
@@ -1724,9 +1843,16 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::mutate(var = stringr::str_replace(var, "^betweenness_", "")) %>%
     dplyr::mutate(var = stringr::str_replace(var, "^eigen_centrality_", "")) %>%
     dplyr::mutate(var = stringr::str_replace(var, "^density_", "")) %>%
-    dplyr::select(measure, cent_measure, mode, dplyr::everything()) %>%
-    tidyr::pivot_wider(names_from = var,
-                       values_from = val) %>%
+    dplyr::select(measure, cent_measure, mode, dplyr::everything()) # %>%
+
+  if (length(type) > 1) {
+    centralization_measures <- centralization_measures %>%
+      tidyr::pivot_wider(names_from = var,
+                         values_from = val)
+
+  }
+
+  centralization_measures <- centralization_measures %>%
     dplyr::mutate(mode = dplyr::case_when(mode == 1 ~ "(Mode 1)",
                                    mode == 2 ~ "(Mode 2)",
                                    TRUE ~ ""),
@@ -1758,12 +1884,17 @@ bi_netwrite <- function(data_type = data_type,
 
   centralization_measures <- as.data.frame(centralization_measures)
 
+  if (length(type) == 0) {
+    centralization_measures <- centralization_measures %>%
+      dplyr::select(measure_labels, measure_descriptions, measures = val)
+  }
+
   for (i in 3:ncol(centralization_measures)) {
     centralization_measures[i, ] <- as.character(centralization_measures[i, ])
   }
 
 
-  system_measures <- dplyr::bind_rows(type_of_graph,
+  system_level_measures <- dplyr::bind_rows(type_of_graph,
                                       weighted_graph,
                                       nodecounts,
                                       edgecounts,
@@ -1788,17 +1919,364 @@ bi_netwrite <- function(data_type = data_type,
                                       pairwise_df,
                                       centralization_measures)
 
+  # System & Node-Level Visualizations
+
+  if ("system_measure_plot" %in% output) {
+
+    # browser()
+
+    # Density Plot
+    density_plot <- function(){
+      # Get degree values and split by mode
+      degree1 <- nodes$degree[nodes$mode == 1]
+      degree2 <- nodes$degree[nodes$mode == 2]
+
+      # Defining degree distribution coordinates
+      y_axis1 <- stats::density(degree1)$y
+      x_axis1 <- stats::density(degree1)$x
+      y_axis2 <- stats::density(degree2)$y
+      x_axis2 <- stats::density(degree2)$x
+      coordinates1 <- cbind(as.data.frame(x_axis1), y_axis1)
+      coordinates1 <- coordinates1[(coordinates1$x_axis1 >= 0), ]
+      coordinates2 <- cbind(as.data.frame(x_axis2), y_axis2)
+      coordinates2 <- coordinates2[(coordinates2$x_axis2 >= 0), ]
+      x_axis <- pretty(c(coordinates1$x_axis1, coordinates2$x_axis2))
+      y_axis <- pretty(c(coordinates1$y_axis1, coordinates2$y_axis2))
+      x_spacer <- x_axis[c(length(x_axis))] - x_axis[c(length(x_axis)-1)]
+      x_spacer <- x_spacer*0.5
+      y_spacer <- y_axis[c(length(y_axis))] - y_axis[c(length(y_axis)-1)]
+      y_spacer <- y_spacer*0.5
 
 
+      # Defining Base Degree Plot
+      # graphics::par(mar = c(5,6,2,2),  family='HersheySerif')
+      plot(0, type='n', xlab=' ', ylab=' ', xlim=c(min(x_axis), max(x_axis)),
+           ylim=c(min(y_axis), max(y_axis)), cex.axis=1.3, family='HersheySerif',
+           las=1, main=' ', bty='n')
+      graphics::grid(lwd = 2)
+
+      # Adding Margin Text
+      graphics::mtext(side = 1, text = 'Total Degree', col = "black", line = 3, cex = 1.5, family='HersheySerif')
+      graphics::mtext(side = 2, text = 'Density', col = "black", line = 4.5, cex = 1.5, family='HersheySerif')
+
+      # Plotting Degree
+      graphics::lines(coordinates1$x_axis1, coordinates1$y_axis1, col='brown', lwd=1.5)
+      graphics::lines(coordinates2$x_axis2, coordinates2$y_axis2, col='darkblue', lwd=1.5)
+
+      # # Adding Skew and Kurtosis
+      # skewness1 <- moments::skewness(degree1)
+      # kurtosis1 <- moments::kurtosis(degree1)
+      # skewness2 <- moments::skewness(degree2)
+      # kurtosis2 <- moments::kurtosis(degree2)
+      # graphics::text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-y_spacer), paste('Skewness ', round(skewness1, digits=2), "/", round(skewness2, digits=2), sep = ""), cex=1.3)
+      # graphics::text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-(y_spacer*2)), paste('Kurtosis ', round(kurtosis1, digits=2), "/", round(kurtosis2, digits = 2), sep = ""), cex=1.3)
+
+      # Adding Title
+      graphics::title(c("Total Degree Distribution"), family='serif', cex.main=2)
+    }
+    density_grob <- cowplot::as_grob(density_plot)
+
+    #######################################
+
+
+    # Populating Subplots
+    system_plot_names <- c("Number of Weak Components",
+                           "Proportion in the Largest Weak Component",
+                           "Degree Assortativity (Total)",
+                           "Reciprocity Rate",
+                           "Transitivity Rate",
+                           "Global Clustering Coefficient",
+                           "Average Geodesic",
+                           "Multi-Level Edge Correlation")
+
+    system_plot_labels <- c("# of Weak Components",
+                            "% in the Largest Weak Component",
+                            "Degree Assortativity",
+                            "Reciprocity Rate",
+                            "Transitivity Rate",
+                            "Global Clustering Coefficient",
+                            "Average Geodesic",
+                            "Multi-Level Edge Correlation")
+
+    system_plot_names[[9]] <- "Density"
+    system_plot_labels[[9]] <- "Density"
+
+    plot_texts <- list()
+    plot_texts$num_weak <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[1]],
+                                                          system_level_measures[system_level_measures$measure_labels == system_plot_names[[1]], 3],
+                                                          sep = "\n"))
+    plot_texts$prop_weak <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[2]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[2]], 3], 1, 4),
+                                                          sep = "\n"))
+    plot_texts$deg_assort <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[3]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[3]], 3], 1, 4),
+                                                          sep = "\n"))
+    plot_texts$recip <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[4]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[4]], 3], 1, 4),
+                                                          sep = "\n"))
+    plot_texts$avg_geo <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[7]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[7]], 3], 1, 4),
+                                                          sep = "\n"))
+
+    # Adding Skew and Kurtosis measures for grobs
+    degree1 <- nodes$degree[nodes$mode == 1]
+    degree2 <- nodes$degree[nodes$mode == 2]
+    skewness1 <- moments::skewness(degree1)
+    kurtosis1 <- moments::kurtosis(degree1)
+    skewness2 <- moments::skewness(degree2)
+    kurtosis2 <- moments::kurtosis(degree2)
+
+    plot_texts$skewness <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Skewness",
+                                                          paste("Mode 1: ", round(skewness1, digits = 2), sep = ""),
+                                                          paste("Mode 2: ", round(skewness2, digits = 2), sep = ""),
+                                                          sep = "\n"))
+    plot_texts$kurtosis <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Kurtosis",
+                                                          paste("Mode 1: ", round(kurtosis1, digits = 2), sep = ""),
+                                                          paste("Mode 2: ", round(kurtosis2, digits = 2), sep = ""),
+                                                          sep = "\n"))
+
+
+
+
+
+    # if (system_level_measures[system_level_measures$measure_labels == system_plot_names[[8]], 3] == "Singleplex Network") {
+    #   plot_texts$multi_corr <- ggplot2::ggplot() +
+    #     ggplot2::theme_void() +
+    #     ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[8]],
+    #                                                         system_level_measures[system_level_measures$measure_labels == system_plot_names[[8]], 3],
+    #                                                         sep = "\n"))
+    # } else {
+    #   plot_texts$multi_corr <- ggplot2::ggplot() +
+    #     ggplot2::theme_void() +
+    #     ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[8]],
+    #                                                         substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[8]], 3], 1, 4),
+    #                                                         sep = "\n"))
+    # }
+
+    plot_texts$density <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste(system_plot_labels[[9]],
+                                                          substr(system_level_measures[system_level_measures$measure_labels == system_plot_names[[9]], 3], 1, 6),
+                                                          sep = "\n"))
+
+
+    mid_right <- cowplot::plot_grid(plot_texts$deg_assort,
+                                    plot_texts$recip,
+                                    plot_texts$skewness,
+                                    plot_texts$kurtosis,
+                                    ### NEED TO DECIDE WHAT TO DO ABOUT MULTIPLEX
+                                    ### CORRELATION WHEN 3+ TYPES
+                                    # plot_texts$multi_corr,
+
+                                    ncol = 1)
+
+    center <- cowplot::plot_grid(density_grob, mid_right, ncol = 2,
+                                 rel_widths = c(2.5, 1))
+
+    top_row <- cowplot::plot_grid(plot_texts$num_weak,
+                                  plot_texts$prop_weak,
+                                  plot_texts$density,
+                                  ncol = 3)
+
+    bottom_row <- cowplot::plot_grid(
+                                     plot_texts$avg_geo,
+                                     ncol = 2)
+
+    p_1 <- cowplot::plot_grid(top_row, center,
+                              bottom_row,
+                              nrow = 3, ncol = 1,
+                              rel_heights = c(1, 5, 1)) +
+      ggplot2::labs(title = "System-Level Measures") +
+      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                        size = 28,
+                                                        face = "bold"))
+
+    if (shiny == FALSE) {
+      print(p_1)
+    }
+
+
+  }
+
+  if ("node_measure_plot" %in% output) {
+
+    # browser()
+
+    # Make list to store ggplots
+    node_gg_list <- list()
+
+    node_gg_list[[1]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = weighted_degree, color = as.factor(mode))) +
+      ggplot2::geom_density() +
+      ggplot2::labs(x = "Weighted Degree",
+                    y = "Density",
+                    color = "Mode") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                     legend.position = "none")
+
+    node_gg_list[[2]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = degree, color = as.factor(mode))) +
+      ggplot2::geom_density() +
+      ggplot2::labs(x = "Degree",
+                    y = "Density",
+                    color = "Mode") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                     legend.position = "none")
+
+    node_gg_list[[3]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = closeness, color = as.factor(mode))) +
+      ggplot2::geom_density() +
+      ggplot2::labs(x = "Closeness",
+                    y = "Density",
+                    color = "Mode") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                     legend.position = "none")
+
+
+    node_gg_list[[4]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = betweenness, color = as.factor(mode))) +
+      ggplot2::geom_density() +
+      ggplot2::labs(x = "Betweenness",
+                    y = "Density",
+                    color = "Mode") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                     legend.position = "none")
+
+    node_gg_list[[5]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = eigen_centrality)) +
+      ggplot2::geom_density() +
+      ggplot2::labs(x = "Eigenvector",
+                    y = "Density") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                     legend.position = "none")
+
+
+    mode_legend_gg <- nodes %>%
+      ggplot2::ggplot(ggplot2::aes(x = degree, y = weighted_degree,
+                                   color = as.factor(mode))) +
+      ggplot2::geom_line() +
+      ggplot2::theme_void() +
+      # ggplot2::scale_color_manual(values = edge_legend_df$color) +
+      ggplot2::labs(color = "Mode")
+
+    node_gg_list[[6]] <- cowplot::get_legend(mode_legend_gg)
+
+
+
+    p_2 <- cowplot::plot_grid(plotlist = node_gg_list, nrow = 3, ncol = 2) +
+      ggplot2::labs(title = "\nNode-Level Measures\n") +
+      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                        size = 24,
+                                                        face = "bold"))
+
+    if (shiny == FALSE) {
+      print(p_2)
+    }
+
+  }
+
+  # Extract largest components to store as outputs if desired
+  largest_bicomponents <- suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){largest_bicomponent_igraph(x)$largest_bi_component}))
+  if (length(largest_bicomponents) == 1) {
+    largest_bicomponents <- largest_bicomponents[[1]]
+  }
+
+  largest_components <- suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){largest_weak_component_igraph(x)$largest_component}))
+  if (length(largest_components) == 1) {
+    largest_components <- largest_components[[1]]
+  }
 
 
    # Create one-mode edgelists for each mode
+  mode1_proj <- projection_el(bipartite_list = bipartite_list,
+                               mode = 1,
+                               within_fun = within_fun,
+                               agg_fun = agg_fun,
+                               directed = directed)
+  ##### Extract the mode 1 nodelist to pass into netwrite
+  mode1_nodes <- bipartite_list$nodelist %>%
+    dplyr::filter(mode == 1)
 
-  ##### GET JIM/PETER'S TAKE ON THIS-- IGRAPH'S PROJECTION FUNCTION IS CONVENIENT
-  ##### BUT IF WE HAVE MULTIPLE RELATION TYPES OR WEIGHTED TIES I THINK MY FUNCTION
-  ##### IS MORE CONVENIENT. SO WHAT SHOULD WE DO?
+  mode2_proj <- projection_el(bipartite_list = bipartite_list,
+                              mode = 2,
+                              within_fun = within_fun,
+                              agg_fun = agg_fun,
+                              directed = directed)
+  ##### Extract the mode 2 nodelist to pass into netwrite
+  mode2_nodes <- bipartite_list$nodelist %>%
+    dplyr::filter(mode == 2)
 
 
+  if (is.null(type)) {
   # Pass one=mode edgelists through netwrite
+  # DIFFERENT CONDITIONALS FOR SINGLE VS. MULTIRELATIONAL
+  mode1_nw <- multi_netwrite(i_elements = mode1_proj$i_elements,
+                             j_elements = mode1_proj$j_elements,
+                             weights = mode1_proj$weight,
+                             directed = directed,
+                             nodelist = mode1_nodes,
+                             node_id = "id",
+                             output = output,
+                             shiny = FALSE)
+
+  mode2_nw <- multi_netwrite(i_elements = mode2_proj$i_elements,
+                             j_elements = mode2_proj$j_elements,
+                             weights = mode2_proj$weight,
+                             directed = directed,
+                             nodelist = mode2_nodes,
+                             node_id = "id",
+                             output = output,
+                             shiny = FALSE)
+
+
+  } else {
+    mode1_nw <- multi_netwrite(i_elements = mode1_proj$i_elements,
+                               j_elements = mode1_proj$j_elements,
+                               weights = mode1_proj$weight,
+                               type = mode1_proj$type,
+                               directed = directed,
+                               nodelist = mode1_nodes,
+                               node_id = "id",
+                               output = output,
+                               shiny = FALSE)
+
+    mode2_nw <- multi_netwrite(i_elements = mode2_proj$i_elements,
+                               j_elements = mode2_proj$j_elements,
+                               weights = mode2_proj$weight,
+                               type = mode2_proj$weight,
+                               directed = directed,
+                               nodelist = mode2_nodes,
+                               node_id = "id",
+                               output = output,
+                               shiny = FALSE)
+}
+
+
+  full_graph_list <- list(edgelist = bipartite_list$edgelist,
+                          node_measures = nodes,
+                          network = bipartite_list$igraph_objects,
+                          system_measure_plot = p_1,
+                          node_measure_plot = p_2,
+                          largest_component = largest_components,
+                          largest_bi_component = largest_bicomponents)
+
+output_list <- list(full_graph = full_graph_list,
+                    mode1 = mode1_nw, mode2 = mode2_nw)
+
+return(output_list)
 
 }
