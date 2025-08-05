@@ -107,6 +107,7 @@ bipartite_check <- function(bipartite,
 ###########################################################
 
 make_bipartite_list <- function(data_type,
+                                nodelist = NULL,
                                 adjacency_matrix = NULL,
                                 i_elements = NULL,
                                 j_elements = NULL,
@@ -277,7 +278,7 @@ bi_igraph <- function(bipartite_list) {
 # Creating one-mode projection edgelists with customizable calculation
 projection_el <- function(bipartite_list,
                           mode = 1,
-                          within_fun = NULL,
+                          within_fun = function(x,y){return(x*y)},
                           agg_fun = sum,
                           directed = FALSE) {
 
