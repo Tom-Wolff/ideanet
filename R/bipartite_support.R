@@ -24,8 +24,10 @@ adjacency_list = FALSE
 nodelist = NULL
 fix_nodelist = TRUE
 node_id = NULL
-i_elements <- el$person
-j_elements <- el$event
+i_elements <- el$CASEID
+j_elements <- el$alter
+# i_elements <- el$person
+# j_elements <- el$event
 bipartite <- NULL
 # mode_id = NULL
 # weights = NULL
@@ -1245,6 +1247,12 @@ bi_netwrite <- function(data_type = data_type,
                         within_fun = NULL,
                         agg_fun = sum) {
 
+
+  # START FLOW
+
+  ### Create a list for storing output
+  output_list <- list()
+
   # Make nodelist/edgelist from inputted data
   bipartite_list <- make_bipartite_list(data_type = data_type,
                                         adjacency_matrix = adjacency_matrix,
@@ -1363,7 +1371,7 @@ bi_netwrite <- function(data_type = data_type,
 
 
   # SYSTEM-LEVEL MEASURES
-
+if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   # ASK JIM AND PETER WHICH OF THE ORIGINAL LIST MAKE SENSE FOR THE BIPARTITE
   # GRAPH
 
@@ -1918,6 +1926,7 @@ bi_netwrite <- function(data_type = data_type,
                                       multi_edgecorr,
                                       pairwise_df,
                                       centralization_measures)
+}
 
   # System & Node-Level Visualizations
 
@@ -1928,8 +1937,13 @@ bi_netwrite <- function(data_type = data_type,
     # Density Plot
     density_plot <- function(){
       # Get degree values and split by mode
-      degree1 <- nodes$degree[nodes$mode == 1]
-      degree2 <- nodes$degree[nodes$mode == 2]
+      if (is.null(type)) {
+        degree1 <- nodes$degree[nodes$mode == 1]
+        degree2 <- nodes$degree[nodes$mode == 2]
+      } else {
+        degree1 <- nodes$degree_aggregate[nodes$mode == 1]
+        degree2 <- nodes$degree_aggregate[nodes$mode == 2]
+      }
 
       # Defining degree distribution coordinates
       y_axis1 <- stats::density(degree1)$y
@@ -2029,8 +2043,13 @@ bi_netwrite <- function(data_type = data_type,
                                                           sep = "\n"))
 
     # Adding Skew and Kurtosis measures for grobs
-    degree1 <- nodes$degree[nodes$mode == 1]
-    degree2 <- nodes$degree[nodes$mode == 2]
+    if (is.null(type)) {
+      degree1 <- nodes$degree[nodes$mode == 1]
+      degree2 <- nodes$degree[nodes$mode == 2]
+    } else {
+      degree1 <- nodes$degree_aggregate[nodes$mode == 1]
+      degree2 <- nodes$degree_aggregate[nodes$mode == 2]
+    }
     skewness1 <- moments::skewness(degree1)
     kurtosis1 <- moments::kurtosis(degree1)
     skewness2 <- moments::skewness(degree2)
@@ -2114,12 +2133,26 @@ bi_netwrite <- function(data_type = data_type,
 
   if ("node_measure_plot" %in% output) {
 
+    # Make an alternate version of `nodes` to handle different names
+    # if we're working with a multirelational network
+    nodes2 <- nodes
+
+    if (!is.null(type)) {
+      nodes2 <- nodes2 %>%
+        dplyr::select(mode,
+                      weighted_degree = weighted_degree_aggregate,
+                      degree = degree_aggregate,
+                      closeness = closeness_aggregate,
+                      betweenness = betweenness_aggregate,
+                      eigen_centrality = eigen_centrality_aggregate)
+    }
+
     # browser()
 
     # Make list to store ggplots
     node_gg_list <- list()
 
-    node_gg_list[[1]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = weighted_degree, color = as.factor(mode))) +
+    node_gg_list[[1]] <- nodes2 %>% ggplot2::ggplot(ggplot2::aes(x = weighted_degree, color = as.factor(mode))) +
       ggplot2::geom_density() +
       ggplot2::labs(x = "Weighted Degree",
                     y = "Density",
@@ -2128,7 +2161,7 @@ bi_netwrite <- function(data_type = data_type,
       ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
                      legend.position = "none")
 
-    node_gg_list[[2]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = degree, color = as.factor(mode))) +
+    node_gg_list[[2]] <- nodes2 %>% ggplot2::ggplot(ggplot2::aes(x = degree, color = as.factor(mode))) +
       ggplot2::geom_density() +
       ggplot2::labs(x = "Degree",
                     y = "Density",
@@ -2137,7 +2170,7 @@ bi_netwrite <- function(data_type = data_type,
       ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
                      legend.position = "none")
 
-    node_gg_list[[3]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = closeness, color = as.factor(mode))) +
+    node_gg_list[[3]] <- nodes2 %>% ggplot2::ggplot(ggplot2::aes(x = closeness, color = as.factor(mode))) +
       ggplot2::geom_density() +
       ggplot2::labs(x = "Closeness",
                     y = "Density",
@@ -2147,7 +2180,7 @@ bi_netwrite <- function(data_type = data_type,
                      legend.position = "none")
 
 
-    node_gg_list[[4]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = betweenness, color = as.factor(mode))) +
+    node_gg_list[[4]] <- nodes2 %>% ggplot2::ggplot(ggplot2::aes(x = betweenness, color = as.factor(mode))) +
       ggplot2::geom_density() +
       ggplot2::labs(x = "Betweenness",
                     y = "Density",
@@ -2156,7 +2189,7 @@ bi_netwrite <- function(data_type = data_type,
       ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
                      legend.position = "none")
 
-    node_gg_list[[5]] <- nodes %>% ggplot2::ggplot(ggplot2::aes(x = eigen_centrality)) +
+    node_gg_list[[5]] <- nodes2 %>% ggplot2::ggplot(ggplot2::aes(x = eigen_centrality)) +
       ggplot2::geom_density() +
       ggplot2::labs(x = "Eigenvector",
                     y = "Density") +
@@ -2165,7 +2198,7 @@ bi_netwrite <- function(data_type = data_type,
                      legend.position = "none")
 
 
-    mode_legend_gg <- nodes %>%
+    mode_legend_gg <- nodes2 %>%
       ggplot2::ggplot(ggplot2::aes(x = degree, y = weighted_degree,
                                    color = as.factor(mode))) +
       ggplot2::geom_line() +
@@ -2189,17 +2222,20 @@ bi_netwrite <- function(data_type = data_type,
 
   }
 
-  # Extract largest components to store as outputs if desired
-  largest_bicomponents <- suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){largest_bicomponent_igraph(x)$largest_bi_component}))
-  if (length(largest_bicomponents) == 1) {
-    largest_bicomponents <- largest_bicomponents[[1]]
-  }
+  if ("largest_bi_component" %in% output) {
+    # Extract largest components to store as outputs if desired
+    largest_bicomponents <- suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){largest_bicomponent_igraph(x)$largest_bi_component}))
+    if (length(largest_bicomponents) == 1) {
+      largest_bicomponents <- largest_bicomponents[[1]]
+    }
+}
 
-  largest_components <- suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){largest_weak_component_igraph(x)$largest_component}))
-  if (length(largest_components) == 1) {
-    largest_components <- largest_components[[1]]
+  if ("largest_component" %in% output) {
+    largest_components <- suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){largest_weak_component_igraph(x)$largest_component}))
+    if (length(largest_components) == 1) {
+      largest_components <- largest_components[[1]]
+    }
   }
-
 
    # Create one-mode edgelists for each mode
   mode1_proj <- projection_el(bipartite_list = bipartite_list,
@@ -2224,6 +2260,7 @@ bi_netwrite <- function(data_type = data_type,
   if (is.null(type)) {
   # Pass one=mode edgelists through netwrite
   # DIFFERENT CONDITIONALS FOR SINGLE VS. MULTIRELATIONAL
+  base::message("Processing Mode 1 projection")
   mode1_nw <- multi_netwrite(i_elements = mode1_proj$i_elements,
                              j_elements = mode1_proj$j_elements,
                              weights = mode1_proj$weight,
@@ -2232,7 +2269,7 @@ bi_netwrite <- function(data_type = data_type,
                              node_id = "id",
                              output = output,
                              shiny = FALSE)
-
+  base::message("Processing Mode 2 projection")
   mode2_nw <- multi_netwrite(i_elements = mode2_proj$i_elements,
                              j_elements = mode2_proj$j_elements,
                              weights = mode2_proj$weight,
@@ -2244,6 +2281,7 @@ bi_netwrite <- function(data_type = data_type,
 
 
   } else {
+    base::message("Processing Mode 1 projection")
     mode1_nw <- multi_netwrite(i_elements = mode1_proj$i_elements,
                                j_elements = mode1_proj$j_elements,
                                weights = mode1_proj$weight,
@@ -2253,11 +2291,11 @@ bi_netwrite <- function(data_type = data_type,
                                node_id = "id",
                                output = output,
                                shiny = FALSE)
-
+    base::message("Processing Mode 2 projection")
     mode2_nw <- multi_netwrite(i_elements = mode2_proj$i_elements,
                                j_elements = mode2_proj$j_elements,
                                weights = mode2_proj$weight,
-                               type = mode2_proj$weight,
+                               type = mode2_proj$type,
                                directed = directed,
                                nodelist = mode2_nodes,
                                node_id = "id",
@@ -2265,18 +2303,43 @@ bi_netwrite <- function(data_type = data_type,
                                shiny = FALSE)
 }
 
+  # Storing specified outputs for bipartite level
+  if ("edgelist" %in% output) {
+    output_list$edgelist <- bipartite_list$edgelist
+  }
 
-  full_graph_list <- list(edgelist = bipartite_list$edgelist,
-                          node_measures = nodes,
-                          network = bipartite_list$igraph_objects,
-                          system_measure_plot = p_1,
-                          node_measure_plot = p_2,
-                          largest_component = largest_components,
-                          largest_bi_component = largest_bicomponents)
+  if ("nodelist" %in% output) {
+    output_list$node_measures <- nodes
+  }
 
-output_list <- list(full_graph = full_graph_list,
+  if ("graph" %in% output) {
+    output_list$network <- bipartite_list$igraph_objects
+  }
+
+  if ("system_measure_plot" %in% output) {
+    output_list$system_measure_plot <- p_1
+  }
+
+  if ("node_measure_plot" %in% output) {
+    output_list$node_measure_plot <- p_2
+  }
+
+  if ("system_level_measures" %in% output) {
+    output_list$system_level_measures <- system_level_measures
+  }
+
+  if ("largest_component" %in% output) {
+    output_list$largest_component <- largest_components
+  }
+
+  if ("largest_bi_component" %in% output) {
+    output_list$largest_bi_component <- largest_bicomponents
+  }
+
+
+final_output <- list(full_graph = output_list,
                     mode1 = mode1_nw, mode2 = mode2_nw)
 
-return(output_list)
+return(final_output)
 
 }
