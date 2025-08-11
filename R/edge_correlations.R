@@ -22,6 +22,8 @@
 
 edge_correlations <- function(netwrite_output) {
 
+  # browser()
+
   # Check if multirelational network
   if (!("system_level_measures" %in% names(netwrite_output))) {
     stop("List does not contain system_level_measure data frame. Please rerun netwrite to include this data frame in its output.")
@@ -39,7 +41,7 @@ edge_correlations <- function(netwrite_output) {
   # Extract variable names
   cor_split_names <- stringr::str_extract_all(cor_split, "\\b\\w+_weight\\b")
   # Extract correlation values
-  cor_split_vals <- as.numeric(unlist(stringr::str_extract_all(cor_split, "\\d+\\.\\d+$")))
+  cor_split_vals <- as.numeric(unlist(stringr::str_extract_all(cor_split, "\\d+(\\.\\d+)?$")))
 
   # Begin constructing dataframe
   cor_df <- dplyr::bind_rows(lapply(cor_split_names, function(x){data.frame(type1 = x[1], type2 = x[2])}))

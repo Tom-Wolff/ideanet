@@ -2301,7 +2301,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     # kcore_time <- Sys.time()
 
     # Average Edge Connectivity
-    avg_ec <- graph_avg_ec_adaptive(graph)
+    avg_ec <- graph_avg_ec_adaptive(graph = g)
 
 
     measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties',
