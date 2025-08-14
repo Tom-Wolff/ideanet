@@ -2746,12 +2746,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       # Plotting Degree
       graphics::lines(coordinates$x_axis, coordinates$y_axis, col='brown', lwd=1.5)
 
-      # Adding Skew and Kurtosis
-      skewness <- moments::skewness(nodes$total_degree)
-      kurtosis <- moments::kurtosis(nodes$total_degree)
-      graphics::text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-y_spacer), paste('Skewness',round(skewness, digits=2)), cex=1.3)
-      graphics::text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-(y_spacer*2)), paste('Kurtosis',round(kurtosis, digits=2)), cex=1.3)
-
       # Adding Title
       graphics::title(c("Total Degree Distribution"), family='serif', cex.main=2)
     }
@@ -2846,35 +2840,97 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                                           sep = "\n"))
 
 
-    mid_right <- cowplot::plot_grid(plot_texts$deg_assort,
+    # Adding Skew and Kurtosis
+    skewness <- moments::skewness(nodes$total_degree)
+    kurtosis <- moments::kurtosis(nodes$total_degree)
+
+    plot_texts$skewness <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Skewness", round(skewness, digits = 2), sep = "\n"))
+    plot_texts$kurtosis <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Kurtosis", round(kurtosis, digits = 2), sep = "\n"))
+
+    # LEFT SIDE
+    top_left <- cowplot::plot_grid(plot_texts$num_weak,
+                                   plot_texts$prop_weak,
+                                   ncol = 2)
+
+    bottom_left <- cowplot::plot_grid(plot_texts$skewness,
+                                      plot_texts$kurtosis,
+                                      ncol = 2)
+
+    left <- cowplot::plot_grid(top_left, density_grob, bottom_left,
+                               nrow = 3, ncol = 1,
+                               rel_heights = c(1, 5, 1))
+
+
+# RIGHT SIDE
+    top_right <- cowplot::plot_grid(plot_texts$density,
+                                    plot_texts$deg_assort,
                                     plot_texts$recip,
                                     plot_texts$trans_rate,
+                                    plot_texts$gcc,
+                                    plot_texts$avg_geo,
                                     ### NEED TO DECIDE WHAT TO DO ABOUT MULTIPLEX
                                     ### CORRELATION WHEN 3+ TYPES
                                     # plot_texts$multi_corr,
-
                                     ncol = 1)
 
-    center <- cowplot::plot_grid(density_grob, mid_right, ncol = 2,
-                                 rel_widths = c(2.5, 1))
+### BOTTOM RIGHT WILL BE MULTI-EDGE CORRELATION
 
-    top_row <- cowplot::plot_grid(plot_texts$num_weak,
-                                  plot_texts$prop_weak,
-                                  plot_texts$density,
-                                  ncol = 3)
+    multicor <- system_level_measures[system_level_measures$measure_labels == "Multi-Level Edge Correlation", 3]
 
-    bottom_row <- cowplot::plot_grid(plot_texts$gcc,
-                                     plot_texts$avg_geo,
-                                     ncol = 2)
+    if (multicor == "Singleplex Network") {
+      bottom_right <- ggplot2::ggplot() +
+        ggplot2::theme_void() +
+        ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Singleplex Network"))
 
-    p_1 <- cowplot::plot_grid(top_row, center,
-                              bottom_row,
-                              nrow = 3, ncol = 1,
-                              rel_heights = c(1, 5, 1)) +
-      ggplot2::labs(title = "System-Level Measures") +
-      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
-                                                        size = 28,
-                                                        face = "bold"))
+      right <- cowplot::plot_grid(top_right,
+                                  bottom_right,
+                                  ncol = 1,
+                                  rel_heights = c(4, 1))
+
+      p_1 <- cowplot::plot_grid(left, right,
+                                nrow = 1, ncol = 2,
+                                rel_widths = c(3, 1)) +
+        ggplot2::labs(title = "System-Level Measures") +
+        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                          size = 28,
+                                                          face = "bold"))
+
+    } else {
+
+      bottom_right <- edge_correlations(system_level_measures) %>%
+        ggplot2::ggplot(ggplot2::aes(x = type1,
+                                     y = type2,
+                                     fill = correlation)) +
+        ggplot2::geom_tile(color = "white",
+                           lwd = 1.5) +
+        ggplot2::geom_text(ggplot2::aes(label = correlation), color = "white", size = 4) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid = ggplot2::element_blank(),
+                       legend.position = "none",
+                       plot.title = ggplot2::element_text(hjust = 0.5, face = "bold")) +
+        ggplot2::labs(x = NULL,
+                      y = NULL,
+                      title = "\nMulti-Level\nEdge Correlations")
+
+      right <- cowplot::plot_grid(top_right,
+                                  bottom_right,
+                                  ncol = 1,
+                                  rel_heights = c(2, 2))
+
+      p_1 <- cowplot::plot_grid(left, right,
+                                nrow = 1, ncol = 2,
+                                rel_widths = c(2.5, 1.5)) +
+        ggplot2::labs(title = "System-Level Measures") +
+        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                          size = 28,
+                                                          face = "bold"))
+
+    }
+
 
     if (shiny == FALSE) {
       print(p_1)

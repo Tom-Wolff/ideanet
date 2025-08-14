@@ -24,17 +24,23 @@ edge_correlations <- function(netwrite_output) {
 
   # browser()
 
+  if (!is.data.frame(netwrite_output)) {
+
   # Check if multirelational network
   if (!("system_level_measures" %in% names(netwrite_output))) {
     stop("List does not contain system_level_measure data frame. Please rerun netwrite to include this data frame in its output.")
+  }
+  } else {
+    netwrite_output <- list(system_level_measures = netwrite_output)
   }
 
   if (is.na(netwrite_output$system_level_measures[netwrite_output$system_level_measures[,1] == "Number of Tie Types", 3])) {
     stop("Network does not contain multiple edge types")
   }
 
+
   # Get string from the system-level summary dataframe
-  cor_string <- netwrite_output$system_level_measures[netwrite_output$system_level_measures[,1] == "Multi-Level Edge Correlation", "summary_graph"]
+  cor_string <- netwrite_output$system_level_measures[netwrite_output$system_level_measures[,1] == "Multi-Level Edge Correlation", 3]
 
   # Split `cor_string` as needed
   cor_split <- stringr::str_split(cor_string, pattern = "; ")[[1]]
