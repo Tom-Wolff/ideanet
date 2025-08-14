@@ -2901,9 +2901,20 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     } else {
 
-      bottom_right <- edge_correlations(system_level_measures) %>%
+      cormat1 <- edge_correlations(system_level_measures)
+      cormat2 <- cormat1 %>% dplyr::rename(type1 = type2,
+                                           type2 = type1)
+      cormat3 <- data.frame(type1 = unique(type),
+                            type2 = unique(type),
+                            correlation = NA)
+
+      full_cormat <- dplyr::bind_rows(cormat1, cormat2, cormat3) %>%
+        dplyr::mutate(type1 = as.ordered(type1),
+                      type2 = as.ordered(type2))
+
+      bottom_right <- full_cormat %>%
         ggplot2::ggplot(ggplot2::aes(x = type1,
-                                     y = type2,
+                                     y = ordered(type2, levels = rev(levels(type2))),
                                      fill = correlation)) +
         ggplot2::geom_tile(color = "white",
                            lwd = 1.5) +
