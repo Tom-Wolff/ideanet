@@ -2860,9 +2860,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                       plot_texts$kurtosis,
                                       ncol = 2)
 
-    left <- cowplot::plot_grid(top_left, density_grob, bottom_left,
+    left <- cowplot::plot_grid(density_grob, bottom_left, top_left,
                                nrow = 3, ncol = 1,
-                               rel_heights = c(1, 5, 1))
+                               rel_heights = c(5, 1, 1))
 
 
 # RIGHT SIDE
@@ -2894,12 +2894,13 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       p_1 <- cowplot::plot_grid(left, right,
                                 nrow = 1, ncol = 2,
                                 rel_widths = c(3, 1)) +
-        ggplot2::labs(title = "System-Level Measures") +
+        ggplot2::labs(title = "System-Level Measures\n") +
         ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                          vjust = -1,
                                                           size = 28,
                                                           face = "bold"))
 
-    } else {
+    } else if (stringr::str_detect(multicor, ";")) {
 
       cormat1 <- edge_correlations(system_level_measures)
       cormat2 <- cormat1 %>% dplyr::rename(type1 = type2,
@@ -2935,11 +2936,31 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       p_1 <- cowplot::plot_grid(left, right,
                                 nrow = 1, ncol = 2,
                                 rel_widths = c(2.5, 1.5)) +
-        ggplot2::labs(title = "System-Level Measures") +
+        ggplot2::labs(title = "System-Level Measures\n") +
         ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                          vjust = -1,
                                                           size = 28,
                                                           face = "bold"))
 
+    } else {
+      multicor2 <- edge_correlations(system_level_measures)[,3]
+      bottom_right <- ggplot2::ggplot() +
+        ggplot2::theme_void() +
+        ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Multi-Level\nEdge Correlation", multicor2, sep = "\n"))
+
+      right <- cowplot::plot_grid(top_right,
+                                  bottom_right,
+                                  ncol = 1,
+                                  rel_heights = c(4, 1))
+
+      p_1 <- cowplot::plot_grid(left, right,
+                                nrow = 1, ncol = 2,
+                                rel_widths = c(3, 1)) +
+        ggplot2::labs(title = "System-Level Measures\n") +
+        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                          vjust = -1,
+                                                          size = 28,
+                                                          face = "bold"))
     }
 
 
