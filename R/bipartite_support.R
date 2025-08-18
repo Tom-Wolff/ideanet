@@ -14,41 +14,41 @@
 #
 # # Read in edgelist of Davis women/events network
 # el <- read.csv("~/Desktop/davis_edgelist.csv")
-el <- read.csv("~/Desktop/rcLong.csv") %>%
-  dplyr::filter(!is.na(weight)) %>%
-  dplyr::filter(city == 1) %>%
-  dplyr::filter(round == 1)
-data_type <- "edgelist"
-adjacency_matrix = FALSE
-adjacency_list = FALSE
-nodelist = NULL
-fix_nodelist = TRUE
-node_id = NULL
-i_elements <- el$CASEID
-j_elements <- el$alter
-# i_elements <- el$person
-# j_elements <- el$event
-bipartite <- NULL
-# mode_id = NULL
-# weights = NULL
-weights <- el$weight
-# type = NULL
-type <- el$var
-remove_loops = FALSE
-missing_code = NA
-weight_type = "frequency"
-directed = FALSE
-net_name = "network"
-shiny = FALSE
-output = c("graph",
-           "largest_bi_component",
-           "largest_component",
-           "node_measure_plot",
-           "nodelist",
-           "edgelist",
-           "system_level_measures",
-           "system_measure_plot")
-message = TRUE
+# el <- read.csv("~/Desktop/rcLong.csv") %>%
+#   dplyr::filter(!is.na(weight)) %>%
+#   dplyr::filter(city == 1) %>%
+#   dplyr::filter(round == 1)
+# data_type <- "edgelist"
+# adjacency_matrix = FALSE
+# adjacency_list = FALSE
+# nodelist = NULL
+# fix_nodelist = TRUE
+# node_id = NULL
+# i_elements <- el$CASEID
+# j_elements <- el$alter
+# # i_elements <- el$person
+# # j_elements <- el$event
+# bipartite <- NULL
+# # mode_id = NULL
+# # weights = NULL
+# weights <- el$weight
+# # type = NULL
+# type <- el$var
+# remove_loops = FALSE
+# missing_code = NA
+# weight_type = "frequency"
+# directed = FALSE
+# net_name = "network"
+# shiny = FALSE
+# output = c("graph",
+#            "largest_bi_component",
+#            "largest_component",
+#            "node_measure_plot",
+#            "nodelist",
+#            "edgelist",
+#            "system_level_measures",
+#            "system_measure_plot")
+# message = TRUE
 
 
 #
