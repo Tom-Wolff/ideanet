@@ -1136,7 +1136,7 @@ membership_breakdown <- function(x, mode = "weak") {
 #####################################################################
 #    A P P L Y I N G   P A I R W I S E   R E A C H A B I L I T Y    #
 #####################################################################
-apply_pairwise <- function(g) {
+apply_pairwise <- function(g, directed) {
 
   if (directed == TRUE) {
 
@@ -1245,8 +1245,10 @@ bi_netwrite <- function(data_type = data_type,
                         shiny = shiny,
                         output = output,
                         message = message,
-                        within_fun = NULL,
+                        within_fun = function(x,y){return(x*y)},
                         agg_fun = sum) {
+
+  # browser()
 
 
   # START FLOW
@@ -1717,7 +1719,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   }
 
   ##### Pairwise Reachability
-  pairwise_list <- lapply(bipartite_list$igraph_objects, apply_pairwise)
+  pairwise_list <- lapply(bipartite_list$igraph_objects, apply_pairwise, directed = directed)
 
   if (length(type) > 1) {
       for (i in 1:length(pairwise_list)) {
