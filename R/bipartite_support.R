@@ -108,6 +108,7 @@ bipartite_check <- function(bipartite,
 
 make_bipartite_list <- function(data_type,
                                 nodelist = NULL,
+                                node_id = NULL,
                                 adjacency_matrix = NULL,
                                 i_elements = NULL,
                                 j_elements = NULL,
@@ -137,12 +138,31 @@ make_bipartite_list <- function(data_type,
       dplyr::mutate(type = 1) %>%
       dplyr::select(mode1, mode2, type, weight)
 
-    bi_nl <- data.frame(id = c(unique(bi_el$mode1),
+    bi_nl <- data.frame(id = 0:(length(c(unique(bi_el$mode1),
+                                unique(bi_el$mode2)))-1),
+                        name = c(unique(bi_el$mode1),
                                unique(bi_el$mode2)),
                         mode = c(rep(1, length(unique(bi_el$mode1))),
                                  rep(2, length(unique(bi_el$mode2)))
                         )
     )
+
+    # Zero-indexing edgelist
+    nl1 <- bi_nl %>%
+      dplyr::select(mode1 = name,
+                    id1 = id)
+
+    nl2 <- bi_nl %>%
+      dplyr::select(mode2 = name,
+                    id2 = id)
+
+    bi_el <- bi_el %>%
+      dplyr::left_join(nl1, by = "mode1") %>%
+      dplyr::left_join(nl2, by = "mode2") %>%
+      dplyr::select(mode1 = id1, mode2 = id2,
+                    i_elements = mode1,
+                    j_elements = mode2,
+                    dplyr::everything())
 
 
     # If user enters their own nodelist, merge into `bi_nl`
@@ -163,11 +183,10 @@ make_bipartite_list <- function(data_type,
       original_nodelist_names[which(original_nodelist_names == "mode")] <- "original_mode"
       colnames(original_nodelist) <- original_nodelist_names
 
-      original_nodelist$id <- nodelist[,node_id]
-
+      original_nodelist$name <- nodelist[,node_id]
 
       bi_nl <- bi_nl %>%
-        dplyr::left_join(original_nodelist, by = "id")
+        dplyr::left_join(original_nodelist, by = "name")
 
     }
 
@@ -176,6 +195,7 @@ make_bipartite_list <- function(data_type,
   }
 
   if (data_type == "edgelist") {
+
     bi_el <- data.frame(mode1 = i_elements,
                         mode2 = j_elements)
 
@@ -205,11 +225,31 @@ make_bipartite_list <- function(data_type,
       dplyr::filter(mode2 != missing_code) %>%
       dplyr::filter(!is.na(mode2))
 
-    bi_nl <- data.frame(id = c(unique(bi_el$mode1),
+    bi_nl <- data.frame(id = 0:(length(c(unique(bi_el$mode1),
+                                         unique(bi_el$mode2)))-1),
+                        name = c(unique(bi_el$mode1),
                                unique(bi_el$mode2)),
                         mode = c(rep(1, length(unique(bi_el$mode1))),
                                  rep(2, length(unique(bi_el$mode2)))
                         ))
+
+
+    # Zero-indexing edgelist
+    nl1 <- bi_nl %>%
+      dplyr::select(mode1 = name,
+                    id1 = id)
+
+    nl2 <- bi_nl %>%
+      dplyr::select(mode2 = name,
+                    id2 = id)
+
+    bi_el <- bi_el %>%
+      dplyr::left_join(nl1, by = "mode1") %>%
+      dplyr::left_join(nl2, by = "mode2") %>%
+      dplyr::select(mode1 = id1, mode2 = id2,
+                    i_elements = mode1,
+                    j_elements = mode2,
+                    dplyr::everything())
 
     # If user enters their own nodelist, merge into `bi_nl`
     if (!is.null(nodelist)) {
@@ -229,11 +269,12 @@ make_bipartite_list <- function(data_type,
       original_nodelist_names[which(original_nodelist_names == "mode")] <- "original_mode"
       colnames(original_nodelist) <- original_nodelist_names
 
-      original_nodelist$id <- nodelist[,node_id]
+      original_nodelist$name <- nodelist[,node_id]
 
-
+      # Merging and zero-indexing
       bi_nl <- bi_nl %>%
-        dplyr::left_join(original_nodelist, by = "id")
+        dplyr::left_join(original_nodelist, by = "name") %>%
+        dplyr::select(id, dplyr::everything())
 
     }
 
@@ -286,11 +327,13 @@ projection_el <- function(bipartite_list,
 
 
   # Store a starting edgelist
-  el1 <- bipartite_list$edgelist
+  el1 <- bipartite_list$edgelist %>%
+    dplyr::select(mode1, mode2, type, weight)
   ### Name formatting
   colnames(el1) <- paste(colnames(el1), 1, sep = "")
   # Store `el2` as another copy of this edgelist
-  el2 <- bipartite_list$edgelist
+  el2 <- bipartite_list$edgelist %>%
+    dplyr::select(mode1, mode2, type, weight)
   colnames(el2) <- paste(colnames(el2), 2, sep = "")
 
   # Rename columns to enable merge
@@ -611,16 +654,14 @@ bidens_edgelist <- function(el, nl, directed) {
 #### Bipartite degree and normalized degree (from Borgatti & Everett 1997)
 bi_degree <- function(bipartite_list) {
 
-  # browser()
-
   # Mode 1 Degree Counts
   mode1_degree <- bipartite_list$edgelist %>%
     dplyr::group_by(mode1, type) %>%
     dplyr::summarize(degree = dplyr::n(),
                      weighted_degree = sum(weight)) %>%
     dplyr::ungroup() %>%
-    dplyr::rename(id = mode1) %>%
-    dplyr::mutate(id = as.character(id))
+    dplyr::rename(id = mode1) # %>%
+    # dplyr::mutate(id = as.character(id))
 
   # Mode 2 Degree Counts
   mode2_degree <- bipartite_list$edgelist %>%
@@ -628,8 +669,8 @@ bi_degree <- function(bipartite_list) {
     dplyr::summarize(degree = dplyr::n(),
                      weighted_degree = sum(weight)) %>%
     dplyr::ungroup() %>%
-    dplyr::rename(id = mode2) %>%
-    dplyr::mutate(id = as.character(id))
+    dplyr::rename(id = mode2) # %>%
+    # dplyr::mutate(id = as.character(id))
 
   # Mode 1 Aggregate Graph Degree Counts
   if (length(unique(bipartite_list$edgelist$type)) > 1) {
@@ -643,7 +684,7 @@ bi_degree <- function(bipartite_list) {
                        weighted_degree = sum(weight)) %>%
       dplyr::ungroup() %>%
       dplyr::rename(id = mode1) %>%
-      dplyr::mutate(id = as.character(id),
+      dplyr::mutate(# id = as.character(id),
                     type = "aggregate")
 
     # Mode 2 Aggregate Graph Degree Counts
@@ -657,7 +698,7 @@ bi_degree <- function(bipartite_list) {
                        weighted_degree = sum(weight)) %>%
       dplyr::ungroup() %>%
       dplyr::rename(id = mode2) %>%
-      dplyr::mutate(id = as.character(id),
+      dplyr::mutate(# id = as.character(id),
                     type = "aggregate")
   }
 
@@ -698,6 +739,9 @@ bi_degree <- function(bipartite_list) {
                          # names_prefix = "type",
                          values_from = dplyr::ends_with("degree"),
                          values_fill = 0)
+  } else {
+    degree_el <- degree_el %>%
+      dplyr::select(-type)
   }
 
   return(degree_el)
@@ -851,9 +895,9 @@ bi_closeness <- function(bipartite_list,
       dplyr::select(mode, bi_norm)
 
 
-    closeness_df <- data.frame(id = names(farness),
+    closeness_df <- data.frame(name = names(farness),
                                inv_farness = 1/farness) %>%
-      dplyr::left_join(bipartite_list$nodelist, by = "id") %>%
+      dplyr::left_join(bipartite_list$nodelist, by = "name") %>%
       dplyr::left_join(divisors, by = "mode") %>%
       dplyr::mutate(closeness = inv_farness * bi_norm * 100) %>%
       dplyr::select(id, closeness)
@@ -914,12 +958,12 @@ bi_betweenness <- function(bipartite_list,
       # different non-normalized betweenness scores than UCINet does.
       # This is a known difference that we've simply accepted in our
       # one-mode workflows
-      nonnorm_betweenness <- data.frame(id = igraph::V(regular_graph)$name,
+      nonnorm_betweenness <- data.frame(name = igraph::V(regular_graph)$name,
                                         betweenness = igraph::betweenness(regular_graph, directed = FALSE,
                                                                           normalized = FALSE)
       ) %>%
         # Merge in mode identification
-        dplyr::left_join(bipartite_list$nodelist, by = "id")
+        dplyr::left_join(bipartite_list$nodelist, by = "name")
 
       ### Get counts for each mode
       n_o <- bipartite_list$nodelist %>%
@@ -967,12 +1011,12 @@ bi_betweenness <- function(bipartite_list,
   # different non-normalized betweenness scores than UCINet does.
   # This is a known difference that we've simply accepted in our
   # one-mode workflows
-  nonnorm_betweenness <- data.frame(id = igraph::V(regular_graph)$name,
+  nonnorm_betweenness <- data.frame(name = igraph::V(regular_graph)$name,
                                     betweenness = igraph::betweenness(regular_graph, directed = FALSE,
                                                                       normalized = FALSE)
   ) %>%
   # Merge in mode identification
-  dplyr::left_join(bipartite_list$nodelist, by = "id")
+  dplyr::left_join(bipartite_list$nodelist, by = "name")
 
   ### Get counts for each mode
   n_o <- bipartite_list$nodelist %>%
@@ -1042,6 +1086,8 @@ bi_betweenness <- function(bipartite_list,
 
 bi_eigen <- function(bipartite_list, directed) {
 
+  # browser()
+
   # If multiple edge types, create an aggregate edge type
   if (length(unique(bipartite_list$edgelist$type)) > 1) {
 
@@ -1074,11 +1120,11 @@ bi_eigen <- function(bipartite_list, directed) {
       # Create igraph object, needed to get distance matrix
       regular_graph <- bi_igraph(this_list)
 
-      this_df <- data.frame(id = igraph::V(regular_graph)$name,
+      this_df <- data.frame(name = igraph::V(regular_graph)$name,
                             weak_membership = igraph::components(regular_graph, mode = "weak")$membership,
                             eigen = ideanet:::eigen_igraph(regular_graph, directed = directed))
 
-      colnames(this_df) <- c("id",
+      colnames(this_df) <- c("name",
                              paste("weak_membership", unique_types[i], sep = "_"),
                              paste("eigen_centrality", unique_types[i], sep = "_"))
 
@@ -1086,7 +1132,7 @@ bi_eigen <- function(bipartite_list, directed) {
         eigen_df <- this_df
       } else {
         eigen_df <- eigen_df %>%
-          dplyr::full_join(this_df, by = "id")
+          dplyr::full_join(this_df, by = "name")
       }
 
     }
@@ -1097,11 +1143,15 @@ bi_eigen <- function(bipartite_list, directed) {
   # Create igraph object, needed to get distance matrix
   regular_graph <- bi_igraph(bipartite_list)
 
-  eigen_df <- data.frame(id = igraph::V(regular_graph)$name,
+  eigen_df <- data.frame(name = igraph::V(regular_graph)$name,
                          weak_membership = igraph::components(regular_graph, mode = "weak")$membership,
                          eigen_centrality = igraph::eigen_centrality(regular_graph)$vector)
 
   }
+
+  eigen_df <- bipartite_list$nodelist %>%
+    dplyr::left_join(eigen_df, by = "name") %>%
+    dplyr::select(id, dplyr::contains("eigen_centrality"))
 
   return(eigen_df)
 
@@ -1115,14 +1165,14 @@ membership_breakdown <- function(x, mode = "weak") {
   if (mode == "bicomponent") {
 
     component_breakdown <- largest_bicomponent_igraph(x)
-    membership_df <- data.frame(id = names(component_breakdown$largest_bicomponent_ids),
+    membership_df <- data.frame(name = names(component_breakdown$largest_bicomponent_ids),
                                 in_largest_bicomponent = TRUE)
 
   } else {
 
   component_breakdown <- igraph::components(x, mode = mode)
   largest_component_ids <- which(component_breakdown$csize == max(component_breakdown$csize))
-  membership_df <- data.frame(id = names(component_breakdown$membership),
+  membership_df <- data.frame(name = names(component_breakdown$membership),
                               mode_membership = component_breakdown$membership,
                               in_largest_mode = component_breakdown$membership %in% largest_component_ids)
 
@@ -1261,6 +1311,8 @@ bi_netwrite <- function(data_type = data_type,
                                         adjacency_matrix = adjacency_matrix,
                                         i_elements = i_elements,
                                         j_elements = j_elements,
+                                        nodelist = nodelist,
+                                        node_id = node_id,
                                         weights = weights,
                                         type = type,
                                         missing_code = missing_code)
@@ -1293,21 +1345,13 @@ bi_netwrite <- function(data_type = data_type,
   }
 
 
-
   # NODE-LEVEL MEASURES
   ### If there are multiple edge types, get node-level measures for each type
   nodes <- bipartite_list$nodelist %>%
     dplyr::left_join(bi_degree(bipartite_list), by = c("id", "mode")) %>%
     dplyr::left_join(bi_closeness(bipartite_list, weight_type = weight_type), by = "id") %>%
     dplyr::left_join(bi_betweenness(bipartite_list, weight_type = weight_type), by = "id") %>%
-    dplyr::left_join(bi_eigen(bipartite_list, directed = directed), by = "id") %>%
-    dplyr::select(id, mode,
-                  dplyr::starts_with("degree"),
-                  dplyr::starts_with("weighted_degree"),
-                  dplyr::starts_with("norm_degree"),
-                  dplyr::starts_with("closeness"),
-                  dplyr::starts_with("betweenness"),
-                  dplyr::starts_with("eigen"))
+    dplyr::left_join(bi_eigen(bipartite_list, directed = directed), by = "id")
 
   # Weak Component Membership
   weak_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "weak")
@@ -1322,12 +1366,12 @@ bi_netwrite <- function(data_type = data_type,
     if (i == 1) {
       weak_memberships_df <- weak_memberships_list[[i]]
     } else {
-      weak_memberships_df <- dplyr::left_join(weak_memberships_df, weak_memberships_list[[i]], by = "id")
+      weak_memberships_df <- dplyr::left_join(weak_memberships_df, weak_memberships_list[[i]], by = "name")
     }
   }
 
   nodes <- nodes %>%
-    dplyr::left_join(weak_memberships_df, by = "id")
+    dplyr::left_join(weak_memberships_df, by = "name")
 
   # Strong Component Membership
   strong_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "strong")
@@ -1340,12 +1384,12 @@ bi_netwrite <- function(data_type = data_type,
     if (i == 1) {
       strong_memberships_df <- strong_memberships_list[[i]]
     } else {
-      strong_memberships_df <- dplyr::left_join(strong_memberships_df, strong_memberships_list[[i]], by = "id")
+      strong_memberships_df <- dplyr::left_join(strong_memberships_df, strong_memberships_list[[i]], by = "name")
     }
   }
 
   nodes <- nodes %>%
-    dplyr::left_join(strong_memberships_df, by = "id")
+    dplyr::left_join(strong_memberships_df, by = "name")
 
   # Bicomponent Membership
   bicomponent_membership_list <- suppressWarnings(lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "bicomponent"))
@@ -1358,12 +1402,12 @@ bi_netwrite <- function(data_type = data_type,
     if (i == 1) {
       bicomponent_memberships_df <- bicomponent_membership_list[[i]]
     } else {
-      bicomponent_memberships_df <- dplyr::full_join(bicomponent_memberships_df, bicomponent_membership_list[[i]], by = "id")
+      bicomponent_memberships_df <- dplyr::full_join(bicomponent_memberships_df, bicomponent_membership_list[[i]], by = "name")
     }
   }
 
   nodes <- nodes %>%
-    dplyr::left_join(bicomponent_memberships_df, by = "id")
+    dplyr::left_join(bicomponent_memberships_df, by = "name")
 
 
 
@@ -1688,7 +1732,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   if (length(type) > 1) {
   ######## First have to reformat edgelist
   multi_node1 <- bipartite_list$nodelist %>%
-    dplyr::mutate(i_elements = as.character(id),
+    dplyr::mutate(i_elements = id, # as.character(id),
                   i_id = 0:(dplyr::n()-1)) %>%
     dplyr::select(i_elements, i_id)
   multi_node2 <- multi_node1 %>%
@@ -2249,6 +2293,14 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   ##### Extract the mode 1 nodelist to pass into netwrite
   mode1_nodes <- bipartite_list$nodelist %>%
     dplyr::filter(mode == 1)
+  if ("original_id" %in% colnames(mode1_nodes)) {
+    mode1_nodes <- mode1_nodes %>%
+      dplyr::select(-original_id)
+  }
+  if ("original_mode" %in% colnames(mode1_nodes)) {
+    mode1_nodes <- mode1_nodes %>%
+      dplyr::select(-original_mode)
+  }
 
   mode2_proj <- projection_el(bipartite_list = bipartite_list,
                               mode = 2,
@@ -2258,8 +2310,16 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   ##### Extract the mode 2 nodelist to pass into netwrite
   mode2_nodes <- bipartite_list$nodelist %>%
     dplyr::filter(mode == 2)
+  if ("original_id" %in% colnames(mode2_nodes)) {
+    mode2_nodes <- mode2_nodes %>%
+      dplyr::select(-original_id)
+  }
+  if ("original_mode" %in% colnames(mode2_nodes)) {
+    mode2_nodes <- mode2_nodes %>%
+      dplyr::select(-original_mode)
+  }
 
-
+  browser()
   if (is.null(type)) {
   # Pass one=mode edgelists through netwrite
   # DIFFERENT CONDITIONALS FOR SINGLE VS. MULTIRELATIONAL
@@ -2316,7 +2376,11 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   }
 
   if ("graph" %in% output) {
-    output_list$network <- bipartite_list$igraph_objects
+    if (length(bipartite_list$igraph_objects) > 1) {
+      output_list$network <- bipartite_list$igraph_objects
+    } else {
+      output_list$network <- bipartite_list$igraph_objects[[1]]
+    }
   }
 
   if ("system_measure_plot" %in% output) {
