@@ -1070,7 +1070,7 @@ k_cohesion <- function(graph) {
     for (comp_id in unique(dt$comp)) {
       members <- dt[dt$comp == comp_id, "node"]
       if (length(members) >= 2) {
-        pairs <- t(combn(members, 2))
+        pairs <- t(utils::combn(members, 2))
         joint_kcore[pairs] <- pmax(joint_kcore[pairs], k)
         joint_kcore[pairs[,2:1]] <- joint_kcore[pairs]  # symmetric
       }

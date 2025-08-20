@@ -791,7 +791,7 @@ ef2 <- function(g) {
 #   return(bonacich_output)
 # }
 
-bonacich <- function(matrix, bpct = .75) {
+bonacich <- function(matrix, bpct = .75, directed = FALSE) {
 
   # browser()
 
@@ -806,7 +806,15 @@ bonacich <- function(matrix, bpct = .75) {
   } else {
 
     # Calculate eigenvalues
-    evs <- RSpectra::eigs(matrix, k = 1, which = "LR")
+    ### Easiest way to do this efficiently is to create igraph object from the
+    ### adjacency matrix and get the eigenvalue from `igraph::eigen_centrality`
+    if (isTRUE(directed)) {
+      temp_g <- igraph::graph_from_adjacency_matrix(matrix, mode = "directed")
+    } else {
+      temp_g <- igraph::graph_from_adjacency_matrix(matrix, mode = "undirected")
+    }
+
+    maxev <- igraph::eigen_centrality(temp_g, directed = directed)$value
 
     # The ones we want are in the first column
     # Something's weird here -- it's combining the two columns that SAS outputs into a single value
@@ -814,41 +822,41 @@ bonacich <- function(matrix, bpct = .75) {
     # gets us the values we want.
 
     # Get maximum eigenvalue
-    maxev <- evs$values
+    # maxev <- evs$values
 
     if (is.complex(maxev) & Im(maxev) != 0) {
       bonacich_output <- data.frame(bonacich = rep(0, n), bon_centralization = rep(0, n))
       base::warning("Maximum eigenvector value is complex number. Bonacich centrality scores will be set to 0.")
     } else {
 
-    maxev <- Re(maxev)
+      maxev <- Re(maxev)
 
-    # Get values that go into computation
-    b <- bpct*(1/maxev) # Diameter of power weight
-    n <- nrow(matrix) # Size
-    i <- Matrix::Diagonal(n) # Identity matrix
-    w <- Matrix::Matrix(rep(1, n), ncol = 1) # Column of 1s
+      # Get values that go into computation
+      b <- bpct*(1/maxev) # Diameter of power weight
+      n <- nrow(matrix) # Size
+      i <- Matrix::Diagonal(n) # Identity matrix
+      w <- Matrix::Matrix(rep(1, n), ncol = 1) # Column of 1s
 
-    # For some reason, the output of the `solve` function is the transpose
-    # of the `INV` function in SAS. I'm going to transpose the output of `solve` here
-    # so that results are consistent with what we get in SAS, but this is something
-    # we need to confirm and possibly be wary of.
+      # For some reason, the output of the `solve` function is the transpose
+      # of the `INV` function in SAS. I'm going to transpose the output of `solve` here
+      # so that results are consistent with what we get in SAS, but this is something
+      # we need to confirm and possibly be wary of.
 
 
-    # Key equation, this is the centrality score
-    C <- (Matrix::t(Matrix::solve(i-b*matrix)))%*%Matrix::t(matrix)%*%w
+      # Key equation, this is the centrality score
+      C <- (Matrix::t(Matrix::solve(i-b*matrix)))%*%Matrix::t(matrix)%*%w
 
-    # This is Bonacich normalizing value alpha
-    A <- sqrt(n/(Matrix::t(C) %*% C))
+      # This is Bonacich normalizing value alpha
+      A <- sqrt(n/(Matrix::t(C) %*% C))
 
-    # This is the power centrality score
-    cent <- as.numeric(A) * as.numeric(C)
+      # This is the power centrality score
+      cent <- as.numeric(A) * as.numeric(C)
 
-    # This is the centralization score
-    NBCNT <- sum(max(C) - C)/((n-1)*(n-2))
+      # This is the centralization score
+      NBCNT <- sum(max(C) - C)/((n-1)*(n-2))
 
-    # Collect power centrality scores and centralization scores into single dataframe
-    bonacich_output <- data.frame(bonacich = cent, bon_centralization = NBCNT)
+      # Collect power centrality scores and centralization scores into single dataframe
+      bonacich_output <- data.frame(bonacich = cent, bon_centralization = NBCNT)
 
     }
 
@@ -1191,7 +1199,8 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
     # First let's get the indegree version
     if (isTRUE(treat_directed)) {
-      bonacich_in <- bonacich(matrix = bon_adjmat, bpct = bpct)
+      bonacich_in <- bonacich(matrix = bon_adjmat, bpct = bpct,
+                              directed = TRUE)
     } else {
       bonacich_in <- data.frame(bonacich = rep(NA, nrow(bon_adjmat)),
                                 bon_centralization = rep(NA, nrow(bon_adjmat)))
@@ -1202,7 +1211,8 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
     # Next let's get the outdegree version
     if (isTRUE(treat_directed)) {
-      bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct)
+      bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct,
+                               directed = TRUE)
     } else {
       bonacich_out <- data.frame(bonacich = rep(NA, nrow(bon_adjmat)),
                                  bon_centralization = rep(NA, nrow(bon_adjmat)))
@@ -1212,7 +1222,8 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
 
     # Finally, we get the undirected version from the symmetrized adjacency matrix
-    bonacich_sym <- bonacich(matrix = bon_sym_mat, bpct = bpct)
+    bonacich_sym <- bonacich(matrix = bon_sym_mat, bpct = bpct,
+                             directed = FALSE)
 
     # Update column names
     colnames(bonacich_sym) <- paste(colnames(bonacich_sym), "_sym", sep = "")
@@ -1267,7 +1278,8 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
         # First let's get the indegree version
         if (isTRUE(treat_directed)) {
-          bonacich_in <- bonacich(matrix = bon_adjmat, bpct = bpct)
+          bonacich_in <- bonacich(matrix = bon_adjmat, bpct = bpct,
+                                  directed = TRUE)
         } else {
           bonacich_in <- data.frame(bonacich = rep(NA, nrow(bon_adjmat)),
                                     bon_centralization = rep(NA, nrow(bon_adjmat)))
@@ -1278,7 +1290,8 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
         # Next let's get the outdegree version
         if (isTRUE(treat_directed)) {
-          bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct)
+          bonacich_out <- bonacich(matrix = Matrix::t(bon_adjmat), bpct = bpct,
+                                   directed = TRUE)
         } else {
           bonacich_out <- data.frame(bonacich = rep(NA, nrow(bon_adjmat)),
                                      bon_centralization = rep(NA, nrow(bon_adjmat)))
@@ -1288,7 +1301,8 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
 
         # Finally, we get the undirected version from the symmetrized adjacency matrix
-        bonacich_sym <- bonacich(matrix = bon_sym_mat, bpct = bpct)
+        bonacich_sym <- bonacich(matrix = bon_sym_mat, bpct = bpct,
+                                 directed = FALSE)
 
         # Update column names
         colnames(bonacich_sym) <- paste(colnames(bonacich_sym), "_sym", sep = "")
@@ -1329,12 +1343,12 @@ bonacich_igraph <- function(g, directed, bpct = .75,
 
   # If directed measures are only `NA`s, remove those columns
   if (sum(is.na(nodelist$bonacich_in)) == nrow(nodelist) &
-    sum(is.na(nodelist$bonacich_out)) == nrow(nodelist)) {
-        # nodelist <- nodelist %>%
-        #   dplyr::select(bonacich = bonacich_sym,
-        #                 bon_centralization = bon_centralization_sym)
-        nodelist <- data.frame(bonacich = nodelist$bonacich_sym,
-                               bon_centralization = nodelist$bon_centralization_sym)
+      sum(is.na(nodelist$bonacich_out)) == nrow(nodelist)) {
+    # nodelist <- nodelist %>%
+    #   dplyr::select(bonacich = bonacich_sym,
+    #                 bon_centralization = bon_centralization_sym)
+    nodelist <- data.frame(bonacich = nodelist$bonacich_sym,
+                           bon_centralization = nodelist$bon_centralization_sym)
   }
 
   return(nodelist)

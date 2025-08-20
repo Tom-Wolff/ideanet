@@ -2903,23 +2903,23 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     } else if (stringr::str_detect(multicor, ";")) {
 
       cormat1 <- edge_correlations(system_level_measures)
-      cormat2 <- cormat1 %>% dplyr::rename(type1 = type2,
-                                           type2 = type1)
+      cormat2 <- cormat1 %>% dplyr::rename(type1 = .data$type2,
+                                           type2 = .data$type1)
       cormat3 <- data.frame(type1 = unique(type),
                             type2 = unique(type),
                             correlation = NA)
 
       full_cormat <- dplyr::bind_rows(cormat1, cormat2, cormat3) %>%
-        dplyr::mutate(type1 = as.ordered(type1),
-                      type2 = as.ordered(type2))
+        dplyr::mutate(type1 = as.ordered(.data$type1),
+                      type2 = as.ordered(.data$type2))
 
       bottom_right <- full_cormat %>%
-        ggplot2::ggplot(ggplot2::aes(x = type1,
-                                     y = ordered(type2, levels = rev(levels(type2))),
-                                     fill = correlation)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$type1,
+                                     y = ordered(.data$type2, levels = rev(levels(.data$type2))),
+                                     fill = .data$correlation)) +
         ggplot2::geom_tile(color = "white",
                            lwd = 1.5) +
-        ggplot2::geom_text(ggplot2::aes(label = correlation), color = "white", size = 4) +
+        ggplot2::geom_text(ggplot2::aes(label = .data$correlation), color = "white", size = 4) +
         ggplot2::theme_minimal() +
         ggplot2::theme(panel.grid = ggplot2::element_blank(),
                        legend.position = "none",
