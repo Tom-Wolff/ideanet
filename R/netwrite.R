@@ -3369,7 +3369,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   return(basic_output)
 
 
-
 }
 
 # Function for preparing node-level measure plots
