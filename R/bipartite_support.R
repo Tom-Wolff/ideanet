@@ -4,6 +4,51 @@
 #                                             #
 ###############################################
 
+# To do list from Latapy et al.:
+#   - Mean degree (for each mode)
+#   - Bipartite density (m is number of edges)
+#   --- m/n_mode1*n_mode2
+#   --- Density of G': 2m/(n_mode1 + n_mode2)(n_mode1 + n_mode2 - 1)
+#     - Average distance
+#     --- Average distance between modes within node
+#
+# - Degree distributions displayed as some kind of logged density/power law
+#   sort of plot
+# - Degree distributions measured as some fraction of nodes as having a degree
+#   past a certain threshold
+# --- Latapy et al. argue that degree distributions may be homogenous for one mode
+#     but heterogenous for the other other mode, so it's important to calculate
+#     separate distribution statistics for each
+# - Correlation between degree in mode1 and degree in mode1
+# --- Basically, get the edgelist, merge in i's degree and j's degree, then
+# --- calculate the correlation between these two degree measures
+# - As a node-level measure, number of distance-2 neighbors
+# --- Basically functions as a kind of degree measure within-node
+# --- And you can plot the distributions of these measures against the degree distribution
+# - Clustering coefficient
+# --- For each dyad, number of i and j's shared neighbors divided by total unique neighbors of i and j
+# --- This is the Jaccard similarity.
+# --- THEN, for each node, calculate Jaccard similarity
+# --- for each of its two-distance neighbors in the same mode. Sum this, then
+# --- divide by the number of two-distance neighbors for that node.
+# ----- From here you can measure the distribution of these scores. And you can
+# ----- take averages, both within-modes and for the whole graph
+# - They also propose 2*number of four-node sets with four links
+# - divided by number of four-node sets with at least three.
+# - Min-clustering
+# --- Number of common neighbors between two nodes in the same mode,
+# --- divided by the size of the smaller neighborhood of the two nodes
+# - Max-clustering
+# --- Number of common neighbors between two nodes in the same mode,
+# --- divided by the size of the larger neighborhood of the same mode
+# ----- And same thing where you take averages within mode and for whole graph
+# - Redundancy Coefficient
+# --- For each node, look at each pair of neighbors that they have. Is there
+# --- another node that's connected to both these nodes? If so, count this in the
+# --- numerator. Then divide by the number of unordered pairs of neighbors of this
+# --- focal node. (|N(v)|(|N(v)|-1)/2)
+# ----- Then take distributions and averages
+
 ###################
 #    S E T U P    #
 ###################
