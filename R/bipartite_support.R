@@ -1701,7 +1701,8 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::left_join(bi_degree(bipartite_list), by = c("id", "mode")) %>%
     dplyr::left_join(bi_closeness(bipartite_list, weight_type = weight_type), by = "id") %>%
     dplyr::left_join(bi_betweenness(bipartite_list, weight_type = weight_type), by = "id") %>%
-    dplyr::left_join(bi_eigen(bipartite_list, directed = directed), by = "id")
+    dplyr::left_join(bi_eigen(bipartite_list, directed = directed), by = "id") %>%
+    dplyr::left_join(dist2_neighbors(bipartite_list), by = "id")
 
   # Weak Component Membership
   weak_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "weak")
