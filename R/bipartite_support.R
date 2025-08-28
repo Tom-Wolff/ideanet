@@ -1576,6 +1576,54 @@ mode_cor_degree <- function(bipartite_list, nodes) {
 }
 
 
+#####################################################################
+#    N U M B E R   O F   D I S T A N C E - 2   N E I G H B O R S    #
+#####################################################################
+
+# From Latapy et al. (2008)
+# - As a node-level measure, number of distance-2 neighbors
+# --- Basically functions as a kind of degree measure within-node
+# --- And you can plot the distributions of these measures against the degree distribution
+
+dist2_neighbors <- function(bipartite_list) {
+
+  if (length(unique(bipartite_list$edgelist$type))) {
+
+    reltypes <- names(bipartite_list$igraph_objects)
+
+    for (i in 1:length(reltypes)) {
+      this_dist2 <- data.frame(name = names(rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NULL) == 2)),
+                               dist2 = rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NULL) == 2))
+      rownames(this_dist2) <- NULL
+      colnames(this_dist2)[2] <- paste("dist2", reltypes[i], sep = "_")
+
+      if (i == 1) {
+        dist2_df <- bipartite_list$nodelist %>%
+          dplyr::select(id, name) %>%
+          dplyr::left_join(this_dist2, by = "name")
+      } else {
+        dist2_df <- dplyr::left_join(dist2_df, this_dist2, by = "name")
+      }
+    }
+
+    dist2_df <- dist2_df %>% dplyr::select(-name)
+
+    # One edge-type condition
+  } else {
+    this_dist2 <- data.frame(name = names(rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NULL) == 2)),
+                             dist2 = rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NULL) == 2))
+    rownames(this_dist2) <- NULL
+
+    dist2_df <- bipartite_list$nodelist %>%
+      dplyr::select(id, name) %>%
+      dplyr::left_join(this_dist2, by = "name") %>%
+      dplyr::select(-name)
+  }
+
+  return(dist2_df)
+}
+
+
 
 ################################################################################
 
