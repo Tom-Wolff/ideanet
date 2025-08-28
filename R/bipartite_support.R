@@ -71,13 +71,13 @@
 # node_id = NULL
 # i_elements <- el$CASEID
 # j_elements <- el$alter
-# # i_elements <- el$person
-# # j_elements <- el$event
+# i_elements <- el$person
+# j_elements <- el$event
 # bipartite <- NULL
-# # mode_id = NULL
-# # weights = NULL
+# mode_id = NULL
+# weights = NULL
 # weights <- el$weight
-# # type = NULL
+# type = NULL
 # type <- el$var
 # remove_loops = FALSE
 # missing_code = NA
@@ -698,6 +698,7 @@ bidens_edgelist <- function(el, nl, directed) {
 
 #### Bipartite degree and normalized degree (from Borgatti & Everett 1997)
 bi_degree <- function(bipartite_list) {
+  # browser()
 
   # Mode 1 Degree Counts
   mode1_degree <- bipartite_list$edgelist %>%
@@ -705,8 +706,8 @@ bi_degree <- function(bipartite_list) {
     dplyr::summarize(degree = dplyr::n(),
                      weighted_degree = sum(weight)) %>%
     dplyr::ungroup() %>%
-    dplyr::rename(id = mode1) # %>%
-    # dplyr::mutate(id = as.character(id))
+    dplyr::rename(id = mode1) %>%
+    dplyr::mutate(type = as.character(type))
 
   # Mode 2 Degree Counts
   mode2_degree <- bipartite_list$edgelist %>%
@@ -714,8 +715,8 @@ bi_degree <- function(bipartite_list) {
     dplyr::summarize(degree = dplyr::n(),
                      weighted_degree = sum(weight)) %>%
     dplyr::ungroup() %>%
-    dplyr::rename(id = mode2) # %>%
-    # dplyr::mutate(id = as.character(id))
+    dplyr::rename(id = mode2) %>%
+    dplyr::mutate(type = as.character(type))
 
   # Mode 1 Aggregate Graph Degree Counts
   if (length(unique(bipartite_list$edgelist$type)) > 1) {
@@ -814,7 +815,12 @@ bi_closeness <- function(bipartite_list,
       dplyr::ungroup() %>%
       dplyr::mutate(type = "aggregate")
 
-    bipartite_list$edgelist <- dplyr::bind_rows(bipartite_list$edgelist,
+    # Need to recode type variable as character
+    or_el <- bipartite_list$edgelist %>%
+      dplyr::mutate(type = as.character(type)) %>%
+      dplyr::select(mode1, mode2, type, weight)
+
+    bipartite_list$edgelist <- dplyr::bind_rows(or_el,
                                                 ag_el)
 
   }
@@ -871,9 +877,9 @@ bi_closeness <- function(bipartite_list,
         dplyr::select(mode, bi_norm)
 
 
-      this_df <- data.frame(id = names(farness),
+      this_df <- data.frame(name = names(farness),
                                  inv_farness = 1/farness) %>%
-        dplyr::left_join(bipartite_list$nodelist, by = "id") %>%
+        dplyr::left_join(bipartite_list$nodelist, by = "name") %>%
         dplyr::left_join(divisors, by = "mode") %>%
         dplyr::mutate(closeness = inv_farness * bi_norm * 100) %>%
         dplyr::select(id, closeness)
@@ -972,7 +978,12 @@ bi_betweenness <- function(bipartite_list,
       dplyr::ungroup() %>%
       dplyr::mutate(type = "aggregate")
 
-    bipartite_list$edgelist <- dplyr::bind_rows(bipartite_list$edgelist,
+    # Need to make type variable a character
+    or_el <- bipartite_list$edgelist %>%
+      dplyr::mutate(type = as.character(type)) %>%
+      dplyr::select(mode1, mode2, type, weight)
+
+    bipartite_list$edgelist <- dplyr::bind_rows(or_el,
                                                 ag_el)
 
   }
@@ -1034,8 +1045,8 @@ bi_betweenness <- function(bipartite_list,
         dplyr::select(id, betweenness, norm_betweenness)
 
       colnames(this_df) <- c("id",
-                                    paste("betweenness", unique_types[i], sep = "_"),
-                                    paste("norm_betweenness", unique_types[i], sep = "_"))
+                             paste("betweenness", unique_types[i], sep = "_"),
+                             paste("norm_betweenness", unique_types[i], sep = "_"))
 
       if (i == 1) {
         betweenness_df <- this_df
@@ -1046,45 +1057,45 @@ bi_betweenness <- function(bipartite_list,
 
 
     }
-  # SINGLE EDGE TYPE
+    # SINGLE EDGE TYPE
   } else {
 
-  # Create igraph object
-  regular_graph <- bi_igraph(bipartite_list)
+    # Create igraph object
+    regular_graph <- bi_igraph(bipartite_list)
 
-  # Get unnormalized betweenness scores. `igraph` produces
-  # different non-normalized betweenness scores than UCINet does.
-  # This is a known difference that we've simply accepted in our
-  # one-mode workflows
-  nonnorm_betweenness <- data.frame(name = igraph::V(regular_graph)$name,
-                                    betweenness = igraph::betweenness(regular_graph, directed = FALSE,
-                                                                      normalized = FALSE)
-  ) %>%
-  # Merge in mode identification
-  dplyr::left_join(bipartite_list$nodelist, by = "name")
+    # Get unnormalized betweenness scores. `igraph` produces
+    # different non-normalized betweenness scores than UCINet does.
+    # This is a known difference that we've simply accepted in our
+    # one-mode workflows
+    nonnorm_betweenness <- data.frame(name = igraph::V(regular_graph)$name,
+                                      betweenness = igraph::betweenness(regular_graph, directed = FALSE,
+                                                                        normalized = FALSE)
+    ) %>%
+      # Merge in mode identification
+      dplyr::left_join(bipartite_list$nodelist, by = "name")
 
-  ### Get counts for each mode
-  n_o <- bipartite_list$nodelist %>%
-    dplyr::group_by(mode) %>%
-    dplyr::summarize(n_o = dplyr::n()) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate()
+    ### Get counts for each mode
+    n_o <- bipartite_list$nodelist %>%
+      dplyr::group_by(mode) %>%
+      dplyr::summarize(n_o = dplyr::n()) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate()
 
-  n_i <- n_o %>% dplyr::mutate(mode = 2:1) %>%
-    dplyr::rename(n_i = n_o)
+    n_i <- n_o %>% dplyr::mutate(mode = 2:1) %>%
+      dplyr::rename(n_i = n_o)
 
-  divisors <- n_o %>%
-    dplyr::left_join(n_i, by = "mode") %>%
-    dplyr::mutate(which_max = n_o <= n_i) %>%
-    dplyr::mutate(bi_max = dplyr::case_when(isFALSE(which_max) ~ 2*(n_o-1)*(n_i-1),
-                                            TRUE ~ (.5*n_i*(n_i-1))+(.5*(n_o-1)*(n_o-2))+((n_o-1)*(n_i-1))
-                                              )) %>%
-    dplyr::select(mode, bi_max)
+    divisors <- n_o %>%
+      dplyr::left_join(n_i, by = "mode") %>%
+      dplyr::mutate(which_max = n_o <= n_i) %>%
+      dplyr::mutate(bi_max = dplyr::case_when(isFALSE(which_max) ~ 2*(n_o-1)*(n_i-1),
+                                              TRUE ~ (.5*n_i*(n_i-1))+(.5*(n_o-1)*(n_o-2))+((n_o-1)*(n_i-1))
+      )) %>%
+      dplyr::select(mode, bi_max)
 
-  betweenness_df <- nonnorm_betweenness %>%
-    dplyr::left_join(divisors, by = "mode") %>%
-    dplyr::mutate(norm_betweenness = (betweenness/bi_max)*100) %>%
-    dplyr::select(id, betweenness, norm_betweenness)
+    betweenness_df <- nonnorm_betweenness %>%
+      dplyr::left_join(divisors, by = "mode") %>%
+      dplyr::mutate(norm_betweenness = (betweenness/bi_max)*100) %>%
+      dplyr::select(id, betweenness, norm_betweenness)
 
   }
 
@@ -1143,7 +1154,12 @@ bi_eigen <- function(bipartite_list, directed) {
       dplyr::ungroup() %>%
       dplyr::mutate(type = "aggregate")
 
-    bipartite_list$edgelist <- dplyr::bind_rows(bipartite_list$edgelist,
+    # Convert type variable into character
+    or_el <- bipartite_list$edgelist %>%
+      dplyr::mutate(type = as.character(type)) %>%
+      dplyr::select(mode1, mode2, type, weight)
+
+    bipartite_list$edgelist <- dplyr::bind_rows(or_el,
                                                 ag_el)
 
   }
@@ -1317,6 +1333,247 @@ apply_pairwise <- function(g, directed) {
 
 }
 
+
+#################################################################
+#    A V E R A G E   D I S T A N C E   W I T H I N   M O D E    #
+#################################################################
+
+bi_avg_dist <- function(bipartite_list) {
+
+  if (length(unique(bipartite_list$edgelist$type)) > 1) {
+
+    for (i in 1:length(bipartite_list$igraph_objects)) {
+      # Get Distance Matrix
+      distmat <- igraph::distances(bipartite_list$igraph_objects[[i]],
+                                   weights = NULL)
+      # Extract Distance Matrix for Mode 1
+      distmat1 <- distmat[rownames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 1, "name"],
+                          colnames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 1, "name"]]
+      diag(distmat1) <- NA
+      # Extract Distance Matrix for Mode 2
+      distmat2 <- distmat[rownames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 2, "name"],
+                          colnames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 2, "name"]]
+      diag(distmat2) <- NA
+
+      this_avgdist <- data.frame(measure_labels = c("Average Distance (Mode 1)",
+                                                    "Average Distance (Mode 2)"),
+                                 measure_descriptions = c("The average distance between two nodes in mode 1",
+                                                          "The average distance between two nodes in mode 2"),
+                                 measures = as.character(c(mean(distmat1, na.rm = TRUE),
+                                                           mean(distmat2, na.rm = TRUE))))
+      colnames(this_avgdist) <- c("measure_labels",
+                                  "measure_descriptions",
+                                  names(bipartite_list$igraph_objects)[[i]])
+
+      if (i == 1) {
+        avgdist_df <- this_avgdist
+      } else {
+        avgdist_df <- avgdist_df %>% dplyr::left_join(this_avgdist, by = c("measure_labels", "measure_descriptions"))
+      }
+    }
+
+  } else {
+    # Get Distance Matrix
+    distmat <- igraph::distances(bipartite_list$igraph_objects[[1]],
+                                 weights = NULL)
+
+    # Extract Distance Matrix for Mode 1
+    distmat1 <- distmat[rownames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 1, "name"],
+                        colnames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 1, "name"]]
+    diag(distmat1) <- NA
+    # Extract Distance Matrix for Mode 2
+    distmat2 <- distmat[rownames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 2, "name"],
+                        colnames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 2, "name"]]
+    diag(distmat2) <- NA
+
+    avgdist_df <- data.frame(measure_labels = c("Average Distance (Mode 1)",
+                                                "Average Distance (Mode 2)"),
+                             measure_descriptions = c("The average distance between two nodes in mode 1",
+                                                      "The average distance between two nodes in mode 2"),
+                             measures = as.character(c(mean(distmat1, na.rm = TRUE),
+                                                       mean(distmat2, na.rm = TRUE))))
+  }
+
+  return(avgdist_df)
+
+}
+
+###################################################################
+#    C R O S S - M O D E   D E G R E E   C O R R E L A T I O N    #
+###################################################################
+
+# From Latapy et al. (2008)
+# - Correlation between degree in mode1 and degree in mode2
+# --- Basically, get the edgelist, merge in i's degree and j's degree, then
+# --- calculate the correlation between these two degree measures
+
+mode_cor_degree <- function(bipartite_list, nodes) {
+
+  if (length(unique(bipartite_list$edgelist$type)) > 1) {
+
+    # browser()
+
+    for (i in 1:length(unique(bipartite_list$edgelist$type))) {
+
+      this_type <- unique(bipartite_list$edgelist$type)[i]
+
+      this_el <- bipartite_list$edgelist %>%
+        dplyr::filter(type == this_type) %>%
+        dplyr::select(mode1, mode2)
+
+      deg_df1 <- nodes[,c("id", paste("degree", this_type, sep = "_"))]
+      colnames(deg_df1) <- c("mode1", "val1")
+      deg_df2 <- nodes[,c("id", paste("degree", this_type, sep = "_"))]
+      colnames(deg_df2) <- c("mode2", "val2")
+
+      deg_el <- this_el %>%
+        dplyr::left_join(deg_df1, by = "mode1") %>%
+        dplyr::left_join(deg_df2, by = "mode2")
+
+
+      wdeg_df1 <- nodes[,c("id", paste("weighted_degree", this_type, sep = "_"))]
+      colnames(wdeg_df1) <- c("mode1", "val1")
+      wdeg_df2 <- nodes[,c("id", paste("weighted_degree", this_type, sep = "_"))]
+      colnames(wdeg_df2) <- c("mode2", "val2")
+
+      wdeg_el <- this_el %>%
+        dplyr::left_join(wdeg_df1, by = "mode1") %>%
+        dplyr::left_join(wdeg_df2, by = "mode2")
+
+      ndeg_df1 <- nodes[,c("id", paste("norm_degree", this_type, sep = "_"))]
+      colnames(ndeg_df1) <- c("mode1", "val1")
+      ndeg_df2 <- nodes[,c("id", paste("norm_degree", this_type, sep = "_"))]
+      colnames(ndeg_df2) <- c("mode2", "val2")
+
+      ndeg_el <- this_el %>%
+        dplyr::left_join(ndeg_df1, by = "mode1") %>%
+        dplyr::left_join(ndeg_df2, by = "mode2")
+
+      this_df <- data.frame(measure_labels = c("Cross-Mode Degree Correlation",
+                                               "Cross-Mode Degree Correlation (Weighted)",
+                                               "Cross-Mode Degree Correlation (Normalized)"),
+                            measure_descriptions = c("The correlation between the degree of mode 1 nodes and the degree of mode 2 nodes to which they are tied",
+                                                     "The correlation between the weighted degree of mode 1 nodes and the weighted degree of mode 2 nodes to which they are tied",
+                                                     "The correlation between the normalized degree of mode 1 nodes and the normalized degree of mode 2 nodes to which they are tied"),
+                            measures = as.character(c(cor(deg_el$val1, deg_el$val2),
+                                         cor(wdeg_el$val1, wdeg_el$val2),
+                                         cor(ndeg_el$val1, ndeg_el$val2))))
+
+      names(this_df)[3] <- this_type
+
+      if (i == 1) {
+        cor_deg_df <- this_df
+      } else {
+        cor_deg_df <- cor_deg_df %>% dplyr::left_join(this_df, by = c("measure_labels",
+                                                                      "measure_descriptions"))
+      }
+
+    }
+
+    # Now we do aggregate graph
+    ag_el <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(mode1, mode2)
+
+    deg_df1 <- nodes[,c("id", paste("degree", "aggregate", sep = "_"))]
+    colnames(deg_df1) <- c("mode1", "val1")
+    deg_df2 <- nodes[,c("id", paste("degree", "aggregate", sep = "_"))]
+    colnames(deg_df2) <- c("mode2", "val2")
+
+    deg_el <- ag_el %>%
+      dplyr::left_join(deg_df1, by = "mode1") %>%
+      dplyr::left_join(deg_df2, by = "mode2")
+
+
+    wdeg_df1 <- nodes[,c("id", paste("weighted_degree", "aggregate", sep = "_"))]
+    colnames(wdeg_df1) <- c("mode1", "val1")
+    wdeg_df2 <- nodes[,c("id", paste("weighted_degree", "aggregate", sep = "_"))]
+    colnames(wdeg_df2) <- c("mode2", "val2")
+
+    wdeg_el <- ag_el %>%
+      dplyr::left_join(wdeg_df1, by = "mode1") %>%
+      dplyr::left_join(wdeg_df2, by = "mode2")
+
+    ndeg_df1 <- nodes[,c("id", paste("norm_degree", "aggregate", sep = "_"))]
+    colnames(ndeg_df1) <- c("mode1", "val1")
+    ndeg_df2 <- nodes[,c("id", paste("norm_degree", "aggregate", sep = "_"))]
+    colnames(ndeg_df2) <- c("mode2", "val2")
+
+    ndeg_el <- ag_el %>%
+      dplyr::left_join(ndeg_df1, by = "mode1") %>%
+      dplyr::left_join(ndeg_df2, by = "mode2")
+
+    this_df <- data.frame(measure_labels = c("Cross-Mode Degree Correlation",
+                                             "Cross-Mode Degree Correlation (Weighted)",
+                                             "Cross-Mode Degree Correlation (Normalized)"),
+                          measure_descriptions = c("The correlation between the degree of mode 1 nodes and the degree of mode 2 nodes to which they are tied",
+                                                   "The correlation between the weighted degree of mode 1 nodes and the weighted degree of mode 2 nodes to which they are tied",
+                                                   "The correlation between the normalized degree of mode 1 nodes and the normalized degree of mode 2 nodes to which they are tied"),
+                          measures = as.character(c(cor(deg_el$val1, deg_el$val2),
+                                       cor(wdeg_el$val1, wdeg_el$val2),
+                                       cor(ndeg_el$val1, ndeg_el$val2))))
+
+    names(this_df)[3] <- "aggregate"
+
+    cor_deg_df <- cor_deg_df %>%
+      dplyr::left_join(this_df, by = c("measure_labels",
+                                       "measure_descriptions"))
+
+    # If only one edge type…
+  } else {
+
+    # Get edgelist
+    this_el <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(mode1, mode2)
+
+    deg_df1 <- nodes[,c("id", "degree")]
+    colnames(deg_df1) <- c("mode1", "val1")
+    deg_df2 <- nodes[,c("id", "degree")]
+    colnames(deg_df2) <- c("mode2", "val2")
+
+    deg_el <- this_el %>%
+      dplyr::left_join(deg_df1, by = "mode1") %>%
+      dplyr::left_join(deg_df2, by = "mode2")
+
+
+    wdeg_df1 <- nodes[,c("id", "weighted_degree")]
+    colnames(wdeg_df1) <- c("mode1", "val1")
+    wdeg_df2 <- nodes[,c("id", "weighted_degree")]
+    colnames(wdeg_df2) <- c("mode2", "val2")
+
+    wdeg_el <- this_el %>%
+      dplyr::left_join(wdeg_df1, by = "mode1") %>%
+      dplyr::left_join(wdeg_df2, by = "mode2")
+
+    ndeg_df1 <- nodes[,c("id", "norm_degree")]
+    colnames(ndeg_df1) <- c("mode1", "val1")
+    ndeg_df2 <- nodes[,c("id", "norm_degree")]
+    colnames(ndeg_df2) <- c("mode2", "val2")
+
+    ndeg_el <- this_el %>%
+      dplyr::left_join(ndeg_df1, by = "mode1") %>%
+      dplyr::left_join(ndeg_df2, by = "mode2")
+
+    cor_deg_df <- data.frame(measure_labels = c("Cross-Mode Degree Correlation",
+                                                "Cross-Mode Degree Correlation (Weighted)",
+                                                "Cross-Mode Degree Correlation (Normalized)"),
+                             measure_descriptions = c("The correlation between the degree of mode 1 nodes and the degree of mode 2 nodes to which they are tied",
+                                                      "The correlation between the weighted degree of mode 1 nodes and the weighted degree of mode 2 nodes to which they are tied",
+                                                      "The correlation between the normalized degree of mode 1 nodes and the normalized degree of mode 2 nodes to which they are tied"),
+                             measures = as.character(c(cor(deg_el$val1, deg_el$val2),
+                                          cor(wdeg_el$val1, wdeg_el$val2),
+                                          cor(ndeg_el$val1, ndeg_el$val2))))
+
+  }
+
+  return(cor_deg_df)
+
+}
 
 
 
@@ -1538,6 +1795,31 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
 
   }
 
+  ##### Mean Degree
+  mean_degree <- nodes %>%
+    dplyr::select(mode, dplyr::contains("degree")) %>%
+    dplyr::group_by(mode) %>%
+    dplyr::summarize_all(mean) %>%
+    dplyr::ungroup() %>%
+    tidyr::pivot_longer(cols = dplyr::contains("degree"),
+                        names_to = "var",
+                        values_to = "measures") %>%
+    dplyr::mutate(measures = as.character(measures)) %>%
+    dplyr::mutate(type = stringr::str_extract(var, "(?<=_)[^_]+$"),
+                  var = stringr::str_extract(var, ".*(?=_)")) %>%
+    tidyr::pivot_wider(names_from = type, values_from = measures) %>%
+    dplyr::mutate(measure_labels = dplyr::case_when(var == "degree" ~ paste("Mean Degree (Mode ", mode, ")", sep = ""),
+                                                    var == "weighted_degree" ~ paste("Mean Weighted Degree (Mode ", mode, ")", sep = ""),
+                                                    var == "norm_degree" ~ paste("Mean Normalized Degree (Mode ", mode, ")", sep = "")),
+                  measure_descriptions = dplyr::case_when(var == "degree" ~ paste("The average number of ties for a node in mode ", mode, sep = ""),
+                                                          var == "weighted_degree" ~ paste("The average weighted degree value for a node in mode ", mode, sep = ""),
+                                                          var == "norm_degree" ~ paste("The average normalized degree value for a mode in node ", mode, sep = "")
+                                                          )
+                                                          ) %>%
+    dplyr::arrange(measure_labels) %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
+    dplyr::select(-mode, -var)
+
   ### If there are multiple edge types, get bipartite-level measures for each type
   ##### Density
   twomode_density <- bi_density(bipartite_list = bipartite_list,
@@ -1587,6 +1869,9 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
       dplyr::select(measure_labels, measure_descriptions, measures = aggregate)
     }
 
+  ##### Average distance between nodes in the same mode
+  ######## NEED TO ASK JIM ABOUT FREQUENCY VS. DISTANCE WEIGHT ASPECT
+  avg_distance <- bi_avg_dist(bipartite_list)
 
   ##### Number of Weak Components
   num_weak <- nodes %>%
@@ -1785,8 +2070,8 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                   j_id = i_id)
 
   multi_el <- bipartite_list$edgelist %>%
-    dplyr::mutate(i_elements = as.character(mode1),
-                  j_elements = as.character(mode2),
+    dplyr::mutate(i_elements = mode1,
+                  j_elements = mode2,
                   Obs_ID = 1:dplyr::n()) %>%
     dplyr::select(Obs_ID, i_elements, j_elements, weight, type) %>%
     dplyr::left_join(multi_node1, by = "i_elements") %>%
@@ -1820,6 +2105,9 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
     pairwise_df <- pairwise_list[[1]]
     colnames(pairwise_df)[3] <- "measures"
   }
+
+  ##### Cross-Mode Degree Correlation
+  crossmode_deg <- mode_cor_degree(bipartite_list, nodes)
 
   ############# Split eigen from rest of node-level measures for SD, Gini, and
   ############# Theil calculation
@@ -2000,7 +2288,9 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                       edgecounts,
                                       num_types,
                                       num_iso,
+                                      mean_degree,
                                       twomode_density,
+                                      avg_distance,
                                       num_weak,
                                       size_largest_weak,
                                       prop_weak,
@@ -2017,6 +2307,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                       avg_geodesic,
                                       multi_edgecorr,
                                       pairwise_df,
+                                      crossmode_deg,
                                       centralization_measures)
 }
 
