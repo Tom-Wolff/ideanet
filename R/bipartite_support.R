@@ -27,11 +27,7 @@
 # --- And you can plot the distributions of these measures against the degree distribution
 
 # - Redundancy Coefficient
-# --- For each node, look at each pair of neighbors that they have. Is there
-# --- another node that's connected to both these nodes? If so, count this in the
-# --- numerator. Then divide by the number of unordered pairs of neighbors of this
-# --- focal node. (|N(v)|(|N(v)|-1)/2)
-# ----- Then take distributions and averages
+
 
 ###################
 #    S E T U P    #
@@ -1610,6 +1606,170 @@ dist2_neighbors <- function(bipartite_list) {
 }
 
 
+#####################################################
+#    R E D U N D A N C Y   C O E F F I C I E N T    #
+#####################################################
+
+# From Latapy et al. (2008)
+# --- For each node, look at each pair of neighbors that they have. Is there
+# --- another node that's connected to both these nodes? If so, count this in the
+# --- numerator. Then divide by the number of unordered pairs of neighbors of this
+# --- focal node. (|N(v)|(|N(v)|-1)/2)
+# ----- Then take distributions and averages
+
+bi_redundancy <- function(bipartite_list) {
+
+  if (length(unique(bipartite_list$edgelist$type)) > 1) {
+
+    for (i in 1:length(unique(bipartite_list$edgelist$type))) {
+      this_type <- unique(bipartite_list$edgelist$type)[i]
+      el1a <- bipartite_list$edgelist %>%
+        dplyr::filter(type == this_type) %>%
+        dplyr::select(merge = mode1, ego = mode2)
+      el1b <- bipartite_list$edgelist %>%
+        dplyr::select(merge = mode1, alter = mode2)
+      el1 <- dplyr::left_join(el1a, el1b, by = "merge",
+                              relationship = "many-to-many") %>%
+        dplyr::filter(ego != alter) %>%
+        dplyr::group_by(ego, alter) %>%
+        dplyr::mutate(redun = dplyr::n() > 1) %>%
+        dplyr::ungroup() %>%
+        dplyr::group_by(merge) %>%
+        dplyr::summarise(numerator = sum(redun),
+                         denominator = dplyr::n(),
+                         redundancy = numerator/denominator) %>%
+        dplyr::ungroup() %>%
+        dplyr::select(id = merge, redundancy)
+
+      el2a <- bipartite_list$edgelist %>%
+        dplyr::filter(type == this_type) %>%
+        dplyr::select(ego = mode1, merge = mode2)
+      el2b <- bipartite_list$edgelist %>%
+        dplyr::select(alter = mode1, merge = mode2)
+      el2 <- dplyr::left_join(el2a, el2b, by = "merge",
+                              relationship = "many-to-many") %>%
+        dplyr::filter(ego != alter) %>%
+        dplyr::group_by(ego, alter) %>%
+        dplyr::mutate(redun = dplyr::n() > 1) %>%
+        dplyr::ungroup() %>%
+        dplyr::group_by(merge) %>%
+        dplyr::summarise(numerator = sum(redun),
+                         denominator = dplyr::n(),
+                         redundancy = numerator/denominator) %>%
+        dplyr::ungroup() %>%
+        dplyr::select(id = merge, redundancy)
+
+      this_el <- dplyr::bind_rows(el1, el2)
+      colnames(this_el)[2] <- paste("redundancy_", this_type, sep = "")
+
+      if (i == 1) {
+        redun_el <- this_el
+      } else {
+        redun_el <- dplyr::left_join(redun_el, this_el, by = "id")
+      }
+
+    }
+
+    # Aggregate edgelist
+    el1a <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(merge = mode1, ego = mode2)
+    el1b <- bipartite_list$edgelist %>%
+      dplyr::select(merge = mode1, alter = mode2)
+    el1 <- dplyr::left_join(el1a, el1b, by = "merge",
+                            relationship = "many-to-many") %>%
+      dplyr::filter(ego != alter) %>%
+      dplyr::group_by(ego, alter) %>%
+      dplyr::mutate(redun = dplyr::n() > 1) %>%
+      dplyr::ungroup() %>%
+      dplyr::group_by(merge) %>%
+      dplyr::summarise(numerator = sum(redun),
+                       denominator = dplyr::n(),
+                       redundancy = numerator/denominator) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(id = merge, redundancy)
+
+    el2a <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(ego = mode1, merge = mode2)
+    el2b <- bipartite_list$edgelist %>%
+      dplyr::select(alter = mode1, merge = mode2)
+    el2 <- dplyr::left_join(el2a, el2b, by = "merge",
+                            relationship = "many-to-many") %>%
+      dplyr::filter(ego != alter) %>%
+      dplyr::group_by(ego, alter) %>%
+      dplyr::mutate(redun = dplyr::n() > 1) %>%
+      dplyr::ungroup() %>%
+      dplyr::group_by(merge) %>%
+      dplyr::summarise(numerator = sum(redun),
+                       denominator = dplyr::n(),
+                       redundancy = numerator/denominator) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(id = merge, redundancy)
+
+    this_el <- dplyr::bind_rows(el1, el2)
+    colnames(this_el)[2] <- "redundancy_aggregate"
+
+    redun_el <- dplyr::left_join(redun_el, this_el)
+
+
+    # Single edge-type condition
+  } else {
+
+    el1a <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(merge = mode1, ego = mode2)
+    el1b <- bipartite_list$edgelist %>%
+      dplyr::select(merge = mode1, alter = mode2)
+    el1 <- dplyr::left_join(el1a, el1b, by = "merge",
+                            relationship = "many-to-many") %>%
+      dplyr::filter(ego != alter) %>%
+      dplyr::group_by(ego, alter) %>%
+      dplyr::mutate(redun = dplyr::n() > 1) %>%
+      dplyr::ungroup() %>%
+      dplyr::group_by(merge) %>%
+      dplyr::summarise(numerator = sum(redun),
+                       denominator = dplyr::n(),
+                       redundancy = numerator/denominator) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(id = merge, redundancy)
+
+    el2a <- bipartite_list$edgelist %>%
+      dplyr::group_by(mode1, mode2) %>%
+      dplyr::slice(1) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(ego = mode1, merge = mode2)
+    el2b <- bipartite_list$edgelist %>%
+      dplyr::select(alter = mode1, merge = mode2)
+    el2 <- dplyr::left_join(el2a, el2b, by = "merge",
+                            relationship = "many-to-many") %>%
+      dplyr::filter(ego != alter) %>%
+      dplyr::group_by(ego, alter) %>%
+      dplyr::mutate(redun = dplyr::n() > 1) %>%
+      dplyr::ungroup() %>%
+      dplyr::group_by(merge) %>%
+      dplyr::summarise(numerator = sum(redun),
+                       denominator = dplyr::n(),
+                       redundancy = numerator/denominator) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(id = merge, redundancy)
+
+    redun_el <- dplyr::bind_rows(el1, el2)
+
+  }
+
+  return(redun_el)
+
+}
+
+
+
 ###################################################################################################
 #    N O D E - L E V E L   J A C C A R D   A N D   C L U S T E R I N G   C O E F F I C I E N T    #
 ###################################################################################################
@@ -1649,8 +1809,8 @@ clust_co_scores <- function(bipartite_list) {
       dplyr::filter(dist == 2) %>%
       dplyr::select(-dist) %>%
       dplyr::mutate(jaccard = NA,
-                    min_clust = NA,
-                    max_clust = NA)
+                    minclust = NA,
+                    maxclust = NA)
 
     for (j in 1:nrow(distmat1)) {
       overlap_mat <- adjmat1[unlist(distmat1[j, c("name", "alter")]),]
@@ -1663,8 +1823,8 @@ clust_co_scores <- function(bipartite_list) {
                           rowSums(overlap_mat)[1],
                           rowSums(overlap_mat)[2])
       distmat1[j, "jaccard"] <- jac_num/jac_denom
-      distmat1[j, "min_clust"] <- jac_num/min_denom
-      distmat1[j, "max_clust"] <- jac_num/max_denom
+      distmat1[j, "minclust"] <- jac_num/min_denom
+      distmat1[j, "maxclust"] <- jac_num/max_denom
     }
 
     distmat2 <- as.data.frame(distmat[rownames(distmat) %in% rownames(adjmat2),
@@ -1673,8 +1833,8 @@ clust_co_scores <- function(bipartite_list) {
       tidyr::pivot_longer(cols = dplyr::all_of(rownames(adjmat2)), names_to = "alter", values_to = "dist") %>%
       dplyr::filter(dist == 2) %>%
       dplyr::mutate(jaccard = NA,
-                    min_clust = NA,
-                    max_clust = NA)
+                    minclust = NA,
+                    maxclust = NA)
 
 
     for (j in 1:nrow(distmat2)) {
@@ -1688,8 +1848,8 @@ clust_co_scores <- function(bipartite_list) {
                           rowSums(overlap_mat)[1],
                           rowSums(overlap_mat)[2])
       distmat2[j, "jaccard"] <- jac_num/jac_denom
-      distmat2[j, "min_clust"] <- jac_num/min_denom
-      distmat2[j, "max_clust"] <- jac_num/max_denom
+      distmat2[j, "minclust"] <- jac_num/min_denom
+      distmat2[j, "maxclust"] <- jac_num/max_denom
     }
 
     these_scores <- dplyr::bind_rows(distmat1 %>%
@@ -1716,9 +1876,13 @@ clust_co_scores <- function(bipartite_list) {
     }
   }
 
-  jac_df <- jac_df %>% dplyr::rename(avg_jaccard = jaccard,
-                                     avg_min_clust = min_clust,
-                                     avg_max_clust = max_clust)
+  if (length(bipartite_list$igraph_objects) == 1) {
+    jac_df <- jac_df %>% dplyr::rename(avg_jaccard = jaccard,
+                                       avg_minclust = minclust,
+                                       avg_maxclust = maxclust)
+  } else {
+    colnames(jac_df)[2:nrow(jac_df)] <- paste("avg", colnames(jac_df)[2:nrow(jac_df)], sep = "_")
+  }
 
   jac_df <- bipartite_list$nodelist %>%
     dplyr::select(id, name) %>%
@@ -1775,6 +1939,7 @@ bi_netwrite <- function(data_type = data_type,
   # Now make bipartite igraph object
   if (is.null(type)) {
     bipartite_list$igraph_objects <- list(bi_igraph(bipartite_list))
+
   } else {
 
     igraph_objects <- list()
@@ -1799,6 +1964,24 @@ bi_netwrite <- function(data_type = data_type,
       bipartite_list$igraph_objects <- igraph_objects
   }
 
+  # # If adjacency matrix/matrices weren't already included in `bipartite_list`,
+  # # go ahead and create them
+  # if (is.null(bipartite_list$adjmat)) {
+  #
+  #   mat_list <- list()
+  #
+  #   for (i in 1:length(bipartite_list$igraph_objects)) {
+  #     mat_list[[i]] <- igraph::as_biadjacency_matrix(bipartite_list$igraph_objects[[i]])
+  #   }
+  #
+  #   bipartite_list$adjmat <- mat_list
+  #
+  #   if (!is.null(type)) {
+  #     names(bipartite_list$adjmat) <- names(bipartite_list$igraph_objects)
+  #   }
+  #
+  # }
+
 
   # NODE-LEVEL MEASURES
   ### If there are multiple edge types, get node-level measures for each type
@@ -1808,7 +1991,8 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::left_join(bi_betweenness(bipartite_list, weight_type = weight_type), by = "id") %>%
     dplyr::left_join(bi_eigen(bipartite_list, directed = directed), by = "id") %>%
     dplyr::left_join(dist2_neighbors(bipartite_list), by = "id") %>%
-    dplyr::left_join(clust_co_scores(bipartite_list), by = "id")
+    dplyr::left_join(clust_co_scores(bipartite_list), by = "id") %>%
+    dplyr::left_join(bi_redundancy(bipartite_list), by = "id")
 
   # Weak Component Membership
   weak_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "weak")
@@ -2237,22 +2421,23 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   }
 
   ##### Clustering Coefficients
+  if (is.null(type)) {
   clust_coef <- as.data.frame(dplyr::bind_rows(nodes %>%
                                   dplyr::group_by(mode) %>%
-                                  dplyr::select(mode, dplyr::contains("jaccard"), dplyr::contains("min_clust"), dplyr::contains("max_clust")) %>%
+                                  dplyr::select(mode, dplyr::contains("jaccard"), dplyr::contains("minclust"), dplyr::contains("maxclust")) %>%
                                   dplyr::summarize_all(function(x){sum(x, na.rm = TRUE)/dplyr::n()}),
                                  nodes %>%
                                   dplyr::mutate(mode = NA) %>%
-                                  dplyr::select(mode, dplyr::contains("jaccard"), dplyr::contains("min_clust"), dplyr::contains("max_clust")) %>%
+                                  dplyr::select(mode, dplyr::contains("jaccard"), dplyr::contains("minclust"), dplyr::contains("maxclust")) %>%
                                   dplyr::summarize_all(function(x){sum(x, na.rm = TRUE)/dplyr::n()})) %>%
     tidyr::pivot_longer(dplyr::contains("avg"), names_to = "var", values_to = "measures") %>%
     dplyr::mutate(measure_labels = dplyr::case_when(stringr::str_detect(var, "avg_jaccard") ~ paste("Global Clustering Coefficient (Mode ", mode, ")", sep = ""),
-                                                    stringr::str_detect(var, "avg_min_clust") ~ paste("Min-Clustering Coefficient (Mode ", mode, ")", sep = ""),
-                                                    stringr::str_detect(var, "avg_max_clust") ~ paste("Max-Clustering Coefficient (Mode ", mode, ")", sep = ""),
+                                                    stringr::str_detect(var, "avg_minclust") ~ paste("Min-Clustering Coefficient (Mode ", mode, ")", sep = ""),
+                                                    stringr::str_detect(var, "avg_maxclust") ~ paste("Max-Clustering Coefficient (Mode ", mode, ")", sep = ""),
                                                     TRUE ~ NA),
                   measure_descriptions = dplyr::case_when(stringr::str_detect(var, "avg_jaccard") ~ paste("The average node-level clustering coefficient (Jaccard score) for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
-                                                          stringr::str_detect(var, "avg_min_clust") ~ paste("The average node-level min-clustering coefficient for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
-                                                          stringr::str_detect(var, "avg_max_clust") ~ paste("The average node-level max-clustering coefficient for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
+                                                          stringr::str_detect(var, "avg_minclust") ~ paste("The average node-level min-clustering coefficient for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
+                                                          stringr::str_detect(var, "avg_maxclust") ~ paste("The average node-level max-clustering coefficient for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
                                                           TRUE ~ NA),
                   measure_labels = stringr::str_replace(measure_labels, "Mode 0", "Full Graph"),
                   measure_descriptions = stringr::str_replace(measure_descriptions, "mode 0", "the entire graph")
@@ -2264,9 +2449,88 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
     clust_coef[,i] <- as.character(clust_coef[,3])
   }
 
+  } else {
+    clust_coef <- as.data.frame(dplyr::bind_rows(nodes %>%
+                                                   dplyr::group_by(mode) %>%
+                                                   dplyr::select(mode, dplyr::contains("jaccard"), dplyr::contains("minclust"), dplyr::contains("maxclust")) %>%
+                                                   dplyr::summarize_all(function(x){sum(x, na.rm = TRUE)/dplyr::n()}),
+                                                 nodes %>%
+                                                   dplyr::mutate(mode = NA) %>%
+                                                   dplyr::select(mode, dplyr::contains("jaccard"), dplyr::contains("minclust"), dplyr::contains("maxclust")) %>%
+                                                   dplyr::summarize_all(function(x){sum(x, na.rm = TRUE)/dplyr::n()}))) %>%
+                                  tidyr::pivot_longer(dplyr::contains("avg"), names_to = "var", values_to = "measures") %>%
+      dplyr::mutate(measures = as.character(measures)) %>%
+      dplyr::mutate(type = stringr::str_extract(var, "(?<=_)[^_]+$"),
+                    var = stringr::str_extract(var, ".*(?=_)")) %>%
+      tidyr::pivot_wider(names_from = type, values_from = measures) %>%
+      dplyr::mutate(measure_labels = dplyr::case_when(stringr::str_detect(var, "avg_jaccard") ~ paste("Global Clustering Coefficient (Mode ", mode, ")", sep = ""),
+                                                      stringr::str_detect(var, "avg_minclust") ~ paste("Min-Clustering Coefficient (Mode ", mode, ")", sep = ""),
+                                                      stringr::str_detect(var, "avg_maxclust") ~ paste("Max-Clustering Coefficient (Mode ", mode, ")", sep = ""),
+                                                      TRUE ~ NA),
+                    measure_descriptions = dplyr::case_when(stringr::str_detect(var, "avg_jaccard") ~ paste("The average node-level clustering coefficient (Jaccard score) for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
+                                                            stringr::str_detect(var, "avg_minclust") ~ paste("The average node-level min-clustering coefficient for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
+                                                            stringr::str_detect(var, "avg_maxclust") ~ paste("The average node-level max-clustering coefficient for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
+                                                            TRUE ~ NA),
+                    measure_labels = stringr::str_replace(measure_labels, "Mode 0", "Full Graph"),
+                    measure_descriptions = stringr::str_replace(measure_descriptions, "mode 0", "the entire graph")
+      ) %>%
+      dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
+      dplyr::select(-mode, -var)
+  }
+
+
+
+  ##### Redundancy Coefficient
+  if (is.null(type)) {
+    # NEED TO CHECK THIS
+    redun_coef <- dplyr::bind_rows(nodes %>%
+                                     dplyr::select(mode, dplyr::contains("redundancy")) %>%
+                                     dplyr::group_by(mode) %>%
+                                     dplyr::summarize_all(mean, na.rm = TRUE),
+                                   nodes %>%
+                                     dplyr::select(mode, dplyr::contains("redundancy")) %>%
+                                     dplyr::summarize_all(mean, na.rm = TRUE) %>%
+                                     dplyr::mutate(mode = 0)) %>%
+      tidyr::pivot_longer(dplyr::contains("redundancy"), names_to = "var", values_to = "measures") %>%
+      dplyr::mutate(measure_labels = paste("Average Redundancy (Mode ", mode, ")", sep = ""),
+                    measure_descriptions = paste("The average redundancy coefficient (fraction of pairs of neighbor of a node linked to another node) in mode ", mode, "as specified in Latapy et al. (2008)", sep = ""),
+                    measure_labels = stringr::str_replace(measure_labels, "Mode 0", "Full Graph"),
+                    measure_descriptions = stringr::str_replace(measure_descriptions, "mode 0", "the entire graph")) %>%
+      dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
+      dplyr::select(-mode, -var)
+
+    for (i in 3:ncol(clust_coef)) {
+      redun_coef[,i] <- as.character(redun_coef[,3])
+    }
+
+  } else {
+    redun_coef <- dplyr::bind_rows(nodes %>%
+                                     dplyr::select(mode, dplyr::contains("redundancy")) %>%
+                                     dplyr::group_by(mode) %>%
+                                     dplyr::summarize_all(mean, na.rm = TRUE),
+                                   nodes %>%
+                                     dplyr::select(mode, dplyr::contains("redundancy")) %>%
+                                     dplyr::summarize_all(mean, na.rm = TRUE) %>%
+                                     dplyr::mutate(mode = 0)) %>%
+      tidyr::pivot_longer(dplyr::contains("redundancy"), names_to = "var", values_to = "measures") %>%
+      dplyr::mutate(measures = as.character(measures)) %>%
+      dplyr::mutate(type = stringr::str_extract(var, "(?<=_)[^_]+$"),
+                    var = stringr::str_extract(var, ".*(?=_)")) %>%
+      tidyr::pivot_wider(names_from = type, values_from = measures) %>%
+      dplyr::mutate(measure_labels = paste("Average Redundancy (Mode ", mode, ")", sep = ""),
+                    measure_descriptions = paste("The average redundancy coefficient (fraction of pairs of neighbor of a node linked to another node) in mode ", mode, "as specified in Latapy et al. (2008)", sep = ""),
+                    measure_labels = stringr::str_replace(measure_labels, "Mode 0", "Full Graph"),
+                    measure_descriptions = stringr::str_replace(measure_descriptions, "mode 0", "the entire graph")) %>%
+      dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
+      dplyr::select(-mode, -var)
+  }
+
+
+
+
 
   ##### Multi-Level Edge Correlation
-  if (length(type) > 1) {
+  if (length(unique(type)) > 1) {
   ######## First have to reformat edgelist
   multi_node1 <- bipartite_list$nodelist %>%
     dplyr::mutate(i_elements = id, # as.character(id),
@@ -2513,6 +2777,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                       reciprocity_rate,
                                       avg_geodesic,
                                       clust_coef,
+                                      redun_coef,
                                       multi_edgecorr,
                                       pairwise_df,
                                       crossmode_deg,
