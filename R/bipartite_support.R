@@ -25,23 +25,7 @@
 # - As a node-level measure, number of distance-2 neighbors
 # --- Basically functions as a kind of degree measure within-node
 # --- And you can plot the distributions of these measures against the degree distribution
-# - Clustering coefficient
-# --- For each dyad, number of i and j's shared neighbors divided by total unique neighbors of i and j
-# --- This is the Jaccard similarity.
-# --- THEN, for each node, calculate Jaccard similarity
-# --- for each of its two-distance neighbors in the same mode. Sum this, then
-# --- divide by the number of two-distance neighbors for that node.
-# ----- From here you can measure the distribution of these scores. And you can
-# ----- take averages, both within-modes and for the whole graph
-# - They also propose 2*number of four-node sets with four links
-# - divided by number of four-node sets with at least three.
-# - Min-clustering
-# --- Number of common neighbors between two nodes in the same mode,
-# --- divided by the size of the smaller neighborhood of the two nodes
-# - Max-clustering
-# --- Number of common neighbors between two nodes in the same mode,
-# --- divided by the size of the larger neighborhood of the same mode
-# ----- And same thing where you take averages within mode and for whole graph
+
 # - Redundancy Coefficient
 # --- For each node, look at each pair of neighbors that they have. Is there
 # --- another node that's connected to both these nodes? If so, count this in the
@@ -1345,7 +1329,7 @@ bi_avg_dist <- function(bipartite_list) {
     for (i in 1:length(bipartite_list$igraph_objects)) {
       # Get Distance Matrix
       distmat <- igraph::distances(bipartite_list$igraph_objects[[i]],
-                                   weights = NULL)
+                                   weights = NA)
       # Extract Distance Matrix for Mode 1
       distmat1 <- distmat[rownames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 1, "name"],
                           colnames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 1, "name"]]
@@ -1375,7 +1359,7 @@ bi_avg_dist <- function(bipartite_list) {
   } else {
     # Get Distance Matrix
     distmat <- igraph::distances(bipartite_list$igraph_objects[[1]],
-                                 weights = NULL)
+                                 weights = NA)
 
     # Extract Distance Matrix for Mode 1
     distmat1 <- distmat[rownames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 1, "name"],
@@ -1587,13 +1571,15 @@ mode_cor_degree <- function(bipartite_list, nodes) {
 
 dist2_neighbors <- function(bipartite_list) {
 
-  if (length(unique(bipartite_list$edgelist$type))) {
+  # browser()
+
+  if (length(unique(bipartite_list$edgelist$type)) > 1) {
 
     reltypes <- names(bipartite_list$igraph_objects)
 
     for (i in 1:length(reltypes)) {
-      this_dist2 <- data.frame(name = names(rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NULL) == 2)),
-                               dist2 = rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NULL) == 2))
+      this_dist2 <- data.frame(name = names(rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NA) == 2)),
+                               dist2 = rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NA) == 2))
       rownames(this_dist2) <- NULL
       colnames(this_dist2)[2] <- paste("dist2", reltypes[i], sep = "_")
 
@@ -1610,8 +1596,8 @@ dist2_neighbors <- function(bipartite_list) {
 
     # One edge-type condition
   } else {
-    this_dist2 <- data.frame(name = names(rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NULL) == 2)),
-                             dist2 = rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NULL) == 2))
+    this_dist2 <- data.frame(name = names(rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NA) == 2)),
+                             dist2 = rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NA) == 2))
     rownames(this_dist2) <- NULL
 
     dist2_df <- bipartite_list$nodelist %>%
@@ -1623,6 +1609,125 @@ dist2_neighbors <- function(bipartite_list) {
   return(dist2_df)
 }
 
+
+###################################################################################################
+#    N O D E - L E V E L   J A C C A R D   A N D   C L U S T E R I N G   C O E F F I C I E N T    #
+###################################################################################################
+# From Latapy et al. (2008)
+# --- For each dyad, number of i and j's shared neighbors divided by total unique neighbors of i and j
+# --- This is the Jaccard similarity.
+# --- THEN, for each node, calculate Jaccard similarity
+# --- for each of its two-distance neighbors in the same mode. Sum this, then
+# --- divide by the number of two-distance neighbors for that node.
+# ----- From here you can measure the distribution of these scores. And you can
+# ----- take averages, both within-modes and for the whole graph
+# - They also propose 2*number of four-node sets with four links
+# - divided by number of four-node sets with at least three.
+# - Min-clustering
+# --- Number of common neighbors between two nodes in the same mode,
+# --- divided by the size of the smaller neighborhood of the two nodes
+# - Max-clustering
+# --- Number of common neighbors between two nodes in the same mode,
+# --- divided by the size of the larger neighborhood of the same mode
+# ----- And same thing where you take averages within mode and for whole graph
+
+clust_co_scores <- function(bipartite_list) {
+
+  # browser()
+
+  for (i in 1:length(bipartite_list$igraph_objects)) {
+    # Get bipartite adjacency matrices
+    adjmat1 <- igraph::as_biadjacency_matrix(bipartite_list$igraph_objects[[i]]) > 0
+    adjmat2 <- t(adjmat1)
+
+    # Get distance matrices for each mode, filter the two-step distances, and create and edgelist
+    distmat <- igraph::distances(bipartite_list$igraph_objects[[i]], weights = NA)
+    distmat1 <- as.data.frame(distmat[rownames(distmat) %in% rownames(adjmat1),
+                                      colnames(distmat) %in% rownames(adjmat1)]) %>%
+      dplyr::mutate(name = rownames(.)) %>%
+      tidyr::pivot_longer(cols = dplyr::all_of(rownames(adjmat1)), names_to = "alter", values_to = "dist") %>%
+      dplyr::filter(dist == 2) %>%
+      dplyr::select(-dist) %>%
+      dplyr::mutate(jaccard = NA,
+                    min_clust = NA,
+                    max_clust = NA)
+
+    for (j in 1:nrow(distmat1)) {
+      overlap_mat <- adjmat1[unlist(distmat1[j, c("name", "alter")]),]
+      jac_num <- sum(overlap_mat[1,] + overlap_mat[2,] == 2)
+      jac_denom <- sum(overlap_mat[1,] + overlap_mat[2,] > 0)
+      min_denom <- ifelse(rowSums(overlap_mat)[1] >= rowSums(overlap_mat)[2],
+                          rowSums(overlap_mat)[2],
+                          rowSums(overlap_mat)[1])
+      max_denom <- ifelse(rowSums(overlap_mat)[1] >= rowSums(overlap_mat)[2],
+                          rowSums(overlap_mat)[1],
+                          rowSums(overlap_mat)[2])
+      distmat1[j, "jaccard"] <- jac_num/jac_denom
+      distmat1[j, "min_clust"] <- jac_num/min_denom
+      distmat1[j, "max_clust"] <- jac_num/max_denom
+    }
+
+    distmat2 <- as.data.frame(distmat[rownames(distmat) %in% rownames(adjmat2),
+                                      colnames(distmat) %in% rownames(adjmat2)]) %>%
+      dplyr::mutate(name = rownames(.)) %>%
+      tidyr::pivot_longer(cols = dplyr::all_of(rownames(adjmat2)), names_to = "alter", values_to = "dist") %>%
+      dplyr::filter(dist == 2) %>%
+      dplyr::mutate(jaccard = NA,
+                    min_clust = NA,
+                    max_clust = NA)
+
+
+    for (j in 1:nrow(distmat2)) {
+      overlap_mat <- adjmat2[unlist(distmat2[j, c("name", "alter")]),]
+      jac_num <- sum(overlap_mat[1,] + overlap_mat[2,] == 2)
+      jac_denom <- sum(overlap_mat[1,] + overlap_mat[2,] > 0)
+      min_denom <- ifelse(rowSums(overlap_mat)[1] >= rowSums(overlap_mat)[2],
+                          rowSums(overlap_mat)[2],
+                          rowSums(overlap_mat)[1])
+      max_denom <- ifelse(rowSums(overlap_mat)[1] >= rowSums(overlap_mat)[2],
+                          rowSums(overlap_mat)[1],
+                          rowSums(overlap_mat)[2])
+      distmat2[j, "jaccard"] <- jac_num/jac_denom
+      distmat2[j, "min_clust"] <- jac_num/min_denom
+      distmat2[j, "max_clust"] <- jac_num/max_denom
+    }
+
+    these_scores <- dplyr::bind_rows(distmat1 %>%
+                                       dplyr::select(-alter) %>%
+                                       dplyr::group_by(name) %>%
+                                       dplyr::summarise_all(mean) %>%
+                                       dplyr::ungroup(),
+                                     distmat2 %>%
+                                       dplyr::select(-alter, -dist) %>%
+                                       dplyr::group_by(name) %>%
+                                       dplyr::summarise_all(mean) %>%
+                                       dplyr::ungroup())
+
+    if (length(bipartite_list$igraph_objects) == 1) {
+      jac_df <- these_scores
+    } else {
+      if (i == 1) {
+        colnames(these_scores)[2:4] <- paste(colnames(these_scores)[2:4], names(bipartite_list$igraph_objects)[i], sep = "_")
+        jac_df <- these_scores
+      } else {
+        colnames(these_scores)[2:4] <- paste(colnames(these_scores)[2:4], names(bipartite_list$igraph_objects)[i], sep = "_")
+        jac_df <- jac_df %>% dplyr::left_join(these_scores, by = "name")
+      }
+    }
+  }
+
+  jac_df <- jac_df %>% dplyr::rename(avg_jaccard = jaccard,
+                                     avg_min_clust = min_clust,
+                                     avg_max_clust = max_clust)
+
+  jac_df <- bipartite_list$nodelist %>%
+    dplyr::select(id, name) %>%
+    dplyr::left_join(jac_df, by = "name") %>%
+    dplyr::select(-name)
+
+  return(jac_df)
+
+}
 
 
 ################################################################################
@@ -1702,7 +1807,8 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::left_join(bi_closeness(bipartite_list, weight_type = weight_type), by = "id") %>%
     dplyr::left_join(bi_betweenness(bipartite_list, weight_type = weight_type), by = "id") %>%
     dplyr::left_join(bi_eigen(bipartite_list, directed = directed), by = "id") %>%
-    dplyr::left_join(dist2_neighbors(bipartite_list), by = "id")
+    dplyr::left_join(dist2_neighbors(bipartite_list), by = "id") %>%
+    dplyr::left_join(clust_co_scores(bipartite_list), by = "id")
 
   # Weak Component Membership
   weak_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "weak")
@@ -1845,29 +1951,52 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   }
 
   ##### Mean Degree
-  mean_degree <- nodes %>%
-    dplyr::select(mode, dplyr::contains("degree")) %>%
-    dplyr::group_by(mode) %>%
-    dplyr::summarize_all(mean) %>%
-    dplyr::ungroup() %>%
-    tidyr::pivot_longer(cols = dplyr::contains("degree"),
-                        names_to = "var",
-                        values_to = "measures") %>%
-    dplyr::mutate(measures = as.character(measures)) %>%
-    dplyr::mutate(type = stringr::str_extract(var, "(?<=_)[^_]+$"),
-                  var = stringr::str_extract(var, ".*(?=_)")) %>%
-    tidyr::pivot_wider(names_from = type, values_from = measures) %>%
-    dplyr::mutate(measure_labels = dplyr::case_when(var == "degree" ~ paste("Mean Degree (Mode ", mode, ")", sep = ""),
-                                                    var == "weighted_degree" ~ paste("Mean Weighted Degree (Mode ", mode, ")", sep = ""),
-                                                    var == "norm_degree" ~ paste("Mean Normalized Degree (Mode ", mode, ")", sep = "")),
-                  measure_descriptions = dplyr::case_when(var == "degree" ~ paste("The average number of ties for a node in mode ", mode, sep = ""),
-                                                          var == "weighted_degree" ~ paste("The average weighted degree value for a node in mode ", mode, sep = ""),
-                                                          var == "norm_degree" ~ paste("The average normalized degree value for a mode in node ", mode, sep = "")
-                                                          )
-                                                          ) %>%
-    dplyr::arrange(measure_labels) %>%
-    dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
-    dplyr::select(-mode, -var)
+  if (is.null(type)) {
+    mean_degree <- nodes %>%
+      dplyr::select(mode, dplyr::contains("degree")) %>%
+      dplyr::group_by(mode) %>%
+      dplyr::summarize_all(mean) %>%
+      dplyr::ungroup() %>%
+      tidyr::pivot_longer(cols = dplyr::contains("degree"),
+                          names_to = "var",
+                          values_to = "measures") %>%
+      dplyr::mutate(measures = as.character(measures)) %>%
+      dplyr::mutate(measure_labels = dplyr::case_when(var == "degree" ~ paste("Mean Degree (Mode ", mode, ")", sep = ""),
+                                                      var == "weighted_degree" ~ paste("Mean Weighted Degree (Mode ", mode, ")", sep = ""),
+                                                      var == "norm_degree" ~ paste("Mean Normalized Degree (Mode ", mode, ")", sep = "")),
+                    measure_descriptions = dplyr::case_when(var == "degree" ~ paste("The average number of ties for a node in mode ", mode, sep = ""),
+                                                            var == "weighted_degree" ~ paste("The average weighted degree value for a node in mode ", mode, sep = ""),
+                                                            var == "norm_degree" ~ paste("The average normalized degree value for a mode in node ", mode, sep = "")
+                    )) %>%
+      dplyr::arrange(measure_labels) %>%
+      dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
+      dplyr::select(-mode, -var)
+  } else {
+    mean_degree <- nodes %>%
+      dplyr::select(mode, dplyr::contains("degree")) %>%
+      dplyr::group_by(mode) %>%
+      dplyr::summarize_all(mean) %>%
+      dplyr::ungroup() %>%
+      tidyr::pivot_longer(cols = dplyr::contains("degree"),
+                          names_to = "var",
+                          values_to = "measures") %>%
+      dplyr::mutate(measures = as.character(measures)) %>%
+      dplyr::mutate(type = stringr::str_extract(var, "(?<=_)[^_]+$"),
+                    var = stringr::str_extract(var, ".*(?=_)")) %>%
+      tidyr::pivot_wider(names_from = type, values_from = measures) %>%
+      dplyr::mutate(measure_labels = dplyr::case_when(var == "degree" ~ paste("Mean Degree (Mode ", mode, ")", sep = ""),
+                                                      var == "weighted_degree" ~ paste("Mean Weighted Degree (Mode ", mode, ")", sep = ""),
+                                                      var == "norm_degree" ~ paste("Mean Normalized Degree (Mode ", mode, ")", sep = "")),
+                    measure_descriptions = dplyr::case_when(var == "degree" ~ paste("The average number of ties for a node in mode ", mode, sep = ""),
+                                                            var == "weighted_degree" ~ paste("The average weighted degree value for a node in mode ", mode, sep = ""),
+                                                            var == "norm_degree" ~ paste("The average normalized degree value for a mode in node ", mode, sep = "")
+                    )
+      ) %>%
+      dplyr::arrange(measure_labels) %>%
+      dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
+      dplyr::select(-mode, -var)
+  }
+
 
   ### If there are multiple edge types, get bipartite-level measures for each type
   ##### Density
@@ -2106,6 +2235,35 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                measures = unlist(suppressWarnings(lapply(bipartite_list$igraph_objects, function(x){as.character(igraph::mean_distance(x, directed = directed))})))
                  )
   }
+
+  ##### Clustering Coefficients
+  clust_coef <- as.data.frame(dplyr::bind_rows(nodes %>%
+                                  dplyr::group_by(mode) %>%
+                                  dplyr::select(mode, dplyr::contains("jaccard"), dplyr::contains("min_clust"), dplyr::contains("max_clust")) %>%
+                                  dplyr::summarize_all(function(x){sum(x, na.rm = TRUE)/dplyr::n()}),
+                                 nodes %>%
+                                  dplyr::mutate(mode = NA) %>%
+                                  dplyr::select(mode, dplyr::contains("jaccard"), dplyr::contains("min_clust"), dplyr::contains("max_clust")) %>%
+                                  dplyr::summarize_all(function(x){sum(x, na.rm = TRUE)/dplyr::n()})) %>%
+    tidyr::pivot_longer(dplyr::contains("avg"), names_to = "var", values_to = "measures") %>%
+    dplyr::mutate(measure_labels = dplyr::case_when(stringr::str_detect(var, "avg_jaccard") ~ paste("Global Clustering Coefficient (Mode ", mode, ")", sep = ""),
+                                                    stringr::str_detect(var, "avg_min_clust") ~ paste("Min-Clustering Coefficient (Mode ", mode, ")", sep = ""),
+                                                    stringr::str_detect(var, "avg_max_clust") ~ paste("Max-Clustering Coefficient (Mode ", mode, ")", sep = ""),
+                                                    TRUE ~ NA),
+                  measure_descriptions = dplyr::case_when(stringr::str_detect(var, "avg_jaccard") ~ paste("The average node-level clustering coefficient (Jaccard score) for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
+                                                          stringr::str_detect(var, "avg_min_clust") ~ paste("The average node-level min-clustering coefficient for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
+                                                          stringr::str_detect(var, "avg_max_clust") ~ paste("The average node-level max-clustering coefficient for nodes in mode ", mode, ", as specified in Latapy et al. (2008)", sep = ""),
+                                                          TRUE ~ NA),
+                  measure_labels = stringr::str_replace(measure_labels, "Mode 0", "Full Graph"),
+                  measure_descriptions = stringr::str_replace(measure_descriptions, "mode 0", "the entire graph")
+                                             ) %>%
+    dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
+    dplyr::select(-mode, -var))
+
+  for (i in 3:ncol(clust_coef)) {
+    clust_coef[,i] <- as.character(clust_coef[,3])
+  }
+
 
   ##### Multi-Level Edge Correlation
   if (length(type) > 1) {
@@ -2354,6 +2512,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                       deg_assort_out,
                                       reciprocity_rate,
                                       avg_geodesic,
+                                      clust_coef,
                                       multi_edgecorr,
                                       pairwise_df,
                                       crossmode_deg,
