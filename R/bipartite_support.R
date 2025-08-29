@@ -1894,6 +1894,47 @@ clust_co_scores <- function(bipartite_list) {
 }
 
 
+#############################################################################
+#    C L U S T E R I N G   C O E F F I C I E N T   ( A L T E R N A T E )    #
+#############################################################################
+
+bi_clust_alt <- function(bipartite_list) {
+
+  # Create igraph objects of motifs to count
+  fourcycle_df <- data.frame(ego = c(1, 1, 2, 2),
+                             alter = c(3, 4, 3, 4))
+  fourcycle_graph <- igraph::graph_from_data_frame(fourcycle_df, directed = FALSE)
+
+  openfour_df <- data.frame(ego = c(1, 1, 2),
+                            alter = c(3, 4, 3))
+  openfour_graph <- igraph::graph_from_data_frame(openfour_df, directed = FALSE)
+
+  clust_alt_df <- dplyr::bind_rows(
+    lapply(bipartite_list$igraph_objects,
+           function(x) {
+
+             x <- igraph::simplify(x, remove.multiple = TRUE)
+
+             four_counts <- igraph::count_subgraph_isomorphisms(fourcycle_graph,
+                                                                x)
+             openfour_counts <- igraph::count_subgraph_isomorphisms(openfour_graph,
+                                                                    x)
+
+             clust_alt <- four_counts/openfour_counts
+
+             this_df <- data.frame(measure_labels = "Global Clustering Coefficient (Alternate)",
+                                   measure_descriptions = "The number of closed four-cycles in the graph divided by the number of potential closed four-cycles in the graph",
+                                   measures = as.character(clust_alt))
+             return(this_df)
+           }
+    )) %>%
+    dplyr::mutate(type = names(bipartite_list$igraph_objects)) %>%
+    tidyr::pivot_wider(names_from = type, values_from = measures)
+
+  return(clust_alt_df)
+
+}
+
 ################################################################################
 
 bi_netwrite <- function(data_type = data_type,
