@@ -2717,39 +2717,56 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # browser()
 
-    # Density Plot
-    density_plot <- function(){
-      # Defining degree distribution coordinates
-      y_axis <- stats::density(nodes$total_degree)$y
-      x_axis <- stats::density(nodes$total_degree)$x
-      coordinates <- cbind(as.data.frame(x_axis), y_axis)
-      coordinates <- coordinates[(coordinates$x_axis >= 0), ]
-      x_axis <- pretty(coordinates$x_axis)
-      y_axis <- pretty(coordinates$y_axis)
-      x_spacer <- x_axis[c(length(x_axis))] - x_axis[c(length(x_axis)-1)]
-      x_spacer <- x_spacer*0.5
-      y_spacer <- y_axis[c(length(y_axis))] - y_axis[c(length(y_axis)-1)]
-      y_spacer <- y_spacer*0.5
-
-
-      # Defining Base Degree Plot
-      # graphics::par(mar = c(5,6,2,2),  family='HersheySerif')
-      plot(0, type='n', xlab=' ', ylab=' ', xlim=c(min(x_axis), max(x_axis)),
-           ylim=c(min(y_axis), max(y_axis)), cex.axis=1.3, family='HersheySerif',
-           las=1, main=' ', bty='n')
-      graphics::grid(lwd = 2)
-
-      # Adding Margin Text
-      graphics::mtext(side = 1, text = 'Total Degree', col = "black", line = 3, cex = 1.5, family='HersheySerif')
-      graphics::mtext(side = 2, text = 'Density', col = "black", line = 4.5, cex = 1.5, family='HersheySerif')
-
-      # Plotting Degree
-      graphics::lines(coordinates$x_axis, coordinates$y_axis, col='brown', lwd=1.5)
-
-      # Adding Title
-      graphics::title(c("Total Degree Distribution"), family='serif', cex.main=2)
+    if (max(nodes$total_degree, na.rm = TRUE) < 30) {
+      n_bins <- max(nodes$total_degree, na.rm = TRUE)
     }
-    density_grob <- cowplot::as_grob(density_plot)
+
+    degree_plot <- nodes %>%
+      ggplot2::ggplot(ggplot2::aes(x = total_degree)) +
+      ggplot2::geom_histogram(bins = n_bins) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid.major.x = ggplot2::element_blank(),
+                     panel.grid.minor.x = ggplot2::element_blank(),
+                     plot.title = ggplot2::element_text(face = "bold",
+                                                        size = 16,
+                                                        hjust = .5)) +
+      ggplot2::labs(title = "Total Degree Distribution",
+                    y = "\nCount\n", x = "\nTotal Degree")
+
+    # # Density Plot
+    # density_plot <- function(){
+    #   # Defining degree distribution coordinates
+    #   y_axis <- stats::density(nodes$total_degree)$y
+    #   x_axis <- stats::density(nodes$total_degree)$x
+    #   coordinates <- cbind(as.data.frame(x_axis), y_axis)
+    #   coordinates <- coordinates[(coordinates$x_axis >= 0), ]
+    #   x_axis <- pretty(coordinates$x_axis)
+    #   y_axis <- pretty(coordinates$y_axis)
+    #   x_spacer <- x_axis[c(length(x_axis))] - x_axis[c(length(x_axis)-1)]
+    #   x_spacer <- x_spacer*0.5
+    #   y_spacer <- y_axis[c(length(y_axis))] - y_axis[c(length(y_axis)-1)]
+    #   y_spacer <- y_spacer*0.5
+    #
+    #
+    #   # Defining Base Degree Plot
+    #   # graphics::par(mar = c(5,6,2,2),  family='HersheySerif')
+    #   plot(0, type='n', xlab=' ', ylab=' ', xlim=c(min(x_axis), max(x_axis)),
+    #        ylim=c(min(y_axis), max(y_axis)), cex.axis=1.3, family='HersheySerif',
+    #        las=1, main=' ', bty='n')
+    #   graphics::grid(lwd = 2)
+    #
+    #   # Adding Margin Text
+    #   graphics::mtext(side = 1, text = 'Total Degree', col = "black", line = 3, cex = 1.5, family='HersheySerif')
+    #   graphics::mtext(side = 2, text = 'Density', col = "black", line = 4.5, cex = 1.5, family='HersheySerif')
+    #
+    #   # Plotting Degree
+    #   graphics::lines(coordinates$x_axis, coordinates$y_axis, col='brown', lwd=1.5)
+    #
+    #   # Adding Title
+    #   graphics::title(c("Total Degree Distribution"), family='serif', cex.main=2)
+    # }
+    # density_grob <- cowplot::as_grob(density_plot)
+    degree_grob <- cowplot::as_grob(degree_plot)
 
     #######################################
 
@@ -2860,7 +2877,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                       plot_texts$kurtosis,
                                       ncol = 2)
 
-    left <- cowplot::plot_grid(density_grob, bottom_left, top_left,
+    left <- cowplot::plot_grid(degree_grob, bottom_left, top_left,
                                nrow = 3, ncol = 1,
                                rel_heights = c(5, 1, 1))
 
@@ -2976,7 +2993,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   if ("node_measure_plot" %in% output) {
 
-    # browser()
+    browser()
 
     # Make list to store ggplots
     node_gg_list <- list()
