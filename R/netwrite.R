@@ -11,6 +11,9 @@
 #' @param j_elements If \code{data_type} is set to \code{"edgelist"}, a vector of identifiers indicating the receivers of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing these identifiers.
 #' @param weights If \code{data_type} is set to \code{"edgelist"}, a numeric vector indicating the weight of ties in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing tie weights. \code{netwrite} requires that all edge weights be positive values.
 #' @param type If \code{data_type} is set to \code{"edgelist"}, a numeric or character vector indicating the types of relationships represented in the edgelist, or a single character value indicating the name of the column in \code{edgelist} containing tie types. If \code{type} is specified, \code{netwrite} will treat network(s) as multi-relational and produce additional outputs reflecting the different types of ties appearing in the data.
+#' @param bipartite A logical value specifying whether the data represent a bipartite or "two-mode" network. Treating the data as bipartite generates a separate set of node- and system-level measures more appropriate for analysis of bipartite networks. If not specified, \code{netwrite} will automatically determine if the data resemble a bipartite network and process the data as bipartite if so.
+#' @param within_fun When processing a bipartite network, an initial function used to calculate edge weights when creating one-mode projections. The default setting, when used with the default setting for \code{between_fun}, produces those values created by multiplying the adjacency matrix by its transpose.
+#' @param agg_fun When processing a bipartite network, a second function used to calculate edge weights when creating one-mode projections. The default setting, when used with the default setting for \code{within_fun}, produces those values created by multiplying the adjancency matrix by its transpose.
 #' @param nodelist Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If the latter, a value for \code{node_id} must be specified.
 #' @param node_id If a data frame is entered for the \code{nodelist} argument, \code{node_id} should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
 #' @param node_netid If a data frame is entered for the \code{nodelist} argument, \code{node_netid} should be a character value indicating the name of the column in the node-level data frame containing unique network identifiers. This argument should be specified if a value is given for \code{edge_netid}.
@@ -111,6 +114,9 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      fix_nodelist = TRUE,
                      # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
                      weights=NULL, type=NULL,
+                     bipartite = NULL,
+                     within_fun = function(x,y){return(x*y)},
+                     agg_fun = sum,
                      remove_loops = FALSE,
                      missing_code=99999,
                      weight_type='frequency', directed=FALSE,
@@ -146,6 +152,40 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   # we display a warning to the user:
   if (!("nodelist" %in% output | "node_measure_plot" %in% output) & "system_level_measures" %in% output) {
     base::warning("Outputs related to node-level measures not selected for inclusion in `netwrite` output. System-level measures based on node-level centrality scores (e.g. centralization, Herfindahl index) will be excluded from system-level measures output.")
+  }
+
+
+  # CHECK IF DATA INPUTS SUGGEST BIPARTITE STRUCTURE
+  bi_check <- bipartite_check(bipartite = bipartite,
+                              data_type = data_type,
+                              i_elements = i_elements,
+                              j_elements = j_elements,
+                              adjacency_matrix = adjacency_matrix)
+
+  # IF NETWORK IS BIPARTITE, PASS DATA THROUGH `bi_netwrite`
+  if (isTRUE(bi_check)) {
+    return(
+      bi_netwrite(data_type = data_type,
+                adjacency_matrix = adjacency_matrix,
+                adjacency_list = adjacency_list,
+                nodelist = nodelist,
+                fix_nodelist = fix_nodelist,
+                node_id = node_id,
+                i_elements = i_elements,
+                j_elements = j_elements,
+                weights = weights,
+                type = type,
+                remove_loops = remove_loops,
+                missing_code = missing_code,
+                weight_type = weight_type,
+                directed = directed,
+                net_name = net_name,
+                shiny = shiny,
+                output = output,
+                message = message,
+                within_fun = within_fun,
+                agg_fun = agg_fun)
+      )
   }
 
 
@@ -227,10 +267,45 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         nodelist[, node_netid] <- paste("network", nodelist[, node_netid], sep = "")
       }
     }
-
-
-
   }
+
+
+  # CHECK IF DATA INPUTS SUGGEST BIPARTITE STRUCTURE
+  bi_check <- bipartite_check(bipartite = bipartite,
+                              data_type = data_type,
+                              i_elements = i_elements,
+                              j_elements = j_elements,
+                              adjacency_matrix = adjacency_matrix)
+
+  # IF NETWORK IS BIPARTITE, PASS DATA THROUGH `bi_netwrite`
+  #### VERIFY THAT THIS ALL WORKS, BUT NOTE THAT WE NEED TO ADD
+  #### MULTI-NETWORK SUPPORT
+  if (isTRUE(bi_check)) {
+    return(
+      bi_netwrite(data_type = data_type,
+                  adjacency_matrix = adjacency_matrix,
+                  adjacency_list = adjacency_list,
+                  nodelist = nodelist,
+                  fix_nodelist = fix_nodelist,
+                  node_id = node_id,
+                  i_elements = i_elements,
+                  j_elements = j_elements,
+                  weights = weights,
+                  type = type,
+                  remove_loops = remove_loops,
+                  missing_code = missing_code,
+                  weight_type = weight_type,
+                  directed = directed,
+                  net_name = net_name,
+                  shiny = shiny,
+                  output = output,
+                  message = message,
+                  within_fun = within_fun,
+                  agg_fun = agg_fun)
+    )
+  }
+
+
 
   if (!is.null(edge_netid)) {
 
