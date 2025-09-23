@@ -145,47 +145,13 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     nodelist <- as.data.frame(nodelist)
   }
 
-# Some measures in the system level measures data frame calculated from the
+  # Some measures in the system level measures data frame calculated from the
   # distribution of centrality scores at the node level. If users don't choose
   # to create an output built on node-level measures, however, we should exclude
   # system-level measures that depend on centrality scores. When this occurs
   # we display a warning to the user:
   if (!("nodelist" %in% output | "node_measure_plot" %in% output) & "system_level_measures" %in% output) {
     base::warning("Outputs related to node-level measures not selected for inclusion in `netwrite` output. System-level measures based on node-level centrality scores (e.g. centralization, Herfindahl index) will be excluded from system-level measures output.")
-  }
-
-
-  # CHECK IF DATA INPUTS SUGGEST BIPARTITE STRUCTURE
-  bi_check <- bipartite_check(bipartite = bipartite,
-                              data_type = data_type,
-                              i_elements = i_elements,
-                              j_elements = j_elements,
-                              adjacency_matrix = adjacency_matrix)
-
-  # IF NETWORK IS BIPARTITE, PASS DATA THROUGH `bi_netwrite`
-  if (isTRUE(bi_check)) {
-    return(
-      bi_netwrite(data_type = data_type,
-                adjacency_matrix = adjacency_matrix,
-                adjacency_list = adjacency_list,
-                nodelist = nodelist,
-                fix_nodelist = fix_nodelist,
-                node_id = node_id,
-                i_elements = i_elements,
-                j_elements = j_elements,
-                weights = weights,
-                type = type,
-                remove_loops = remove_loops,
-                missing_code = missing_code,
-                weight_type = weight_type,
-                directed = directed,
-                net_name = net_name,
-                shiny = shiny,
-                output = output,
-                message = message,
-                within_fun = within_fun,
-                agg_fun = agg_fun)
-      )
   }
 
 
@@ -281,28 +247,91 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   #### VERIFY THAT THIS ALL WORKS, BUT NOTE THAT WE NEED TO ADD
   #### MULTI-NETWORK SUPPORT
   if (isTRUE(bi_check)) {
-    return(
-      bi_netwrite(data_type = data_type,
-                  adjacency_matrix = adjacency_matrix,
-                  adjacency_list = adjacency_list,
-                  nodelist = nodelist,
-                  fix_nodelist = fix_nodelist,
-                  node_id = node_id,
-                  i_elements = i_elements,
-                  j_elements = j_elements,
-                  weights = weights,
-                  type = type,
-                  remove_loops = remove_loops,
-                  missing_code = missing_code,
-                  weight_type = weight_type,
-                  directed = directed,
-                  net_name = net_name,
-                  shiny = shiny,
-                  output = output,
-                  message = message,
-                  within_fun = within_fun,
-                  agg_fun = agg_fun)
-    )
+    if (!is.null(edge_netid)) {
+
+      # Create list for storing each context's output
+      context_list <- list()
+
+      # Get unique netid values
+      netid_vals <- unique(edge_netid)
+
+      # For each unique network ID, extract edgelist and, if applicable, nodelist
+      for (i in 1:length(netid_vals)) {
+
+        base::message(paste("Processing network ", netid_vals[[i]], sep = ""))
+
+        # FIX THIS, NEED TO CONSTRUCT THE EDGELIST HERE AT THE TOP
+        these_edges <- temp_el[edge_netid == netid_vals[[i]],]
+        these_nodes <- NULL
+
+        if ("data.frame" %in% class(nodelist)) {
+          these_nodes <- nodelist[nodelist[, node_netid] == netid_vals[[i]], ]
+        }
+
+        if (min(these_edges$weights) == 1 & max(these_edges$weights) == 1) {
+          these_weights <- NULL
+        } else {
+          these_weights <- these_edges$weights
+        }
+
+        if (sum(is.na(these_edges$type)) == nrow(these_edges)) {
+          these_types <- NULL
+        } else {
+          these_types <- these_edges$type
+        }
+
+        context_list[[i]] <- bi_netwrite(data_type = data_type,
+                                         adjacency_matrix = adjacency_matrix,
+                                         adjacency_list = adjacency_list,
+                                         nodelist = these_nodes,
+                                         fix_nodelist = fix_nodelist,
+                                         node_id = node_id,
+                                         i_elements = these_edges$i_elements,
+                                         j_elements = these_edges$j_elements,
+                                         weights = these_weights,
+                                         type = these_types,
+                                         remove_loops = remove_loops,
+                                         missing_code = missing_code,
+                                         weight_type = weight_type,
+                                         directed = directed,
+                                         net_name = as.character(netid_vals[[i]]),
+                                         shiny = shiny,
+                                         output = output,
+                                         message = message,
+                                         within_fun = within_fun,
+                                         agg_fun = agg_fun)
+
+      }
+
+      names(context_list) <- netid_vals
+      return(context_list)
+
+
+    } else {
+
+      return(
+        bi_netwrite(data_type = data_type,
+                    adjacency_matrix = adjacency_matrix,
+                    adjacency_list = adjacency_list,
+                    nodelist = nodelist,
+                    fix_nodelist = fix_nodelist,
+                    node_id = node_id,
+                    i_elements = i_elements,
+                    j_elements = j_elements,
+                    weights = weights,
+                    type = type,
+                    remove_loops = remove_loops,
+                    missing_code = missing_code,
+                    weight_type = weight_type,
+                    directed = directed,
+                    net_name = net_name,
+                    shiny = shiny,
+                    output = output,
+                    message = message,
+                    within_fun = within_fun,
+                    agg_fun = agg_fun)
+      )
+    }
   }
 
 
@@ -1157,34 +1186,34 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if ("nodelist" %in% final_output) {
 
-    for (i in 2:length(node_measures_list)) {
+      for (i in 2:length(node_measures_list)) {
 
 
-      this_name <- names(node_measures_list)[[i]]
-      new_column_names <- paste(this_name,
-                                colnames(node_measures_list[[i]]),
-                                sep = "_")
+        this_name <- names(node_measures_list)[[i]]
+        new_column_names <- paste(this_name,
+                                  colnames(node_measures_list[[i]]),
+                                  sep = "_")
 
-      colnames(node_measures_list[[i]]) <- c(colnames(node_measures_list[[i]])[1:2],
-                                             new_column_names[3:length(new_column_names)])
-    }
+        colnames(node_measures_list[[i]]) <- c(colnames(node_measures_list[[i]])[1:2],
+                                               new_column_names[3:length(new_column_names)])
+      }
 
-    node_measures <- suppressMessages(Reduce(dplyr::full_join, node_measures_list))
+      node_measures <- suppressMessages(Reduce(dplyr::full_join, node_measures_list))
 
-    # If `nodelist` is a data frame, we'll want to merge it into `node_measures`
-    if (("data.frame" %in% class(nodelist)) == TRUE) {
+      # If `nodelist` is a data frame, we'll want to merge it into `node_measures`
+      if (("data.frame" %in% class(nodelist)) == TRUE) {
 
-      # Sometimes the original ID column we need to join on will be of a different class
-      # between the two dataframes we're trying to merge here. To be safe, we'll convert both columns
-      # into characters and merge
-      original_nodelist[, node_id] <- as.character(unlist(original_nodelist[, node_id]))
-      node_measures[, node_id] <- as.character(unlist(node_measures[, node_id]))
+        # Sometimes the original ID column we need to join on will be of a different class
+        # between the two dataframes we're trying to merge here. To be safe, we'll convert both columns
+        # into characters and merge
+        original_nodelist[, node_id] <- as.character(unlist(original_nodelist[, node_id]))
+        node_measures[, node_id] <- as.character(unlist(node_measures[, node_id]))
 
-      node_measures <- dplyr::left_join(original_nodelist, node_measures, by = node_id)
-      # Rearrange columns
-      node_measures <- dplyr::select(node_measures, .data$id, dplyr::everything())
+        node_measures <- dplyr::left_join(original_nodelist, node_measures, by = node_id)
+        # Rearrange columns
+        node_measures <- dplyr::select(node_measures, .data$id, dplyr::everything())
 
-    }
+      }
 
 
       netwrite_output$node_measures <- node_measures
@@ -1359,9 +1388,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       colnames(nodes) <- "id"
       nodes$id <- nodes$id - 1
       if (!is.null(nodes$label)) {
-          nodes$label <- igraph::V(g)$name
+        nodes$label <- igraph::V(g)$name
       } else {
-          nodes$label <- nodes$id
+        nodes$label <- nodes$id
       }
 
       # To keep things consistent across code, we're going to reassign node names
@@ -2755,8 +2784,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     if (!("nodelist" %in% output | "node_measure_plot" %in% output)) {
 
       keep_rows <- !(stringr::str_detect(system_level_measures$measure_labels, "^Herfindahl") +
-                     stringr::str_detect(system_level_measures$measure_labels, "^Standard Deviation") +
-                     stringr::str_detect(system_level_measures$measure_labels, "Centralization"))
+                       stringr::str_detect(system_level_measures$measure_labels, "^Standard Deviation") +
+                       stringr::str_detect(system_level_measures$measure_labels, "Centralization"))
 
       ### Degree centralization is still calculated, so might as well keep
       keep_rows[stringr::str_detect(system_level_measures$measure_labels, "^Degree Centralization")] <- TRUE
@@ -3223,7 +3252,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
-   # browser()
+    # browser()
 
     # Burt Measures
     burt_measures <- columns[grepl("burt", columns)]
@@ -3365,11 +3394,11 @@ node_gg_setup <- function(index_df, nodes) {
   for(j in seq_along(measures)){
     plot_measure <- nodes[,measures[[j]]]
     plot_measure <- plot_measure[!is.na(plot_measure)]
-        # If all values are NAs, just store a vector of `-9999` so the plotting
-        # doesn't crash
-        if (length(plot_measure) == 0) {
-          plot_measure <- rep(-9999, length(nodes[,measures[[j]]]))
-        }
+    # If all values are NAs, just store a vector of `-9999` so the plotting
+    # doesn't crash
+    if (length(plot_measure) == 0) {
+      plot_measure <- rep(-9999, length(nodes[,measures[[j]]]))
+    }
     sub_measures[[j]] <- plot_measure
   }
 
@@ -3414,15 +3443,15 @@ node_gg_setup <- function(index_df, nodes) {
   # Plotting Degree
   for(j in seq_along(sub_measures)){
     plot_measure <- sub_measures[[j]]
-        # If all values in `plot_measure` are set the de facto `NA` value
-        # of `-9999`, do not plot this measure and present users with a warning
-        if (all(plot_measure == -9999)) {
-          base::warning(paste("Measure ",
-                              measures[[j]],
-                              " consists only of NA values. This measure will not be displayed in the node-level summary visualization.",
-                              sep = ""))
-          next
-        }
+    # If all values in `plot_measure` are set the de facto `NA` value
+    # of `-9999`, do not plot this measure and present users with a warning
+    if (all(plot_measure == -9999)) {
+      base::warning(paste("Measure ",
+                          measures[[j]],
+                          " consists only of NA values. This measure will not be displayed in the node-level summary visualization.",
+                          sep = ""))
+      next
+    }
 
     y_axis <- stats::density(plot_measure)$y
     x_axis <- stats::density(plot_measure)$x

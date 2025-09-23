@@ -143,6 +143,10 @@ make_bipartite_list <- function(data_type,
 
   # browser()
 
+  if (isFALSE(nodelist) == TRUE) {
+    nodelist <- NULL
+  }
+
   ### Object for storing nodelist and edgelist
   bipartite_list <- list(nodelist = NULL,
                          edgelist = NULL,
@@ -223,6 +227,11 @@ make_bipartite_list <- function(data_type,
 
     bi_el <- data.frame(mode1 = i_elements,
                         mode2 = j_elements)
+
+    if (class(bi_el$mode1) == "character" | class(bi_el$mode2) == "character") {
+      bi_el$mode1 <- as.character(bi_el$mode1)
+      bi_el$mode2 <- as.character(bi_el$mode2)
+    }
 
     if (!is.null(type)) {
       bi_el$type <- type
@@ -1592,8 +1601,8 @@ dist2_neighbors <- function(bipartite_list) {
 
     # One edge-type condition
   } else {
-    this_dist2 <- data.frame(name = names(rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NA) == 2)),
-                             dist2 = rowSums(igraph::distances(bipartite_list$igraph_objects[[i]], weights = NA) == 2))
+    this_dist2 <- data.frame(name = names(rowSums(igraph::distances(bipartite_list$igraph_objects[[1]], weights = NA) == 2)),
+                             dist2 = rowSums(igraph::distances(bipartite_list$igraph_objects[[1]], weights = NA) == 2))
     rownames(this_dist2) <- NULL
 
     dist2_df <- bipartite_list$nodelist %>%
@@ -1898,40 +1907,129 @@ clust_co_scores <- function(bipartite_list) {
 #    C L U S T E R I N G   C O E F F I C I E N T   ( A L T E R N A T E )    #
 #############################################################################
 
-bi_clust_alt <- function(bipartite_list) {
+# bi_clust_alt <- function(bipartite_list) {
+#
+#   # Create igraph objects of motifs to count
+#   fourcycle_df <- data.frame(ego = c(1, 1, 2, 2),
+#                              alter = c(3, 4, 3, 4))
+#   fourcycle_graph <- igraph::graph_from_data_frame(fourcycle_df, directed = FALSE)
+#
+#   openfour_df <- data.frame(ego = c(1, 1, 2),
+#                             alter = c(3, 4, 3))
+#   openfour_graph <- igraph::graph_from_data_frame(openfour_df, directed = FALSE)
+#
+#   clust_alt_df <- dplyr::bind_rows(
+#     lapply(bipartite_list$igraph_objects,
+#            function(x) {
+#
+#              x <- igraph::simplify(x, remove.multiple = TRUE)
+#
+#              four_counts <- igraph::count_subgraph_isomorphisms(fourcycle_graph,
+#                                                                 x)
+#              openfour_counts <- igraph::count_subgraph_isomorphisms(openfour_graph,
+#                                                                     x)
+#
+#              clust_alt <- four_counts/openfour_counts
+#
+#              this_df <- data.frame(measure_labels = "Global Clustering Coefficient (Alternate)",
+#                                    measure_descriptions = "The number of closed four-cycles in the graph divided by the number of potential closed four-cycles in the graph",
+#                                    measures = as.character(clust_alt))
+#              return(this_df)
+#            }
+#     )) %>%
+#     dplyr::mutate(type = names(bipartite_list$igraph_objects)) %>%
+#     tidyr::pivot_wider(names_from = type, values_from = measures)
+#
+#   return(clust_alt_df)
+#
+# }
 
-  # Create igraph objects of motifs to count
-  fourcycle_df <- data.frame(ego = c(1, 1, 2, 2),
-                             alter = c(3, 4, 3, 4))
-  fourcycle_graph <- igraph::graph_from_data_frame(fourcycle_df, directed = FALSE)
 
-  openfour_df <- data.frame(ego = c(1, 1, 2),
-                            alter = c(3, 4, 3))
-  openfour_graph <- igraph::graph_from_data_frame(openfour_df, directed = FALSE)
 
-  clust_alt_df <- dplyr::bind_rows(
-    lapply(bipartite_list$igraph_objects,
-           function(x) {
+fourcycle_gcc <- function(x) {
 
-             x <- igraph::simplify(x, remove.multiple = TRUE)
+  if (length(x$igraph_objects) == 1) {
+    names(x$igraph_objects) <- "measure"
+  }
 
-             four_counts <- igraph::count_subgraph_isomorphisms(fourcycle_graph,
-                                                                x)
-             openfour_counts <- igraph::count_subgraph_isomorphisms(openfour_graph,
-                                                                    x)
+  return(
+    dplyr::bind_rows(lapply(x$igraph_objects, fourcycle_gcc_v3))%>%
+      dplyr::mutate(type = names(x$igraph_objects)) %>%
+      tidyr::pivot_wider(names_from = type, values_from = measures)
+  )
+}
 
-             clust_alt <- four_counts/openfour_counts
 
-             this_df <- data.frame(measure_labels = "Global Clustering Coefficient (Alternate)",
-                                   measure_descriptions = "The number of closed four-cycles in the graph divided by the number of potential closed four-cycles in the graph",
-                                   measures = as.character(clust_alt))
-             return(this_df)
-           }
-    )) %>%
-    dplyr::mutate(type = names(bipartite_list$igraph_objects)) %>%
-    tidyr::pivot_wider(names_from = type, values_from = measures)
+fourcycle_gcc_v3 <- function(x) {
 
-  return(clust_alt_df)
+  # browser()
+
+  adjmat <- igraph::as_biadjacency_matrix(x)
+  adjmat[adjmat > 0] <- 1
+
+
+  fourcycle_counts <- c(0)
+  fourchain_counts <- c(0)
+
+  for (i in 1:(nrow(adjmat)-1)) {
+    # print(i)
+    this <- adjmat[i, ]
+    rest <- adjmat[(i+1):nrow(adjmat),]
+
+    if (i < (nrow(adjmat)-1)) {
+      mat_apply <- apply(rest, 1, shared_function, this = this)
+      fourcycle_counts <- c(fourcycle_counts,
+                            sum(unlist(lapply(mat_apply, function(x){x$four_cycles})))
+      )
+      fourchain_counts <- c(fourchain_counts,
+                            sum(unlist(lapply(mat_apply, function(x){x$four_chains})))
+      )
+    } else {
+
+      # browser()
+
+      both_tied <- which(this == 1 & rest == 1)
+      only_one_tied <- which(this == 1 & rest == 0)
+      four_chain_elements <- sort(c(both_tied, only_one_tied))
+
+      if (length(both_tied) < 2) {
+        num_four_cycles <- 0
+      } else {
+        num_four_cycles <- ncol(utils::combn(both_tied, 2))
+      }
+
+      if (length(four_chain_elements) < 2) {
+        num_four_chains <- 0
+      } else {
+        # num_four_chains <- ncol(utils::combn(four_chain_elements, 2))
+
+        num_four_chains <- nrow(expand.grid(both = both_tied,
+                                            one = four_chain_elements) %>%
+                                  dplyr::filter(both != one) %>%
+                                  dplyr::mutate(low = ifelse(both < one, both, one),
+                                                high = ifelse(both < one, one, both)) %>%
+                                  dplyr::select(low, high) %>%
+                                  dplyr::distinct())
+
+      }
+
+      fourcycle_counts <- c(fourcycle_counts,
+                            num_four_cycles)
+
+      fourchain_counts <- c(fourchain_counts,
+                            num_four_chains)
+
+    }
+  }
+
+  # sum(fourcycle_counts)
+  # sum(fourchain_counts)
+
+  return(data.frame(measure_labels = "Global Clustering Coefficient (Alternate)",
+                    measure_descriptions = "The number of closed four-cycles in the graph divided by the number of potential closed four-cycles in the graph",
+                    measures = as.character(sum(fourcycle_counts)/sum(fourchain_counts))
+  )
+  )
 
 }
 
@@ -2520,6 +2618,9 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   }
 
 
+  ##### Clustering Coefficient (Alternate)
+  clust_coef2 <- fourcycle_gcc(bipartite_list)
+
 
   ##### Redundancy Coefficient
   if (is.null(type)) {
@@ -2565,9 +2666,6 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
       dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
       dplyr::select(-mode, -var)
   }
-
-
-
 
 
   ##### Multi-Level Edge Correlation
@@ -2818,6 +2916,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                       reciprocity_rate,
                                       avg_geodesic,
                                       clust_coef,
+                                      clust_coef2,
                                       redun_coef,
                                       multi_edgecorr,
                                       pairwise_df,
