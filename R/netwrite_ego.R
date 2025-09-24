@@ -1002,21 +1002,34 @@ ego_netwrite <- function(egos,
 
       # Handling if ego is an isolate
       if (nrow(this_el) > 0) {
-        this_cors <- suppressWarnings(as.data.frame(t(multiplex_ego(edgelist = this_el,
-                                                                    directed = directed,
-                                                                    type = aa_multi$type))))
+
+        this_cors <- suppressWarnings(multiplex_edge_corr_igraph(edgelist = this_el,
+                                                                 directed = directed,
+                                                                 type = this_el$type,
+                                                                 as_text = FALSE))
+
+        names(this_cors) <- stringr::str_replace_all(names(this_cors), "_weight", "")
+        names(this_cors) <- paste("aa", names(this_cors), sep = "_")
+
+        this_cors <- as.data.frame(t(this_cors))
+
         this_cors$ego_id <- this_ego_id
 
         cors_list[[i]] <- this_cors
+
       }
 
     }
 
     cors_list <- dplyr::bind_rows(cors_list)
 
+    if ("aa_NA" %in% names(cors_list)) {
+      cors_list$aa_NA <- NULL
+    }
+
     # Identify that these are correlations for alter-alter ties
-    colnames(cors_list) <- paste("aa", colnames(cors_list), sep = "_")
-    colnames(cors_list)[ncol(cors_list)] <- "ego_id"
+    # colnames(cors_list) <- paste("aa", colnames(cors_list), sep = "_")
+    # colnames(cors_list)[ncol(cors_list)] <- "ego_id"
 
     egonet_summaries <- egonet_summaries %>%
       dplyr::left_join(cors_list, by = "ego_id")
@@ -1062,9 +1075,17 @@ ego_netwrite <- function(egos,
 
       # Handling if ego is an isolate
       if (nrow(this_el) > 0) {
-        this_cors <- suppressWarnings(as.data.frame(t(multiplex_ego(edgelist = this_el,
-                                                                    directed = directed,
-                                                                    type = alter_edge_types))))
+
+        this_cors <- suppressWarnings(multiplex_edge_corr_igraph(edgelist = this_el,
+                                                                 directed = directed,
+                                                                 type = this_el$type,
+                                                                 as_text = FALSE))
+
+        names(this_cors) <- stringr::str_replace_all(names(this_cors), "_weight", "")
+        names(this_cors) <- paste("alter", names(this_cors), sep = "_")
+
+        this_cors <- as.data.frame(t(this_cors))
+
         this_cors$ego_id <- this_ego_id
 
         alter_cors_list[[i]] <- this_cors
@@ -1072,9 +1093,14 @@ ego_netwrite <- function(egos,
     }
 
     alter_cors_list <- dplyr::bind_rows(alter_cors_list)
-    # Identify that these are correlations for ego-alter ties
-    colnames(alter_cors_list) <- paste("alter", colnames(alter_cors_list), sep = "_")
-    colnames(alter_cors_list)[ncol(alter_cors_list)] <- "ego_id"
+
+    if ("alter_NA" %in% names(alter_cors_list)) {
+      alter_cors_list$alter_NA <- NULL
+    }
+
+    # # Identify that these are correlations for ego-alter ties
+    # colnames(alter_cors_list) <- paste("alter", colnames(alter_cors_list), sep = "_")
+    # colnames(alter_cors_list)[ncol(alter_cors_list)] <- "ego_id"
 
     # Merge into `egonet_summaries`
     egonet_summaries <- egonet_summaries %>%

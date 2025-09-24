@@ -891,143 +891,378 @@ average_geodesic <- function(g) {
 #    M U L T I P L E X   E D G E   C O R R E L A T I O N    #
 #############################################################
 
-multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
-  if('type' %in% colnames(edgelist)){
-    # Creating edgelist to manipulate internally
-    edges <- as.data.frame(edgelist[,])
+# multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type, type) {
+#   if('type' %in% colnames(edgelist)){
+#     # Creating edgelist to manipulate internally
+#     edges <- as.data.frame(edgelist[,])
+#
+#     # Moving back to One-Index for Comparison Purposes
+#     edges[,3] <- edges[,3] + 1
+#     edges[,5] <- edges[,5] + 1
+#
+#     # Recovering original weight for the purposes of comparison
+#     if(weight_type == 'frequency') {
+#       edges[,6] <- as.numeric(1/edges[,6])
+#     }else{
+#       edges[,6] <- edges[,6]
+#     }
+#
+#     # Generating Correlations Either as Directed or Undirected
+#     if(as.logical(directed) == TRUE) {
+#       # Generating Sub-Networks Based on Type
+#       types <- sort(unique(type))
+#       subnets <- vector('list', length(types))
+#       names(subnets) <- types
+#       for(i in seq_along(types)){
+#         subnets[[i]] <- as.data.frame(edges[(type == types[[i]]), ])
+#         subnets[[i]] <- subnets[[i]][,c('i_id', 'j_id', 'type', 'weight')]
+#         colnames(subnets[[i]])[[3]] <- names(subnets)[[i]]
+#         colnames(subnets[[i]])[[4]] <- paste0(colnames(subnets[[i]])[[3]],'_',colnames(subnets[[i]])[[4]])
+#       }
+#
+#       # Creating a Wide Data-Set to Generate Correlations
+#       ties <- unique(as.data.frame(edges[ ,c("i_id", "j_id")]))
+#       for(i in seq_along(types)){
+#         ties <- dplyr::left_join(ties, subnets[[i]], by=c('i_id', 'j_id'))
+#         ties[is.na(ties)] <- 0
+#       }
+#
+#       # Calculating the Correlation for Unique Combination of Types
+#       pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
+#       for(i in nrow(pairs)) {
+#         column_set <- pairs[i,]
+#         tie_set <- ties[,column_set]
+#         multiplex_edge_correlation <- paste0('Edge Correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2))
+#         rm(column_set, tie_set)
+#       }
+#       rm(pairs, types, subnets, ties)
+#     }else{
+#       # Creating a separate edgelist (Symmetric Edges) to Perform Operations
+#       s_edges <- edges[,c('i_id', 'j_id', 'type', 'weight')]
+#
+#       # Eliminating Duplicate Pairs
+#       s_edges <- s_edges[!duplicated(t(apply(s_edges[,c(1:2)], 1, sort))),]
+#
+#       # Creating Edge Groups & Glossary
+#       edges_1 <- cbind(s_edges[,c(1,2)], seq(1, dim(s_edges)[[1]], 1))
+#       colnames(edges_1)[[3]] <- c('edge_group')
+#
+#       edges_2 <- cbind(s_edges[,c(2,1)], seq(1, dim(s_edges)[[1]], 1))
+#       colnames(edges_2) <- c('i_id','j_id','edge_group')
+#
+#       edges_glossary <- rbind(edges_1, edges_2)
+#       edges_glossary <- edges_glossary[order(edges_glossary$edge_group), ]
+#       rm(edges_1, edges_2, s_edges)
+#
+#       # Joining edge_groups to edges
+#       if('Obs_ID' %in% colnames(edgelist)){
+#         edges <- edges
+#       }else{
+#         edges <- cbind(seq(1, dim(edges)[[1]], 1), edges)
+#         names(edges)[[1]] <- c('Obs_ID')
+#       }
+#       edges <- dplyr::left_join(as.data.frame(edges), edges_glossary, by=c('i_id', 'j_id'))
+#
+#       # Eliminating Duplicates Caused by Self-Loops
+#       edges <- edges[!(duplicated(edges$Obs_ID)), ]
+#       rm(edges_glossary)
+#
+#       # Collapsing Ties and Summing Weights
+#       edge_groups <- unique(edges$edge_group)
+#       ties <- vector('list', length(edge_groups))
+#       names(ties) <- edge_groups
+#       for(i in seq_along(edge_groups)) {
+#         e_group <- edges[(edges$edge_group == edge_groups[[i]]), ]
+#         row.names(e_group) <- seq(1, nrow(e_group), 1)
+#         e_types <- unique(e_group$type)
+#         ties[[i]] <- as.data.frame(e_group$type)
+#         ties[[i]]$weight <- sum(e_group$weight)
+#         ties[[i]]$i_id <- e_group[1,3]
+#         ties[[i]]$j_id <- e_group[1,5]
+#         colnames(ties[[i]])[[1]] <- c('type')
+#         ties[[i]] <- ties[[i]][,c(3,4,1,2)]
+#         rm(e_group, e_types)
+#       }
+#
+#       ties <- do.call("rbind", ties)
+#
+#       # Generating Sub-Networks Based on Type
+#       types <- sort(unique(type))
+#       subnets <- vector('list', length(types))
+#       names(subnets) <- types
+#       for(i in seq_along(types)){
+#         subnets[[i]] <- ties[(ties$type == types[[i]]), ]
+#         colnames(subnets[[i]])[[3]] <- names(subnets)[[i]]
+#         colnames(subnets[[i]])[[4]] <- paste0(colnames(subnets[[i]])[[3]],'_',colnames(subnets[[i]])[[4]])
+#       }
+#
+#       # Creating a Wide Data-Set to Generate Correlations
+#       ties <- unique(ties[ ,c("i_id", "j_id")])
+#       for(i in seq_along(types)){
+#         ties <- dplyr::left_join(ties, subnets[[i]], by=c('i_id', 'j_id'))
+#         ties[is.na(ties)] <- 0
+#       }
+#
+#       # Calculating the Correlation for Unique Combination of Types
+#       pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
+#       for(i in 1:nrow(pairs)) {
+#         column_set <- pairs[i,]
+#         tie_set <- ties[,column_set]
+#         if (i == 1) {
+#           multiplex_edge_correlation <- paste0('Edge Correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2))
+#         } else {
+#           multiplex_edge_correlation <- paste(multiplex_edge_correlation,
+#                                               paste0('correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2)),
+#                                               sep = "; ")
+#         }
+#         rm(column_set, tie_set)
+#       }
+#       rm(pairs, types, subnets, ties)
+#     }
+#
+#     # Assigning final scores to global environment
+#     # assign(x = 'multiplex_edge_correlation', value = multiplex_edge_correlation,.GlobalEnv)
+#   }else{
+#     edgelist <- edgelist[,]
+#     multiplex_edge_correlation <- 'Simplex Network'
+#   }
+#   return(multiplex_edge_correlation)
+# }
 
-    # Moving back to One-Index for Comparison Purposes
-    edges[,3] <- edges[,3] + 1
-    edges[,5] <- edges[,5] + 1
 
-    # Recovering original weight for the purposes of comparison
-    if(weight_type == 'frequency') {
-      edges[,6] <- as.numeric(1/edges[,6])
-    }else{
-      edges[,6] <- edges[,6]
-    }
 
-    # Generating Correlations Either as Directed or Undirected
-    if(as.logical(directed) == TRUE) {
-      # Generating Sub-Networks Based on Type
-      types <- sort(unique(type))
-      subnets <- vector('list', length(types))
-      names(subnets) <- types
-      for(i in seq_along(types)){
-        subnets[[i]] <- as.data.frame(edges[(type == types[[i]]), ])
-        subnets[[i]] <- subnets[[i]][,c('i_id', 'j_id', 'type', 'weight')]
-        colnames(subnets[[i]])[[3]] <- names(subnets)[[i]]
-        colnames(subnets[[i]])[[4]] <- paste0(colnames(subnets[[i]])[[3]],'_',colnames(subnets[[i]])[[4]])
-      }
+# Multiplex Edge Correlation Functions: Revised
+# Jonathan H. Morgan, Ph.D.
 
-      # Creating a Wide Data-Set to Generate Correlations
-      ties <- unique(as.data.frame(edges[ ,c("i_id", "j_id")]))
-      for(i in seq_along(types)){
-        ties <- dplyr::left_join(ties, subnets[[i]], by=c('i_id', 'j_id'))
-        ties[is.na(ties)] <- 0
-      }
+#	Helper Function: Directed Network Processing
+.process_directed_network <- function(edges, network_types,
+                                      as_text = FALSE) {
+  # browser()
+  #	"""
+  #	Args:
+  #		edges: preprocessed edge dataframe
+  #		network_types: unique network types
+  #	Returns:
+  #		character vector of correlation results
+  #	Notes:
+  #		Processes directed edges without symmetry considerations.
+  #	"""
 
-      # Calculating the Correlation for Unique Combination of Types
-      pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
-      for(i in nrow(pairs)) {
-        column_set <- pairs[i,]
-        tie_set <- ties[,column_set]
-        multiplex_edge_correlation <- paste0('Edge Correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2))
-        rm(column_set, tie_set)
-      }
-      rm(pairs, types, subnets, ties)
-    }else{
-      # Creating a separate edgelist (Symmetric Edges) to Perform Operations
-      s_edges <- edges[,c('i_id', 'j_id', 'type', 'weight')]
+  #	Pre-allocate subnet list
+  n_types <- length(network_types)
+  subnets <- vector('list', n_types)
+  names(subnets) <- network_types
 
-      # Eliminating Duplicate Pairs
-      s_edges <- s_edges[!duplicated(t(apply(s_edges[,c(1:2)], 1, sort))),]
-
-      # Creating Edge Groups & Glossary
-      edges_1 <- cbind(s_edges[,c(1,2)], seq(1, dim(s_edges)[[1]], 1))
-      colnames(edges_1)[[3]] <- c('edge_group')
-
-      edges_2 <- cbind(s_edges[,c(2,1)], seq(1, dim(s_edges)[[1]], 1))
-      colnames(edges_2) <- c('i_id','j_id','edge_group')
-
-      edges_glossary <- rbind(edges_1, edges_2)
-      edges_glossary <- edges_glossary[order(edges_glossary$edge_group), ]
-      rm(edges_1, edges_2, s_edges)
-
-      # Joining edge_groups to edges
-      if('Obs_ID' %in% colnames(edgelist)){
-        edges <- edges
-      }else{
-        edges <- cbind(seq(1, dim(edges)[[1]], 1), edges)
-        names(edges)[[1]] <- c('Obs_ID')
-      }
-      edges <- dplyr::left_join(as.data.frame(edges), edges_glossary, by=c('i_id', 'j_id'))
-
-      # Eliminating Duplicates Caused by Self-Loops
-      edges <- edges[!(duplicated(edges$Obs_ID)), ]
-      rm(edges_glossary)
-
-      # Collapsing Ties and Summing Weights
-      edge_groups <- unique(edges$edge_group)
-      ties <- vector('list', length(edge_groups))
-      names(ties) <- edge_groups
-      for(i in seq_along(edge_groups)) {
-        e_group <- edges[(edges$edge_group == edge_groups[[i]]), ]
-        row.names(e_group) <- seq(1, nrow(e_group), 1)
-        e_types <- unique(e_group$type)
-        ties[[i]] <- as.data.frame(e_group$type)
-        ties[[i]]$weight <- sum(e_group$weight)
-        ties[[i]]$i_id <- e_group[1,3]
-        ties[[i]]$j_id <- e_group[1,5]
-        colnames(ties[[i]])[[1]] <- c('type')
-        ties[[i]] <- ties[[i]][,c(3,4,1,2)]
-        rm(e_group, e_types)
-      }
-
-      ties <- do.call("rbind", ties)
-
-      # Generating Sub-Networks Based on Type
-      types <- sort(unique(type))
-      subnets <- vector('list', length(types))
-      names(subnets) <- types
-      for(i in seq_along(types)){
-        subnets[[i]] <- ties[(ties$type == types[[i]]), ]
-        colnames(subnets[[i]])[[3]] <- names(subnets)[[i]]
-        colnames(subnets[[i]])[[4]] <- paste0(colnames(subnets[[i]])[[3]],'_',colnames(subnets[[i]])[[4]])
-      }
-
-      # Creating a Wide Data-Set to Generate Correlations
-      ties <- unique(ties[ ,c("i_id", "j_id")])
-      for(i in seq_along(types)){
-        ties <- dplyr::left_join(ties, subnets[[i]], by=c('i_id', 'j_id'))
-        ties[is.na(ties)] <- 0
-      }
-
-      # Calculating the Correlation for Unique Combination of Types
-      pairs <- t(utils::combn(paste0(types,'_','weight'), 2))
-      for(i in 1:nrow(pairs)) {
-        column_set <- pairs[i,]
-        tie_set <- ties[,column_set]
-        if (i == 1) {
-          multiplex_edge_correlation <- paste0('Edge Correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2))
-        } else {
-          multiplex_edge_correlation <- paste(multiplex_edge_correlation,
-                                              paste0('correlation for ', paste(column_set, collapse= ' and '), ': ', round(stats::cor(tie_set)[1,2], digits=2)),
-                                              sep = "; ")
-        }
-        rm(column_set, tie_set)
-      }
-      rm(pairs, types, subnets, ties)
-    }
-
-    # Assigning final scores to global environment
-    # assign(x = 'multiplex_edge_correlation', value = multiplex_edge_correlation,.GlobalEnv)
-  }else{
-    edgelist <- edgelist[,]
-    multiplex_edge_correlation <- 'Simplex Network'
+  #	Build type-specific subnets
+  for (i in seq_along(network_types)) {
+    type_mask <- edges$type == network_types[i]
+    subnets[[i]] <- edges[type_mask, c('i_id', 'j_id', 'type', 'weight')]
+    names(subnets[[i]])[names(subnets[[i]]) == 'type'] <- network_types[i]
+    names(subnets[[i]])[names(subnets[[i]]) == 'weight'] <- paste0(network_types[i], '_weight')
   }
-  return(multiplex_edge_correlation)
+
+  #	Create correlation matrix
+  correlation_results <- .calculate_correlations(subnets, edges, network_types,
+                                                 as_text = as_text)
+
+  # Return Correlation Results
+  return(correlation_results)
 }
+
+
+#	Helper Function: Undirected Network Processing with Edge Aggregation
+.process_undirected_network <- function(edges, network_types,
+                                        as_text = FALSE) {
+  # browser()
+  #	"""
+  #	Args:
+  #		edges: preprocessed edge dataframe
+  #		network_types: unique network types
+  #	Returns:
+  #		character vector of correlation results
+  #	Notes:
+  #		Critical aggregation logic: Creates symmetric edge groups where (i,j) and (j,i)
+  #		are treated as the same edge. Within each group, weights are summed by network type.
+  #		This means if we have edges (1,2,friendship,0.5) and (2,1,friendship,0.3),
+  #		they become one edge group with friendship_weight = 0.8.
+  #	"""
+
+  #	Create canonical edge pairs (always i < j for undirected edges)
+  edges_canonical <- edges
+
+  #	For each edge, ensure i_id < j_id (canonical form)
+  swap_mask <- edges_canonical$i_id > edges_canonical$j_id
+  temp_i <- edges_canonical$i_id[swap_mask]
+  edges_canonical$i_id[swap_mask] <- edges_canonical$j_id[swap_mask]
+  edges_canonical$j_id[swap_mask] <- temp_i
+
+  #	Create edge pair identifier
+  edges_canonical$edge_pair <- paste(edges_canonical$i_id, edges_canonical$j_id, sep = "-")
+
+  #	Aggregate weights by edge pair and type
+  aggregated <- aggregate(
+    weight ~ edge_pair + i_id + j_id + type,
+    data = edges_canonical,
+    FUN = sum
+  )
+
+  #	Build type-specific subnets from aggregated data
+  n_types <- length(network_types)
+  subnets <- vector('list', n_types)
+  names(subnets) <- network_types
+
+  for (i in seq_along(network_types)) {
+    type_ties <- aggregated[aggregated$type == network_types[i], ]
+    names(type_ties)[names(type_ties) == 'type'] <- network_types[i]
+    names(type_ties)[names(type_ties) == 'weight'] <- paste0(network_types[i], '_weight')
+    subnets[[i]] <- type_ties
+  }
+
+  #	Calculate correlations
+  correlation_results <- .calculate_correlations(subnets, aggregated, network_types,
+                                                 as_text = as_text)
+
+  # Return Correlation Results
+  return(correlation_results)
+}
+
+#	Helper Function: Correlation Calculation
+.calculate_correlations <- function(subnets, base_ties, network_types,
+                                    as_text = FALSE) {
+
+  # browser()
+
+  #	"""
+  #	Args:
+  #		subnets: list of type-specific edge dataframes
+  #		base_ties: base tie structure for joining
+  #		network_types: vector of network type names
+  #	Returns:
+  #		character vector of correlation results
+  #	Notes:
+  #		Creates wide format data and calculates pairwise correlations.
+  #	"""
+
+  #	Create base tie structure
+  ties_wide <- unique(base_ties[, c("i_id", "j_id")])
+
+  #	Join all subnet data
+  for (i in seq_along(network_types)) {
+    ties_wide <- merge(
+      ties_wide,
+      subnets[[i]],
+      by = c('i_id', 'j_id'),
+      all.x = TRUE
+    )
+  }
+
+  #	Replace NA with 0
+  ties_wide[is.na(ties_wide)] <- 0
+
+  #	Generate correlation pairs
+  weight_cols <- paste0(network_types, '_weight')
+  n_types <- length(weight_cols)
+  if (n_types < 2) {
+    return("Only one network type found")
+  }
+
+  #	Calculate pairwise correlations
+  pair_combinations <- combn(weight_cols, 2, simplify = FALSE)
+  n_pairs <- length(pair_combinations)
+
+  if (isFALSE(as_text)) {
+    # Numeric output
+    correlation_results <- numeric(n_pairs)
+
+    for (i in seq_along(pair_combinations)) {
+      col_pair <- pair_combinations[[i]]
+      pair_label <- paste("cor",
+                          paste(col_pair, collapse = "_"),
+                          sep = "_")
+      correlation_results[i] <- cor(ties_wide[, col_pair[1]], ties_wide[, col_pair[2]])
+      names(correlation_results)[i] <- pair_label
+
+    }
+  } else {
+    # Character output
+      correlation_results <- character(n_pairs)
+
+      for (i in seq_along(pair_combinations)) {
+        col_pair <- pair_combinations[[i]]
+        correlation_value <- cor(ties_wide[, col_pair[1]], ties_wide[, col_pair[2]])
+        correlation_results[i] <- paste0(
+          'Edge Correlation for ',
+          paste(col_pair, collapse = ' and '),
+          ': ',
+          round(correlation_value, digits = 2)
+        )
+      }
+  }
+
+
+  # Return Correlation Results
+  return(correlation_results)
+}
+
+multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type = "raw",
+                                       type,
+                                       as_text = FALSE) {
+
+  # browser()
+  #	"""
+  #	Args:
+  #		edgelist: data frame with edge information (must have i_id, j_id, type, weight columns)
+  #		directed: logical, whether to treat network as directed
+  #		weight_type: string, "frequency" inverts weights, otherwise uses raw weights
+  #	Returns:
+  #		character vector of correlation results or "Simplex Network"
+  #	Notes:
+  #		Key aggregation logic: for undirected networks, symmetric edges (i,j) and (j,i)
+  #		are grouped together and weights are summed within each type before correlation.
+  #	"""
+
+  #	Early return for simplex networks
+  if (is.null(type)) {
+    return('Simplex Network')
+  }
+
+  #	Data preparation
+  edges <- as.data.frame(edgelist)
+  edges$type <- type
+
+  # Convert zero-based node IDs to one-based
+  edges$i_id <- edges$i_id + 1
+  edges$j_id <- edges$j_id + 1
+
+  # Handle frequency weight inversion if needed
+  if (weight_type == 'frequency') {
+    edges$weight <- as.numeric(1 / edges$weight)
+  }
+
+  #	Network type extraction
+  network_types <- sort(unique(edges$type))
+  n_types <- length(network_types)
+
+  if (directed) {
+    #	Directed network processing
+    correlation_results <- .process_directed_network(edges, network_types,
+                                                     as_text = as_text)
+  } else {
+    #	Undirected network processing with edge aggregation
+    correlation_results <- .process_undirected_network(edges, network_types,
+                                                       as_text = as_text)
+  }
+
+  if (length(correlation_results) > 1 & isTRUE(as_text)) {
+    correlation_results <- paste(correlation_results, collapse = "; ")
+  }
+
+  # Return Results
+  return(correlation_results)
+}
+
+
+
 
 
 

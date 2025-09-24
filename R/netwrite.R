@@ -1827,7 +1827,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       multiplex <- multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
                                               weight_type = weight_type,
-                                              type = type)
+                                              type = type,
+                                              as_text = TRUE)
       #.multiplex_time <- Sys.time()
 
 
