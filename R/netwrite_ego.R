@@ -924,6 +924,26 @@ ego_netwrite <- function(egos,
       egonet_summaries <- dplyr::left_join(egonet_summaries, egonet_summaries2, by = "ego_id")
     }
 
+    ##### If we have multiple relation types, we'll want degree counts for those as well
+    if (!is.null(alter_types)) {
+
+      ### Use `dplyr` to get ego network sizes
+      alter_hold <- alters %>% dplyr::select(.data$ego_id, .data$alter_id, dplyr::starts_with("type_"))
+
+      type_sizes <- alter_hold %>%
+        dplyr::select(-.data$alter_id) %>%
+        dplyr::group_by(.data$ego_id) %>%
+        dplyr::summarize_all(~sum(.x == 1, na.rm = TRUE)) %>%
+        dplyr::ungroup()
+
+      egonet_summaries <- egonet_summaries %>%
+        dplyr::left_join(type_sizes, by = "ego_id") %>%
+        dplyr::select(ego_id, network_size, dplyr::starts_with("type"), dplyr::everything())
+
+      colnames(egonet_summaries) <- gsub("^type_", "num_", colnames(egonet_summaries))
+
+    }
+
     # If we don't have data on alter-alter ties, we may still need `egonet_summaries`
     # for multiplex edge correlation on the ego-alter edgelist. But at this stage
     # the only thing that really needs to be calculated is network size
@@ -949,11 +969,10 @@ ego_netwrite <- function(egos,
         dplyr::summarize_all(~sum(.x == 1, na.rm = TRUE)) %>%
         dplyr::ungroup()
 
-      colnames(type_sizes) <- gsub("^type_", "network_size_", colnames(type_sizes))
+      colnames(type_sizes) <- gsub("^type_", "num_", colnames(type_sizes))
 
       egonet_summaries <- egonet_summaries %>%
         dplyr::left_join(type_sizes, by = "ego_id")
-
     }
 
   }
