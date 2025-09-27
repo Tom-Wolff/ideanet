@@ -1949,7 +1949,7 @@ clust_co_scores <- function(bipartite_list) {
 fourcycle_gcc <- function(x) {
 
   if (length(x$igraph_objects) == 1) {
-    names(x$igraph_objects) <- "measure"
+    names(x$igraph_objects) <- "measures"
   }
 
   return(
@@ -2032,6 +2032,44 @@ fourcycle_gcc_v3 <- function(x) {
   )
 
 }
+
+shared_function <- function(x, this) {
+
+  # browser()
+
+  both_tied <- which(this == 1 & x == 1)
+  only_one_tied <- which(this == 1 & x == 0 | this == 0 & x == 1)
+  if (length(both_tied) == 0) {
+    four_chain_elements <- c()
+  } else {
+    four_chain_elements <- sort(c(both_tied, only_one_tied))
+  }
+
+  if (length(both_tied) < 2) {
+    num_four_cycles <- 0
+  } else {
+    num_four_cycles <- ncol(utils::combn(both_tied, 2))
+  }
+
+  if (length(four_chain_elements) < 2) {
+    num_four_chains <- 0
+  } else {
+    # num_four_chains <- ncol(utils::combn(four_chain_elements, 2))
+    num_four_chains <- nrow(expand.grid(both = both_tied,
+                                        one = four_chain_elements) %>%
+                              dplyr::filter(both != one) %>%
+                              dplyr::mutate(low = ifelse(both < one, both, one),
+                                            high = ifelse(both < one, one, both)) %>%
+                              dplyr::select(low, high) %>%
+                              dplyr::distinct())
+  }
+
+  return(list(four_cycles = num_four_cycles,
+              four_chains = num_four_chains))
+
+}
+
+
 
 ################################################################################
 
@@ -3268,7 +3306,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
       dplyr::select(-original_mode)
   }
 
-  browser()
+  # browser()
   if (is.null(type)) {
   # Pass one=mode edgelists through netwrite
   # DIFFERENT CONDITIONALS FOR SINGLE VS. MULTIRELATIONAL
