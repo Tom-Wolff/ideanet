@@ -114,6 +114,11 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      fix_nodelist = TRUE,
                      # I THINK the `weights` argument should work for adjmats if we just have users set to TRUE when using a weighted adjmat
                      weights=NULL, type=NULL,
+
+                     # STILL NEED TO WRITE DOCUMENTATION FOR TIME ARGUMENTS
+                     edge_time = NULL,
+                     node_time = NULL,
+
                      bipartite = NULL,
                      within_fun = function(x,y){return(x*y)},
                      agg_fun = sum,
@@ -199,6 +204,16 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       }
     }
 
+    #### EDGE TIME SHOULD COME IN HERE
+    if (length(edge_time) == 1 & is.numeric(edge_time)) {
+      if ("data.frame" %in% class(edgelist)) {
+        edge_time <- edgelist[, edge_time]
+      } else {
+        stop("Edgelist data frame not given.")
+      }
+    }
+
+
     # Create temporary edgelist to pass to sub-functions
     temp_el <- data.frame(i_elements = i_elements,
                           j_elements = j_elements)
@@ -227,12 +242,57 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       temp_el$edge_netid <- NA
     }
 
+    if (!is.null(edge_time)) {
+      temp_el$edge_time <- edge_time
+
+      temp_el$edge_netid <- paste(temp_el$edge_netid, " time", temp_el$edge_time, sep = "")
+
+      temp_el$edge_netid <- stringr::str_replace(temp_el$edge_netid, "^NA ", "")
+
+      # Check output and format
+    } else {
+      temp_el$edge_time <- NA
+    }
+
+    ########## AT THIS POINT, FIGURE OUT HOW TO COMBINE EDGE_TIME AND
+    ########## EDGE_NETID
+
+
+    #### NODE TIME SHOULD COME IN THE MIX HERE
 
     if (!is.null(node_netid) ) {
       if (is.numeric(nodelist[, node_netid])) {
-        nodelist[, node_netid] <- paste("network", nodelist[, node_netid], sep = "")
+        # nodelist[, node_netid] <- paste("network", nodelist[, node_netid], sep = "")
+        nodelist$temp_netid <- paste("network", nodelist[, node_netid], sep = "")
+      } else {
+        nodelist$temp_netid <- nodelist[, node_netid]
+      }
+    } else {
+        nodelist$temp_netid <- NA
+    }
+
+    if (!is.null(node_time)) {
+      if (is.character(node_time) & (length(node_time) > 1)) {
+        for (i in 1:length(node_time)) {
+          nodelist[,node_time[[i]]] <- ifelse(nodelist[,node_time[[i]]], i, NA)
+        }
+
+        nodelist <- nodelist %>%
+          tidyr::pivot_longer(cols = node_time,
+                              names_to = "wave_name",
+                              values_to = "wave") %>%
+          dplyr::select(-wave_name) %>%
+          dplyr::filter(!is.na(wave)) %>%
+          dplyr::mutate(temp_netid = paste(temp_netid, " time", wave, sep = ""))
+
+      } else {
+        nodelist$temp_netid = paste(nodelist$temp_netid, " time", nodelist[, node_time], sep = "")
+        nodelist$temp_netid <- stringr::str_replace(nodelist$temp_netid, "^NA ", "")
       }
     }
+
+
+
   }
 
 
@@ -243,17 +303,20 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               j_elements = j_elements,
                               adjacency_matrix = adjacency_matrix)
 
+
   # IF NETWORK IS BIPARTITE, PASS DATA THROUGH `bi_netwrite`
   #### VERIFY THAT THIS ALL WORKS, BUT NOTE THAT WE NEED TO ADD
   #### MULTI-NETWORK SUPPORT
   if (isTRUE(bi_check)) {
-    if (!is.null(edge_netid)) {
+    if (!is.null(edge_netid) | !is.null(edge_time)) {
+      # if (!is.null(edge_netid)) {
 
       # Create list for storing each context's output
       context_list <- list()
 
       # Get unique netid values
-      netid_vals <- unique(edge_netid)
+      # netid_vals <- unique(edge_netid)
+      netid_vals <- unique(temp_el$edge_netid)
 
       # For each unique network ID, extract edgelist and, if applicable, nodelist
       for (i in 1:length(netid_vals)) {
@@ -261,11 +324,14 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         base::message(paste("Processing network ", netid_vals[[i]], sep = ""))
 
         # FIX THIS, NEED TO CONSTRUCT THE EDGELIST HERE AT THE TOP
-        these_edges <- temp_el[edge_netid == netid_vals[[i]],]
+        # these_edges <- temp_el[edge_netid == netid_vals[[i]],]
+        these_edges <- temp_el[temp_el$edge_netid == netid_vals[[i]],]
         these_nodes <- NULL
 
         if ("data.frame" %in% class(nodelist)) {
-          these_nodes <- nodelist[nodelist[, node_netid] == netid_vals[[i]], ]
+          # these_nodes <- nodelist[nodelist[, node_netid] == netid_vals[[i]], ]
+          these_nodes <- as.data.frame(nodelist[nodelist$temp_netid == netid_vals[[i]], ])
+          these_nodes$temp_netid <- NULL
         }
 
         if (min(these_edges$weights) == 1 & max(these_edges$weights) == 1) {
@@ -303,7 +369,28 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       }
 
+
       names(context_list) <- netid_vals
+
+      if (!is.null(edge_netid) & !is.null(edge_time)) {
+        listnames <- names(context_list)
+        net_times <- data.frame(time = stringr::str_extract(listnames, "time*.$"),
+                                net = stringr::str_replace(listnames, " time*.$", ""))
+        u_nets <- unique(net_times$net)
+
+        new_list <- list()
+
+        for (i in 1:length(u_nets)) {
+          new_list[[i]] <- context_list[which(net_times$net == u_nets[[i]])]
+          names(new_list[[i]]) <- stringr::str_extract(names(new_list[[i]]), "time*.$")
+        }
+
+        names(new_list) <- u_nets
+
+        context_list <- new_list
+
+      }
+
       return(context_list)
 
 
@@ -335,14 +422,15 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
   }
 
 
-
-  if (!is.null(edge_netid)) {
+  if (!is.null(edge_netid) | !is.null(edge_time)) {
+  # if (!is.null(edge_netid)) {
 
     # Create list for storing each context's output
     context_list <- list()
 
     # Get unique netid values
-    netid_vals <- unique(edge_netid)
+    # netid_vals <- unique(edge_netid)
+    netid_vals <- unique(temp_el$edge_netid)
 
     # For each unique network ID, extract edgelist and, if applicable, nodelist
     for (i in 1:length(netid_vals)) {
@@ -350,11 +438,14 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       base::message(paste("Processing network ", netid_vals[[i]], sep = ""))
 
       # FIX THIS, NEED TO CONSTRUCT THE EDGELIST HERE AT THE TOP
-      these_edges <- temp_el[edge_netid == netid_vals[[i]],]
+      # these_edges <- temp_el[edge_netid == netid_vals[[i]],]
+      these_edges <- temp_el[temp_el$edge_netid == netid_vals[[i]],]
       these_nodes <- FALSE
 
       if ("data.frame" %in% class(nodelist)) {
-        these_nodes <- nodelist[nodelist[, node_netid] == netid_vals[[i]], ]
+        # these_nodes <- nodelist[nodelist[, node_netid] == netid_vals[[i]], ]
+        these_nodes <- as.data.frame(nodelist[nodelist$temp_netid == netid_vals[[i]], ])
+        these_nodes$temp_netid <- NULL
       }
 
       if (min(these_edges$weights) == 1 & max(these_edges$weights) == 1) {
@@ -389,6 +480,27 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
 
     names(context_list) <- netid_vals
+
+
+    if (!is.null(edge_netid) & !is.null(edge_time)) {
+      listnames <- names(context_list)
+      net_times <- data.frame(time = stringr::str_extract(listnames, "time*.$"),
+                              net = stringr::str_replace(listnames, " time*.$", ""))
+      u_nets <- unique(net_times$net)
+
+      new_list <- list()
+
+      for (i in 1:length(u_nets)) {
+        new_list[[i]] <- context_list[which(net_times$net == u_nets[[i]])]
+        names(new_list[[i]]) <- stringr::str_extract(names(new_list[[i]]), "time*.$")
+      }
+
+      names(new_list) <- u_nets
+
+      context_list <- new_list
+
+    }
+
     return(context_list)
 
 

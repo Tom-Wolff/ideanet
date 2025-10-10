@@ -519,7 +519,7 @@ herfindahl_index <- function(x) {
   # Get sum of `x` measure vector
   sum_total <- sum(x, na.rm = TRUE)
   # Now divide `x` by `sum_total` and multiply by 100
-  pct_shares <- (x/sum_total) * 100
+  pct_shares <- (x/sum_total)
   # If there are any `NA` values, substitute with zero
   pct_shares[is.na(pct_shares)] <- 0
   # Square values and sum

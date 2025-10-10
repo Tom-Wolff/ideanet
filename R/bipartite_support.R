@@ -259,33 +259,11 @@ make_bipartite_list <- function(data_type,
       dplyr::filter(mode2 != missing_code) %>%
       dplyr::filter(!is.na(mode2))
 
-    bi_nl <- data.frame(id = 0:(length(c(unique(bi_el$mode1),
-                                         unique(bi_el$mode2)))-1),
-                        name = c(unique(bi_el$mode1),
-                               unique(bi_el$mode2)),
-                        mode = c(rep(1, length(unique(bi_el$mode1))),
-                                 rep(2, length(unique(bi_el$mode2)))
-                        ))
 
-
-    # Zero-indexing edgelist
-    nl1 <- bi_nl %>%
-      dplyr::select(mode1 = name,
-                    id1 = id)
-
-    nl2 <- bi_nl %>%
-      dplyr::select(mode2 = name,
-                    id2 = id)
-
-    bi_el <- bi_el %>%
-      dplyr::left_join(nl1, by = "mode1") %>%
-      dplyr::left_join(nl2, by = "mode2") %>%
-      dplyr::select(mode1 = id1, mode2 = id2,
-                    i_elements = mode1,
-                    j_elements = mode2,
-                    dplyr::everything())
-
-    # If user enters their own nodelist, merge into `bi_nl`
+    # If user enters their own nodelist, merge into `bi_nl`.
+    # Under this condition, the nodelist should be zero-indexed first
+    # and then zero-indexed IDs are merged into the edgelist. This ensures
+    # that isolates receive sensible identification
     if (!is.null(nodelist)) {
 
       original_nodelist <- nodelist
@@ -300,16 +278,62 @@ make_bipartite_list <- function(data_type,
       colnames(original_nodelist) <- original_nodelist_names
       # If any column in the nodelist dataframe is named `"mode"`,
       # rename to `"original_mode"`
-      original_nodelist_names[which(original_nodelist_names == "mode")] <- "original_mode"
-      colnames(original_nodelist) <- original_nodelist_names
+      # original_nodelist_names[which(original_nodelist_names == "mode")] <- "original_mode"
+      # colnames(original_nodelist) <- original_nodelist_names
 
       original_nodelist$name <- nodelist[,node_id]
 
-      # Merging and zero-indexing
-      bi_nl <- bi_nl %>%
-        dplyr::left_join(original_nodelist, by = "name") %>%
+      # Add zero-indexing
+      original_nodelist$id <- 0:(nrow(original_nodelist)-1)
+
+
+      nl1 <- original_nodelist %>%
+        dplyr::select(mode1 = name,
+                      id1 = id)
+
+      nl2 <- original_nodelist %>%
+        dplyr::select(mode2 = name,
+                      id2 = id)
+
+      bi_el <- bi_el %>%
+        dplyr::left_join(nl1, by = "mode1") %>%
+        dplyr::left_join(nl2, by = "mode2") %>%
+        dplyr::select(mode1 = id1, mode2 = id2,
+                      i_elements = mode1,
+                      j_elements = mode2,
+                      dplyr::everything())
+
+
+      # Save copy of nodelist for output
+      bi_nl <- original_nodelist %>%
         dplyr::select(id, dplyr::everything())
 
+    } else {
+      # Zero-indexing edgelist and nodelist if no nodelist
+      # is given
+      bi_nl <- data.frame(id = 0:(length(c(unique(bi_el$mode1),
+                                           unique(bi_el$mode2)))-1),
+                          name = c(unique(bi_el$mode1),
+                                   unique(bi_el$mode2)),
+                          mode = c(rep(1, length(unique(bi_el$mode1))),
+                                   rep(2, length(unique(bi_el$mode2)))
+                          ))
+
+      nl1 <- bi_nl %>%
+        dplyr::select(mode1 = name,
+                      id1 = id)
+
+      nl2 <- bi_nl %>%
+        dplyr::select(mode2 = name,
+                      id2 = id)
+
+      bi_el <- bi_el %>%
+        dplyr::left_join(nl1, by = "mode1") %>%
+        dplyr::left_join(nl2, by = "mode2") %>%
+        dplyr::select(mode1 = id1, mode2 = id2,
+                      i_elements = mode1,
+                      j_elements = mode2,
+                      dplyr::everything())
     }
 
 
@@ -329,6 +353,9 @@ make_bipartite_list <- function(data_type,
 ###########################################
 
 bi_igraph <- function(bipartite_list) {
+
+  # browser()
+
   # Make standard igraph object from data frames
   regular_graph <- igraph::graph_from_data_frame(bipartite_list$edgelist,
                                                  directed = FALSE,
@@ -336,9 +363,20 @@ bi_igraph <- function(bipartite_list) {
   # Identify modes
   bi_map <- igraph::bipartite_mapping(regular_graph)
 
-  igraph::V(regular_graph)$type <- bi_map$type
-  igraph::V(regular_graph)$shape <- ifelse(bi_map$type, "square", "circle")
-  igraph::V(regular_graph)$color <- ifelse(bi_map$type, "salmon", "lightblue")
+  # Are there isolates? If so, you'll need to refer to the nodelist
+  # to accurately map mode membership to nodes
+  has_isolates <- 0 %in% igraph::degree(regular_graph)
+
+  # Extract original mode mappings
+
+  if (isTRUE(has_isolates) & ("mode" %in% igraph::vertex_attr_names(regular_graph))) {
+    igraph::V(regular_graph)$type <- igraph::V(regular_graph)$mode == 2
+  } else {
+    igraph::V(regular_graph)$type <- bi_map$type
+  }
+
+  igraph::V(regular_graph)$shape <- ifelse(igraph::V(regular_graph)$type, "square", "circle")
+  igraph::V(regular_graph)$color <- ifelse(igraph::V(regular_graph)$type, "salmon", "lightblue")
 
   return(regular_graph)
 
@@ -891,8 +929,11 @@ bi_closeness <- function(bipartite_list,
     # Create igraph object, needed to get distance matrix
     regular_graph <- bi_igraph(bipartite_list)
 
+    ### Remove any isolates
+    no_iso <- igraph::delete_vertices(regular_graph, igraph::degree(regular_graph) == 0)
+
     # Create distance matrix
-    dist <- igraph::distances(regular_graph)
+    dist <- igraph::distances(no_iso)
 
     # Get farness by taking row sums of distance matrix
     farness <- rowSums(dist)
@@ -1329,6 +1370,13 @@ apply_pairwise <- function(g, directed) {
 
 bi_avg_dist <- function(bipartite_list) {
 
+  # browser()
+
+  # CURRENTLY JUST IGNORING INFINITE DISTANCES DERIVED FROM ISOLATES
+  #### BUT DO WE ACTUALLY WANT TO DO WITHIN-COMPONENT, OR FOR LARGEST
+  #### ISOLATED COMPONENT?
+
+
   if (length(unique(bipartite_list$edgelist$type)) > 1) {
 
     for (i in 1:length(bipartite_list$igraph_objects)) {
@@ -1370,10 +1418,14 @@ bi_avg_dist <- function(bipartite_list) {
     distmat1 <- distmat[rownames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 1, "name"],
                         colnames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 1, "name"]]
     diag(distmat1) <- NA
+    ##### (Tentative, replace Inf values arising from isolates with NA values)
+    distmat1[is.infinite(distmat1)] <- NA
     # Extract Distance Matrix for Mode 2
     distmat2 <- distmat[rownames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 2, "name"],
                         colnames(distmat) %in% bipartite_list$nodelist[bipartite_list$nodelist$mode == 2, "name"]]
     diag(distmat2) <- NA
+    ##### (Tentative, replace Inf values arising from isolates with NA values)
+    distmat2[is.infinite(distmat2)] <- NA
 
     avgdist_df <- data.frame(measure_labels = c("Average Distance (Mode 1)",
                                                 "Average Distance (Mode 2)"),
@@ -2164,7 +2216,9 @@ bi_netwrite <- function(data_type = data_type,
   ### If there are multiple edge types, get node-level measures for each type
   nodes <- bipartite_list$nodelist %>%
     dplyr::left_join(bi_degree(bipartite_list), by = c("id", "mode")) %>%
+    dplyr::mutate(dplyr::across(dplyr::contains("degree"), function(x) {tidyr::replace_na(x, 0)})) %>%
     dplyr::left_join(bi_closeness(bipartite_list, weight_type = weight_type), by = "id") %>%
+    dplyr::mutate(dplyr::across(dplyr::contains("closeness"), function(x) {tidyr::replace_na(x, 0)})) %>%
     dplyr::left_join(bi_betweenness(bipartite_list, weight_type = weight_type), by = "id") %>%
     dplyr::left_join(bi_eigen(bipartite_list, directed = directed), by = "id") %>%
     dplyr::left_join(dist2_neighbors(bipartite_list), by = "id") %>%
@@ -2608,6 +2662,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                   dplyr::select(mode, dplyr::contains("jaccard"), dplyr::contains("minclust"), dplyr::contains("maxclust")) %>%
                                   dplyr::summarize_all(function(x){sum(x, na.rm = TRUE)/dplyr::n()})) %>%
     tidyr::pivot_longer(dplyr::contains("avg"), names_to = "var", values_to = "measures") %>%
+    dplyr::mutate(measures = as.character(measures)) %>%
     dplyr::mutate(measure_labels = dplyr::case_when(stringr::str_detect(var, "avg_jaccard") ~ paste("Global Clustering Coefficient (Mode ", mode, ")", sep = ""),
                                                     stringr::str_detect(var, "avg_minclust") ~ paste("Min-Clustering Coefficient (Mode ", mode, ")", sep = ""),
                                                     stringr::str_detect(var, "avg_maxclust") ~ paste("Max-Clustering Coefficient (Mode ", mode, ")", sep = ""),
@@ -2622,9 +2677,9 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
     dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
     dplyr::select(-mode, -var))
 
-  for (i in 3:ncol(clust_coef)) {
-    clust_coef[,i] <- as.character(clust_coef[,3])
-  }
+  # for (i in 3:ncol(clust_coef)) {
+  #   clust_coef[,i] <- as.character(clust_coef[,i])
+  # }
 
   } else {
     clust_coef <- as.data.frame(dplyr::bind_rows(nodes %>%
@@ -2672,6 +2727,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                      dplyr::summarize_all(mean, na.rm = TRUE) %>%
                                      dplyr::mutate(mode = 0)) %>%
       tidyr::pivot_longer(dplyr::contains("redundancy"), names_to = "var", values_to = "measures") %>%
+      dplyr::mutate(measures = as.character(measures)) %>%
       dplyr::mutate(measure_labels = paste("Average Redundancy (Mode ", mode, ")", sep = ""),
                     measure_descriptions = paste("The average redundancy coefficient (fraction of pairs of neighbor of a node linked to another node) in mode ", mode, "as specified in Latapy et al. (2008)", sep = ""),
                     measure_labels = stringr::str_replace(measure_labels, "Mode 0", "Full Graph"),
@@ -2679,9 +2735,9 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
       dplyr::select(measure_labels, measure_descriptions, dplyr::everything()) %>%
       dplyr::select(-mode, -var)
 
-    for (i in 3:ncol(clust_coef)) {
-      redun_coef[,i] <- as.character(redun_coef[,3])
-    }
+    # for (i in 3:ncol(clust_coef)) {
+    #   redun_coef[,i] <- as.character(redun_coef[,i])
+    # }
 
   } else {
     redun_coef <- dplyr::bind_rows(nodes %>%
