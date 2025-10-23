@@ -2729,6 +2729,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if (max(nodes$total_degree, na.rm = TRUE) < 30) {
       n_bins <- max(nodes$total_degree, na.rm = TRUE) + 1
+    } else {
+      n_bins <- 30
     }
 
     degree_plot <- nodes %>%
