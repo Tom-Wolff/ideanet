@@ -3088,6 +3088,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if (max(nodes$weighted_degree, na.rm = TRUE) < 30) {
       n_bins_wdeg <- max(nodes$weighted_degree, na.rm = TRUE) + 1
+    } else {
+      n_bins_wdeg <- 30
     }
 
     if (nrow(weighted_degree_measures) == 1) {
@@ -3177,6 +3179,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if (max(nodes$total_degree, na.rm = TRUE) < 30) {
       n_bins_deg <- max(nodes$total_degree, na.rm = TRUE) + 1
+    } else {
+      n_bins_deg <- 30
     }
 
     if (nrow(degree_measures) == 1) {
