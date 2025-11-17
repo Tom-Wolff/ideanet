@@ -134,6 +134,7 @@ bipartite_check <- function(bipartite,
 make_bipartite_list <- function(data_type,
                                 nodelist = NULL,
                                 node_id = NULL,
+                                mode = NULL,
                                 adjacency_matrix = NULL,
                                 i_elements = NULL,
                                 j_elements = NULL,
@@ -278,8 +279,13 @@ make_bipartite_list <- function(data_type,
       colnames(original_nodelist) <- original_nodelist_names
       # If any column in the nodelist dataframe is named `"mode"`,
       # rename to `"original_mode"`
-      # original_nodelist_names[which(original_nodelist_names == "mode")] <- "original_mode"
-      # colnames(original_nodelist) <- original_nodelist_names
+      if ("mode" %in% original_nodelist_names) {
+        original_nodelist_names[which(original_nodelist_names == "mode")] <- "original_mode"
+        colnames(original_nodelist) <- original_nodelist_names
+      } else {
+        original_nodelist$original_mode <- NA
+      }
+
 
       original_nodelist$name <- nodelist[,node_id]
 
@@ -289,24 +295,60 @@ make_bipartite_list <- function(data_type,
 
       nl1 <- original_nodelist %>%
         dplyr::select(mode1 = name,
-                      id1 = id)
+                      id1 = id,
+                      mode_num1 = original_mode)
 
       nl2 <- original_nodelist %>%
         dplyr::select(mode2 = name,
-                      id2 = id)
+                      id2 = id,
+                      mode_num2 = original_mode)
 
       bi_el <- bi_el %>%
         dplyr::left_join(nl1, by = "mode1") %>%
         dplyr::left_join(nl2, by = "mode2") %>%
-        dplyr::select(mode1 = id1, mode2 = id2,
-                      i_elements = mode1,
-                      j_elements = mode2,
-                      dplyr::everything())
+        dplyr::mutate(mode1_fix = dplyr::case_when(mode_num1 == 1 ~ mode1,
+                                                   mode_num2 == 2 ~ mode2,
+                                                   TRUE ~ mode1),
+                      mode2_fix = dplyr::case_when(mode_num2 == 2 ~ mode2,
+                                                   mode_num2 == 1 ~ mode1,
+                                                   TRUE ~ mode2),
+                      id1_fix = dplyr::case_when(mode_num1 == 1 ~ id1,
+                                                 mode_num2 == 2 ~ id2,
+                                                 TRUE ~ id1),
+                      id2_fix = dplyr::case_when(mode_num2 == 2 ~ id2,
+                                                 mode_num2 == 1 ~ id1,
+                                                 TRUE ~ id2)) %>%
+        dplyr::select(mode1 = id1_fix,
+                      mode2 = id2_fix,
+                      i_elements = mode1_fix,
+                      j_elements = mode2_fix,
+                      type, weight)
+
+      # %>%
+      #   dplyr::select(mode1 = id1, mode2 = id2,
+      #                 i_elements = mode1,
+      #                 j_elements = mode2,
+      #                 dplyr::everything())
 
 
       # Save copy of nodelist for output
       bi_nl <- original_nodelist %>%
-        dplyr::select(id, dplyr::everything())
+        dplyr::select(id, dplyr::everything()) %>%
+        dplyr::mutate(mode = dplyr::case_when(id %in% bi_el$mode1 ~ 1,
+                                              id %in% bi_el$mode2 ~ 2,
+                                              TRUE ~ NA))
+
+      if ("original_mode" %in% colnames(bi_nl)) {
+        bi_nl <- bi_nl %>%
+          dplyr::mutate(mode = ifelse(is.na(mode), original_mode, mode)) %>%
+          dplyr::select(id, name, mode, dplyr::everything()) %>%
+          dplyr::select(-original_mode)
+
+        if (NA %in% bi_nl$mode) {
+          warning("Network contains isolates, but no mode membership is indicated in the nodelist. Mode membership for isolates cannot be determined, and isolates will be assigned an NA value as their respective mode. Isolates will be ignored in all calculations.")
+        }
+      }
+
 
     } else {
       # Zero-indexing edgelist and nodelist if no nodelist
@@ -338,6 +380,8 @@ make_bipartite_list <- function(data_type,
 
 
     bipartite_list$edgelist <- bi_el
+    ### For merging purposes, store `bi_nl$name` as a character
+    bi_nl$name <- as.character(bi_nl$name)
     bipartite_list$nodelist <- bi_nl
 
 
@@ -965,7 +1009,8 @@ bi_closeness <- function(bipartite_list,
       dplyr::group_by(mode) %>%
       dplyr::summarize(n_o = dplyr::n()) %>%
       dplyr::ungroup() %>%
-      dplyr::mutate()
+      dplyr::mutate() %>%
+      dplyr::filter(!is.na(mode))
 
     n_i <- n_o %>% dplyr::mutate(mode = 2:1) %>%
       dplyr::rename(n_i = n_o)
@@ -1109,7 +1154,8 @@ bi_betweenness <- function(bipartite_list,
       dplyr::group_by(mode) %>%
       dplyr::summarize(n_o = dplyr::n()) %>%
       dplyr::ungroup() %>%
-      dplyr::mutate()
+      dplyr::mutate() %>%
+      dplyr::filter(!is.na(mode))
 
     n_i <- n_o %>% dplyr::mutate(mode = 2:1) %>%
       dplyr::rename(n_i = n_o)
@@ -1680,6 +1726,8 @@ dist2_neighbors <- function(bipartite_list) {
 
 bi_redundancy <- function(bipartite_list) {
 
+  # browser()
+
   if (length(unique(bipartite_list$edgelist$type)) > 1) {
 
     for (i in 1:length(unique(bipartite_list$edgelist$type))) {
@@ -1857,8 +1905,11 @@ clust_co_scores <- function(bipartite_list) {
   # browser()
 
   for (i in 1:length(bipartite_list$igraph_objects)) {
+    # Remove isolates from graph
+    bi_no_iso <- igraph::delete.vertices(bipartite_list$igraph_objects[[i]],
+                                         is.na(igraph::V(bipartite_list$igraph_objects[[i]])$type))
     # Get bipartite adjacency matrices
-    adjmat1 <- igraph::as_biadjacency_matrix(bipartite_list$igraph_objects[[i]]) > 0
+    adjmat1 <- igraph::as_biadjacency_matrix(bi_no_iso) > 0
     adjmat2 <- t(adjmat1)
 
     # Get distance matrices for each mode, filter the two-step distances, and create and edgelist
@@ -2016,6 +2067,8 @@ fourcycle_gcc_v3 <- function(x) {
 
   # browser()
 
+  x <- igraph::delete.vertices(x,
+                               is.na(igraph::V(x)$type))
   adjmat <- igraph::as_biadjacency_matrix(x)
   adjmat[adjmat > 0] <- 1
 
@@ -2131,6 +2184,7 @@ bi_netwrite <- function(data_type = data_type,
                         nodelist = nodelist,
                         fix_nodelist = fix_nodelist,
                         node_id = node_id,
+                        mode = mode,
                         i_elements = i_elements,
                         j_elements = j_elements,
                         weights = weights,
@@ -2161,6 +2215,7 @@ bi_netwrite <- function(data_type = data_type,
                                         j_elements = j_elements,
                                         nodelist = nodelist,
                                         node_id = node_id,
+                                        mode = mode,
                                         weights = weights,
                                         type = type,
                                         missing_code = missing_code)
@@ -3344,6 +3399,10 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
     mode1_nodes <- mode1_nodes %>%
       dplyr::select(-original_mode)
   }
+  if ("original_name" %in% colnames(mode1_nodes)) {
+    mode1_nodes <- mode1_nodes %>%
+      dplyr::select(-original_name)
+  }
 
   mode2_proj <- projection_el(bipartite_list = bipartite_list,
                               mode = 2,
@@ -3360,6 +3419,10 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
   if ("original_mode" %in% colnames(mode2_nodes)) {
     mode2_nodes <- mode2_nodes %>%
       dplyr::select(-original_mode)
+  }
+  if ("original_name" %in% colnames(mode2_nodes)) {
+    mode2_nodes <- mode2_nodes %>%
+      dplyr::select(-original_name)
   }
 
   # browser()

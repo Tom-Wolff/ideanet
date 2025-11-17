@@ -16,6 +16,7 @@
 #' @param agg_fun When processing a bipartite network, a second function used to calculate edge weights when creating one-mode projections. The default setting, when used with the default setting for \code{within_fun}, produces those values created by multiplying the adjancency matrix by its transpose.
 #' @param nodelist Either a vector of values indicating unique node/vertex IDs, or a data frame including all information about nodes in the network. If the latter, a value for \code{node_id} must be specified.
 #' @param node_id If a data frame is entered for the \code{nodelist} argument, \code{node_id} should be a character value indicating the name of the column in the node-level data frame containing unique node identifiers.
+#' @param mode When processing a bipartite network and a data frame is entered for the \code{nodelist} argument, \code{mode} should be a character value indicating the name of the column containing mode membership identifiers.
 #' @param node_netid If a data frame is entered for the \code{nodelist} argument, \code{node_netid} should be a character value indicating the name of the column in the node-level data frame containing unique network identifiers. This argument should be specified if a value is given for \code{edge_netid}.
 #' @param fix_nodelist If \code{data_type} is set to \code{"edgelist"} and user inputs a vector or data frame into \code{nodelist}, a logical value indicating whether to include node IDs that do not appear in the nodelist but do appear in the edgelist in the nodelist used when processing network data. By default, \code{fix_nodelist} is set to \code{FALSE} to identify potential inconsistencies between the nodelist and edgelist to the user.
 #' @param remove_loops A logical value indicating whether "self-loops" (ties directed toward oneself) should be considered valid ties in the network being processed.
@@ -120,6 +121,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                      node_time = NULL,
 
                      bipartite = NULL,
+                     mode = NULL,
                      within_fun = function(x,y){return(x*y)},
                      agg_fun = sum,
                      remove_loops = FALSE,
@@ -257,10 +259,11 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     ########## AT THIS POINT, FIGURE OUT HOW TO COMBINE EDGE_TIME AND
     ########## EDGE_NETID
 
+    if (class(nodelist) != "logical") {
 
     #### NODE TIME SHOULD COME IN THE MIX HERE
 
-    if (!is.null(node_netid) ) {
+    if (!is.null(node_netid)) {
       if (is.numeric(nodelist[, node_netid])) {
         # nodelist[, node_netid] <- paste("network", nodelist[, node_netid], sep = "")
         nodelist$temp_netid <- paste("network", nodelist[, node_netid], sep = "")
@@ -269,6 +272,10 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       }
     } else {
         nodelist$temp_netid <- NA
+    }
+
+    if (!is.null(mode)) {
+      nodelist$mode <- nodelist[, mode]
     }
 
     if (!is.null(node_time)) {
@@ -291,7 +298,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       }
     }
 
-
+}
 
   }
 
