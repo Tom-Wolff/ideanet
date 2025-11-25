@@ -3110,7 +3110,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
 
       node_gg_list[[1]] <- nodes %>%
-        ggplot2::ggplot(ggplot2::aes(x = weighted_degree)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$weighted_degree)) +
         ggplot2::geom_histogram(bins = n_bins_wdeg) +
         ggplot2::theme_minimal() +
         ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
@@ -3149,7 +3149,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "outdegree") ~ "Out",
                                                stringr::str_detect(measure, "indegree") ~ "In",
                                                TRUE ~ "Total")) %>%
-        ggplot2::ggplot(ggplot2::aes(x = value, fill = label)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
         ggplot2::geom_histogram(position = "identity",
                                 alpha = 0.5,
                                 bins = n_bins_wdeg) +
@@ -3201,7 +3201,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
 
       node_gg_list[[2]] <- nodes %>%
-        ggplot2::ggplot(ggplot2::aes(x = total_degree)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$total_degree)) +
         ggplot2::geom_histogram(bins = n_bins_deg) +
         ggplot2::theme_minimal() +
         ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
@@ -3239,7 +3239,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "out_degree") ~ "Out",
                                                stringr::str_detect(measure, "in_degree") ~ "In",
                                                TRUE ~ "Total")) %>%
-        ggplot2::ggplot(ggplot2::aes(x = value, fill = label)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
         ggplot2::geom_histogram(position = "identity",
                                 alpha = 0.5,
                                 bins = n_bins_wdeg) +
@@ -3266,7 +3266,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if (nrow(closeness_measures) == 1) {
       node_gg_list[[3]] <- nodes %>%
-        ggplot2::ggplot(ggplot2::aes(x = closeness)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$closeness)) +
         ggplot2::geom_histogram() +
         ggplot2::theme_minimal() +
         ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
@@ -3304,7 +3304,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "_out") ~ "Out",
                                                stringr::str_detect(measure, "_in") ~ "In",
                                                TRUE ~ "Undirected")) %>%
-        ggplot2::ggplot(ggplot2::aes(x = value, fill = label)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
         ggplot2::geom_histogram(position = "identity",
                                 alpha = 0.5) +
         ggplot2::theme_minimal() +
@@ -3370,7 +3370,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
 
       node_gg_list[[4]] <- nodes %>%
-        ggplot2::ggplot(ggplot2::aes(x = betweenness)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$betweenness)) +
         ggplot2::geom_histogram() +
         ggplot2::theme_minimal() +
         ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
@@ -3392,7 +3392,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                             values_to = "value") %>%
         dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "binarized") ~ "Binarized",
                                                TRUE ~ "Betweenness")) %>%
-        ggplot2::ggplot(ggplot2::aes(x = value, fill = label)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
         ggplot2::geom_histogram(position = "identity",
                                 alpha = 0.5) +
         ggplot2::theme_minimal() +
@@ -3445,7 +3445,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                           values_to = "value") %>%
       dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "negative") ~ "Beta = -0.75",
                                              TRUE ~ "Beta = 0.75")) %>%
-      ggplot2::ggplot(ggplot2::aes(x = value, fill = label)) +
+      ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
       ggplot2::geom_histogram(position = "identity",
                               alpha = 0.5) +
       ggplot2::theme_minimal() +
@@ -3492,7 +3492,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if (nrow(eigen_measures) == 1) {
       node_gg_list[[6]] <- nodes %>%
-        ggplot2::ggplot(ggplot2::aes(x = eigen_centrality)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$eigen_centrality)) +
         ggplot2::geom_histogram() +
         ggplot2::theme_minimal() +
         ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
@@ -3530,7 +3530,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
           dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "in") ~ "In",
                                                  stringr::str_detect(measure, "out") ~ "Out",
                                                  TRUE ~ "Symmetric")) %>%
-          ggplot2::ggplot(ggplot2::aes(x = value, fill = label)) +
+          ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
           ggplot2::geom_histogram(position = "identity",
                                   alpha = 0.5) +
           ggplot2::theme_minimal() +
@@ -3580,7 +3580,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                           values_to = "value") %>%
       dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "constraint") ~ "Constraint",
                                              TRUE ~ "Hierarchy")) %>%
-      ggplot2::ggplot(ggplot2::aes(x = value, fill = label)) +
+      ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
       ggplot2::geom_histogram(position = "identity",
                               alpha = 0.5) +
       ggplot2::theme_minimal() +
@@ -3629,7 +3629,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     if (nrow(reachable_measures) == 1) {
       node_gg_list[[8]] <- nodes %>%
-        ggplot2::ggplot(ggplot2::aes(x = reachability)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$reachability)) +
         ggplot2::geom_histogram() +
         ggplot2::theme_minimal() +
         ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
@@ -3668,7 +3668,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "in") ~ "In",
                                                stringr::str_detect(measure, "out") ~ "Out",
                                                TRUE ~ "All")) %>%
-        ggplot2::ggplot(ggplot2::aes(x = value, fill = label)) +
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
         ggplot2::geom_histogram(position = "identity",
                                 alpha = 0.5) +
         ggplot2::theme_minimal() +

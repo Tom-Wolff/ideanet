@@ -1100,7 +1100,7 @@ average_geodesic <- function(g) {
   edges_canonical$edge_pair <- paste(edges_canonical$i_id, edges_canonical$j_id, sep = "-")
 
   #	Aggregate weights by edge pair and type
-  aggregated <- aggregate(
+  aggregated <- stats::aggregate(
     weight ~ edge_pair + i_id + j_id + type,
     data = edges_canonical,
     FUN = sum
@@ -1167,7 +1167,7 @@ average_geodesic <- function(g) {
   }
 
   #	Calculate pairwise correlations
-  pair_combinations <- combn(weight_cols, 2, simplify = FALSE)
+  pair_combinations <- utils::combn(weight_cols, 2, simplify = FALSE)
   n_pairs <- length(pair_combinations)
 
   if (isFALSE(as_text)) {
@@ -1179,7 +1179,7 @@ average_geodesic <- function(g) {
       pair_label <- paste("cor",
                           paste(col_pair, collapse = "_"),
                           sep = "_")
-      correlation_results[i] <- cor(ties_wide[, col_pair[1]], ties_wide[, col_pair[2]])
+      correlation_results[i] <- stats::cor(ties_wide[, col_pair[1]], ties_wide[, col_pair[2]])
       names(correlation_results)[i] <- pair_label
 
     }
@@ -1189,7 +1189,7 @@ average_geodesic <- function(g) {
 
       for (i in seq_along(pair_combinations)) {
         col_pair <- pair_combinations[[i]]
-        correlation_value <- cor(ties_wide[, col_pair[1]], ties_wide[, col_pair[2]])
+        correlation_value <- stats::cor(ties_wide[, col_pair[1]], ties_wide[, col_pair[2]])
         correlation_results[i] <- paste0(
           'Edge Correlation for ',
           paste(col_pair, collapse = ' and '),

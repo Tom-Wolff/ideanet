@@ -938,7 +938,7 @@ ego_netwrite <- function(egos,
 
       egonet_summaries <- egonet_summaries %>%
         dplyr::left_join(type_sizes, by = "ego_id") %>%
-        dplyr::select(ego_id, network_size, dplyr::starts_with("type"), dplyr::everything())
+        dplyr::select(.data$ego_id, .data$network_size, dplyr::starts_with("type"), dplyr::everything())
 
       colnames(egonet_summaries) <- gsub("^type_", "num_", colnames(egonet_summaries))
 

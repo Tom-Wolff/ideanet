@@ -68,6 +68,7 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
     #eigen_cen <- igraph::eigen_centrality(g, directed=as.logical(directed), scale=FALSE)$vector
     eigen_cen <- eigen_igraph(g, directed = as.logical(directed),
                               message = message)
+    pagerank <- igraph::page_rank(g, directed = as.logical(directed))$vector
     # eigen_time <- Sys.time()
     constraint <- burt_ch(g) #, weights = weights)
     effective_size <- ef2(g)
@@ -127,7 +128,7 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
                                    weighted_outdegree, norm_weighted_outdegree,
                                    closeness_in, closeness_out, closeness_undirected,
                                    betweenness_scores, bonpow, bonpow_negative,
-                                   eigen_cen, constraint, effective_size, reachability))
+                                   eigen_cen, pagerank, constraint, effective_size, reachability))
 
       # assign(x = "bon_cent", bon_cent)
       # assign(x = "bon_cent_neg", bon_cent_neg)
@@ -158,6 +159,7 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
     #eigen_cen <- igraph::eigen_centrality(g, directed=as.logical(directed), scale=FALSE)$vector
     eigen_cen <- eigen_igraph(g, directed = as.logical(directed),
                               message = message)
+    pagerank <- igraph::page_rank(g, directed = as.logical(directed))$vector
     # eigen_time <- Sys.time()
     constraint <- burt_ch(g) #, weights = weights)
     effective_size <- ef2(g)
@@ -174,7 +176,7 @@ node_level_igraph <- function(nodes, g, directed, message, weights,
                                  weighted_degree, norm_weighted_degree,
                                  closeness, betweenness_scores, bonpow,
                                  bonpow_negative,
-                                 eigen_cen, constraint, effective_size,
+                                 eigen_cen, pagerank, constraint, effective_size,
                                  reachability))
 
     # assign(x = "bon_cent", bon_cent)

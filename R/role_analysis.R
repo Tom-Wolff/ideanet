@@ -238,7 +238,7 @@ cluster_method <- function(graph, # igraph object generated from netwrite
                                    dplyr::contains("degree"),
                                    dplyr::contains("betweenness"),
                                    dplyr::contains("bonpow"),
-                                   dplyr::contains("eigen"),
+                                   dplyr::contains("pagerank"),
                                    dplyr::contains("closeness"))
 
   # 3. Make dummy variable(s) indicating isolate status in each graph/subgraph

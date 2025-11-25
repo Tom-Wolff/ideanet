@@ -61,6 +61,7 @@ Imports:
     ggplot2,
     ggthemes,
     grDevices,
+    gridExtra,
     gridGraphics,
     igraph (>= 2.1.0),
     intergraph,
