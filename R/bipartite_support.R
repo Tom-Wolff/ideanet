@@ -2278,7 +2278,10 @@ bi_netwrite <- function(data_type = data_type,
     dplyr::left_join(bi_eigen(bipartite_list, directed = directed), by = "id") %>%
     dplyr::left_join(dist2_neighbors(bipartite_list), by = "id") %>%
     dplyr::left_join(clust_co_scores(bipartite_list), by = "id") %>%
-    dplyr::left_join(bi_redundancy(bipartite_list), by = "id")
+    dplyr::left_join(bi_redundancy(bipartite_list), by = "id") %>%
+    dplyr::mutate(pendant = dplyr::case_when(degree == 1 ~ TRUE,
+                                             degree == 0 ~ FALSE,
+                                             TRUE ~ FALSE))
 
   # Weak Component Membership
   weak_memberships_list <- lapply(bipartite_list$igraph_objects, membership_breakdown, mode = "weak")
