@@ -109,6 +109,11 @@ get_CHAMP_map <- function( network,
             partition_summary[idx, "partition_num"]
           partition_summary[x, "next_num_communities"] <- 
             partition_summary[idx, "num_communities"]
+        } else {
+          warning(paste("Partition #", partition_summary[x,"partition_num"], 
+                        "(with", partition_summary[x,"num_communities"],
+                        "communities) maps to gamma value ", res_param,
+                        ", outside the gamma_range used in get_partitions: consider starting over with a larger gamma_range in get_partitions"))
         }
       }
     }
@@ -156,7 +161,11 @@ get_CHAMP_map <- function( network,
         x2 <- append(x2, (p$starting_gamma + p$ending_gamma)/2)
         x2 <- append(x2, p$next_gamma)
         y2 <- append(y2, p$num_communities)
-        y2 <- append(y2, p$next_num_communities)
+        if (!is.na(p$next_num_communities)) {
+          y2 <- append(y2, p$next_num_communities)  
+        } else {
+          y2 <- append(y2, p$num_communities)
+        }
         if ((p$starting_gamma + p$ending_gamma)/2 > p$next_gamma) {
           ends <- append(ends, "first")
         } else { ends <- append(ends, "last") }
