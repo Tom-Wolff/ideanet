@@ -59,7 +59,6 @@ Imports:
     dplyr,
     forcats,
     ggplot2,
-    ggthemes,
     grDevices,
     gridGraphics,
     igraph (>= 2.1.0),

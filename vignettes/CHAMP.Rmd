@@ -121,6 +121,7 @@ Next, we run the `CHAMP` algorithm on the resulting partitions, and plot results
 -   `network`: igraph object to analyze.
 -   `partitions`: partitions object generated from `get_partitions`.
 -   `plottitle`: optionally, a title for the output plot. `Null` by default.
+-   `plots`: Boolean to decide whether to generate corresponding figure. `TRUE` by default.
 
 ```{r flor_CHAMP, warning = FALSE}
 flor_partitions <- CHAMP(nw_flor$florentine, flor_partitions, 
@@ -165,6 +166,8 @@ The `get_CHAMP_map` function uses the equivalence of modularity optimization wit
 -   `network`: igraph object to analyze.
 -   `partitions`: partitions object generated from `get_partitions`.
 -   `plottitle`: optionally, a title for the output plot. `Null` by default.
+-   `shiny`: Boolean indicating whether `get_CHAMP_map` is being called within `ideanetViz`. If `TRUE`, `get_CHAMP_map` returns an output data frame that `ideanetViz` uses for visualization.
+-   `plots`: Boolean to decide whether to generate corresponding figure. `TRUE` by default.
 
 ```{r flor_CHAMPmap, warning = FALSE}
 flor_partitions <- get_CHAMP_map(nw_flor$florentine, flor_partitions, 
@@ -181,7 +184,12 @@ print(flor_partitions$CHAMPsummary)
 knitr::kable(flor_partitions$CHAMPsummary)
 ```
 
-Looking at the above figure and table, at the bottom of the table we see that the 6-community partition with `partition_num` 11 maps to the estimated $\gamma$ value listed under `next_gamma`, where the 5-community partition is optimal (that is, the bottom row of the table lists `next_partition_num` 8 and `next_num_communities` 5). Meanwhile, note that the `next_gamma` value listed for `partition_num` 5 is between the `starting_gamma` and `ending_gamma` values for `partition_num` 8, whereas the `next_gamma` and `next_partition_num` for `partition_num` 8 maps to itself. That is, `partition_num` 8 is a fixed point of the iterative map on the CHAMP set. We see that `partition_num` 2, with 3 communities, is also a fixed point, mapping to itself. Note that the "fixed point" message output from `get_CHAMP_map` identifies both `partition_num` 2 and `partition_num` 8 as the two partitions that each point to themselves.
+Looking at the above figure and table, at the bottom of the table we see that the 6-community partition with `partition_num` 11 maps to the estimated $\gamma$ value listed under `next_gamma`, where the 5-community partition is optimal (that is, the bottom row of the table lists `next_partition_num` 8 and `next_num_communities` 5). Meanwhile, note that the `next_gamma` value listed for `partition_num` 5 is between the `starting_gamma` and `ending_gamma` values for `partition_num` 8, whereas the `next_gamma` and `next_partition_num` for `partition_num` 8 maps to itself. That is, `partition_num` 8 is a fixed point of the iterative map on the CHAMP set. We see that `partition_num` 2, with 3 communities, is also a fixed point, mapping to itself. 
+
+Note that the "fixed point" message output from `get_CHAMP_map` identifies both `partition_num` 2 and `partition_num` 8 as the two partitions that each point to themselves. If you happen to miss this message in your use, the `partition_num` of each fixed point is also stored in a list.
+```{r}
+print(flor_partitions$fixedpoints)
+```
 
 As an aside, note the NA values in the row corresponding to the 2-community partition. This partition is unlike the others here in that it doesn't map to anywhere, because this 2-community partition is a trivial solution in that it simply identifies the 2 components of the graph (disconnected from one another) without any further community structure within those components, and in the absence of any further community structure it has no associated resolution. This trivial partition where all nodes in each connected component are together in a community cannot be mapped to any other partition (hence the NA values). However, it is theoretically possible in the pipeline for other partitions to map to $\gamma$ values where this trivial partition is optimal (but it does not happen in the present examples).
 
