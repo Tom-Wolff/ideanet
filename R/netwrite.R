@@ -1827,7 +1827,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       multiplex <- multiplex_edge_corr_igraph(edgelist = edgelist, directed = as.logical(directed),
                                               weight_type = weight_type,
-                                              type = type)
+                                              type = type,
+                                              as_text = TRUE)
       #.multiplex_time <- Sys.time()
 
 
@@ -2016,6 +2017,9 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     trans_cor <- sna::gtrans(intergraph::asNetwork(igraph::simplify(g, remove.multiple = TRUE)), mode = sna_mode, measure = "correlation")
 
     # trans_cor_time <- Sys.time()
+
+    # Mean degree
+    mean_degree <- mean(nodes$total_degree)
 
     if (directed == TRUE){
       density_directed <- igraph::edge_density(g)
@@ -2300,12 +2304,17 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     # kcore_time <- Sys.time()
 
+    # Average Edge Connectivity
+    avg_ec <- graph_avg_ec_adaptive(graph = g)
+
 
     measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties',
                         'Number of Tie Types',
 
                         "Number of isolates",
                         "Number of self-loops",
+
+                        "Mean Degree",
 
                         "Density (Undirected)", "Density (Directed)",
 
@@ -2372,7 +2381,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         "Gini Coefficient, Eigenvector Centrality",
                         "Theil Index, Eigenvector Centrality",
 
-                        "K-Core Cohesion"
+                        "K-Core Cohesion", "Average Edge Connectivity"
     )
 
     measure_descriptions <- c("Type of graph (either directed or undirected)",
@@ -2383,6 +2392,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
                               "The number of nodes in the network without any ties to other nodes",
                               "The number of edges in the network that whose origin and target are the same node",
+
+                              "The average number of ties connected to a node in the network",
 
                               "The proportion of possible ties in the network that actually exist when treating edges as being undirected",
                               "The proportion of possible ties in the network that actually exist when treating edges as being directed",
@@ -2513,12 +2524,17 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "Measure of inequality in eigenvector centrality scores (Score not normalized)",
 
                               # K-core Cohesion
-                              "The average across all pairs of the maximum k-core to which each pair is a joint member (Measures the average level of shared contacts)"
+                              "The average across all pairs of the maximum k-core to which each pair is a joint member (Measures the average level of shared contacts)",
+
+                              # Average Edge Connectivity
+                              "The average number of edge-disjoint paths connecting pairs in the network"
     )
 
     measures <- c(graph_type, weighted_graph, as.character(num_nodes), as.character(num_ties), as.character(num_types),
 
                   as.character(num_isolates), as.character(num_self_loops),
+
+                  as.character(mean_degree),
 
                   as.character(density_undirected), as.character(density_directed),
 
@@ -2588,7 +2604,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(gini_eigen),
                   as.character(theil_eigen),
 
-                  as.character(k_core_cohesion))
+                  as.character(k_core_cohesion),
+                  as.character(avg_ec))
 
 
     system_level_measures <- cbind(as.data.frame(measure_labels), measure_descriptions, measures)
@@ -2708,60 +2725,137 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
   if ("system_measure_plot" %in% output) {
 
-    # browser()
+   # browser()
 
-    # Density Plot
-    density_plot <- function(){
-      # Defining degree distribution coordinates
-      y_axis <- stats::density(nodes$total_degree)$y
-      x_axis <- stats::density(nodes$total_degree)$x
-      coordinates <- cbind(as.data.frame(x_axis), y_axis)
-      coordinates <- coordinates[(coordinates$x_axis >= 0), ]
-      x_axis <- pretty(coordinates$x_axis)
-      y_axis <- pretty(coordinates$y_axis)
-      x_spacer <- x_axis[c(length(x_axis))] - x_axis[c(length(x_axis)-1)]
-      x_spacer <- x_spacer*0.5
-      y_spacer <- y_axis[c(length(y_axis))] - y_axis[c(length(y_axis)-1)]
-      y_spacer <- y_spacer*0.5
-
-
-      # Defining Base Degree Plot
-      # graphics::par(mar = c(5,6,2,2),  family='HersheySerif')
-      plot(0, type='n', xlab=' ', ylab=' ', xlim=c(min(x_axis), max(x_axis)),
-           ylim=c(min(y_axis), max(y_axis)), cex.axis=1.3, family='HersheySerif',
-           las=1, main=' ', bty='n')
-      graphics::grid(lwd = 2)
-
-      # Adding Margin Text
-      graphics::mtext(side = 1, text = 'Total Degree', col = "black", line = 3, cex = 1.5, family='HersheySerif')
-      graphics::mtext(side = 2, text = 'Density', col = "black", line = 4.5, cex = 1.5, family='HersheySerif')
-
-      # Plotting Degree
-      graphics::lines(coordinates$x_axis, coordinates$y_axis, col='brown', lwd=1.5)
-
-      # Adding Skew and Kurtosis
-      skewness <- moments::skewness(nodes$total_degree)
-      kurtosis <- moments::kurtosis(nodes$total_degree)
-      graphics::text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-y_spacer), paste('Skewness',round(skewness, digits=2)), cex=1.3)
-      graphics::text(x = (max(x_axis)-x_spacer), y = (max(y_axis)-(y_spacer*2)), paste('Kurtosis',round(kurtosis, digits=2)), cex=1.3)
-
-      # Adding Title
-      graphics::title(c("Total Degree Distribution"), family='serif', cex.main=2)
+    if (max(nodes$total_degree, na.rm = TRUE) < 30) {
+      n_bins <- max(nodes$total_degree, na.rm = TRUE) + 1
+    } else {
+      n_bins <- 30
     }
-    density_grob <- cowplot::as_grob(density_plot)
+
+    degree_plot <- nodes %>%
+      ggplot2::ggplot(ggplot2::aes(x = total_degree)) +
+      ggplot2::geom_histogram(bins = n_bins) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid.major.x = ggplot2::element_blank(),
+                     panel.grid.minor.x = ggplot2::element_blank(),
+                     plot.title = ggplot2::element_text(face = "bold",
+                                                        size = 16,
+                                                        hjust = .5)) +
+      ggplot2::labs(title = "Total Degree Distribution",
+                    y = "\nCount\n", x = "\nTotal Degree\n")
+
+    # Adding Skewness and Kurtosis Label
+    sk_label <- paste(
+                  paste("Skewness: ", round(moments::skewness(nodes$total_degree), digits = 2), sep = ""),
+                  paste("Kurtosis: ", round(moments::kurtosis(nodes$total_degree), digits = 2), sep = ""),
+                  sep = "\n")
+
+    sk_x <- max(nodes$total_degree)
+    sk_y <- max(ggplot2::ggplot_build(degree_plot)$data[[1]]$count)
+
+    degree_plot <- degree_plot +
+            ggplot2::annotate("text",
+                               x = sk_x,
+                               y = sk_y,
+                              label = sk_label,
+                               size = 4,
+                              vjust = 1.05,
+                              hjust = 1)
+
+    # # Density Plot
+    # density_plot <- function(){
+    #   # Defining degree distribution coordinates
+    #   y_axis <- stats::density(nodes$total_degree)$y
+    #   x_axis <- stats::density(nodes$total_degree)$x
+    #   coordinates <- cbind(as.data.frame(x_axis), y_axis)
+    #   coordinates <- coordinates[(coordinates$x_axis >= 0), ]
+    #   x_axis <- pretty(coordinates$x_axis)
+    #   y_axis <- pretty(coordinates$y_axis)
+    #   x_spacer <- x_axis[c(length(x_axis))] - x_axis[c(length(x_axis)-1)]
+    #   x_spacer <- x_spacer*0.5
+    #   y_spacer <- y_axis[c(length(y_axis))] - y_axis[c(length(y_axis)-1)]
+    #   y_spacer <- y_spacer*0.5
+    #
+    #
+    #   # Defining Base Degree Plot
+    #   # graphics::par(mar = c(5,6,2,2),  family='HersheySerif')
+    #   plot(0, type='n', xlab=' ', ylab=' ', xlim=c(min(x_axis), max(x_axis)),
+    #        ylim=c(min(y_axis), max(y_axis)), cex.axis=1.3, family='HersheySerif',
+    #        las=1, main=' ', bty='n')
+    #   graphics::grid(lwd = 2)
+    #
+    #   # Adding Margin Text
+    #   graphics::mtext(side = 1, text = 'Total Degree', col = "black", line = 3, cex = 1.5, family='HersheySerif')
+    #   graphics::mtext(side = 2, text = 'Density', col = "black", line = 4.5, cex = 1.5, family='HersheySerif')
+    #
+    #   # Plotting Degree
+    #   graphics::lines(coordinates$x_axis, coordinates$y_axis, col='brown', lwd=1.5)
+    #
+    #   # Adding Title
+    #   graphics::title(c("Total Degree Distribution"), family='serif', cex.main=2)
+    # }
+    # density_grob <- cowplot::as_grob(density_plot)
+    degree_grob <- cowplot::as_grob(degree_plot)
 
     #######################################
 
 
-    # Populating Subplots
-    system_plot_names <- c("Number of Weak Components",
-                           "Proportion in the Largest Weak Component",
-                           "Degree Assortativity (Total)",
-                           "Reciprocity Rate",
-                           "Transitivity Rate",
-                           "Global Clustering Coefficient",
-                           "Average Geodesic",
-                           "Multi-Level Edge Correlation")
+
+# browser()
+    if (isTRUE(directed)) {
+        # Populating Subplots
+        system_plot_names <- c("Number of Nodes",
+                               "Number of Ties",
+                               "Number of isolates",
+                               "Mean Degree",
+                               "Density (Directed)",
+                               "Number of Weak Components",
+                               "Proportion in the Largest Weak Component",
+                               "Degree Assortativity (Total)",
+                               "Reciprocity Rate",
+                               "Transitivity Rate",
+                               "Global Clustering Coefficient",
+                               "Average Geodesic",
+                               "Multi-Level Edge Correlation")
+    } else {
+        system_plot_names <- c("Number of Nodes",
+                               "Number of Ties",
+                               "Number of isolates",
+                               "Mean Degree",
+                               "Density (Undirected)",
+                               "Number of Weak Components",
+                               "Proportion in the Largest Weak Component",
+                               "Degree Assortativity (Total)",
+                               "Reciprocity Rate",
+                               "Transitivity Rate",
+                               "Global Clustering Coefficient",
+                               "Average Geodesic",
+                               "Multi-Level Edge Correlation")
+    }
+
+
+    display_table <- system_level_measures[system_level_measures$measure_labels %in% system_plot_names, c(1, 3)]
+    display_table <- display_table[1:12,]
+    display_table$measure_labels <- c("# of Nodes",
+                                      "# of Ties",
+                                      "# of Isolates",
+                                      "Mean Degree",
+                                      "Density",
+                                      "# of Weak Components",
+                                      "Prop. in Largest Weak Component",
+                                      "Degree Assortativity",
+                                      "Reciprocity Rate",
+                                      "Transitivity Rate",
+                                      "Global Clustering Coefficient",
+                                      "Average Geodesic")
+    display_table$measures <- round(as.numeric(display_table$measures), digits = 2)
+    display_table$measures <- as.character(display_table$measures)
+    table_grob <- gridExtra::tableGrob(display_table,
+                                       rows = NULL,
+                                       cols = NULL,
+                                       theme = gridExtra::ttheme_default(base_size = 10))
+
 
     system_plot_labels <- c("# of Weak Components",
                             "% in the Largest Weak Component",
@@ -2839,35 +2933,129 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                                           sep = "\n"))
 
 
-    mid_right <- cowplot::plot_grid(plot_texts$deg_assort,
+    # Adding Skew and Kurtosis
+    skewness <- moments::skewness(nodes$total_degree)
+    kurtosis <- moments::kurtosis(nodes$total_degree)
+
+    plot_texts$skewness <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Skewness", round(skewness, digits = 2), sep = "\n"))
+    plot_texts$kurtosis <- ggplot2::ggplot() +
+      ggplot2::theme_void() +
+      ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Kurtosis", round(kurtosis, digits = 2), sep = "\n"))
+
+    # LEFT SIDE
+    top_left <- cowplot::plot_grid(plot_texts$num_weak,
+                                   plot_texts$prop_weak,
+                                   ncol = 2)
+
+    bottom_left <- cowplot::plot_grid(plot_texts$skewness,
+                                      plot_texts$kurtosis,
+                                      ncol = 2)
+
+    left <- cowplot::plot_grid(degree_grob, bottom_left,#  top_left,
+                               nrow = 2, ncol = 1,
+                               rel_heights = c(5, 1))
+
+
+# RIGHT SIDE
+    top_right <- cowplot::plot_grid(plot_texts$density,
+                                    plot_texts$deg_assort,
                                     plot_texts$recip,
                                     plot_texts$trans_rate,
+                                    plot_texts$gcc,
+                                    plot_texts$avg_geo,
                                     ### NEED TO DECIDE WHAT TO DO ABOUT MULTIPLEX
                                     ### CORRELATION WHEN 3+ TYPES
                                     # plot_texts$multi_corr,
-
                                     ncol = 1)
 
-    center <- cowplot::plot_grid(density_grob, mid_right, ncol = 2,
-                                 rel_widths = c(2.5, 1))
+### BOTTOM RIGHT WILL BE MULTI-EDGE CORRELATION
 
-    top_row <- cowplot::plot_grid(plot_texts$num_weak,
-                                  plot_texts$prop_weak,
-                                  plot_texts$density,
-                                  ncol = 3)
+    multicor <- system_level_measures[system_level_measures$measure_labels == "Multi-Level Edge Correlation", 3]
 
-    bottom_row <- cowplot::plot_grid(plot_texts$gcc,
-                                     plot_texts$avg_geo,
-                                     ncol = 2)
+    if (multicor == "Singleplex Network") {
+      # bottom_right <- ggplot2::ggplot() +
+      #   ggplot2::theme_void() +
+      #   ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Singleplex Network"))
+      #
+      # right <- cowplot::plot_grid(table_grob,
+      #                             bottom_right,
+      #                             ncol = 1,
+      #                             rel_heights = c(5, 1))
 
-    p_1 <- cowplot::plot_grid(top_row, center,
-                              bottom_row,
-                              nrow = 3, ncol = 1,
-                              rel_heights = c(1, 5, 1)) +
-      ggplot2::labs(title = "System-Level Measures") +
-      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
-                                                        size = 28,
-                                                        face = "bold"))
+      p_1 <- cowplot::plot_grid(degree_grob, table_grob,
+                                nrow = 1, ncol = 2,
+                                rel_widths = c(2, 2)) +
+        ggplot2::labs(title = "System-Level Measures\n") +
+        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                          vjust = -1,
+                                                          size = 28,
+                                                          face = "bold"))
+
+    } else if (stringr::str_detect(multicor, ";")) {
+
+      cormat1 <- edge_correlations(system_level_measures)
+      cormat2 <- cormat1 %>% dplyr::rename(type1 = .data$type2,
+                                           type2 = .data$type1)
+      cormat3 <- data.frame(type1 = unique(type),
+                            type2 = unique(type),
+                            correlation = NA)
+
+      full_cormat <- dplyr::bind_rows(cormat1, cormat2, cormat3) %>%
+        dplyr::mutate(type1 = as.ordered(.data$type1),
+                      type2 = as.ordered(.data$type2))
+
+      bottom_left <- full_cormat %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$type1,
+                                     y = ordered(.data$type2, levels = rev(levels(.data$type2))),
+                                     fill = .data$correlation)) +
+        ggplot2::geom_tile(color = "white",
+                           lwd = 1.5) +
+        ggplot2::geom_text(ggplot2::aes(label = .data$correlation), color = "white", size = 4) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(panel.grid = ggplot2::element_blank(),
+                       legend.position = "none",
+                       plot.title = ggplot2::element_text(hjust = 0.5, face = "bold")) +
+        ggplot2::labs(x = NULL,
+                      y = NULL,
+                      title = "Multi-Level Edge Correlations")
+
+      left <- cowplot::plot_grid(degree_grob,
+                                 bottom_left,
+                                 ncol = 1,
+                                 rel_heights = c(2, 2))
+
+      p_1 <- cowplot::plot_grid(left, table_grob,
+                                nrow = 1, ncol = 2,
+                                rel_widths = c(2, 2)) +
+        ggplot2::labs(title = "System-Level Measures\n") +
+        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                          vjust = -1,
+                                                          size = 28,
+                                                          face = "bold"))
+
+    } else {
+      multicor2 <- edge_correlations(system_level_measures)[,3]
+      bottom_right <- ggplot2::ggplot() +
+        ggplot2::theme_void() +
+        ggplot2::geom_text(ggplot2::aes(0,0), label = paste("Multi-Level\nEdge Correlation", multicor2, sep = "\n"))
+
+      right <- cowplot::plot_grid(top_right,
+                                  bottom_right,
+                                  ncol = 1,
+                                  rel_heights = c(4, 1))
+
+      p_1 <- cowplot::plot_grid(left, right,
+                                nrow = 1, ncol = 2,
+                                rel_widths = c(3, 1)) +
+        ggplot2::labs(title = "System-Level Measures\n") +
+        ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5,
+                                                          vjust = -1,
+                                                          size = 28,
+                                                          face = "bold"))
+    }
+
 
     if (shiny == FALSE) {
       print(p_1)
@@ -2896,18 +3084,39 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     weighted_degree_measures <- cbind(weighted_degree_measures, stringr::str_to_title(stringr::str_replace_all(weighted_degree_measures[,2], "^weighted_", "")))
     colnames(weighted_degree_measures) <- c('type', 'measure', 'label')
 
-    wdeg_setup <- node_gg_setup(index_df = weighted_degree_measures, nodes = nodes)
+    # wdeg_setup <- node_gg_setup(index_df = weighted_degree_measures, nodes = nodes)
+
+    if (max(nodes$weighted_degree, na.rm = TRUE) < 30) {
+      n_bins_wdeg <- max(nodes$weighted_degree, na.rm = TRUE) + 1
+    } else {
+      n_bins_wdeg <- 30
+    }
 
     if (nrow(weighted_degree_measures) == 1) {
-      node_gg_list[[1]] <- wdeg_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
-                                     y = wdeg_setup$coords$y_axis)) +
-        ggplot2::geom_line() +
+      # node_gg_list[[1]] <- wdeg_setup$coords %>%
+      #   ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
+      #                                y = wdeg_setup$coords$y_axis)) +
+      #   ggplot2::geom_line() +
+      #   ggplot2::theme_minimal() +
+      #   ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      #   ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
+      #   ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
+      #   ggplot2::labs(y = "\nDensity\n",
+      #                 x = NULL,
+      #                 color = NULL,
+      #                 caption = "Weighted Degree\n") +
+      #   ggplot2::theme(legend.position = c(.8, .8),
+      #                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+      #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+      node_gg_list[[1]] <- nodes %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$weighted_degree)) +
+        ggplot2::geom_histogram(bins = n_bins_wdeg) +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Weighted Degree\n") +
@@ -2915,16 +3124,40 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
-      node_gg_list[[1]] <- wdeg_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
-                                     y = wdeg_setup$coords$y_axis,
-                                     color = wdeg_setup$coords$measure)) +
-        ggplot2::geom_line() +
+      # node_gg_list[[1]] <- wdeg_setup$coords %>%
+      #   ggplot2::ggplot(ggplot2::aes(x = wdeg_setup$coords$x_axis,
+      #                                y = wdeg_setup$coords$y_axis,
+      #                                color = wdeg_setup$coords$measure)) +
+      #   ggplot2::geom_line() +
+      #   ggplot2::theme_minimal() +
+      #   ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      #   ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
+      #   ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
+      #   ggplot2::labs(y = "\nDensity\n",
+      #                 x = NULL,
+      #                 color = NULL,
+      #                 caption = "Weighted Degree\n") +
+      #   ggplot2::theme(legend.position = c(.8, .8),
+      #                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+      #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+      node_gg_list[[1]] <- nodes %>%
+        dplyr::select(as.data.frame(weighted_degree_measures)$measure) %>%
+        tidyr::pivot_longer(dplyr::everything(),
+                            names_to = "measure",
+                            values_to = "value") %>%
+        dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "outdegree") ~ "Out",
+                                               stringr::str_detect(measure, "indegree") ~ "In",
+                                               TRUE ~ "Total")) %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
+        ggplot2::geom_histogram(position = "identity",
+                                alpha = 0.5,
+                                bins = n_bins_wdeg) +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = wdeg_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = wdeg_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Weighted Degree\n") +
@@ -2941,18 +3174,40 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     degree_measures <- cbind(degree_measures, stringr::str_to_title(stringr::str_replace_all(degree_measures[,2], "_degree$", "")))
     colnames(degree_measures) <- c('type', 'measure', 'label')
 
-    deg_setup <- node_gg_setup(index_df = degree_measures, nodes = nodes)
+    # deg_setup <- node_gg_setup(index_df = degree_measures, nodes = nodes)
+
+
+    if (max(nodes$total_degree, na.rm = TRUE) < 30) {
+      n_bins_deg <- max(nodes$total_degree, na.rm = TRUE) + 1
+    } else {
+      n_bins_deg <- 30
+    }
 
     if (nrow(degree_measures) == 1) {
-      node_gg_list[[2]] <- deg_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
-                                     y = deg_setup$coords$y_axis)) +
-        ggplot2::geom_line() +
+      # node_gg_list[[2]] <- deg_setup$coords %>%
+      #   ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
+      #                                y = deg_setup$coords$y_axis)) +
+      #   ggplot2::geom_line() +
+      #   ggplot2::theme_minimal() +
+      #   ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      #   ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
+      #   ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
+      #   ggplot2::labs(y = "\nDensity\n",
+      #                 x = NULL,
+      #                 color = NULL,
+      #                 caption = "Degree\n") +
+      #   ggplot2::theme(legend.position = c(.8, .8),
+      #                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+      #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+      node_gg_list[[2]] <- nodes %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$total_degree)) +
+        ggplot2::geom_histogram(bins = n_bins_deg) +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Degree\n") +
@@ -2960,16 +3215,39 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
-      node_gg_list[[2]] <- deg_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
-                                     y = deg_setup$coords$y_axis,
-                                     color = deg_setup$coords$measure)) +
-        ggplot2::geom_line() +
+      # node_gg_list[[2]] <- deg_setup$coords %>%
+      #   ggplot2::ggplot(ggplot2::aes(x = deg_setup$coords$x_axis,
+      #                                y = deg_setup$coords$y_axis,
+      #                                color = deg_setup$coords$measure)) +
+      #   ggplot2::geom_line() +
+      #   ggplot2::theme_minimal() +
+      #   ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      #   ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
+      #   ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
+      #   ggplot2::labs(y = "\nDensity\n",
+      #                 x = NULL,
+      #                 color = NULL,
+      #                 caption = "Degree\n") +
+      #   ggplot2::theme(legend.position = c(.8, .8),
+      #                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+      #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+      node_gg_list[[2]] <- nodes %>%
+        dplyr::select(as.data.frame(degree_measures)$measure) %>%
+        tidyr::pivot_longer(dplyr::everything(),
+                            names_to = "measure",
+                            values_to = "value") %>%
+        dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "out_degree") ~ "Out",
+                                               stringr::str_detect(measure, "in_degree") ~ "In",
+                                               TRUE ~ "Total")) %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
+        ggplot2::geom_histogram(position = "identity",
+                                alpha = 0.5,
+                                bins = n_bins_wdeg) +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = deg_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = deg_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Degree\n") +
@@ -2984,41 +3262,79 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     closeness_measures <- cbind(closeness_measures, stringr::str_to_title(stringr::str_replace_all(closeness_measures[,2], "^closeness_", "")))
     colnames(closeness_measures) <- c('type', 'measure', 'label')
 
-    closeness_setup <- node_gg_setup(index_df = closeness_measures, nodes = nodes)
+    # closeness_setup <- node_gg_setup(index_df = closeness_measures, nodes = nodes)
 
     if (nrow(closeness_measures) == 1) {
-      node_gg_list[[3]] <- closeness_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = closeness_setup$coords$x_axis,
-                                     y = closeness_setup$coords$y_axis)) +
-        ggplot2::geom_line() +
+      node_gg_list[[3]] <- nodes %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$closeness)) +
+        ggplot2::geom_histogram() +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = closeness_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = closeness_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Closeness\n") +
         ggplot2::theme(legend.position = c(.8, .8),
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+      # node_gg_list[[3]] <- closeness_setup$coords %>%
+      #   ggplot2::ggplot(ggplot2::aes(x = closeness_setup$coords$x_axis,
+      #                                y = closeness_setup$coords$y_axis)) +
+      #   ggplot2::geom_line() +
+      #   ggplot2::theme_minimal() +
+      #   ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      #   ggplot2::scale_x_continuous(breaks = closeness_setup$x_breaks) +
+      #   ggplot2::scale_y_continuous(breaks = closeness_setup$y_breaks) +
+      #   ggplot2::labs(y = "\nDensity\n",
+      #                 x = NULL,
+      #                 color = NULL,
+      #                 caption = "Closeness\n") +
+      #   ggplot2::theme(legend.position = c(.8, .8),
+      #                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+      #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
-      node_gg_list[[3]] <- closeness_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = closeness_setup$coords$x_axis,
-                                     y = closeness_setup$coords$y_axis,
-                                     color = closeness_setup$coords$measure)) +
-        ggplot2::geom_line() +
+      node_gg_list[[3]] <- nodes %>%
+        dplyr::select(as.data.frame(closeness_measures)$measure) %>%
+        tidyr::pivot_longer(dplyr::everything(),
+                            names_to = "measure",
+                            values_to = "value") %>%
+        dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "_out") ~ "Out",
+                                               stringr::str_detect(measure, "_in") ~ "In",
+                                               TRUE ~ "Undirected")) %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
+        ggplot2::geom_histogram(position = "identity",
+                                alpha = 0.5) +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = closeness_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = closeness_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Closeness\n") +
         ggplot2::theme(legend.position = c(.8, .8),
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+      # node_gg_list[[3]] <- closeness_setup$coords %>%
+      #   ggplot2::ggplot(ggplot2::aes(x = closeness_setup$coords$x_axis,
+      #                                y = closeness_setup$coords$y_axis,
+      #                                color = closeness_setup$coords$measure)) +
+      #   ggplot2::geom_line() +
+      #   ggplot2::theme_minimal() +
+      #   ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      #   ggplot2::scale_x_continuous(breaks = closeness_setup$x_breaks) +
+      #   ggplot2::scale_y_continuous(breaks = closeness_setup$y_breaks) +
+      #   ggplot2::labs(y = "\nDensity\n",
+      #                 x = NULL,
+      #                 color = NULL,
+      #                 caption = "Closeness\n") +
+      #   ggplot2::theme(legend.position = c(.8, .8),
+      #                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+      #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
 
@@ -3037,38 +3353,77 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     bet_setup <- node_gg_setup(index_df = betweenness_measures, nodes = nodes)
 
     if (nrow(betweenness_measures) == 1) {
-      node_gg_list[[4]] <- bet_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = bet_setup$coords$x_axis,
-                                     y = bet_setup$coords$y_axis)) +
-        ggplot2::geom_line() +
+      # node_gg_list[[4]] <- bet_setup$coords %>%
+      #   ggplot2::ggplot(ggplot2::aes(x = bet_setup$coords$x_axis,
+      #                                y = bet_setup$coords$y_axis)) +
+      #   ggplot2::geom_line() +
+      #   ggplot2::theme_minimal() +
+      #   ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      #   ggplot2::scale_x_continuous(breaks = bet_setup$x_breaks) +
+      #   ggplot2::scale_y_continuous(breaks = bet_setup$y_breaks) +
+      #   ggplot2::labs(y = "\nDensity\n",
+      #                 x = NULL,
+      #                 color = NULL,
+      #                 caption = "Betweenness\n") +
+      #   ggplot2::theme(legend.position = c(.8, .8),
+      #                  legend.background = ggplot2::element_rect(colour="white", fill="white"),
+      #                  plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+      node_gg_list[[4]] <- nodes %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$betweenness)) +
+        ggplot2::geom_histogram() +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = bet_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = bet_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Betweenness\n") +
         ggplot2::theme(legend.position = c(.8, .8),
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
     } else {
-      node_gg_list[[4]] <- bet_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = bet_setup$coords$x_axis,
-                                     y = bet_setup$coords$y_axis,
-                                     color = bet_setup$coords$measure)) +
-        ggplot2::geom_line() +
+      node_gg_list[[4]] <- nodes %>%
+        dplyr::select(as.data.frame(betweenness_measures)$measure) %>%
+        tidyr::pivot_longer(dplyr::everything(),
+                            names_to = "measure",
+                            values_to = "value") %>%
+        dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "binarized") ~ "Binarized",
+                                               TRUE ~ "Betweenness")) %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
+        ggplot2::geom_histogram(position = "identity",
+                                alpha = 0.5) +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = bet_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = bet_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Betweenness\n") +
         ggplot2::theme(legend.position = c(.8, .8),
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+
+        # bet_setup$coords %>%
+        # ggplot2::ggplot(ggplot2::aes(x = bet_setup$coords$x_axis,
+        #                              y = bet_setup$coords$y_axis,
+        #                              color = bet_setup$coords$measure)) +
+        # ggplot2::geom_line() +
+        # ggplot2::theme_minimal() +
+        # ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        # ggplot2::scale_x_continuous(breaks = bet_setup$x_breaks) +
+        # ggplot2::scale_y_continuous(breaks = bet_setup$y_breaks) +
+        # ggplot2::labs(y = "\nDensity\n",
+        #               x = NULL,
+        #               color = NULL,
+        #               caption = "Betweenness\n") +
+        # ggplot2::theme(legend.position = c(.8, .8),
+        #                legend.background = ggplot2::element_rect(colour="white", fill="white"),
+        #                plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
 
@@ -3081,24 +3436,46 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     bon_measures[,3] <- stringr::str_replace_all(bon_measures[,3], "^Negative", "Beta -0.75")
     colnames(bon_measures) <- c('type', 'measure', 'label')
 
-    bon_setup <- node_gg_setup(index_df = bon_measures, nodes = nodes)
+    # bon_setup <- node_gg_setup(index_df = bon_measures, nodes = nodes)
 
-    node_gg_list[[5]] <- bon_setup$coords %>%
-      ggplot2::ggplot(ggplot2::aes(x = bon_setup$coords$x_axis,
-                                   y = bon_setup$coords$y_axis,
-                                   color = bon_setup$coords$measure)) +
-      ggplot2::geom_line() +
+    node_gg_list[[5]] <- nodes %>%
+      dplyr::select(as.data.frame(bon_measures)$measure) %>%
+      tidyr::pivot_longer(dplyr::everything(),
+                          names_to = "measure",
+                          values_to = "value") %>%
+      dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "negative") ~ "Beta = -0.75",
+                                             TRUE ~ "Beta = 0.75")) %>%
+      ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
+      ggplot2::geom_histogram(position = "identity",
+                              alpha = 0.5) +
       ggplot2::theme_minimal() +
-      ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-      ggplot2::scale_x_continuous(breaks = bon_setup$x_breaks) +
-      ggplot2::scale_y_continuous(breaks = bon_setup$y_breaks) +
-      ggplot2::labs(y = "\nDensity\n",
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                     panel.grid.major.x = ggplot2::element_blank(),
+                     legend.title = ggplot2::element_blank()) +
+      ggplot2::labs(y = "\nCount\n",
                     x = NULL,
                     color = NULL,
                     caption = "Bonacich\n") +
       ggplot2::theme(legend.position = c(.8, .8),
                      legend.background = ggplot2::element_rect(colour="white", fill="white"),
                      plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+      # bon_setup$coords %>%
+      # ggplot2::ggplot(ggplot2::aes(x = bon_setup$coords$x_axis,
+      #                              y = bon_setup$coords$y_axis,
+      #                              color = bon_setup$coords$measure)) +
+      # ggplot2::geom_line() +
+      # ggplot2::theme_minimal() +
+      # ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      # ggplot2::scale_x_continuous(breaks = bon_setup$x_breaks) +
+      # ggplot2::scale_y_continuous(breaks = bon_setup$y_breaks) +
+      # ggplot2::labs(y = "\nDensity\n",
+      #               x = NULL,
+      #               color = NULL,
+      #               caption = "Bonacich\n") +
+      # ggplot2::theme(legend.position = c(.8, .8),
+      #                legend.background = ggplot2::element_rect(colour="white", fill="white"),
+      #                plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
 
     # Eigenvector
     eigen_measures <- columns[grepl("eigen", columns)]
@@ -3111,41 +3488,79 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
     colnames(eigen_measures) <- c('type', 'measure', 'label')
 
-    eigen_setup <- node_gg_setup(index_df = eigen_measures, nodes = nodes)
+    # eigen_setup <- node_gg_setup(index_df = eigen_measures, nodes = nodes)
 
     if (nrow(eigen_measures) == 1) {
-      node_gg_list[[6]] <- eigen_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = eigen_setup$coords$x_axis,
-                                     y = eigen_setup$coords$y_axis)) +
-        ggplot2::geom_line() +
+      node_gg_list[[6]] <- nodes %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$eigen_centrality)) +
+        ggplot2::geom_histogram() +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = eigen_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = eigen_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Eigenvector\n") +
         ggplot2::theme(legend.position = c(.8, .8),
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+        # eigen_setup$coords %>%
+        # ggplot2::ggplot(ggplot2::aes(x = eigen_setup$coords$x_axis,
+        #                              y = eigen_setup$coords$y_axis)) +
+        # ggplot2::geom_line() +
+        # ggplot2::theme_minimal() +
+        # ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        # ggplot2::scale_x_continuous(breaks = eigen_setup$x_breaks) +
+        # ggplot2::scale_y_continuous(breaks = eigen_setup$y_breaks) +
+        # ggplot2::labs(y = "\nDensity\n",
+        #               x = NULL,
+        #               color = NULL,
+        #               caption = "Eigenvector\n") +
+        # ggplot2::theme(legend.position = c(.8, .8),
+        #                legend.background = ggplot2::element_rect(colour="white", fill="white"),
+        #                plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
-      node_gg_list[[6]] <- eigen_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = eigen_setup$coords$x_axis,
-                                     y = eigen_setup$coords$y_axis,
-                                     color = eigen_setup$coords$measure)) +
-        ggplot2::geom_line() +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = eigen_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = eigen_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
-                      x = NULL,
-                      color = NULL,
-                      caption = "Eigenvector\n") +
-        ggplot2::theme(legend.position = c(.8, .8),
-                       legend.background = ggplot2::element_rect(colour="white", fill="white"),
-                       plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+      node_gg_list[[6]] <- nodes %>%
+        dplyr::select(as.data.frame(eigen_measures)$measure) %>%
+          tidyr::pivot_longer(dplyr::everything(),
+                              names_to = "measure",
+                              values_to = "value") %>%
+          dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "in") ~ "In",
+                                                 stringr::str_detect(measure, "out") ~ "Out",
+                                                 TRUE ~ "Symmetric")) %>%
+          ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
+          ggplot2::geom_histogram(position = "identity",
+                                  alpha = 0.5) +
+          ggplot2::theme_minimal() +
+          ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                         panel.grid.major.x = ggplot2::element_blank(),
+                         legend.title = ggplot2::element_blank()) +
+          ggplot2::labs(y = "\nCount\n",
+                        x = NULL,
+                        color = NULL,
+                        caption = "Eigenvector\n") +
+          ggplot2::theme(legend.position = c(.8, .8),
+                         legend.background = ggplot2::element_rect(colour="white", fill="white"),
+                         plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+        # eigen_setup$coords %>%
+        # ggplot2::ggplot(ggplot2::aes(x = eigen_setup$coords$x_axis,
+        #                              y = eigen_setup$coords$y_axis,
+        #                              color = eigen_setup$coords$measure)) +
+        # ggplot2::geom_line() +
+        # ggplot2::theme_minimal() +
+        # ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        # ggplot2::scale_x_continuous(breaks = eigen_setup$x_breaks) +
+        # ggplot2::scale_y_continuous(breaks = eigen_setup$y_breaks) +
+        # ggplot2::labs(y = "\nDensity\n",
+        #               x = NULL,
+        #               color = NULL,
+        #               caption = "Eigenvector\n") +
+        # ggplot2::theme(legend.position = c(.8, .8),
+        #                legend.background = ggplot2::element_rect(colour="white", fill="white"),
+        #                plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
    # browser()
@@ -3156,24 +3571,47 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     burt_measures <- cbind(burt_measures, stringr::str_to_title(stringr::str_replace_all(burt_measures[,2], "burt_", "")))
     colnames(burt_measures) <- c('type', 'measure', 'label')
 
-    burt_setup <- node_gg_setup(index_df = burt_measures, nodes = nodes)
+    # burt_setup <- node_gg_setup(index_df = burt_measures, nodes = nodes)
 
-    node_gg_list[[7]] <- burt_setup$coords %>%
-      ggplot2::ggplot(ggplot2::aes(x = burt_setup$coords$x_axis,
-                                   y = burt_setup$coords$y_axis,
-                                   color = burt_setup$coords$measure)) +
-      ggplot2::geom_line() +
+    node_gg_list[[7]] <- nodes %>%
+      dplyr::select(as.data.frame(burt_measures)$measure) %>%
+      tidyr::pivot_longer(dplyr::everything(),
+                          names_to = "measure",
+                          values_to = "value") %>%
+      dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "constraint") ~ "Constraint",
+                                             TRUE ~ "Hierarchy")) %>%
+      ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
+      ggplot2::geom_histogram(position = "identity",
+                              alpha = 0.5) +
       ggplot2::theme_minimal() +
-      ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-      ggplot2::scale_x_continuous(breaks = burt_setup$x_breaks) +
-      ggplot2::scale_y_continuous(breaks = burt_setup$y_breaks) +
-      ggplot2::labs(y = "\nDensity\n",
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                     panel.grid.major.x = ggplot2::element_blank(),
+                     legend.title = ggplot2::element_blank()) +
+      ggplot2::labs(y = "\nCount\n",
                     x = NULL,
                     color = NULL,
                     caption = "Burt Measures\n") +
       ggplot2::theme(legend.position = c(.8, .8),
                      legend.background = ggplot2::element_rect(colour="white", fill="white"),
                      plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+
+      # burt_setup$coords %>%
+      # ggplot2::ggplot(ggplot2::aes(x = burt_setup$coords$x_axis,
+      #                              y = burt_setup$coords$y_axis,
+      #                              color = burt_setup$coords$measure)) +
+      # ggplot2::geom_line() +
+      # ggplot2::theme_minimal() +
+      # ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+      # ggplot2::scale_x_continuous(breaks = burt_setup$x_breaks) +
+      # ggplot2::scale_y_continuous(breaks = burt_setup$y_breaks) +
+      # ggplot2::labs(y = "\nDensity\n",
+      #               x = NULL,
+      #               color = NULL,
+      #               caption = "Burt Measures\n") +
+      # ggplot2::theme(legend.position = c(.8, .8),
+      #                legend.background = ggplot2::element_rect(colour="white", fill="white"),
+      #                plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
 
 
     # Reachability Measures
@@ -3187,41 +3625,80 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     }
     colnames(reachable_measures) <- c('type', 'measure', 'label')
 
-    reach_setup <- node_gg_setup(index_df = reachable_measures, nodes = nodes)
+    # reach_setup <- node_gg_setup(index_df = reachable_measures, nodes = nodes)
 
     if (nrow(reachable_measures) == 1) {
-      node_gg_list[[8]] <- reach_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = reach_setup$coords$x_axis,
-                                     y = reach_setup$coords$y_axis)) +
-        ggplot2::geom_line() +
+      node_gg_list[[8]] <- nodes %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$reachability)) +
+        ggplot2::geom_histogram() +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = reach_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = reach_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Reachability\n") +
         ggplot2::theme(legend.position = c(.8, .8),
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+
+        # reach_setup$coords %>%
+        # ggplot2::ggplot(ggplot2::aes(x = reach_setup$coords$x_axis,
+        #                              y = reach_setup$coords$y_axis)) +
+        # ggplot2::geom_line() +
+        # ggplot2::theme_minimal() +
+        # ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        # ggplot2::scale_x_continuous(breaks = reach_setup$x_breaks) +
+        # ggplot2::scale_y_continuous(breaks = reach_setup$y_breaks) +
+        # ggplot2::labs(y = "\nDensity\n",
+        #               x = NULL,
+        #               color = NULL,
+        #               caption = "Reachability\n") +
+        # ggplot2::theme(legend.position = c(.8, .8),
+        #                legend.background = ggplot2::element_rect(colour="white", fill="white"),
+        #                plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     } else {
-      node_gg_list[[8]] <- reach_setup$coords %>%
-        ggplot2::ggplot(ggplot2::aes(x = reach_setup$coords$x_axis,
-                                     y = reach_setup$coords$y_axis,
-                                     color = reach_setup$coords$measure)) +
-        ggplot2::geom_line() +
+      node_gg_list[[8]] <- nodes %>%
+        dplyr::select(as.data.frame(reachable_measures)$measure) %>%
+        tidyr::pivot_longer(dplyr::everything(),
+                            names_to = "measure",
+                            values_to = "value") %>%
+        dplyr::mutate(label = dplyr::case_when(stringr::str_detect(measure, "in") ~ "In",
+                                               stringr::str_detect(measure, "out") ~ "Out",
+                                               TRUE ~ "All")) %>%
+        ggplot2::ggplot(ggplot2::aes(x = .data$value, fill = .data$label)) +
+        ggplot2::geom_histogram(position = "identity",
+                                alpha = 0.5) +
         ggplot2::theme_minimal() +
-        ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
-        ggplot2::scale_x_continuous(breaks = reach_setup$x_breaks) +
-        ggplot2::scale_y_continuous(breaks = reach_setup$y_breaks) +
-        ggplot2::labs(y = "\nDensity\n",
+        ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                       panel.grid.major.x = ggplot2::element_blank(),
+                       legend.title = ggplot2::element_blank()) +
+        ggplot2::labs(y = "\nCount\n",
                       x = NULL,
                       color = NULL,
                       caption = "Reachability\n") +
         ggplot2::theme(legend.position = c(.8, .8),
                        legend.background = ggplot2::element_rect(colour="white", fill="white"),
                        plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
+
+        # reach_setup$coords %>%
+        # ggplot2::ggplot(ggplot2::aes(x = reach_setup$coords$x_axis,
+        #                              y = reach_setup$coords$y_axis,
+        #                              color = reach_setup$coords$measure)) +
+        # ggplot2::geom_line() +
+        # ggplot2::theme_minimal() +
+        # ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) +
+        # ggplot2::scale_x_continuous(breaks = reach_setup$x_breaks) +
+        # ggplot2::scale_y_continuous(breaks = reach_setup$y_breaks) +
+        # ggplot2::labs(y = "\nDensity\n",
+        #               x = NULL,
+        #               color = NULL,
+        #               caption = "Reachability\n") +
+        # ggplot2::theme(legend.position = c(.8, .8),
+        #                legend.background = ggplot2::element_rect(colour="white", fill="white"),
+        #                plot.caption = ggplot2::element_text(hjust = 0.5, size = 11))
     }
 
     p_2 <- cowplot::plot_grid(plotlist = node_gg_list, nrow = 3, ncol = 3) +
@@ -3272,7 +3749,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
   return(basic_output)
-
 
 
 }
