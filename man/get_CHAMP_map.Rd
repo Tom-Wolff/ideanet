@@ -4,7 +4,13 @@
 \alias{get_CHAMP_map}
 \title{Find the SBM-equivalence iterative map on the CHAMP set of somewhere optimal partitions}
 \usage{
-get_CHAMP_map(network, partitions, plotlabel = NULL, shiny = FALSE)
+get_CHAMP_map(
+  network,
+  partitions,
+  plotlabel = NULL,
+  shiny = FALSE,
+  plots = TRUE
+)
 }
 \arguments{
 \item{network}{The network, as igraph object, to be clustered into communities. Only undirected networks are currently supported. If the object has a 'weight' edge attribute, then that attribute will be used, though it is important to emphasize that the underlying equivalence between modularity and planted partitons defining the iterative map was derived for unweighted networks.}
@@ -14,6 +20,8 @@ get_CHAMP_map(network, partitions, plotlabel = NULL, shiny = FALSE)
 \item{plotlabel}{Optional label to include as annotation on the generated figure.}
 
 \item{shiny}{A logical value indicating whether \code{get_CHAMP_map} is being called within \code{ideanetViz}. If \code{TRUE}, \code{get_CHAMP_map} returns an output data frame that \code{ideanetViz} uses for visualization.}
+
+\item{plots}{A logical value indicating whether output plots should be generated.}
 }
 \value{
 \code{get_CHAMP_map} returns the input list of partitions with the \code{$CHAMPsummary} updated to indicate the iterative map, that is, information about the next partition that each partition points to in the map, along with the generated \code{$CHAMPmap} plot of the partitions in the CHAMP set (by their numbers of communities) versus gamma. If \code{shiny = TRUE}, the returned list also includes a data frame entitled \code{shiny_partitions} that is used for visualizations in \code{ideanetViz}.
@@ -40,5 +48,5 @@ partitions <- CHAMP(karate, partitions, plottitle = "Weighted Karate Club")
 partitions <- get_CHAMP_map(karate, partitions, plotlabel = "Weighted Karate Club")
 }
 \author{
-Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein
+Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Sayan Bhattacharya, Alex Craig, Rachel Matthew, Sydney Rosenbaum, Ava Scharfstein and Joanna Shan
 }
