@@ -1970,6 +1970,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     num_nodes <- length(igraph::V(g))
     num_ties <- length(igraph::E(g))
+    num_unique_ties <- nrow(unique(edgelist[, c("i_id", "j_id")]))
 
     num_types <- ifelse((is.null(type) == TRUE), NA, length(unique(type)))
 
@@ -2308,7 +2309,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     avg_ec <- graph_avg_ec_adaptive(graph = g)
 
 
-    measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties',
+    measure_labels <- c('Type of Graph', 'Weighted', 'Number of Nodes', 'Number of Ties', "Number of Unique Ties",
                         'Number of Tie Types',
 
                         "Number of isolates",
@@ -2388,6 +2389,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "Whether or not edges in the graph have weights",
                               'The number of nodes in the graph',
                               'The number of ties in the graph',
+                              'The number of unique ties (ego-alter pairs) in the graph',
                               'The number of types of tie in the graph (if multi-relational)',
 
                               "The number of nodes in the network without any ties to other nodes",
@@ -2530,7 +2532,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "The average number of edge-disjoint paths connecting pairs in the network"
     )
 
-    measures <- c(graph_type, weighted_graph, as.character(num_nodes), as.character(num_ties), as.character(num_types),
+    measures <- c(graph_type, weighted_graph, as.character(num_nodes), as.character(num_ties), as.character(num_unique_ties), as.character(num_types),
 
                   as.character(num_isolates), as.character(num_self_loops),
 
@@ -2807,6 +2809,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
         # Populating Subplots
         system_plot_names <- c("Number of Nodes",
                                "Number of Ties",
+                               "Number of Unique Ties",
                                "Number of isolates",
                                "Mean Degree",
                                "Density (Directed)",
@@ -2821,6 +2824,7 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     } else {
         system_plot_names <- c("Number of Nodes",
                                "Number of Ties",
+                               "Number of Unique Ties",
                                "Number of isolates",
                                "Mean Degree",
                                "Density (Undirected)",
@@ -2836,9 +2840,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
 
     display_table <- system_level_measures[system_level_measures$measure_labels %in% system_plot_names, c(1, 3)]
-    display_table <- display_table[1:12,]
+    display_table <- display_table[1:13,]
     display_table$measure_labels <- c("# of Nodes",
                                       "# of Ties",
+                                      "# of Unique Ties",
                                       "# of Isolates",
                                       "Mean Degree",
                                       "Density",

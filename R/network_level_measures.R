@@ -1228,7 +1228,7 @@ multiplex_edge_corr_igraph <- function(edgelist, directed, weight_type = "raw",
 
   #	Data preparation
   edges <- as.data.frame(edgelist)
-  edges$type <- type
+  # edges$type <- type
 
   # Convert zero-based node IDs to one-based
   edges$i_id <- edges$i_id + 1
