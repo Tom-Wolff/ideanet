@@ -110,10 +110,10 @@ get_CHAMP_map <- function( network,
           partition_summary[x, "next_num_communities"] <- 
             partition_summary[idx, "num_communities"]
         } else {
-          warning(paste("Partition #", partition_summary[x,"partition_num"], 
-                        "(with", partition_summary[x,"num_communities"],
-                        "communities) maps to gamma value ", res_param,
-                        ", outside the gamma_range used in get_partitions: consider starting over with a larger gamma_range in get_partitions"))
+          warning(sprintf("Partition #%d (with %d communities) maps to gamma value %.3g, outside the gamma_range used in get_partitions: consider starting over with a larger gamma_range in get_partitions", 
+                          partition_summary[x,"partition_num"], 
+                          partition_summary[x,"num_communities"], 
+                          res_param))
         }
       }
     }
