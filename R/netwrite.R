@@ -1972,7 +1972,6 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
     num_ties <- length(igraph::E(g))
     num_unique_ties <- nrow(unique(igraph::as_edgelist(g)))
 
-
     num_types <- ifelse((is.null(type) == TRUE), NA, length(unique(type)))
 
     # basic_system_time <- Sys.time()
