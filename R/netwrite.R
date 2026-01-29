@@ -1970,7 +1970,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
     num_nodes <- length(igraph::V(g))
     num_ties <- length(igraph::E(g))
-    num_unique_ties <- nrow(unique(edgelist[, c("i_id", "j_id")]))
+    num_unique_ties <- nrow(unique(igraph::as_edgelist(g)))
+
 
     num_types <- ifelse((is.null(type) == TRUE), NA, length(unique(type)))
 
@@ -2172,6 +2173,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       cent_eigen_undir <- eigen_centr$undirected
       cent_eigen_dir <- eigen_centr$directed
 
+      # browser()
+
       ##### Standard deviation for eigen
       sd_eigen <- sd_component(measure = nodes$eigen_centrality,
                                components = nodes$weak_membership)$sd
@@ -2281,6 +2284,8 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       cent_eigen_undir <- eigen_centr$undirected
 
       cent_eigen_dir <- NA
+
+      # browser()
 
       ##### Standard deviation for eigen
       sd_eigen <- sd_component(measure = nodes$eigen_centrality,
