@@ -2077,16 +2077,32 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       ##### Standard deviations for betweenness
       sd_bet <- stats::sd(nodes$betweenness, na.rm = TRUE)
-      sd_bet_bin <- stats::sd(nodes$binarized_betweenness, na.rm = TRUE)
+      if ("binarized_betweenness" %in% names(nodes)) {
+        sd_bet_bin <- stats::sd(nodes$binarized_betweenness, na.rm = TRUE)
+      } else {
+        sd_bet_bin <- NA
+      }
       ##### Herfindahl Index for betweenness
       herf_bet <- herfindahl(measure = nodes$betweenness)
-      herf_bet_bin <- herfindahl(measure = nodes$binarized_betweenness)
+      if ("binarized_betweenness" %in% names(nodes)) {
+        herf_bet_bin <- herfindahl(measure = nodes$binarized_betweenness)
+      } else {
+        herf_bet_bin <- NA
+      }
       ##### Gini Coefficient for Betweenness
       gini_bet <- gini(measure = nodes$betweenness)
-      gini_bet_bin <- gini(measure = nodes$binarized_betweenness)
+      if ("binarized_betweenness" %in% names(nodes)) {
+        gini_bet_bin <- gini(measure = nodes$binarized_betweenness)
+      } else {
+        gini_bet_bin <- NA
+      }
       ##### Theil Index  for Betweenness
       theil_bet <- theil(measure = nodes$betweenness)
-      theil_bet_bin <- theil(measure = nodes$binarized_betweenness)
+      if ("binarized_betweenness" %in% names(nodes)) {
+        theil_bet_bin <- theil(measure = nodes$binarized_betweenness)
+      } else {
+        theil_bet_bin <- NA
+      }
 
 
       ### Degree
@@ -2172,20 +2188,59 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
       cent_eigen_undir <- eigen_centr$undirected
       cent_eigen_dir <- eigen_centr$directed
 
-      # browser()
-
       ##### Standard deviation for eigen
-      sd_eigen <- sd_component(measure = nodes$eigen_centrality,
+      if ("eigen_in" %in% names(nodes)) {
+        sd_eigen_in <- sd_component(measure = nodes$eigen_in,
+                                    components = nodes$weak_membership)$sd
+        sd_eigen_out <- sd_component(measure = nodes$eigen_out,
+                                    components = nodes$weak_membership)$sd
+        sd_eigen <- sd_component(measure = nodes$eigen_sym,
+                                 components = nodes$weak_membership)$sd
+
+        ##### Herfindahl Index for Eigen
+        herf_eigen_in <- herfindahl(measure = nodes$eigen_in,
+                                    components = nodes$weak_membership)$herfindahl
+        herf_eigen_out <- herfindahl(measure = nodes$eigen_out,
+                                     components = nodes$weak_membership)$herfindahl
+        herf_eigen <- herfindahl(measure = nodes$eigen_sym,
+                                 components = nodes$weak_membership)$herfindahl
+        ##### Gini Coefficient for Eigen
+        gini_eigen_in <- gini(measure = nodes$eigen_in,
+                              components = nodes$weak_membership)$gini
+        gini_eigen_out <- gini(measure = nodes$eigen_out,
+                               components = nodes$weak_membership)$gini
+        gini_eigen <- gini(measure = nodes$eigen_sym,
+                           components = nodes$weak_membership)$gini
+        ##### Theil Index for Eigen
+        theil_eigen_in <- theil(measure = nodes$eigen_in,
+                                components = nodes$weak_membership)$theil
+        theil_eigen_out <- theil(measure = nodes$eigen_out,
+                                 components = nodes$weak_membership)$theil
+        theil_eigen <- theil(measure = nodes$eigen_sym,
+                             components = nodes$weak_membership)$theil
+      } else {
+        sd_eigen_in <- NA
+        sd_eigen_out <- NA
+        sd_eigen <- sd_component(measure = nodes$eigen_centrality,
                                components = nodes$weak_membership)$sd
-      ##### Herfindahl Index for Eigen
-      herf_eigen <- herfindahl(measure = nodes$eigen_centrality,
-                               components = nodes$weak_membership)$herfindahl
-      ##### Gini Coefficient for Eigen
-      gini_eigen <- gini(measure = nodes$eigen_centrality,
-                         components = nodes$weak_membership)$gini
-      ##### Theil Index for Eigen
-      theil_eigen <- theil(measure = nodes$eigen_centrality,
-                           components = nodes$weak_membership)$theil
+
+        ##### Herfindahl Index for Eigen
+        herf_eigen_in <- NA
+        herf_eigen_out <- NA
+        herf_eigen <- herfindahl(measure = nodes$eigen_centrality,
+                                 components = nodes$weak_membership)$herfindahl
+        ##### Gini Coefficient for Eigen
+        gini_eigen_in <- NA
+        gini_eigen_out <- NA
+        gini_eigen <- gini(measure = nodes$eigen_centrality,
+                           components = nodes$weak_membership)$gini
+        ##### Theil Index for Eigen
+        theil_eigen_in <- NA
+        theil_eigen_out <- NA
+        theil_eigen <- theil(measure = nodes$eigen_centrality,
+                             components = nodes$weak_membership)$theil
+      }
+
 
 
     } else {
@@ -2209,16 +2264,32 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       ##### Standard deviations for betweenness
       sd_bet <- stats::sd(nodes$betweenness, na.rm = TRUE)
-      sd_bet_bin <- stats::sd(nodes$binarized_betweenness, na.rm = TRUE)
+      if ("binarized_betweenness" %in% names(nodes)) {
+        sd_bet_bin <- stats::sd(nodes$binarized_betweenness, na.rm = TRUE)
+      } else {
+        sd_bet_bin <- NA
+      }
       ##### Herfindahl Index for betweenness
       herf_bet <- herfindahl(measure = nodes$betweenness)
-      herf_bet_bin <- herfindahl(measure = nodes$binarized_betweenness)
+      if ("binarized_betweenness" %in% names(nodes)) {
+        herf_bet_bin <- herfindahl(measure = nodes$binarized_betweenness)
+      } else {
+        herf_bet_bin <- NA
+      }
       ##### Gini Coefficient for Betweenness
       gini_bet <- gini(measure = nodes$betweenness)
-      gini_bet_bin <- gini(measure = nodes$binarized_betweenness)
+      if ("binarized_betweenness" %in% names(nodes)) {
+        gini_bet_bin <- gini(measure = nodes$binarized_betweenness)
+      } else {
+        gini_bet_bin <- NA
+      }
       ##### Theil Index  for Betweenness
       theil_bet <- theil(measure = nodes$betweenness)
+      if ("binarized_betweenness" %in% names(nodes)) {
       theil_bet_bin <- theil(measure = nodes$binarized_betweenness)
+      } else {
+        theil_bet_bin <- NA
+      }
 
 
       ### Degree
@@ -2286,16 +2357,24 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
 
       # browser()
 
-      ##### Standard deviation for eigen
+      sd_eigen_in <- NA
+      sd_eigen_out <- NA
       sd_eigen <- sd_component(measure = nodes$eigen_centrality,
                                components = nodes$weak_membership)$sd
+
       ##### Herfindahl Index for Eigen
+      herf_eigen_in <- NA
+      herf_eigen_out <- NA
       herf_eigen <- herfindahl(measure = nodes$eigen_centrality,
                                components = nodes$weak_membership)$herfindahl
       ##### Gini Coefficient for Eigen
+      gini_eigen_in <- NA
+      gini_eigen_out <- NA
       gini_eigen <- gini(measure = nodes$eigen_centrality,
                          components = nodes$weak_membership)$gini
       ##### Theil Index for Eigen
+      theil_eigen_in <- NA
+      theil_eigen_out <- NA
       theil_eigen <- theil(measure = nodes$eigen_centrality,
                            components = nodes$weak_membership)$theil
 
@@ -2381,10 +2460,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                         "Theil Index, Closeness (Undirected)", "Theil Index, Closeness (Indegree)", "Theil Index, Closeness (Outdegree)",
 
                         "Eigenvector Centralization (Undirected)", "Eigenvector Centralization (Directed)",
-                        "Standard Deviation, Eigenvector Centrality",
-                        "Herfindahl Index, Eigenvector Centrality",
-                        "Gini Coefficient, Eigenvector Centrality",
-                        "Theil Index, Eigenvector Centrality",
+                        "Standard Deviation, Eigenvector Centrality (Undirected)", "Standard Deviation, Eigenvector Centrality (Indegree)", "Standard Deviation, Eigenvector Centrality (Outdegree)",
+                        "Herfindahl Index, Eigenvector Centrality (Undirected)", "Herfindahl Index, Eigenvector Centrality (Indegree)", "Herfindahl Index, Eigenvector Centrality (Outdegree)",
+                        "Gini Coefficient, Eigenvector Centrality (Undirected)", "Gini Coefficient, Eigenvector Centrality (Indegree)", "Gini Coefficient, Eigenvector Centrality (Outdegree)",
+                        "Theil Index, Eigenvector Centrality (Undirected)", "Theil Index, Eigenvector Centrality (Indegree)", "Theil Index, Eigenvector Centrality (Outdegree)",
 
                         "K-Core Cohesion", "Average Edge Connectivity"
     )
@@ -2521,13 +2600,21 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Undirected edges used when calculating eigenvector centrality)",
                               "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Directed edges paths used when calculating eigenvector centrality)",
                               ##### SD Eigenvector centrality
-                              "Standard deviation of eigenvector centrality scores",
+                              "Standard deviation of eigenvector centrality scores (undirected)",
+                              "Standard deviation of eigenvector centrality scores (incoming edges used when calculating eigenvector centrality)",
+                              "Standard deviation of eigenvector centrality scores (outgoing edges used when calculating eigenvector centrality)",
                               ##### Herf Eigen
-                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Undirected edges used when calculating eigenvector centrality)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Incoming edges used when calculating eigenvector centrality)",
+                              "The extent to which ties in the network are concentrated on a single actor or group of actors, as determined by eigenvector centrality scores (Outgoing edges used when calculating eigenvector centrality)",
                               ##### Gini Eigen
-                              "Measure of inequality in eigenvector centrality scores (0 represents perfect equality, 1 represents perfect inequality)",
+                              "Measure of inequality in eigenvector centrality scores (Undirected edges used when calculating eigenvector centrality; 0 represents perfect equality, 1 represents perfect inequality)",
+                              "Measure of inequality in eigenvector centrality scores (Incoming edges used when calculating eigenvector centrality; 0 represents perfect equality, 1 represents perfect inequality)",
+                              "Measure of inequality in eigenvector centrality scores (Outgoing edges used when calculating eigenvector centrality; 0 represents perfect equality, 1 represents perfect inequality)",
                               ##### Theil Eigen
-                              "Measure of inequality in eigenvector centrality scores (Score not normalized)",
+                              "Measure of inequality in eigenvector centrality scores (Undirected edges used when calculating eigenvector centrality; Score not normalized)",
+                              "Measure of inequality in eigenvector centrality scores (Incoming edges used when calculating eigenvector centrality; Score not normalized)",
+                              "Measure of inequality in eigenvector centrality scores (Outgoing edges used when calculating eigenvector centrality; Score not normalized)",
 
                               # K-core Cohesion
                               "The average across all pairs of the maximum k-core to which each pair is a joint member (Measures the average level of shared contacts)",
@@ -2605,10 +2692,10 @@ basic_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                   as.character(theil_close_un), as.character(theil_close_in), as.character(theil_close_out),
 
                   as.character(cent_eigen_undir), as.character(cent_eigen_dir),
-                  as.character(sd_eigen),
-                  as.character(herf_eigen),
-                  as.character(gini_eigen),
-                  as.character(theil_eigen),
+                  as.character(sd_eigen), as.character(sd_eigen_in), as.character(sd_eigen_out),
+                  as.character(herf_eigen), as.character(herf_eigen_in), as.character(herf_eigen_out),
+                  as.character(gini_eigen), as.character(gini_eigen_in), as.character(gini_eigen_out),
+                  as.character(theil_eigen), as.character(theil_eigen_in), as.character(theil_eigen_out),
 
                   as.character(k_core_cohesion),
                   as.character(avg_ec))
