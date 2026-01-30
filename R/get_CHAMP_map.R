@@ -176,8 +176,8 @@ get_CHAMP_map <- function( network,
     
     palette <- sample(grDevices::colors()[c(1:151, 362:657)], lengths(partition_summary)[1], replace=T)
     ggfig <- ggplot2::ggplot(data = plot_data.1) +
-      ggplot2::geom_line(ggplot2::aes(x = .data$x, y = .data$y, group = .data$group, color=palette[color]), linewidth=2) +
-      ggplot2::geom_point(ggplot2::aes(x = .data$x, y = .data$y, color=palette[color]), shape=4, size=2, stroke=2) +
+      ggplot2::geom_line(ggplot2::aes(x = .data$x, y = .data$y, group = .data$group, color=palette[.data$color]), linewidth=2) +
+      ggplot2::geom_point(ggplot2::aes(x = .data$x, y = .data$y, color=palette[.data$color]), shape=4, size=2, stroke=2) +
       ggplot2::geom_point(data = plot_data.2, ggplot2::aes(x = .data$x1, y = .data$y1), size=2, stroke=1) +
       ggplot2::geom_line(data=plot_data.3, ggplot2::aes(x = .data$x2, y = .data$y2, group = .data$group),
                          linewidth=1, color="darkgray",
