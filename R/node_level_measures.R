@@ -817,6 +817,8 @@ bonacich <- function(matrix, bpct = .75, directed = FALSE) {
     }
 
     maxev <- igraph::eigen_centrality(temp_g, directed = directed)$value
+    # maxev <- max(eigen(matrix)$values)
+    # maxev <- RSpectra::eigs(matrix, k = 1)$values
 
     # The ones we want are in the first column
     # Something's weird here -- it's combining the two columns that SAS outputs into a single value
