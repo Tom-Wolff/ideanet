@@ -139,7 +139,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 "system_measure_plot"),
                      message = TRUE) {
 
-  # browser()
+  browser()
 
   # `netwrite` doesn't play nicely with tibbles, so if `nodelist` or `edgelist`
   # are tibbles we'll need to convert them to data.frames
@@ -289,8 +289,13 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                               names_to = "wave_name",
                               values_to = "wave") %>%
           dplyr::select(-wave_name) %>%
-          dplyr::filter(!is.na(wave)) %>%
-          dplyr::mutate(temp_netid = paste(temp_netid, " time", wave, sep = ""))
+          dplyr::filter(!is.na(wave))
+
+        if (!is.null(node_netid)) {
+          nodelist$temp_netid <- paste(nodelist$temp_netid, " time", nodelist$wave, sep = "")
+        } else {
+          nodelist$temp_netid <- paste("time", nodelist$wave, sep = "")
+        }
 
       } else {
         nodelist$temp_netid = paste(nodelist$temp_netid, " time", nodelist[, node_time], sep = "")
@@ -576,7 +581,7 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                       "system_measure_plot"),
                            message = TRUE) {
 
-  # browser()
+  browser()
   # netwrite_start <- Sys.time()
 
   # To support upcoming igraph update, replace all NA values with zero (for edgelists)
