@@ -139,7 +139,7 @@ netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                 "system_measure_plot"),
                      message = TRUE) {
 
-  browser()
+  # browser()
 
   # `netwrite` doesn't play nicely with tibbles, so if `nodelist` or `edgelist`
   # are tibbles we'll need to convert them to data.frames
@@ -581,7 +581,7 @@ multi_netwrite <- function(data_type = c('edgelist'), adjacency_matrix=FALSE,
                                       "system_measure_plot"),
                            message = TRUE) {
 
-  browser()
+  # browser()
   # netwrite_start <- Sys.time()
 
   # To support upcoming igraph update, replace all NA values with zero (for edgelists)
