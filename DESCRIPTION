@@ -84,6 +84,7 @@ Suggests:
     devtools,
     egor,
     ergm,
+    sf,
     shinythemes,
     shinyWidgets,
     knitr,

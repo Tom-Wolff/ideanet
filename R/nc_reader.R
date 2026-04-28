@@ -553,6 +553,56 @@ nc_read <- function(
                     alters = alters)
   }
 
+
+  ###################################################################################
+  #    E X T R A C T I N G   G E O J S O N   F R O M   P R O T O C O L   F I L E    #
+  ###################################################################################
+
+  # If there's a protocol file specified...
+  if (!is.null(protocol)) {
+
+    # And we have the `sf` package installed
+    if (requireNamespace("sf", quietly = TRUE)) {
+
+    # And we detect location values in our codebook...
+    if("location" %in% node_extract$var_type) {
+      # Look for geojson files in the temporary directory created
+      # when we read in the protocol's JSON file:
+      asset_files <- list.files(paste(exdir_temp, "assets", sep = "/"))
+      geojson_files <- asset_files[stringr::str_detect(asset_files, "geojson$")]
+
+      # If we find geojson files…
+      if (length(geojson_files > 0)) {
+
+        for (g in 1:length(geojson_files)) {
+          this_geojson <- sf::st_read(paste(exdir_temp, "assets", geojson_files[g], sep = "/"))
+
+          # Find this geojson file in `nc_json`'s asset manifest
+          find_geojson <- which(lapply(nc_json$assetManifest, find_geojson_asset, geojson_file = geojson_files[g]) == TRUE)
+          # Now that we've found it, extract the original name of the file:
+          geojson_name <- nc_json$assetManifest[[find_geojson]]$name
+
+          if (g == 1) {
+            geojson_list <- list()
+          }
+
+          geojson_list[[g]] <- this_geojson
+          # Add name of original file to `geojson_list`
+          names(geojson_list)[g] <- geojson_name
+
+        }
+      }
+
+    }
+
+    nc_list$geojson <- geojson_list
+
+    } else {
+      warning("Installation of sf package is required to extract GeoJSON from Network Canvas protocol files.")
+    }
+  }
+
+
   return(nc_list)
 
 
@@ -764,3 +814,8 @@ codebook_extract <- function(x) {
 }
 
 
+# Convenience function for finding geojson file
+# in protocol JSON's asset manifest
+find_geojson_asset <- function(x, geojson_file) {
+  return(x$source == geojson_file)
+}
