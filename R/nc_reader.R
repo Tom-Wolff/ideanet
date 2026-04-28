@@ -44,6 +44,59 @@ nc_read <- function(
   }
 
 
+
+  #################################################
+  #    N C   P R O T O C O L   C O D E B O O K    #
+  #################################################
+
+  if (!is.null(protocol)) {
+
+    # Create temporary directory for unzipping the protocol file
+    exdir_temp <- tempdir()
+
+    # Extract protocol file contents
+    utils::unzip(protocol, exdir = exdir_temp)
+
+    # Read in JSON
+    nc_json <- jsonlite::fromJSON(paste(exdir_temp, "protocol.json", sep = "/"))
+
+    # Extract codebook
+    codebook <- nc_json$codebook
+
+    # Identify categorical variables for each data level
+    ego_extract <- codebook_extract(codebook$ego)
+    ego_extract$level = "ego"
+
+    if (nrow(ego_extract) > 0) {
+      ego_extract2 <- ego_extract %>%
+        dplyr::filter(var_type == "categorical")
+    } else {
+      ego_extract2 <- data.frame()
+    }
+
+
+    node_extract <- dplyr::bind_rows(lapply(codebook$node, codebook_extract))
+    node_extract$level <- "node"
+    if (nrow(node_extract) > 0) {
+      node_extract2 <- node_extract %>%
+        dplyr::filter(var_type == "categorical")
+    } else {
+      node_extract2 <- data.frame()
+    }
+
+    edge_extract <- dplyr::bind_rows(lapply(codebook$edge, codebook_extract))
+    edge_extract$level <- "edge"
+    if (nrow(edge_extract) > 0) {
+      edge_extract2 <- edge_extract %>%
+        dplyr::filter(var_type == "categorical")
+    } else {
+      edge_extract2 <- data.frame()
+    }
+
+  }
+
+
+
   # Get list of files in directory
   file_list <- list.files(path)
   # Remove non-CSV files in case graphMLs are exported
@@ -81,12 +134,42 @@ nc_read <- function(
       node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
       node_type <- stringr::str_replace(node_type, "attributeList_", "")
       node_type <- stringr::str_replace(node_type, ".csv", "")
+      ### Currently, location variables create a risk of merge issues
+      ### (sometimes location values are read as integers, other times they're
+      ### read as characters). If a protocol file indicates a variable is a location,
+      ### automatically force character classification on that variable
+      ##### Filter out location variables
+      if (!is.null(protocol)) {
+        node_locations <- node_extract %>%
+          dplyr::filter(var_type == "location")
+        ##### Determine which variables need in `alters` need to be recoded
+        locations_to_recode <- colnames(alters)[colnames(alters) %in% node_locations$var_name]
+        ##### Recode as characters
+        for (z in locations_to_recode) {
+          alters[,z] <- as.character(alters[,z])
+        }
+      }
+
       if (node_type != "merged") {
           alters$node_type <- node_type
           alters$data_file <- paste(path, alter_files[[i]], sep = "/")
       }
     } else {
       this_alter <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = TRUE)
+      ### Handle location variables once more
+      ### Currently, location variables create a risk of merge issues
+      ### (sometimes location values are read as integers, other times they're
+      ### read as characters). If a protocol file indicates a variable is a location,
+      ### automatically force character classification on that variable
+      ##### Filter out location variables
+      if (!is.null(protocol)) {
+        ##### Determine which variables need in `alters` need to be recoded
+        locations_to_recode <- colnames(this_alter)[colnames(this_alter) %in% node_locations$var_name]
+        ##### Recode as characters
+        for (z in locations_to_recode) {
+          this_alter[,z] <- as.character(this_alter[,z])
+        }
+      }
       # Only need to do the rest if there are actually alter nominated by ego,
       # otherwise can skip
       if (nrow(this_alter) > 0) {
@@ -291,54 +374,11 @@ nc_read <- function(
   }
 
 
-  #################################################
-  #    N C   P R O T O C O L   C O D E B O O K    #
-  #################################################
+  #####################################################################
+  #    R E C O D I N G   C A T E G O R I C A L   V A R I A B L E S    #
+  #####################################################################
 
   if (!is.null(protocol)) {
-
-    # Create temporary directory for unzipping the protocol file
-    exdir_temp <- tempdir()
-
-    # Extract protocol file contents
-    utils::unzip(protocol, exdir = exdir_temp)
-
-    # Read in JSON
-    nc_json <- jsonlite::fromJSON(paste(exdir_temp, "protocol.json", sep = "/"))
-
-    # Extract codebook
-    codebook <- nc_json$codebook
-
-    # Identify categorical variables for each data level
-    ego_extract <- codebook_extract(codebook$ego)
-    ego_extract$level = "ego"
-
-    if (nrow(ego_extract) > 0) {
-      ego_extract2 <- ego_extract %>%
-        dplyr::filter(var_type == "categorical")
-    } else {
-      ego_extract2 <- data.frame()
-    }
-
-
-    node_extract <- dplyr::bind_rows(lapply(codebook$node, codebook_extract))
-    node_extract$level <- "node"
-    if (nrow(node_extract) > 0) {
-      node_extract2 <- node_extract %>%
-        dplyr::filter(var_type == "categorical")
-    } else {
-      node_extract2 <- data.frame()
-    }
-
-    edge_extract <- dplyr::bind_rows(lapply(codebook$edge, codebook_extract))
-    edge_extract$level <- "edge"
-    if (nrow(edge_extract) > 0) {
-      edge_extract2 <- edge_extract %>%
-        dplyr::filter(var_type == "categorical")
-    } else {
-      edge_extract2 <- data.frame()
-    }
-
 
     # If applicable, recode categorical variables (Ego)
     if (nrow(ego_extract2) > 0) {
