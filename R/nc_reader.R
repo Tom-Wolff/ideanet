@@ -107,10 +107,12 @@ nc_read <- function(
 
   for (i in 1:length(ego_files)) {
     if (i == 1) {
-      egos <- utils::read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE)
+      egos <- utils::read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE,
+                              colClasses = "character")
       egos$networkCanvasCaseID <- as.character(egos$networkCanvasCaseID)
     } else {
-      this_ego <- utils::read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE)
+      this_ego <- utils::read.csv(paste(path, ego_files[[i]], sep = "/"), header = TRUE,
+                                  colClasses = "character")
       this_ego$networkCanvasCaseID <- as.character(this_ego$networkCanvasCaseID)
       egos <- dplyr::bind_rows(egos, this_ego)
     }
@@ -125,7 +127,8 @@ nc_read <- function(
 
   for (i in 1:length(alter_files)) {
     if (i == 1) {
-      alters <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = TRUE)
+      alters <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = TRUE,
+                                colClasses = "character")
       # Need to handle the case in which ego 1 is an isolate
       if (nrow(alters) == 0) {
         alters[1,] <- NA
@@ -134,42 +137,15 @@ nc_read <- function(
       node_type <- stringr::str_extract(alter_files[[i]], "attributeList.*.csv")
       node_type <- stringr::str_replace(node_type, "attributeList_", "")
       node_type <- stringr::str_replace(node_type, ".csv", "")
-      ### Currently, location variables create a risk of merge issues
-      ### (sometimes location values are read as integers, other times they're
-      ### read as characters). If a protocol file indicates a variable is a location,
-      ### automatically force character classification on that variable
-      ##### Filter out location variables
-      if (!is.null(protocol)) {
-        node_locations <- node_extract %>%
-          dplyr::filter(var_type == "location")
-        ##### Determine which variables need in `alters` need to be recoded
-        locations_to_recode <- colnames(alters)[colnames(alters) %in% node_locations$var_name]
-        ##### Recode as characters
-        for (z in locations_to_recode) {
-          alters[,z] <- as.character(alters[,z])
-        }
-      }
 
       if (node_type != "merged") {
           alters$node_type <- node_type
           alters$data_file <- paste(path, alter_files[[i]], sep = "/")
       }
     } else {
-      this_alter <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = TRUE)
-      ### Handle location variables once more
-      ### Currently, location variables create a risk of merge issues
-      ### (sometimes location values are read as integers, other times they're
-      ### read as characters). If a protocol file indicates a variable is a location,
-      ### automatically force character classification on that variable
-      ##### Filter out location variables
-      if (!is.null(protocol)) {
-        ##### Determine which variables need in `alters` need to be recoded
-        locations_to_recode <- colnames(this_alter)[colnames(this_alter) %in% node_locations$var_name]
-        ##### Recode as characters
-        for (z in locations_to_recode) {
-          this_alter[,z] <- as.character(this_alter[,z])
-        }
-      }
+      this_alter <- utils::read.csv(paste(path, alter_files[[i]], sep = "/"), header = TRUE,
+                                    colClasses = "character")
+
       # Only need to do the rest if there are actually alter nominated by ego,
       # otherwise can skip
       if (nrow(this_alter) > 0) {
@@ -197,7 +173,8 @@ nc_read <- function(
 
   for (i in 1:length(edge_files)) {
     if (i == 1) {
-      el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = TRUE)
+      el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = TRUE,
+                            colClasses = "character")
       # Handling if first ego is an isolate
       if (nrow(el) == 0) {
         el[1,] <- NA
@@ -212,7 +189,8 @@ nc_read <- function(
           el$data_file <- paste(path, edge_files[[i]], sep = "/")
       }
     } else {
-      this_el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = TRUE)
+      this_el <- utils::read.csv(paste(path, edge_files[[i]], sep = "/"), header = TRUE,
+                                 colClasses = "character")
 
       if (nrow(this_el) == 0) {
         next
@@ -249,6 +227,8 @@ nc_read <- function(
   egos <- dplyr::mutate_all(egos, to_logical)
   # Convert date columns to POSIXct objects (Egos)
   egos <- dplyr::mutate_all(egos, to_date)
+  # Convert numeric columns to numeric (Egos)
+  egos <- dplyr::mutate_all(egos, to_numeric)
 
   # Convert session info to POSIXct
   egos$sessionStart <- to_posix(egos$sessionStart)
@@ -295,7 +275,7 @@ nc_read <- function(
       these_alters <- alters %>% dplyr::filter(node_type == unique(alters$node_type)[[i]])
 
       # Use first CSV file stored in `data_file` column to read in which variables to keep for this type
-      keep_cols <- colnames(utils::read.csv(these_alters[[1, "data_file"]]))
+      keep_cols <- colnames(utils::read.csv(these_alters[[1, "data_file"]], colClasses = "character"))
       # Finalize list of variables to keep based on earlier processing
       keep_cols <- c("ego_id", "alter_id", "node_type",
                      keep_cols[!keep_cols %in% c("nodeID", "null")])
@@ -306,6 +286,8 @@ nc_read <- function(
       these_alters <- dplyr::mutate_all(these_alters, to_logical)
       # Convert date columns to POSIXct objects
       these_alters <- dplyr::mutate_all(these_alters, to_date)
+      # Convert numeric columns to numerics
+      these_alters <- dplyr::mutate_all(these_alters, to_numeric)
 
       # Remove `data_file` column
       these_alters$data_file <- NULL
@@ -323,6 +305,8 @@ nc_read <- function(
     alters <- dplyr::mutate_all(alters, to_logical)
     # Convert date columns to POSIXct objects
     alters <- dplyr::mutate_all(alters, to_date)
+    # Convert numeric columns to numerics
+    alters <- dplyr::mutate_all(alters, to_numeric)
     # Remove `data_file` column
     alters$data_file <- NULL
   }
@@ -337,7 +321,7 @@ nc_read <- function(
       this_el <- el %>% dplyr::filter(edge_type == unique(el$edge_type)[[i]])
 
       # Use first CSV file stored in `data_file` column to read in which variables to keep for this type
-      keep_cols <- colnames(utils::read.csv(this_el[[1, "data_file"]]))
+      keep_cols <- colnames(utils::read.csv(this_el[[1, "data_file"]], colClasses = "character"))
       # Finalize list of variables to keep based on earlier processing
       keep_cols <- c("ego_id", "edge_id", "edge_type",
                      keep_cols[!keep_cols %in% c("edgeID", "null")])
@@ -348,6 +332,8 @@ nc_read <- function(
       this_el <- dplyr::mutate_all(this_el, to_logical)
       # Convert date columns to POSIXct objects
       this_el <- dplyr::mutate_all(this_el, to_date)
+      # Convert numeric columns to numerics
+      this_el <- dplyr::mutate_all(this_el, to_numeric)
 
       # Remove `data_file` column
       this_el$data_file <- NULL
@@ -367,6 +353,8 @@ nc_read <- function(
     el <- dplyr::mutate_all(el, to_logical)
     # Convert date columns to POSIXct objects
     el <- dplyr::mutate_all(el, to_date)
+    # Convert numeric columns to numeric
+    el <- dplyr::mutate_all(el, to_numeric)
 
     # Remove `data_file` column
     el$data_file <- NULL
@@ -778,6 +766,36 @@ to_posix <- function(x) {
   x <- as.POSIXct(x, format = "%Y-%m-%d %H:%M:%OS")
 }
 
+# Convert characters to numerics, but treat strings that start with
+# a zero but have other numeric characters afterword (like census tracts)
+# as characters still
+to_numeric <- function(x) {
+
+  # Only apply if x is a character vector
+  if ("character" %in% class(x)) {
+    # Ensure character input
+    x_char <- as.character(x)
+    ### Remove NAs from x_char
+    x_char <- x_char[!is.na(x_char)]
+
+    # Identify strings that are purely numeric
+    is_numeric_string <- sum(grepl("^[0-9]+$", x_char)) == length(x_char)
+
+    # Identify zero-padded multi-character strings (e.g., "0123", but not "0")
+    is_zero_padded <- sum(grepl("^0[0-9]+$", x_char) & nchar(x_char) > 1) > 0
+
+    if (is_numeric_string == TRUE & is_zero_padded == FALSE) {
+      result <- as.numeric(x)
+    } else {
+      result <- x
+    }
+
+  } else {
+    result <- x
+  }
+
+  return(result)
+}
 
 # Extract variable information from JSON codebook
 var_info <- function(x) {
