@@ -581,9 +581,11 @@ nc_read <- function(
         }
       }
 
+      nc_list$geojson <- geojson_list
+
     }
 
-    nc_list$geojson <- geojson_list
+
 
     } else {
       warning("Installation of sf package is required to extract GeoJSON from Network Canvas protocol files.")
