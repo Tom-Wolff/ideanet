@@ -3440,7 +3440,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                              nodelist = mode1_nodes,
                              node_id = "id",
                              output = output,
-                             shiny = FALSE)
+                             shiny = TRUE)
   base::message("Processing Mode 2 projection")
   mode2_nw <- multi_netwrite(i_elements = mode2_proj$i_elements,
                              j_elements = mode2_proj$j_elements,
@@ -3449,7 +3449,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                              nodelist = mode2_nodes,
                              node_id = "id",
                              output = output,
-                             shiny = FALSE)
+                             shiny = TRUE)
 
 
   } else {
@@ -3462,7 +3462,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                nodelist = mode1_nodes,
                                node_id = "id",
                                output = output,
-                               shiny = FALSE)
+                               shiny = TRUE)
     base::message("Processing Mode 2 projection")
     mode2_nw <- multi_netwrite(i_elements = mode2_proj$i_elements,
                                j_elements = mode2_proj$j_elements,
@@ -3472,7 +3472,7 @@ if ("system_level_measures" %in% output | "system_measure_plot" %in% output) {
                                nodelist = mode2_nodes,
                                node_id = "id",
                                output = output,
-                               shiny = FALSE)
+                               shiny = TRUE)
 }
 
   # Storing specified outputs for bipartite level
