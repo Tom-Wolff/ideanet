@@ -62,7 +62,7 @@ ei_index <- function(ego_id,
                      prop_sim = .data$num_sim/length,
                      num_diff = sum(as.character(.data$alter_val) != as.character(.data$ego_val), na.rm = TRUE),
                      prop_diff = .data$num_diff/length,
-                     ei_index = (.data$prop_diff - .data$prop_sim)/length) %>%
+                     ei_index = (.data$num_diff - .data$num_sim)/(.data$num_sim + .data$num_diff)) %>%
     dplyr::ungroup() %>%
     dplyr:: select(ego_id, ei_index)
 
