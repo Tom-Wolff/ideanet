@@ -303,6 +303,8 @@ make_bipartite_list <- function(data_type,
                       id2 = id,
                       mode_num2 = original_mode)
 
+      # browser()
+
       bi_el <- bi_el %>%
         dplyr::left_join(nl1, by = "mode1") %>%
         dplyr::left_join(nl2, by = "mode2") %>%
