@@ -28,7 +28,8 @@
 #'                  j_elements = florentine_edges$target,
 #'                  type = florentine_edges$type,
 #'                  directed = FALSE,
-#'                  net_name = "florentine_graph")
+#'                  net_name = "florentine_graph",
+#'                  output = c("graph", "nodelist"))
 #'
 #' flor_setup <- qap_setup(flor$florentine_graph,
 #'                         variables = c("total_degree"),

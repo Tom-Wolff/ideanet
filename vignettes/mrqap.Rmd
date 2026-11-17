@@ -27,7 +27,8 @@ nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
                         j_elements = fauxmesa_edges$to,
                         directed = FALSE,
                         net_name = "faux_mesa",
-                        shiny = TRUE)
+                        shiny = TRUE,
+                        output = "graph")
 ```
 
 When we look at the original nodelist passed to `netwrite` (`fauxmesa_nodes`), we see that we have information about each student's grade level, their race/ethnicity, and their sex. This information exists at the *individual level* in that it pertains to individual students. However, when using MRQAP analysis, we are generally interested in how *dyadic* measures predict outcomes. In other words, we're interested in whether similarities or differences between nodes lead to outcomes, both of which are understood at the level of ego-alter relationships. While some users may have dyadic measures stored in their edgelist ahead of time, typically these measures are something one has to generate. The `qap_setup` function in `ideanet` allows users to quickly take node-level attributes and generate dyad-level comparisons with only a few arguments. 
@@ -95,14 +96,15 @@ With our variables of interest in hand, we turn to the MRQAP analysis itself. `i
   
 **NOTE:** If the input network is multi-relational, `qap_run` will automatically merge duplicated rows. This is necessary given that, at this time, the MRQAP wrapper does not elegantly handle repeated observations. When merging rows, it will take the *sum* of numeric edge attributes, and a *random* value of character edge attributes. If the user is interested in the association between two types of ties (e.g., marriage ties predicting business ties), we recommend that they create a set of binary edge attributes using `qap_setup`.
   
-Let's use `qap_run` using the default 500 permutations. While we can significantly decrease the number of permutations to allow for lower computation times, this may make confidence intervals in our results less interpretable. As far as variables go in this example, we'll include `same_sex`, `both_race_White`, and `abs_diff_grade`. 
+To keep this vignette quick to build, we'll run `qap_run` with 100 permutations (`reps = 100`) rather than the default of 500. Fewer permutations means the permutation-based p-values reported below are less precise. They are fine for illustration, but for your own analyses we recommend keeping the default of 500 or using more. As far as variables go in this example, we'll include `same_sex`, `both_race_White`, and `abs_diff_grade`. 
 
 ```{r qap_run}
 faux_qap <- qap_run(net = faux_qap_setup$graph,
                     dependent = NULL,
                     variables = c("same_sex", "both_race_White", "abs_diff_grade"),
                     directed = FALSE,
-                    family = "linear")
+                    family = "linear",
+                    reps = 100)
 ```
 
 `qap_run` returns a list of two objects. The first (`covs_df`) is a data frame summarizing model results in a way resembling a traditional regression output. The second (`mods_df`) is a data frame providing the number of dyadic observations on which the model is computed. 

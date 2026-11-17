@@ -1,0 +1,295 @@
+diff --git a/R/community_detection.R b/R/community_detection.R
+index 8a66d42..998fb20 100644
+--- a/R/community_detection.R
++++ b/R/community_detection.R
+@@ -5,6 +5,7 @@
+ #' @param g An igraph object. If the igraph object contains a directed network, the function will treat the network as undirected before running community detection routines.
+ #' @param modres A modularity resolution parameter used when performing community detection using the Leiden method.
+ #' @param slow_routines A logical indicating whether time-intensive community detection routines should be performed on larger networks. Edge betweenness, leading eigenvector, link communities, and stochastic blockmodeling each take a very long time to identify communities in networks consisting of more than a few thousand nodes. By default, \code{comm_detect} will skip performing these routines on networks with more than 5,000 nodes and inform the user that it is doing so.
++#' @param plots Logical. If \code{TRUE} (default), \code{comm_detect} draws and returns network plots colored by each routine's community assignments. Set to \code{FALSE} to skip plotting, which is considerably faster.
+ #' @param shiny An argument indicating whether the output from the \code{comm_detect} function will be fed into the IDEANet visualization app.
+ #'
+ #' @return \code{comm_detect} returns a list contianing three data frames. \code{comm_members} indicates each node's assigned community membership from each community detection routine. \code{comm_summaries} indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. \code{comp_scores} contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. A fourth element in the list, \code{plots}, contains a series of network visualizations in which nodes are colored by their assigned community memberships from each routine. If \code{shiny == FALSE}, this function will display these visualizations in the user's plot window.
+@@ -25,7 +26,7 @@
+ #'                       output = "graph")
+ #'
+ #' # Run comm_detect
+-#' faux_communities <- comm_detect(g = nw_fauxmesa$faux_mesa)
++#' faux_communities <- comm_detect(g = nw_fauxmesa$faux_mesa, plots = FALSE)
+ 
+ 
+ ###############################################
+@@ -48,7 +49,8 @@
+ 
+ comm_detect <- function(g, modres=1,
+                         slow_routines = FALSE,
+-                        shiny = FALSE) {
++                        shiny = FALSE,
++                        plots = TRUE) {
+ 
+   # browser()
+ 
+@@ -674,7 +676,7 @@ comm_detect <- function(g, modres=1,
+   compare_scores[is.nan(compare_scores)] <- NA
+ 
+   # Plot network with nodes colored by community membership
+-  if (!shiny) {
++  if (!shiny && plots) {
+     # Don't create plots if too large
+     if (n > 5000) {
+       base::message("Network is too large to visualize all membership assignments simultaneously. Visualizations will not be generated.")
+@@ -857,7 +859,7 @@ comm_detect <- function(g, modres=1,
+   # assign(x= cn, value = cs,.GlobalEnv)
+ 
+   # Add plot to output
+-  if (shiny == FALSE) {
++  if (shiny == FALSE && plots && exists("communityplot1", inherits = FALSE)) {
+       output_list$plots <- list("membership_plot1" = communityplot1,
+                                 "membership_plot2" = communityplot2,
+                                 "membership_plot3" = communityplot3)
+diff --git a/R/edge_correlations.R b/R/edge_correlations.R
+index 78dd0e6..ac8d237 100644
+--- a/R/edge_correlations.R
++++ b/R/edge_correlations.R
+@@ -16,7 +16,8 @@
+ #'                     j_elements = florentine_edges$target,
+ #'                     type = florentine_edges$type,
+ #'                     directed = FALSE,
+-#'                     net_name = "florentine")
++#'                     net_name = "florentine",
++#'                     output = c("graph", "nodelist", "system_level_measures"))
+ #'
+ #' edge_correlations(nw_flor)
+ 
+diff --git a/R/get_CHAMP_map.R b/R/get_CHAMP_map.R
+index 4bdbd8b..95a722f 100644
+--- a/R/get_CHAMP_map.R
++++ b/R/get_CHAMP_map.R
+@@ -29,7 +29,7 @@
+ #' # the domains of optimality in the resolution parameter for
+ #' # different partitions
+ #' data(karate, package = "igraphdata")
+-#' partitions <- get_partitions(karate, n_runs = 2500)
++#' partitions <- get_partitions(karate, n_runs = 500)
+ #' partitions <- CHAMP(karate, partitions, plottitle = "Weighted Karate Club")
+ #' partitions <- get_CHAMP_map(karate, partitions, plotlabel = "Weighted Karate Club")
+ 
+diff --git a/R/get_partitions.R b/R/get_partitions.R
+index 44e4f79..1e37385 100644
+--- a/R/get_partitions.R
++++ b/R/get_partitions.R
+@@ -20,7 +20,7 @@
+ #' # Use get_partitions to generate multiple partitions of the
+ #' # Zachary karate club at different resolution parameters
+ #' data(karate, package = "igraphdata")
+-#' partitions <- get_partitions(karate, n_runs = 2500)
++#' partitions <- get_partitions(karate, n_runs = 500)
+ 
+ ###################################
+ #   G E T  P A R T I T I O N S    #
+@@ -83,9 +83,7 @@ get_partitions <- function( network,
+   # add_comm_detect is True, or directly using provided comm_detect() output
+   if (is.logical(add_comm_detect)) {
+     if (add_comm_detect == T) {
+-      grDevices::pdf(file = NULL) #Redirecting the graphical output of comm_detect()
+-      add_comm_detect <- comm_detect(network)
+-      grDevices::dev.off()
++      add_comm_detect <- comm_detect(network, plots = FALSE) # plots are never used here
+     }
+   }
+   if (min(c("memberships", "summaries", "score_comparison") %in%
+diff --git a/R/qap_run.R b/R/qap_run.R
+index 237d27e..2a0629a 100644
+--- a/R/qap_run.R
++++ b/R/qap_run.R
+@@ -23,7 +23,8 @@
+ #'                  j_elements = florentine_edges$target,
+ #'                  type = florentine_edges$type,
+ #'                  directed = FALSE,
+-#'                  net_name = "florentine_graph")
++#'                  net_name = "florentine_graph",
++#'                  output = c("graph", "nodelist"))
+ #'
+ #' flor_setup <- qap_setup(flor$florentine_graph,
+ #'                         variables = c("total_degree"),
+diff --git a/R/qap_setup.R b/R/qap_setup.R
+index 265ae26..aaf8339 100644
+--- a/R/qap_setup.R
++++ b/R/qap_setup.R
+@@ -28,7 +28,8 @@
+ #'                  j_elements = florentine_edges$target,
+ #'                  type = florentine_edges$type,
+ #'                  directed = FALSE,
+-#'                  net_name = "florentine_graph")
++#'                  net_name = "florentine_graph",
++#'                  output = c("graph", "nodelist"))
+ #'
+ #' flor_setup <- qap_setup(flor$florentine_graph,
+ #'                         variables = c("total_degree"),
+diff --git a/R/role_analysis.R b/R/role_analysis.R
+index 3e9c36c..56b482c 100644
+--- a/R/role_analysis.R
++++ b/R/role_analysis.R
+@@ -50,7 +50,8 @@
+ #'                  j_elements = florentine_edges$target,
+ #'                  type = florentine_edges$type,
+ #'                  directed = FALSE,
+-#'                  net_name = "florentine")
++#'                  net_name = "florentine",
++#'                  output = c("graph", "nodelist"))
+ #'
+ #' # Clustering method
+ #' flor_cluster <- role_analysis(graph = flor$igraph_list,
+diff --git a/man/comm_detect.Rd b/man/comm_detect.Rd
+index b269899..f188201 100644
+--- a/man/comm_detect.Rd
++++ b/man/comm_detect.Rd
+@@ -4,7 +4,7 @@
+ \alias{comm_detect}
+ \title{Community Detection Across Multiple Routines (\code{comm_detect})}
+ \usage{
+-comm_detect(g, modres = 1, slow_routines = FALSE, shiny = FALSE)
++comm_detect(g, modres = 1, slow_routines = FALSE, shiny = FALSE, plots = TRUE)
+ }
+ \arguments{
+ \item{g}{An igraph object. If the igraph object contains a directed network, the function will treat the network as undirected before running community detection routines.}
+@@ -13,6 +13,8 @@ comm_detect(g, modres = 1, slow_routines = FALSE, shiny = FALSE)
+ 
+ \item{slow_routines}{A logical indicating whether time-intensive community detection routines should be performed on larger networks. Edge betweenness, leading eigenvector, link communities, and stochastic blockmodeling each take a very long time to identify communities in networks consisting of more than a few thousand nodes. By default, \code{comm_detect} will skip performing these routines on networks with more than 5,000 nodes and inform the user that it is doing so.}
+ 
++\item{plots}{Logical. If \code{TRUE} (default), \code{comm_detect} draws and returns network plots colored by each routine's community assignments. Set to \code{FALSE} to skip plotting, which is considerably faster.}
++
+ \item{shiny}{An argument indicating whether the output from the \code{comm_detect} function will be fed into the IDEANet visualization app.}
+ }
+ \value{
+@@ -32,5 +34,5 @@ nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
+                       output = "graph")
+ 
+ # Run comm_detect
+-faux_communities <- comm_detect(g = nw_fauxmesa$faux_mesa)
++faux_communities <- comm_detect(g = nw_fauxmesa$faux_mesa, plots = FALSE)
+ }
+diff --git a/man/edge_correlations.Rd b/man/edge_correlations.Rd
+index c9a692c..0aced78 100644
+--- a/man/edge_correlations.Rd
++++ b/man/edge_correlations.Rd
+@@ -23,7 +23,8 @@ nw_flor <- netwrite(nodelist = florentine_nodes,
+                     j_elements = florentine_edges$target,
+                     type = florentine_edges$type,
+                     directed = FALSE,
+-                    net_name = "florentine")
++                    net_name = "florentine",
++                    output = c("graph", "nodelist", "system_level_measures"))
+ 
+ edge_correlations(nw_flor)
+ }
+diff --git a/man/get_CHAMP_map.Rd b/man/get_CHAMP_map.Rd
+index 8eceb11..f06e2db 100644
+--- a/man/get_CHAMP_map.Rd
++++ b/man/get_CHAMP_map.Rd
+@@ -43,7 +43,7 @@ See also \url{https://github.com/wweir827/CHAMP} and \url{https://github.com/rag
+ # the domains of optimality in the resolution parameter for
+ # different partitions
+ data(karate, package = "igraphdata")
+-partitions <- get_partitions(karate, n_runs = 2500)
++partitions <- get_partitions(karate, n_runs = 500)
+ partitions <- CHAMP(karate, partitions, plottitle = "Weighted Karate Club")
+ partitions <- get_CHAMP_map(karate, partitions, plotlabel = "Weighted Karate Club")
+ }
+diff --git a/man/get_partitions.Rd b/man/get_partitions.Rd
+index 0f954ec..329925d 100644
+--- a/man/get_partitions.Rd
++++ b/man/get_partitions.Rd
+@@ -36,7 +36,7 @@ The \code{get_partitions} function is a wrapper to gather a collection of commun
+ # Use get_partitions to generate multiple partitions of the
+ # Zachary karate club at different resolution parameters
+ data(karate, package = "igraphdata")
+-partitions <- get_partitions(karate, n_runs = 2500)
++partitions <- get_partitions(karate, n_runs = 500)
+ }
+ \author{
+ Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein
+diff --git a/man/qap_run.Rd b/man/qap_run.Rd
+index e2d5d3f..e7690a3 100644
+--- a/man/qap_run.Rd
++++ b/man/qap_run.Rd
+@@ -44,7 +44,8 @@ flor <- netwrite(nodelist = florentine_nodes,
+                  j_elements = florentine_edges$target,
+                  type = florentine_edges$type,
+                  directed = FALSE,
+-                 net_name = "florentine_graph")
++                 net_name = "florentine_graph",
++                 output = c("graph", "nodelist"))
+ 
+ flor_setup <- qap_setup(flor$florentine_graph,
+                         variables = c("total_degree"),
+diff --git a/man/qap_setup.Rd b/man/qap_setup.Rd
+index eb02ec4..2eb1acf 100644
+--- a/man/qap_setup.Rd
++++ b/man/qap_setup.Rd
+@@ -44,7 +44,8 @@ flor <- netwrite(nodelist = florentine_nodes,
+                  j_elements = florentine_edges$target,
+                  type = florentine_edges$type,
+                  directed = FALSE,
+-                 net_name = "florentine_graph")
++                 net_name = "florentine_graph",
++                 output = c("graph", "nodelist"))
+ 
+ flor_setup <- qap_setup(flor$florentine_graph,
+                         variables = c("total_degree"),
+diff --git a/man/role_analysis.Rd b/man/role_analysis.Rd
+index e691153..a755820 100644
+--- a/man/role_analysis.Rd
++++ b/man/role_analysis.Rd
+@@ -87,7 +87,8 @@ flor <- netwrite(nodelist = florentine_nodes,
+                  j_elements = florentine_edges$target,
+                  type = florentine_edges$type,
+                  directed = FALSE,
+-                 net_name = "florentine")
++                 net_name = "florentine",
++                 output = c("graph", "nodelist"))
+ 
+ # Clustering method
+ flor_cluster <- role_analysis(graph = flor$igraph_list,
+diff --git a/vignettes/CHAMP.Rmd b/vignettes/CHAMP.Rmd
+index f63eb57..f2a11df 100644
+--- a/vignettes/CHAMP.Rmd
++++ b/vignettes/CHAMP.Rmd
+@@ -59,7 +59,8 @@ nw_flor <- netwrite(nodelist = florentine_nodes,
+                     j_elements = florentine_edges$target,
+                     type = florentine_edges$type,
+                     directed = FALSE,
+-                    net_name = "florentine")
++                    net_name = "florentine",
++                    output = "graph")
+ ```
+ 
+ *In the interest of simplicity, we will not visualize sociograms directly in this vignette. However, if you are interested in looking at the general structure of the networks used here, we provide code for doing so and encourage you to paste it in your R console:*
+diff --git a/vignettes/mrqap.Rmd b/vignettes/mrqap.Rmd
+index f754013..16a73ae 100644
+--- a/vignettes/mrqap.Rmd
++++ b/vignettes/mrqap.Rmd
+@@ -27,7 +27,8 @@ nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
+                         j_elements = fauxmesa_edges$to,
+                         directed = FALSE,
+                         net_name = "faux_mesa",
+-                        shiny = TRUE)
++                        shiny = TRUE,
++                        output = "graph")
+ ```
+ 
+ When we look at the original nodelist passed to `netwrite` (`fauxmesa_nodes`), we see that we have information about each student's grade level, their race/ethnicity, and their sex. This information exists at the *individual level* in that it pertains to individual students. However, when using MRQAP analysis, we are generally interested in how *dyadic* measures predict outcomes. In other words, we're interested in whether similarities or differences between nodes lead to outcomes, both of which are understood at the level of ego-alter relationships. While some users may have dyadic measures stored in their edgelist ahead of time, typically these measures are something one has to generate. The `qap_setup` function in `ideanet` allows users to quickly take node-level attributes and generate dyad-level comparisons with only a few arguments. 
+diff --git a/vignettes/roles.Rmd b/vignettes/roles.Rmd
+index 77eef8c..d66a426 100644
+--- a/vignettes/roles.Rmd
++++ b/vignettes/roles.Rmd
+@@ -41,7 +41,8 @@ nw_flor <- netwrite(nodelist = florentine_nodes,
+                     j_elements = florentine_edges$target,
+                     type = florentine_edges$type,
+                     directed = FALSE,
+-                    net_name = "florentine")
++                    net_name = "florentine",
++                    output = c("graph", "nodelist"))
+ ```
+ 
+ We'll be passing resulting `igraph_list` and `node_measures` object to the `role_analysis` function.

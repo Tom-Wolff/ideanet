@@ -50,7 +50,8 @@
 #'                  j_elements = florentine_edges$target,
 #'                  type = florentine_edges$type,
 #'                  directed = FALSE,
-#'                  net_name = "florentine")
+#'                  net_name = "florentine",
+#'                  output = c("graph", "nodelist"))
 #'
 #' # Clustering method
 #' flor_cluster <- role_analysis(graph = flor$igraph_list,

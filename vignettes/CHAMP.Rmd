@@ -59,7 +59,8 @@ nw_flor <- netwrite(nodelist = florentine_nodes,
                     j_elements = florentine_edges$target,
                     type = florentine_edges$type,
                     directed = FALSE,
-                    net_name = "florentine")
+                    net_name = "florentine",
+                    output = "graph")
 ```
 
 *In the interest of simplicity, we will not visualize sociograms directly in this vignette. However, if you are interested in looking at the general structure of the networks used here, we provide code for doing so and encourage you to paste it in your R console:*

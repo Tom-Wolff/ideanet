@@ -20,7 +20,7 @@
 #' # Use get_partitions to generate multiple partitions of the
 #' # Zachary karate club at different resolution parameters
 #' data(karate, package = "igraphdata")
-#' partitions <- get_partitions(karate, n_runs = 2500)
+#' partitions <- get_partitions(karate, n_runs = 500)
 
 ###################################
 #   G E T  P A R T I T I O N S    #
@@ -83,9 +83,7 @@ get_partitions <- function( network,
   # add_comm_detect is True, or directly using provided comm_detect() output
   if (is.logical(add_comm_detect)) {
     if (add_comm_detect == T) {
-      grDevices::pdf(file = NULL) #Redirecting the graphical output of comm_detect()
-      add_comm_detect <- comm_detect(network)
-      grDevices::dev.off()
+      add_comm_detect <- comm_detect(network, plots = FALSE) # plots are never used here
     }
   }
   if (min(c("memberships", "summaries", "score_comparison") %in%

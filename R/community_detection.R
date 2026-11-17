@@ -1,10 +1,11 @@
 #' Community Detection Across Multiple Routines (\code{comm_detect})
 #'
-#' @description The \code{comm_detect} function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is used.
+#' @description The \code{comm_detect} function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. \code{comm_detect} works with undirected networks only: if you supply a directed network, it is converted to an undirected one (reciprocal ties are merged and their weights summed) before any routine is run. The stochastic blockmodel routine needs the number of communities to be set in advance, so \code{comm_detect} uses the median number of communities found by the other routines.
 #'
 #' @param g An igraph object. If the igraph object contains a directed network, the function will treat the network as undirected before running community detection routines.
 #' @param modres A modularity resolution parameter used when performing community detection using the Leiden method.
 #' @param slow_routines A logical indicating whether time-intensive community detection routines should be performed on larger networks. Edge betweenness, leading eigenvector, link communities, and stochastic blockmodeling each take a very long time to identify communities in networks consisting of more than a few thousand nodes. By default, \code{comm_detect} will skip performing these routines on networks with more than 5,000 nodes and inform the user that it is doing so.
+#' @param plots Logical. If \code{TRUE} (default), \code{comm_detect} draws and returns network plots colored by each routine's community assignments. Set to \code{FALSE} to skip plotting, which is considerably faster.
 #' @param shiny An argument indicating whether the output from the \code{comm_detect} function will be fed into the IDEANet visualization app.
 #'
 #' @return \code{comm_detect} returns a list contianing three data frames. \code{comm_members} indicates each node's assigned community membership from each community detection routine. \code{comm_summaries} indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. \code{comp_scores} contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. A fourth element in the list, \code{plots}, contains a series of network visualizations in which nodes are colored by their assigned community memberships from each routine. If \code{shiny == FALSE}, this function will display these visualizations in the user's plot window.
@@ -25,7 +26,7 @@
 #'                       output = "graph")
 #'
 #' # Run comm_detect
-#' faux_communities <- comm_detect(g = nw_fauxmesa$faux_mesa)
+#' faux_communities <- comm_detect(g = nw_fauxmesa$faux_mesa, plots = FALSE)
 
 
 ###############################################
@@ -48,7 +49,8 @@
 
 comm_detect <- function(g, modres=1,
                         slow_routines = FALSE,
-                        shiny = FALSE) {
+                        shiny = FALSE,
+                        plots = TRUE) {
 
   # browser()
 
@@ -674,7 +676,7 @@ comm_detect <- function(g, modres=1,
   compare_scores[is.nan(compare_scores)] <- NA
 
   # Plot network with nodes colored by community membership
-  if (!shiny) {
+  if (!shiny && plots) {
     # Don't create plots if too large
     if (n > 5000) {
       base::message("Network is too large to visualize all membership assignments simultaneously. Visualizations will not be generated.")
@@ -857,7 +859,7 @@ comm_detect <- function(g, modres=1,
   # assign(x= cn, value = cs,.GlobalEnv)
 
   # Add plot to output
-  if (shiny == FALSE) {
+  if (shiny == FALSE && plots && exists("communityplot1", inherits = FALSE)) {
       output_list$plots <- list("membership_plot1" = communityplot1,
                                 "membership_plot2" = communityplot2,
                                 "membership_plot3" = communityplot3)

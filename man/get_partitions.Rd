@@ -36,7 +36,7 @@ The \code{get_partitions} function is a wrapper to gather a collection of commun
 # Use get_partitions to generate multiple partitions of the
 # Zachary karate club at different resolution parameters
 data(karate, package = "igraphdata")
-partitions <- get_partitions(karate, n_runs = 2500)
+partitions <- get_partitions(karate, n_runs = 500)
 }
 \author{
 Peter J. Mucha (\email{peter.j.mucha@dartmouth.edu}), Alex Craig, Rachel Matthew, Sydney Rosenbaum and Ava Scharfstein

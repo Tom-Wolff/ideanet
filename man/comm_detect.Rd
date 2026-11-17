@@ -4,7 +4,7 @@
 \alias{comm_detect}
 \title{Community Detection Across Multiple Routines (\code{comm_detect})}
 \usage{
-comm_detect(g, modres = 1, slow_routines = FALSE, shiny = FALSE)
+comm_detect(g, modres = 1, slow_routines = FALSE, shiny = FALSE, plots = TRUE)
 }
 \arguments{
 \item{g}{An igraph object. If the igraph object contains a directed network, the function will treat the network as undirected before running community detection routines.}
@@ -13,13 +13,15 @@ comm_detect(g, modres = 1, slow_routines = FALSE, shiny = FALSE)
 
 \item{slow_routines}{A logical indicating whether time-intensive community detection routines should be performed on larger networks. Edge betweenness, leading eigenvector, link communities, and stochastic blockmodeling each take a very long time to identify communities in networks consisting of more than a few thousand nodes. By default, \code{comm_detect} will skip performing these routines on networks with more than 5,000 nodes and inform the user that it is doing so.}
 
+\item{plots}{Logical. If \code{TRUE} (default), \code{comm_detect} draws and returns network plots colored by each routine's community assignments. Set to \code{FALSE} to skip plotting, which is considerably faster.}
+
 \item{shiny}{An argument indicating whether the output from the \code{comm_detect} function will be fed into the IDEANet visualization app.}
 }
 \value{
 \code{comm_detect} returns a list contianing three data frames. \code{comm_members} indicates each node's assigned community membership from each community detection routine. \code{comm_summaries} indicates the number of communities inferred from each routine as well as the modularity score arising from community assignments. \code{comp_scores} contains a matrix indicating the similarity of community assignments between each pair of community detection routines, measured using adjusted rand scores. A fourth element in the list, \code{plots}, contains a series of network visualizations in which nodes are colored by their assigned community memberships from each routine. If \code{shiny == FALSE}, this function will display these visualizations in the user's plot window.
 }
 \description{
-The \code{comm_detect} function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. Need to mention that only supports undirected nets and that for some routines the median community value is used.
+The \code{comm_detect} function runs a set of several commonly-used community detection routines on a network and provides community assignments from these routines. \code{comm_detect} works with undirected networks only: if you supply a directed network, it is converted to an undirected one (reciprocal ties are merged and their weights summed) before any routine is run. The stochastic blockmodel routine needs the number of communities to be set in advance, so \code{comm_detect} uses the median number of communities found by the other routines.
 }
 \examples{
 # Run netwrite
@@ -32,5 +34,5 @@ nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
                       output = "graph")
 
 # Run comm_detect
-faux_communities <- comm_detect(g = nw_fauxmesa$faux_mesa)
+faux_communities <- comm_detect(g = nw_fauxmesa$faux_mesa, plots = FALSE)
 }

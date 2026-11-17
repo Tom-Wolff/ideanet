@@ -43,7 +43,7 @@ See also \url{https://github.com/wweir827/CHAMP} and \url{https://github.com/rag
 # the domains of optimality in the resolution parameter for
 # different partitions
 data(karate, package = "igraphdata")
-partitions <- get_partitions(karate, n_runs = 2500)
+partitions <- get_partitions(karate, n_runs = 500)
 partitions <- CHAMP(karate, partitions, plottitle = "Weighted Karate Club")
 partitions <- get_CHAMP_map(karate, partitions, plotlabel = "Weighted Karate Club")
 }
