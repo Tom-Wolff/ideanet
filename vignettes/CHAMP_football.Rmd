@@ -36,7 +36,7 @@ In addition to this vignette, we recommend you look at the [CHAMP_karate vignett
 
 ## Example: NCAA College Football Network
 
-A favorite example for demonstrating the need for a resolution parameter is the network of the (then-so-called) Division I-A college football games from the Fall 2000 season. This example was introduced by Girvan and Newman (2002). The GML file for this example can be downloaded (along with a bunch of other interesting examples) from Mark Newman’s “Network data” web page at <http://www-personal.umich.edu/~mejn/netdata/>. We have directly included this `football` data in `ideanet` with permission from Michelle Girvan and Mark Newman.
+A favorite example for demonstrating the need for a resolution parameter is the network of the (then-so-called) Division I-A college football games from the Fall 2000 season. This example was introduced by Girvan and Newman (2002). The GML file for this example can be downloaded (along with a bunch of other interesting examples) from Mark Newman’s “Network data” web page at `websites.umich.edu/~mejn/netdata`. We have directly included this `football` data in `ideanet` with permission from Michelle Girvan and Mark Newman.
 
 ```{r, eval = FALSE}
 football

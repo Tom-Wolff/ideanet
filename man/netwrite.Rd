@@ -104,7 +104,15 @@ nw_fauxmesa <- netwrite(nodelist = fauxmesa_nodes,
                       i_elements = fauxmesa_edges$from,
                       j_elements = fauxmesa_edges$to,
                       directed = TRUE,
-                      net_name = "faux_mesa")
+                      net_name = "faux_mesa",
+                      output = c("graph",
+                                 "largest_bi_component",
+                                 "largest_component",
+                                 "largest_component",
+                                 "nodelist",
+                                 "edgelist",
+                                 "system_level_measures"))
+
 
 ### Inspect updated edgelist
 head(nw_fauxmesa$edgelist)
@@ -115,14 +123,7 @@ head(nw_fauxmesa$node_measures)
 ### Inspect system-level summary
 head(nw_fauxmesa$system_level_measures)
 
-### Plot sociogram of network
-plot(nw_fauxmesa$faux_mesa)
 
-### View node-level summary visualization
-nw_fauxmesa$node_measure_plot
-
-### View system-level summary visualization
-nw_fauxmesa$system_measure_plot
 
 
 
@@ -131,5 +132,12 @@ nw_fauxmesa$system_measure_plot
 nw_triad <- netwrite(data_type = "adjacency_matrix",
                      adjacency_matrix = triad,
                      directed = TRUE,
-                     net_name = "triad_igraph")
+                     net_name = "triad_igraph",
+                     output = c("graph",
+                                 "largest_bi_component",
+                                 "largest_component",
+                                 "largest_component",
+                                 "nodelist",
+                                 "edgelist",
+                                 "system_level_measures"))
 }

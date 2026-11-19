@@ -265,7 +265,7 @@
 #'   \item{value}{A numberic indicator of football conference affiliation.}
 #'   ...
 #' }
-#' @source Included by permission of M. Girvan and M. E. J. Newman (\href{https://websites.umich.edu/~mejn/netdata/}{Website})
+#' @source Included by permission of M. Girvan and M. E. J. Newman (website: \code{websites.umich.edu/~mejn/netdata})
 #' @references M. Girvan and M. E. J. Newman. 2002. "Community structure in social and biological networks." \emph{Proc. Natl. Acad. Sci. USA} 99:7821-7826.
 "football"
 

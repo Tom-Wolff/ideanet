@@ -14,7 +14,7 @@ An `igraph` object containing 613 edges between 115 vertices (nodes). Vertices c
 }
 }
 \source{
-Included by permission of M. Girvan and M. E. J. Newman (\href{https://websites.umich.edu/~mejn/netdata/}{Website})
+Included by permission of M. Girvan and M. E. J. Newman (website: \code{websites.umich.edu/~mejn/netdata})
 }
 \usage{
 football
